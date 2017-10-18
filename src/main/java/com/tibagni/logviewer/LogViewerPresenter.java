@@ -105,11 +105,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         allLogs = logParser.parseLogs();
         filteredLogs = new LogEntry[0];
 
-//        for (int i = 0; i <= 20; i++) {
-//          try { Thread.sleep(1000); } catch (InterruptedException e) { }
-//          updateAsyncProgress(100 * i / 20, "Updating: " + i);
-//        }
-
         doOnUiThread(() -> {
           view.showFilteredLogs(filteredLogs);
           view.showLogs(allLogs);
@@ -127,6 +122,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     // Before applying a new filter, make sure the last one is cleaned up
     // (if there is an existing one)
     cleanUpFilteredColors();
+    cleanUpFilterTempInfo();
 
     Filter[] filters = new Filter[filterIndices.length];
     int i = 0;
@@ -143,6 +139,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       for (LogEntry entry : filteredLogs) {
         entry.setFilterColor(null);
       }
+    }
+  }
+
+  private void cleanUpFilterTempInfo() {
+    for (Filter filter : filters) {
+      filter.resetTemporaryInfo();
     }
   }
 }

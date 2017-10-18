@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.log.parser;
 
+import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.*;
 import com.tibagni.logviewer.util.StringUtils;
 
@@ -19,11 +20,11 @@ public class LogParser {
 
   private LogReader logReader;
   private List<LogEntry> logEntries;
-  private ParsingProgress parsingProgress;
+  private ProgressReporter progressReporter;
 
-  public LogParser(LogReader logReader, ParsingProgress parsingProgress) {
+  public LogParser(LogReader logReader, ProgressReporter progressReporter) {
     this.logReader = logReader;
-    this.parsingProgress = parsingProgress;
+    this.progressReporter = progressReporter;
     this.logEntries = new ArrayList<>();
   }
 
@@ -33,22 +34,23 @@ public class LogParser {
     int logsRead = 0;
     for (String log : availableLogs) {
       int progress = logsRead++ * 60 / availableLogs.size();
-      parsingProgress.onProgress(progress, "Parsing " + log);
+      progressReporter.onProgress(progress, "Reading " + log + "...");
       logEntries.addAll(getLogEntries(logReader.get(log)));
     }
 
     if (availableLogs.size() > 1) {
-      parsingProgress.onProgress(80, "Organizing all logs...");
+      progressReporter.onProgress(80, "Sorting...");
       Collections.sort(logEntries);
     }
 
-    parsingProgress.onProgress(95, "Organizing all logs...");
+    progressReporter.onProgress(95, "Setting index...");
+
     int index = 0;
     for (LogEntry entry : logEntries) {
       entry.setIndex(index++);
     }
 
-    parsingProgress.onProgress(100, "Completed");
+    progressReporter.onProgress(100, "Completed");
     return logEntries.toArray(new LogEntry[0]);
   }
 
@@ -108,9 +110,5 @@ public class LogParser {
 
   private boolean shouldIgnoreLine(String line) {
     return line.startsWith("--------- beginning of");
-  }
-
-  public interface ParsingProgress {
-    void onProgress(int progress, String description);
   }
 }

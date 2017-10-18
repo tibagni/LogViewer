@@ -12,7 +12,7 @@ public class ParserTests {
 
   @Before
   public void setUp() {
-    logParser = new LogParser(null);
+    logParser = new LogParser(null, null);
   }
 
   @Test

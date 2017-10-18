@@ -72,6 +72,7 @@ public class LogViewerView implements LogViewer.View {
   public void showFilteredLogs(LogEntry[] logEntries) {
     filteredLogList.setListData(logEntries);
     logList.updateUI();
+    filtersList.updateUI();
   }
 
   private void setupFiltersContextActions() {

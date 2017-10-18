@@ -18,6 +18,8 @@ public class Filter {
   private Pattern pattern;
   private int flags = Pattern.CASE_INSENSITIVE;
 
+  private ContextInfo temporaryInfo;
+
   private Filter() { }
 
   public Filter(String name, String pattern, Color color) throws FilterException {
@@ -63,28 +65,21 @@ public class Filter {
     return pattern.toString();
   }
 
+  public ContextInfo getTemporaryInfo() {
+    return temporaryInfo;
+  }
+
+  public void resetTemporaryInfo() {
+    this.temporaryInfo = null;
+  }
+
+  void initTemporaryInfo() {
+    temporaryInfo = new ContextInfo();
+  }
+
   boolean isCaseSensitive() {
     // Check if the CASE_INSENSITIVE is OFF!!
     return (flags & Pattern.CASE_INSENSITIVE) == 0;
-  }
-
-  /**
-   * Apply this filter to the given input
-   *
-   * @param input on which the filter should be applied
-   * @return a new String array containing the filtered output
-   */
-  public LogEntry[] apply(LogEntry[] input) {
-    List<LogEntry> filtered = new ArrayList<>();
-
-    for (LogEntry entry : input) {
-      if (appliesTo(entry.getLogText())) {
-        entry.setFilterColor(color);
-        filtered.add(entry);
-      }
-    }
-
-    return filtered.toArray(new LogEntry[0]);
   }
 
   /**
@@ -144,5 +139,9 @@ public class Filter {
     } catch (Exception e) {
       throw new FilterException("Wrong filter format: " + filterString, e);
     }
+  }
+
+  public static class ContextInfo {
+    public int linesFound;
   }
 }
