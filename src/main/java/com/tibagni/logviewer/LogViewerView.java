@@ -5,6 +5,7 @@ import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.FilterCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.util.JFileChooserExt;
+import com.tibagni.logviewer.util.ProgressMonitorExt;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -26,7 +27,7 @@ public class LogViewerView implements LogViewer.View {
 
   private LogViewer.Presenter presenter;
   private JFileChooserExt fileChooser;
-  private ProgressMonitor progressMonitor;
+  private ProgressMonitorExt progressMonitor;
 
   public LogViewerView() {
     presenter = new LogViewerPresenter(this);
@@ -207,8 +208,10 @@ public class LogViewerView implements LogViewer.View {
   @Override
   public void showStartLoading() {
     if (progressMonitor == null) {
-      progressMonitor = new ProgressMonitor(mainPanel, "Loading...", "", 0, 100);
+      progressMonitor = new ProgressMonitorExt(mainPanel, "Loading...", "", 0, 100);
       progressMonitor.setMillisToDecideToPopup(100);
+      progressMonitor.setCancelable(false);
+      progressMonitor.setPreferredWidth(400);
     }
 
     progressMonitor.setProgress(0);
