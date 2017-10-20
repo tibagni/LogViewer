@@ -105,6 +105,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         allLogs = logParser.parseLogs();
         filteredLogs = new LogEntry[0];
 
+        logParser.release();
+        logParser = null;
+
         doOnUiThread(() -> {
           if (allLogs.length > 0) {
             view.showFilteredLogs(filteredLogs);

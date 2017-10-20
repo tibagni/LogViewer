@@ -29,6 +29,10 @@ public class LogParser {
   }
 
   public LogEntry[] parseLogs() throws LogReaderException {
+    if (logReader == null || logEntries == null || progressReporter == null) {
+      throw new IllegalStateException("LogParser was already released. Cannot use it...");
+    }
+
     logReader.readLogs();
     Set<String> availableLogs = logReader.getAvailableLogsNames();
     int logsRead = 0;
@@ -52,6 +56,16 @@ public class LogParser {
 
     progressReporter.onProgress(100, "Completed");
     return logEntries.toArray(new LogEntry[0]);
+  }
+
+  public void release() {
+    logEntries.clear();
+    logEntries = null;
+
+    progressReporter = null;
+
+    logReader.close();
+    logReader = null;
   }
 
   private List<LogEntry> getLogEntries(String logText) {

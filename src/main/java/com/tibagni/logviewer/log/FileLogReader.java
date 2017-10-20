@@ -12,8 +12,9 @@ import java.util.Set;
 
 public class FileLogReader implements LogReader {
   private File logFiles[];
-  private String logStringsArr[];
   private Map<String, String> logStrings;
+
+  private boolean isClosed;
 
   public FileLogReader(File[] logFiles) {
     this.logFiles = logFiles;
@@ -22,6 +23,10 @@ public class FileLogReader implements LogReader {
 
   @Override
   public void readLogs() throws LogReaderException {
+    if (isClosed) {
+      throw new IllegalStateException("Reader already closed");
+    }
+
     if (logFiles == null || logFiles.length == 0) {
       throw new LogReaderException("There are no logs to read!");
     }
@@ -69,5 +74,15 @@ public class FileLogReader implements LogReader {
   @Override
   public Set<String> getAvailableLogsNames() {
     return logStrings.keySet();
+  }
+
+  @Override
+  public void close() {
+    isClosed = true;
+
+    logStrings.clear();
+    logStrings = null;
+
+    logFiles = null;
   }
 }
