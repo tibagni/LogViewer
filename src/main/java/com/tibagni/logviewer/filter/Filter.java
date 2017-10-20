@@ -1,11 +1,8 @@
 package com.tibagni.logviewer.filter;
 
-import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.util.StringUtils;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -29,10 +26,6 @@ public class Filter {
   public Filter(String name, String pattern, Color color, boolean caseSensitive)
       throws FilterException {
     updateFilter(name, pattern, color, caseSensitive);
-  }
-
-  public void updateFilter(String name, String pattern, Color color) throws FilterException {
-    updateFilter(name, pattern, color, ((flags & Pattern.CASE_INSENSITIVE) == 0));
   }
 
   public void updateFilter(String name, String pattern, Color color, boolean caseSensitive)
@@ -85,8 +78,8 @@ public class Filter {
   /**
    * Take a single String and return whether the it appliesTo this filter or not
    *
-   * @param inputLine
-   * @return
+   * @param inputLine A single log line
+   * @return true if this filter is applicable to the input line. False otherwise
    */
   boolean appliesTo(String inputLine) {
     return pattern.matcher(inputLine).find();

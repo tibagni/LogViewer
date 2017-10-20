@@ -6,7 +6,7 @@ import javax.swing.table.AbstractTableModel;
 
 public class LogListTableModel extends AbstractTableModel {
   private LogEntry[] entries;
-  private String title;
+  private final String title;
 
   public LogListTableModel(String title) {
     this.title = title;

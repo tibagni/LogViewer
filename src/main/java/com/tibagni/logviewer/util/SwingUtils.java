@@ -1,6 +1,5 @@
 package com.tibagni.logviewer.util;
 
-import javax.accessibility.AccessibleContext;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -35,13 +34,13 @@ public final class SwingUtils {
    */
   public static <T extends JComponent> List<T> getDescendantsOfType(
       Class<T> clazz, Container container, boolean nested) {
-    List<T> tList = new ArrayList<T>();
+    List<T> tList = new ArrayList<>();
     for (Component component : container.getComponents()) {
       if (clazz.isAssignableFrom(component.getClass())) {
         tList.add(clazz.cast(component));
       }
       if (nested || !clazz.isAssignableFrom(component.getClass())) {
-        tList.addAll(SwingUtils.<T>getDescendantsOfType(clazz,
+        tList.addAll(SwingUtils.getDescendantsOfType(clazz,
             (Container) component, nested));
       }
     }

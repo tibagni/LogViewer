@@ -1,7 +1,6 @@
 package com.tibagni.logviewer.filter;
 
 import javax.swing.*;
-import javax.swing.colorchooser.AbstractColorChooserPanel;
 import java.awt.*;
 import java.awt.event.*;
 

@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Presenter {
-  private LogViewer.View view;
+  private final LogViewer.View view;
 
-  private List<Filter> filters;
+  private final List<Filter> filters;
   private LogEntry[] allLogs;
   private LogEntry[] filteredLogs;
   private LogParser logParser;

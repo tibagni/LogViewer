@@ -9,8 +9,8 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
 public class LogCellRenderer extends JPanel implements TableCellRenderer {
-  protected JTextArea textView;
-  private JPanel colorIndicator;
+  protected final JTextArea textView;
+  private final JPanel colorIndicator;
 
   public LogCellRenderer() {
     setLayout(new BorderLayout());

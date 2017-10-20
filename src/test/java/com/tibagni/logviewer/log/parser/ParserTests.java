@@ -11,12 +11,14 @@ import org.mockito.Mock;
 
 public class ParserTests {
 
-  LogParser logParser;
+  private LogParser logParser;
 
   @Mock
+  private
   LogReader reader;
 
   @Mock
+  private
   ProgressReporter progressReporter;
 
   @Before

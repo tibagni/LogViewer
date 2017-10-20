@@ -33,8 +33,8 @@ public class FileLogReader implements LogReader {
 
     File currentFile = null;
     try {
-      for (int i = 0; i < logFiles.length; i++) {
-        currentFile = logFiles[i];
+      for (File logFile : logFiles) {
+        currentFile = logFile;
         logStrings.put(currentFile.getName(), readFile(currentFile));
       }
 
@@ -44,18 +44,14 @@ public class FileLogReader implements LogReader {
   }
 
   private String readFile(File file) throws IOException {
-    BufferedReader reader = new BufferedReader(new FileReader(file));
     String line;
     StringBuilder builder = new StringBuilder();
 
-    try {
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
       while ((line = reader.readLine()) != null) {
         builder.append(line);
         builder.append(StringUtils.LINE_SEPARATOR);
       }
-
-    } finally {
-      reader.close();
     }
 
     return builder.toString();

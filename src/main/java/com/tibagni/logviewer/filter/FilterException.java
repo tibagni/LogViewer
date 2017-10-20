@@ -9,7 +9,4 @@ public class FilterException extends Exception {
     super(message, cause);
   }
 
-  public FilterException(Throwable cause) {
-    super(cause);
-  }
 }

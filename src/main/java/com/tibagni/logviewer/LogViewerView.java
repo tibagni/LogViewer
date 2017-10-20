@@ -23,12 +23,12 @@ public class LogViewerView implements LogViewer.View {
   private JButton saveFilterBtn;
   private JButton addNewFilterBtn;
   private JButton openFilterBtn;
-  private ReorderableList filtersList;
+  private ReorderableList<Filter> filtersList;
   private JButton applyFiltersBtn;
   private JButton openLogsBtn;
 
-  private LogViewer.Presenter presenter;
-  private JFileChooserExt fileChooser;
+  private final LogViewer.Presenter presenter;
+  private final JFileChooserExt fileChooser;
   private ProgressMonitorExt progressMonitor;
 
   private LogListTableModel logListTableModel;
@@ -41,7 +41,7 @@ public class LogViewerView implements LogViewer.View {
     addNewFilterBtn.addActionListener(e -> addFilter());
 
     filtersList.setCellRenderer(new FilterCellRenderer());
-    filtersList.setReorderedListener((o, d) -> presenter.reorderFilters(o, d));
+    filtersList.setReorderedListener(presenter::reorderFilters);
     setupFiltersContextActions();
 
     logList.setDefaultRenderer(LogEntry.class, new LogCellRenderer());
@@ -149,7 +149,7 @@ public class LogViewerView implements LogViewer.View {
     if (filtersList.getSelectedIndices().length == 1) {
       // We don't care about the return value here
       EditFilterDialog.showEditFilterDialog(addNewFilterBtn,
-          (Filter) filtersList.getModel().getElementAt(filtersList.getSelectedIndex()));
+          filtersList.getModel().getElementAt(filtersList.getSelectedIndex()));
     }
   }
 

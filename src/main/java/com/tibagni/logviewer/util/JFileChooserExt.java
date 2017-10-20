@@ -14,7 +14,7 @@ public class JFileChooserExt extends JFileChooser {
   /**
    * Set the extension to be added to a file (if not already) when saving
    *
-   * @param saveExtension
+   * @param saveExtension The extension to be appended to the file name when saving a file (if missing)
    */
   public void setSaveExtension(String saveExtension) {
     this.saveExtension = saveExtension;

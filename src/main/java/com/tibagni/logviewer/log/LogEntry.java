@@ -6,8 +6,8 @@ public class LogEntry implements Comparable<LogEntry> {
 
   private int index;
   private LogTimestamp timestamp;
-  private StringBuilder logText;
-  private LogLevel logLevel;
+  private final StringBuilder logText;
+  private final LogLevel logLevel;
   private Color filterColor;
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp) {

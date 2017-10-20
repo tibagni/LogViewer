@@ -6,8 +6,8 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
 
-public class ReorderableList extends JList implements DragGestureListener, DragSourceListener {
-  private DragSource dragSource = new DragSource();
+public class ReorderableList<E> extends JList<E> implements DragGestureListener, DragSourceListener {
+  private final DragSource dragSource = new DragSource();
   private OnReorderedListener reorderedListener;
 
   public ReorderableList() {
