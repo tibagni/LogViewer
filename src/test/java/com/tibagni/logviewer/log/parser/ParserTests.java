@@ -1,23 +1,27 @@
 package com.tibagni.logviewer.log.parser;
 
+import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.LogLevel;
+import com.tibagni.logviewer.log.LogReader;
 import com.tibagni.logviewer.log.LogTimestamp;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 public class ParserTests {
 
   LogParser logParser;
 
+  @Mock
+  LogReader reader;
+
+  @Mock
+  ProgressReporter progressReporter;
+
   @Before
   public void setUp() {
-    logParser = new LogParser(null, null);
-  }
-
-  @Test
-  public void testParseLines() {
-
+    logParser = new LogParser(reader, progressReporter);
   }
 
   @Test
