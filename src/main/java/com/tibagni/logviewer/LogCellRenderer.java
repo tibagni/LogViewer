@@ -2,12 +2,13 @@ package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLevel;
+import sun.swing.DefaultLookup;
 
 import javax.swing.*;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
-public class LogCellRenderer extends JPanel implements ListCellRenderer<LogEntry> {
-
+public class LogCellRenderer extends JPanel implements TableCellRenderer {
   protected JTextArea textView;
   private JPanel colorIndicator;
 
@@ -27,23 +28,35 @@ public class LogCellRenderer extends JPanel implements ListCellRenderer<LogEntry
   }
 
   @Override
-  public Component getListCellRendererComponent(JList<? extends LogEntry> list, LogEntry value,
-                                                int index, boolean isSelected, boolean cellHasFocus) {
+  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                 boolean hasFocus, int row, int column) {
+    LogEntry logEntry = (LogEntry) value;
+    textView.setText(logEntry.getLogText());
+    textView.setWrapStyleWord(true);
+    textView.setLineWrap(true);
 
-    Color normalBgColor = list.getBackground();
-    normalBgColor = (index % 2 == 0) ? normalBgColor : darker(normalBgColor);
+    colorIndicator.setBackground(getColorForLogLevel(logEntry.getLogLevel()));
 
-    Color selectedBgColor = list.getSelectionBackground();
-    Color normalFgColor = list.getForeground();
-    Color selectedFgColor = list.getSelectionForeground();
+    setSize(table.getWidth(), Short.MAX_VALUE);
+    table.setRowHeight(row, getPreferredSize().height);
 
-    textView.setText(value.getLogText());
-    colorIndicator.setBackground(getColorForLogLevel(value.getLogLevel()));
+    if (isSelected) {
+      textView.setForeground(table.getSelectionForeground());
+      textView.setBackground(table.getSelectionBackground());
+    } else {
+      Color background = table.getBackground();
+      if (background == null || background instanceof javax.swing.plaf.UIResource) {
+        Color alternateColor = DefaultLookup.getColor(this, ui, "Table.alternateRowColor");
+        if (alternateColor != null && row % 2 != 0) {
+          background = alternateColor;
+        }
+      }
 
-    textView.setBackground(isSelected ? selectedBgColor : normalBgColor);
-    textView.setForeground(isSelected ? selectedFgColor : normalFgColor);
+      textView.setForeground(table.getForeground());
+      textView.setBackground(background);
+    }
 
-    Color filteredColor = value.getFilterColor();
+    Color filteredColor = logEntry.getFilterColor();
     if (!isSelected && filteredColor != null) {
       textView.setForeground(filteredColor);
     }
@@ -51,34 +64,28 @@ public class LogCellRenderer extends JPanel implements ListCellRenderer<LogEntry
     return this;
   }
 
-  private Color darker(Color color) {
-    final double FACTOR = 0.97;
-    return new Color(Math.max((int)(color.getRed()  *FACTOR), 0),
-        Math.max((int)(color.getGreen()*FACTOR), 0),
-        Math.max((int)(color.getBlue() *FACTOR), 0),
-        color.getAlpha());
-  }
 
   private Color getColorForLogLevel(LogLevel level) {
     Color logColor = Color.LIGHT_GRAY;
     switch (level) {
       case VERBOSE:
-        logColor = new Color(255, 255, 255);
+        logColor = new Color(165, 255, 183);
         break;
       case DEBUG:
-        logColor = new Color(76, 191, 50);
+        logColor = new Color(147, 178, 191);
         break;
       case INFO:
-        logColor = new Color(45, 36, 197);
+        logColor = new Color(124, 124, 124);
         break;
       case WARNING:
-        logColor = new Color(255, 204, 0);
+        logColor = new Color(217, 204, 135);
         break;
       case ERROR:
-        logColor = new Color(208, 0, 0);
+        logColor = new Color(208, 108, 89);
         break;
     }
 
     return logColor;
   }
+
 }

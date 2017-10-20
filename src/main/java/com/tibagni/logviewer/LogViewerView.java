@@ -11,13 +11,14 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
+import java.awt.*;
 import java.awt.event.*;
 import java.util.stream.IntStream;
 
 public class LogViewerView implements LogViewer.View {
-  private JList logList;
+  private JTable logList;
   private JPanel mainPanel;
-  private JList filteredLogList;
+  private JTable filteredLogList;
   private JButton saveFilterBtn;
   private JButton addNewFilterBtn;
   private JButton openFilterBtn;
@@ -29,22 +30,21 @@ public class LogViewerView implements LogViewer.View {
   private JFileChooserExt fileChooser;
   private ProgressMonitorExt progressMonitor;
 
+  private LogListTableModel logListTableModel;
+  private LogListTableModel filteredLogListTableModel;
+
   public LogViewerView() {
     presenter = new LogViewerPresenter(this);
     fileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
 
-    logList.addFocusListener(new MyFocusListener(logList));
-    filteredLogList.addFocusListener(new MyFocusListener(filteredLogList));
     addNewFilterBtn.addActionListener(e -> addFilter());
 
     filtersList.setCellRenderer(new FilterCellRenderer());
     setupFiltersContextActions();
 
-    logList.setCellRenderer(new LogCellRenderer());
-    logList.addComponentListener(new MyComponentListener(logList));
+    logList.setDefaultRenderer(LogEntry.class, new LogCellRenderer());
 
-    filteredLogList.setCellRenderer(new LogCellRenderer());
-    filteredLogList.addComponentListener(new MyComponentListener(filteredLogList));
+    filteredLogList.setDefaultRenderer(LogEntry.class, new LogCellRenderer());
     setupFilteredLogsContextActions();
 
     applyFiltersBtn.addActionListener(e -> applySelectedFilters());
@@ -66,12 +66,12 @@ public class LogViewerView implements LogViewer.View {
 
   @Override
   public void showLogs(LogEntry[] logEntries) {
-    logList.setListData(logEntries);
+    logListTableModel.setLogs(logEntries);
   }
 
   @Override
   public void showFilteredLogs(LogEntry[] logEntries) {
-    filteredLogList.setListData(logEntries);
+    filteredLogListTableModel.setLogs(logEntries);
     logList.updateUI();
     filtersList.updateUI();
   }
@@ -131,11 +131,13 @@ public class LogViewerView implements LogViewer.View {
       @Override
       public void mouseClicked(MouseEvent e) {
         if (e.getClickCount() == 2) {
-          int selectedIndex = filteredLogList.getSelectedIndex();
-          LogEntry clickedEntry = (LogEntry) filteredLogList.getModel().getElementAt(selectedIndex);
+          int selectedIndex = filteredLogList.getSelectedRow();
+          LogEntry clickedEntry = (LogEntry) filteredLogListTableModel.getValueAt(selectedIndex, 0);
 
-          logList.ensureIndexIsVisible(clickedEntry.getIndex());
-          logList.setSelectedIndex(clickedEntry.getIndex());
+          int logIndex = clickedEntry.getIndex();
+          Rectangle scrollToRect = logList.getCellRect(logIndex, 0, true);
+          logList.scrollRectToVisible(scrollToRect);
+          logList.setRowSelectionInterval(logIndex, logIndex);
         }
       }
     });
@@ -223,45 +225,12 @@ public class LogViewerView implements LogViewer.View {
     progressMonitor.setNote(note);
   }
 
-  private class MyComponentListener extends ComponentAdapter {
-    private JList target;
-    private ActionListener resizeCells = e -> {
-      // This will ensure the Cells have proper heights based on the content
-      target.setFixedCellHeight(1);
-      target.setFixedCellHeight(-1);
-    };
+  private void createUIComponents() {
+    logListTableModel = new LogListTableModel("All Logs");
+    logList = new JTable(logListTableModel);
 
-    private Timer recalculateTimer;
-
-    public MyComponentListener(JList target) {
-      this.target = target;
-      this.recalculateTimer = new Timer(1000, resizeCells);
-      this.recalculateTimer.setRepeats(false);
-    }
-
-    @Override
-    public void componentResized(ComponentEvent e) {
-      // Use a Timer instead of resizing the cells every time the size changes.
-      // Otherwise performance will be horrible
-      if (recalculateTimer.isRunning()) {
-        recalculateTimer.restart();
-      } else {
-        recalculateTimer.start();
-      }
-    }
-  }
-
-  private class MyFocusListener extends FocusAdapter {
-    private JList target;
-
-    public MyFocusListener(JList target) {
-      this.target = target;
-    }
-
-    @Override
-    public void focusLost(FocusEvent e) {
-      target.clearSelection();
-    }
+    filteredLogListTableModel = new LogListTableModel("Filtered Logs");
+    filteredLogList = new JTable(filteredLogListTableModel);
   }
 
   public static void main(String[] args) {

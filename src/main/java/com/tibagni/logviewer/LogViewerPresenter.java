@@ -113,6 +113,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
       }
     });
+
+    // Clean up the filters info as it does not apply anymore
+    cleanUpFilterTempInfo();
   }
 
   @Override

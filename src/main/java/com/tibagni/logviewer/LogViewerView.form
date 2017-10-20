@@ -28,7 +28,7 @@
             <properties>
               <dividerSize value="10"/>
               <orientation value="0"/>
-              <resizeWeight value="0.8"/>
+              <resizeWeight value="0.6"/>
             </properties>
             <border type="none"/>
             <children>
@@ -39,11 +39,9 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="b0d97" class="javax.swing.JList" binding="logList">
+                  <component id="449f0" class="javax.swing.JTable" binding="logList" custom-create="true">
                     <constraints/>
-                    <properties>
-                      <model/>
-                    </properties>
+                    <properties/>
                   </component>
                 </children>
               </scrollpane>
@@ -54,11 +52,9 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="6705e" class="javax.swing.JList" binding="filteredLogList">
+                  <component id="3f8c7" class="javax.swing.JTable" binding="filteredLogList" custom-create="true">
                     <constraints/>
-                    <properties>
-                      <background color="-657931"/>
-                    </properties>
+                    <properties/>
                   </component>
                 </children>
               </scrollpane>
