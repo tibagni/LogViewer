@@ -62,7 +62,7 @@ public class LogParser {
       if (isLogLine(line)) {
         LogEntry entry = new LogEntry(line, findLogLevel(line), findTimestamp(line));
         logLines.add(entry);
-      } else if (!shouldIgnoreLine(line)) {
+      } else if (!shouldIgnoreLine(line) && logLines.size() > 0) {
         // This is probably a continuation of a already started log line. Append to it
         LogEntry currentLine = logLines.get(logLines.size() - 1);
         currentLine.appendText(StringUtils.LINE_SEPARATOR + line);

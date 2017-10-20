@@ -106,8 +106,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         filteredLogs = new LogEntry[0];
 
         doOnUiThread(() -> {
-          view.showFilteredLogs(filteredLogs);
-          view.showLogs(allLogs);
+          if (allLogs.length > 0) {
+            view.showFilteredLogs(filteredLogs);
+            view.showLogs(allLogs);
+          } else {
+            view.showErrorMessage("No logs found");
+          }
         });
       } catch (LogReaderException e) {
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
@@ -136,8 +140,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       filters[i++] = this.filters.get(filterIndex);
     }
 
-    filteredLogs = Filters.applyMultipleFilters(allLogs, filters);
-    view.showFilteredLogs(filteredLogs);
+    doAsync(() -> {
+      filteredLogs = Filters.applyMultipleFilters(allLogs, filters, this::updateAsyncProgress);
+      doOnUiThread(() -> view.showFilteredLogs(filteredLogs));
+    });
+
   }
 
   private void cleanUpFilteredColors() {
