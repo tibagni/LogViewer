@@ -6,6 +6,7 @@ import com.tibagni.logviewer.filter.FilterCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.util.JFileChooserExt;
 import com.tibagni.logviewer.util.ProgressMonitorExt;
+import com.tibagni.logviewer.util.ReorderableList;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -22,7 +23,7 @@ public class LogViewerView implements LogViewer.View {
   private JButton saveFilterBtn;
   private JButton addNewFilterBtn;
   private JButton openFilterBtn;
-  private JList filtersList;
+  private ReorderableList filtersList;
   private JButton applyFiltersBtn;
   private JButton openLogsBtn;
 
@@ -40,6 +41,7 @@ public class LogViewerView implements LogViewer.View {
     addNewFilterBtn.addActionListener(e -> addFilter());
 
     filtersList.setCellRenderer(new FilterCellRenderer());
+    filtersList.setReorderedListener((o, d) -> presenter.reorderFilters(o, d));
     setupFiltersContextActions();
 
     logList.setDefaultRenderer(LogEntry.class, new LogCellRenderer());

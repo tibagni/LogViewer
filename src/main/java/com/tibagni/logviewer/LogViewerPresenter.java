@@ -52,6 +52,16 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
+  public void reorderFilters(int orig, int dest) {
+    if (orig == dest) return;
+
+    int destIndex = dest > orig ? (dest - 1) : dest;
+    Filter filter = filters.remove(orig);
+    filters.add(destIndex, filter);
+    view.configureFiltersList(filters.toArray(new Filter[0]));
+  }
+
+  @Override
   public void saveFilters(File filterFile) {
     try {
       boolean firstLoop = true;

@@ -104,7 +104,7 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="f149c" class="javax.swing.JList" binding="filtersList">
+                  <component id="464fe" class="com.tibagni.logviewer.util.ReorderableList" binding="filtersList">
                     <constraints/>
                     <properties>
                       <selectionBackground color="-1315861"/>
