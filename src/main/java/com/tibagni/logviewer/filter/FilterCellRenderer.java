@@ -3,21 +3,20 @@ package com.tibagni.logviewer.filter;
 import javax.swing.*;
 import java.awt.*;
 
-public class FilterCellRenderer extends JTextField implements ListCellRenderer<Filter> {
+public class FilterCellRenderer extends DefaultListCellRenderer {
   @Override
-  public Component getListCellRendererComponent(JList<? extends Filter> list, Filter value, int index,
-                                                boolean isSelected, boolean cellHasFocus) {
-
-    String text = value.getName();
-    Filter.ContextInfo tempInfo = value.getTemporaryInfo();
+  public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
+                                                boolean cellHasFocus) {
+    Filter filter = (Filter) value;
+    String text = filter.getName();
+    Filter.ContextInfo tempInfo = filter.getTemporaryInfo();
     if (tempInfo != null) {
       text += String.format(" (%d)", tempInfo.linesFound);
     }
-
     setText(text);
-    setForeground(isSelected ? list.getBackground() : value.getColor());
-    setBackground(isSelected ? value.getColor() : list.getBackground());
 
-    return this;
+    Component renderComponent = super.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
+    renderComponent.setForeground(filter.getColor());
+    return renderComponent;
   }
 }

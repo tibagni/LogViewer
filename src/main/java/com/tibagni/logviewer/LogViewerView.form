@@ -108,7 +108,9 @@
                 <children>
                   <component id="f149c" class="javax.swing.JList" binding="filtersList">
                     <constraints/>
-                    <properties/>
+                    <properties>
+                      <selectionBackground color="-1315861"/>
+                    </properties>
                   </component>
                 </children>
               </scrollpane>

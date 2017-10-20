@@ -110,15 +110,18 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
           view.showLogs(allLogs);
         });
       } catch (LogReaderException e) {
-        doOnUiThread(() -> {
-          view.showErrorMessage(e.getMessage());
-        });
+        doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
       }
     });
   }
 
   @Override
   public void applyFilters(int[] filterIndices) {
+    if (allLogs == null || allLogs.length == 0) {
+      view.showErrorMessage("There are no logs to filter...");
+      return;
+    }
+
     // Before applying a new filter, make sure the last one is cleaned up
     // (if there is an existing one)
     cleanUpFilteredColors();
