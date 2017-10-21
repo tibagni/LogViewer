@@ -68,7 +68,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     if (firstLogIndexSearch < 0) {
-      firstLogIndexSearch = 0;
+      firstLogIndexSearch = -1;
     }
 
     if (firstLogIndexSearch >= filteredLogs.length) {
@@ -92,7 +92,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     if (firstLogIndexSearch < 0) {
-      firstLogIndexSearch = 0;
+      firstLogIndexSearch = -1;
     }
 
     if (firstLogIndexSearch >= filteredLogs.length) {

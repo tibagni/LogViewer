@@ -125,7 +125,7 @@ public class LogViewerView implements LogViewer.View {
         } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
           filtersList.clearSelection();
         } else if (e.getKeyChar() == ',' || e.getKeyChar() == '.') {
-          int filteredLogIdx = -1;
+          int filteredLogIdx;
           int selectedFilter = filtersList.getSelectedIndex();
           int selectedFilteredLog = filteredLogList.getSelectedRow();
 
