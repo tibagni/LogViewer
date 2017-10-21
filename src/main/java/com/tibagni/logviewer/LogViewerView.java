@@ -217,7 +217,7 @@ public class LogViewerView implements LogViewer.View {
       progressMonitor = new ProgressMonitorExt(mainPanel, "Loading...", "", 0, 100);
       progressMonitor.setMillisToDecideToPopup(100);
       progressMonitor.setCancelable(false);
-      progressMonitor.setPreferredWidth(400);
+      progressMonitor.setPreferredWidth(550);
     }
 
     progressMonitor.setProgress(0);
