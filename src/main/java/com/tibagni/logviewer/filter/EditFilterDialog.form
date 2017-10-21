@@ -86,7 +86,9 @@
               </grid>
               <forms defaultalign-horz="false"/>
             </constraints>
-            <properties/>
+            <properties>
+              <enabled value="false"/>
+            </properties>
           </component>
           <component id="b7359" class="javax.swing.JLabel" binding="regexLbl">
             <constraints>

@@ -1,6 +1,8 @@
 package com.tibagni.logviewer.filter;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -20,6 +22,23 @@ public class EditFilterDialog extends JDialog {
   private Color selectedColor;
 
   private Filter filter;
+
+  private final DocumentListener regexDocumentListener = new DocumentListener() {
+    @Override
+    public void insertUpdate(DocumentEvent e) {
+      nameTxt.setText(regexTxt.getText());
+    }
+
+    @Override
+    public void removeUpdate(DocumentEvent e) {
+      nameTxt.setText(regexTxt.getText());
+    }
+
+    @Override
+    public void changedUpdate(DocumentEvent e) {
+      nameTxt.setText(regexTxt.getText());
+    }
+  };
 
   private EditFilterDialog(Filter editingFilter) {
     setSelectedColor(Color.RED); // Set RED by default
@@ -51,6 +70,21 @@ public class EditFilterDialog extends JDialog {
       setSelectedColor(filter.getColor());
       caseSensitiveCbx.setSelected(filter.isCaseSensitive());
     }
+
+    regexTxt.requestFocus();
+    regexTxt.getDocument().addDocumentListener(regexDocumentListener);
+
+    nameTxt.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mouseClicked(MouseEvent e) {
+        if (!nameTxt.isEnabled()) {
+          regexTxt.getDocument().removeDocumentListener(regexDocumentListener);
+          nameTxt.setEnabled(true);
+          nameTxt.requestFocus();
+          nameTxt.selectAll();
+        }
+      }
+    });
   }
 
   private void onOK() {
