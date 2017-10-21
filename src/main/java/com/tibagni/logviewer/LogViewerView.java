@@ -9,6 +9,7 @@ import com.tibagni.logviewer.log.LogListTableModel;
 import com.tibagni.logviewer.util.JFileChooserExt;
 import com.tibagni.logviewer.util.ProgressMonitorExt;
 import com.tibagni.logviewer.util.ReorderableList;
+import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -123,6 +124,21 @@ public class LogViewerView implements LogViewer.View {
           editSelectedFilter();
         } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
           filtersList.clearSelection();
+        } else if (e.getKeyChar() == ',' || e.getKeyChar() == '.') {
+          int filteredLogIdx = -1;
+          int selectedFilter = filtersList.getSelectedIndex();
+          int selectedFilteredLog = filteredLogList.getSelectedRow();
+
+          if (e.getKeyChar() == ',') {
+            filteredLogIdx = presenter.getPrevFilteredLogForFilter(selectedFilter, selectedFilteredLog);
+          } else {
+            filteredLogIdx = presenter.getNextFilteredLogForFilter(selectedFilter, selectedFilteredLog);
+          }
+
+          if (filteredLogIdx != -1) {
+            SwingUtils.scrollToVisible(filteredLogList, filteredLogIdx);
+            filteredLogList.setRowSelectionInterval(filteredLogIdx, filteredLogIdx);
+          }
         }
       }
     });
@@ -139,8 +155,7 @@ public class LogViewerView implements LogViewer.View {
           LogEntry clickedEntry = (LogEntry) filteredLogListTableModel.getValueAt(selectedIndex, 0);
 
           int logIndex = clickedEntry.getIndex();
-          Rectangle scrollToRect = logList.getCellRect(logIndex, 0, true);
-          logList.scrollRectToVisible(scrollToRect);
+          SwingUtils.scrollToVisible(logList, logIndex);
           logList.setRowSelectionInterval(logIndex, logIndex);
         }
       }

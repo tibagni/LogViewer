@@ -81,7 +81,7 @@ public class Filter {
    * @param inputLine A single log line
    * @return true if this filter is applicable to the input line. False otherwise
    */
-  boolean appliesTo(String inputLine) {
+  public boolean appliesTo(String inputLine) {
     return pattern.matcher(inputLine).find();
   }
 

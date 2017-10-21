@@ -62,6 +62,54 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
+  public int getNextFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
+    if (filterIndex < 0) {
+      return -1;
+    }
+
+    if (firstLogIndexSearch < 0) {
+      firstLogIndexSearch = 0;
+    }
+
+    if (firstLogIndexSearch >= filteredLogs.length) {
+      firstLogIndexSearch = filteredLogs.length - 1;
+    }
+
+    Filter filter = filters.get(filterIndex);
+    for (int i = firstLogIndexSearch + 1; i < filteredLogs.length; i++) {
+      if (filter.appliesTo(filteredLogs[i].getLogText())) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  @Override
+  public int getPrevFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
+    if (filterIndex < 0) {
+      return -1;
+    }
+
+    if (firstLogIndexSearch < 0) {
+      firstLogIndexSearch = 0;
+    }
+
+    if (firstLogIndexSearch >= filteredLogs.length) {
+      firstLogIndexSearch = filteredLogs.length - 1;
+    }
+
+    Filter filter = filters.get(filterIndex);
+    for (int i = firstLogIndexSearch - 1; i >= 0; i--) {
+      if (filter.appliesTo(filteredLogs[i].getLogText())) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  @Override
   public void saveFilters(File filterFile) {
     try {
       boolean firstLoop = true;

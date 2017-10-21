@@ -11,7 +11,7 @@ public class FilterCellRenderer extends DefaultListCellRenderer {
     String text = filter.getName();
     Filter.ContextInfo tempInfo = filter.getTemporaryInfo();
     if (tempInfo != null) {
-      text += String.format(" (%d)", tempInfo.linesFound);
+      text += String.format(" (%d) | <[,] / >[.]", tempInfo.linesFound);
     }
     setText(text);
 

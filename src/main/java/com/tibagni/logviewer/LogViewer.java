@@ -18,6 +18,8 @@ public class LogViewer {
     void addFilter(Filter newFilter);
     void removeFilters(int[] indices);
     void reorderFilters(int orig, int dest);
+    int getNextFilteredLogForFilter(int filterIndex, int firstLogIndexSearch);
+    int getPrevFilteredLogForFilter(int filterIndex, int firstLogIndexSearch);
     void saveFilters(File filterFile);
     void loadFilters(File filtersFile);
     void loadLogs(File[] logFiles);

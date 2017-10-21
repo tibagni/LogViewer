@@ -57,4 +57,12 @@ public final class SwingUtils {
     JButton button = components.get(0);
     button.setVisible(false);
   }
+
+  public static void scrollToVisible(JTable table, int rowIndex) {
+    JViewport viewport = (JViewport) table.getParent();
+    Rectangle cellRectangle = table.getCellRect(rowIndex, 0, true);
+    Rectangle visibleRectangle = viewport.getVisibleRect();
+    SwingUtilities.invokeLater(() -> table.scrollRectToVisible(new Rectangle(cellRectangle.x,
+        cellRectangle.y, (int) visibleRectangle.getWidth(), (int) visibleRectangle.getHeight())));
+  }
 }
