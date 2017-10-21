@@ -1,4 +1,4 @@
-package com.tibagni.logviewer;
+package com.tibagni.logviewer.log;
 
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLevel;
