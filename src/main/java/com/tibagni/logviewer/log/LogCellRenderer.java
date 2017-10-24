@@ -1,7 +1,5 @@
 package com.tibagni.logviewer.log;
 
-import com.tibagni.logviewer.log.LogEntry;
-import com.tibagni.logviewer.log.LogLevel;
 import sun.swing.DefaultLookup;
 
 import javax.swing.*;
@@ -37,8 +35,10 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
     colorIndicator.setBackground(getColorForLogLevel(logEntry.getLogLevel()));
 
-    setSize(table.getWidth(), Short.MAX_VALUE);
-    table.setRowHeight(row, getPreferredSize().height);
+    setSize(table.getColumnModel().getColumn(column).getWidth(), getPreferredSize().height);
+    if (table.getRowHeight(row) != getPreferredSize().height) {
+      table.setRowHeight(row, getPreferredSize().height);
+    }
 
     if (isSelected) {
       textView.setForeground(table.getSelectionForeground());
