@@ -22,4 +22,8 @@ public class StringUtils {
     byte[] bytes = DatatypeConverter.parseBase64Binary(base64);
     return new String(bytes, StandardCharsets.UTF_8);
   }
+
+  public static boolean areEquals(String str1, String str2) {
+    return (str1 == null ? str2 == null : str1.equals(str2));
+  }
 }

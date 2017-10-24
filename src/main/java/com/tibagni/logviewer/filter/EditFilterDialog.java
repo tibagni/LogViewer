@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.util.StringUtils;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -63,28 +65,33 @@ public class EditFilterDialog extends JDialog {
     contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
         JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
+    boolean nameIsPattern = true;
     if (editingFilter != null) {
       filter = editingFilter;
       nameTxt.setText(filter.getName());
       regexTxt.setText(filter.getPatternString());
       setSelectedColor(filter.getColor());
       caseSensitiveCbx.setSelected(filter.isCaseSensitive());
+      nameIsPattern = StringUtils.areEquals(filter.getName(), filter.getPatternString());
     }
 
-    regexTxt.requestFocus();
-    regexTxt.getDocument().addDocumentListener(regexDocumentListener);
-
-    nameTxt.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        if (!nameTxt.isEnabled()) {
-          regexTxt.getDocument().removeDocumentListener(regexDocumentListener);
-          nameTxt.setEnabled(true);
-          nameTxt.requestFocus();
-          nameTxt.selectAll();
+    if (nameIsPattern) {
+      regexTxt.getDocument().addDocumentListener(regexDocumentListener);
+      nameTxt.setEnabled(false);
+      nameTxt.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+          if (!nameTxt.isEnabled()) {
+            regexTxt.getDocument().removeDocumentListener(regexDocumentListener);
+            nameTxt.setEnabled(true);
+            nameTxt.requestFocus();
+            nameTxt.selectAll();
+          }
         }
-      }
-    });
+      });
+    }
+
+    SwingUtilities.invokeLater(() -> regexTxt.requestFocus());
   }
 
   private void onOK() {
