@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.util.StringUtils;
 
 import javax.swing.*;
@@ -21,6 +22,7 @@ public class EditFilterDialog extends JDialog {
   private JCheckBox caseSensitiveCbx;
   private JButton chooseColorButton;
   private JPanel colorPreview;
+  private JButton regexEditorBtn;
   private Color selectedColor;
 
   private Filter filter;
@@ -52,6 +54,7 @@ public class EditFilterDialog extends JDialog {
     buttonOK.addActionListener(e -> onOK());
     buttonCancel.addActionListener(e -> onCancel());
     chooseColorButton.addActionListener(e -> onSelectColor());
+    regexEditorBtn.addActionListener(e -> onEditRegex());
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -124,6 +127,16 @@ public class EditFilterDialog extends JDialog {
     Color color = JColorChooser.showDialog(this, "Select Color...", selectedColor);
     if (color != null) {
       setSelectedColor(color);
+    }
+  }
+
+  private void onEditRegex() {
+    RegexEditorDialog.Result edited = RegexEditorDialog.showEditRegexDialog(this,
+        regexTxt.getText(), caseSensitiveCbx.isSelected());
+
+    if (edited != null) {
+      regexTxt.setText(edited.pattern);
+      caseSensitiveCbx.setSelected(edited.caseSensitive);
     }
   }
 
