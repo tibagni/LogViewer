@@ -59,6 +59,10 @@ public class LogViewerView implements LogViewer.View {
     openFilterBtn.addActionListener(e -> openFilter());
   }
 
+  JPanel getContentPane() {
+    return mainPanel;
+  }
+
   @Override
   public void configureFiltersList(Filter[] filters) {
     filtersList.setListData(filters);
@@ -250,15 +254,5 @@ public class LogViewerView implements LogViewer.View {
 
     filteredLogListTableModel = new LogListTableModel("Filtered Logs");
     filteredLogList = new JTable(filteredLogListTableModel);
-  }
-
-  public static void main(String[] args) {
-    JFrame frame = new JFrame("LogViewer");
-    LogViewerView logViewer = new LogViewerView();
-
-    frame.setContentPane(logViewer.mainPanel);
-    frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-    frame.pack();
-    frame.setVisible(true);
   }
 }

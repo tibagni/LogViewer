@@ -1,7 +1,7 @@
 <component name="ArtifactManager">
   <artifact type="jar" name="LogViewer_main:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/LogViewer_main_jar</output-path>
-    <root id="archive" name="LogViewer_main.jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/LogViewer_jar</output-path>
+    <root id="archive" name="LogViewer.jar">
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/src/META-INF/MANIFEST.MF" />
       </element>
