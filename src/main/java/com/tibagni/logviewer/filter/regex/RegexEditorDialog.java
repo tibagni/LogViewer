@@ -27,7 +27,8 @@ public class RegexEditorDialog extends JDialog {
   boolean isRegexValid;
   Result result;
 
-  private RegexEditorDialog() {
+  private RegexEditorDialog(Dialog owner) {
+    super(owner);
     setContentPane(contentPane);
     setModal(true);
     getRootPane().setDefaultButton(buttonOK);
@@ -114,8 +115,8 @@ public class RegexEditorDialog extends JDialog {
     }
   }
 
-  public static Result showEditRegexDialog(Component relativeTo, String pattern, boolean caseSensitive) {
-    RegexEditorDialog dialog = new RegexEditorDialog();
+  public static Result showEditRegexDialog(Dialog parent, Component relativeTo, String pattern, boolean caseSensitive) {
+    RegexEditorDialog dialog = new RegexEditorDialog(parent);
     dialog.caseSensitive.setSelected(caseSensitive);
     dialog.regexEdit.setText(pattern);
     dialog.applyRegexToPreview();

@@ -44,7 +44,8 @@ public class EditFilterDialog extends JDialog {
     }
   };
 
-  private EditFilterDialog(Filter editingFilter) {
+  private EditFilterDialog(Frame owner, Filter editingFilter) {
+    super(owner);
     setSelectedColor(Color.RED); // Set RED by default
 
     setContentPane(contentPane);
@@ -131,7 +132,7 @@ public class EditFilterDialog extends JDialog {
   }
 
   private void onEditRegex() {
-    RegexEditorDialog.Result edited = RegexEditorDialog.showEditRegexDialog(this,
+    RegexEditorDialog.Result edited = RegexEditorDialog.showEditRegexDialog(this, this,
         regexTxt.getText(), caseSensitiveCbx.isSelected());
 
     if (edited != null) {
@@ -146,8 +147,8 @@ public class EditFilterDialog extends JDialog {
     colorPreview.invalidate();
   }
 
-  public static Filter showEditFilterDialog(Component relativeTo, Filter editingFilter) {
-    EditFilterDialog dialog = new EditFilterDialog(editingFilter);
+  public static Filter showEditFilterDialog(Frame parent, Component relativeTo, Filter editingFilter) {
+    EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter);
     dialog.setLocationRelativeTo(relativeTo);
     dialog.pack();
     dialog.setVisible(true);
@@ -155,7 +156,7 @@ public class EditFilterDialog extends JDialog {
     return dialog.filter;
   }
 
-  public static Filter showEditFilterDialog(Component relativeTo) {
-    return showEditFilterDialog(relativeTo, null);
+  public static Filter showEditFilterDialog(Frame parent, Component relativeTo) {
+    return showEditFilterDialog(parent, relativeTo, null);
   }
 }
