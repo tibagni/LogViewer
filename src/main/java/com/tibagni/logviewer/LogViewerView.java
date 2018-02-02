@@ -6,16 +6,12 @@ import com.tibagni.logviewer.filter.FilterCellRenderer;
 import com.tibagni.logviewer.log.LogCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogListTableModel;
-import com.tibagni.logviewer.util.JFileChooserExt;
-import com.tibagni.logviewer.util.ProgressMonitorExt;
-import com.tibagni.logviewer.util.ReorderableList;
-import com.tibagni.logviewer.util.SwingUtils;
+import com.tibagni.logviewer.util.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
-import java.awt.*;
 import java.awt.event.*;
 import java.util.stream.IntStream;
 
@@ -29,9 +25,11 @@ public class LogViewerView implements LogViewer.View {
   private ReorderableList<Filter> filtersList;
   private JButton applyFiltersBtn;
   private JButton openLogsBtn;
+  private JSplitPane logsPane;
 
   private final LogViewer.Presenter presenter;
-  private final JFileChooserExt fileChooser;
+  private final JFileChooserExt logFileChooser;
+  private final JFileChooserExt filterFileChooser;
   private ProgressMonitorExt progressMonitor;
 
   private LogListTableModel logListTableModel;
@@ -39,7 +37,8 @@ public class LogViewerView implements LogViewer.View {
 
   public LogViewerView() {
     presenter = new LogViewerPresenter(this);
-    fileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
+    logFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
+    filterFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
 
     addNewFilterBtn.addActionListener(e -> addFilter());
 
@@ -57,6 +56,16 @@ public class LogViewerView implements LogViewer.View {
     openLogsBtn.addActionListener(e -> openLogs());
     saveFilterBtn.addActionListener(e -> saveFilter());
     openFilterBtn.addActionListener(e -> openFilter());
+
+    // Configure file drop
+    new FileDrop(System.out, logsPane, files ->  presenter.loadLogs(files));
+    new FileDrop(System.out, filtersList, files -> {
+      if (files.length > 1) {
+        showErrorMessage("You can only open one filter file at a time!");
+      } else {
+        presenter.loadFilters(files[0]);
+      }
+    });
   }
 
   JPanel getContentPane() {
@@ -120,7 +129,7 @@ public class LogViewerView implements LogViewer.View {
     // Add the shortcuts for the context menu
     filtersList.addKeyListener(new KeyAdapter() {
       @Override
-      public void keyReleased(KeyEvent e) {
+      public void keyPressed(KeyEvent e) {
         if (!filtersList.isSelectionEmpty() && filtersList.getModel().getSize() > 0 &&
             (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE)) {
           deleteSelectedFilters();
@@ -199,34 +208,34 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void openLogs() {
-    fileChooser.resetChoosableFileFilters();
-    fileChooser.setMultiSelectionEnabled(true);
-    fileChooser.setDialogTitle("Open Logs...");
-    int selectedOption = fileChooser.showOpenDialog(mainPanel);
+    logFileChooser.resetChoosableFileFilters();
+    logFileChooser.setMultiSelectionEnabled(true);
+    logFileChooser.setDialogTitle("Open Logs...");
+    int selectedOption = logFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.loadLogs(fileChooser.getSelectedFiles());
+      presenter.loadLogs(logFileChooser.getSelectedFiles());
     }
   }
 
   private void saveFilter() {
-    fileChooser.resetChoosableFileFilters();
-    fileChooser.setMultiSelectionEnabled(false);
-    fileChooser.setDialogTitle("Save Filter...");
-    fileChooser.setSaveExtension(Filter.FILE_EXTENSION);
-    int selectedOption = fileChooser.showSaveDialog(mainPanel);
+    filterFileChooser.resetChoosableFileFilters();
+    filterFileChooser.setMultiSelectionEnabled(false);
+    filterFileChooser.setDialogTitle("Save Filter...");
+    filterFileChooser.setSaveExtension(Filter.FILE_EXTENSION);
+    int selectedOption = filterFileChooser.showSaveDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.saveFilters(fileChooser.getSelectedFile());
+      presenter.saveFilters(filterFileChooser.getSelectedFile());
     }
   }
 
   private void openFilter() {
-    fileChooser.resetChoosableFileFilters();
-    fileChooser.setFileFilter(new FileNameExtensionFilter("Filter files", Filter.FILE_EXTENSION));
-    fileChooser.setMultiSelectionEnabled(false);
-    fileChooser.setDialogTitle("Open Filter...");
-    int selectedOption = fileChooser.showOpenDialog(mainPanel);
+    filterFileChooser.resetChoosableFileFilters();
+    filterFileChooser.setFileFilter(new FileNameExtensionFilter("Filter files", Filter.FILE_EXTENSION));
+    filterFileChooser.setMultiSelectionEnabled(false);
+    filterFileChooser.setDialogTitle("Open Filter...");
+    int selectedOption = filterFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.loadFilters(fileChooser.getSelectedFile());
+      presenter.loadFilters(filterFileChooser.getSelectedFile());
     }
   }
 

@@ -1,4 +1,4 @@
-package com.tibagni.ogviewer.filter;
+package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.filter.Filter;

@@ -21,7 +21,7 @@
         </properties>
         <border type="none"/>
         <children>
-          <splitpane id="8d017">
+          <splitpane id="8d017" binding="logsPane">
             <constraints>
               <splitpane position="right"/>
             </constraints>
@@ -36,7 +36,9 @@
                 <constraints>
                   <splitpane position="left"/>
                 </constraints>
-                <properties/>
+                <properties>
+                  <enabled value="true"/>
+                </properties>
                 <border type="none"/>
                 <children>
                   <component id="449f0" class="javax.swing.JTable" binding="logList" custom-create="true">
