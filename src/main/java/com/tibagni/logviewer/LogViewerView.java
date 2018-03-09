@@ -12,6 +12,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
+import java.awt.Frame;
 import java.awt.event.*;
 import java.util.stream.IntStream;
 
@@ -34,8 +35,10 @@ public class LogViewerView implements LogViewer.View {
 
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
+  private Frame parent;
 
-  public LogViewerView() {
+  public LogViewerView(Frame parent) {
+    this.parent = parent;
     presenter = new LogViewerPresenter(this);
     logFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
     filterFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
@@ -178,13 +181,13 @@ public class LogViewerView implements LogViewer.View {
   private void editSelectedFilter() {
     if (filtersList.getSelectedIndices().length == 1) {
       // We don't care about the return value here
-      EditFilterDialog.showEditFilterDialog(addNewFilterBtn,
+      EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn,
           filtersList.getModel().getElementAt(filtersList.getSelectedIndex()));
     }
   }
 
   private void addFilter() {
-    Filter newFilter = EditFilterDialog.showEditFilterDialog(addNewFilterBtn);
+    Filter newFilter = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn);
     if (newFilter != null) {
       presenter.addFilter(newFilter);
     }

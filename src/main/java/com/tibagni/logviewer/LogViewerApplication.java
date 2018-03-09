@@ -8,7 +8,7 @@ public class LogViewerApplication {
 
   public static void main(String[] args) {
     JFrame frame = new JFrame(APPLICATION_NAME);
-    LogViewerView logViewer = new LogViewerView();
+    LogViewerView logViewer = new LogViewerView(frame);
 
     frame.setContentPane(logViewer.getContentPane());
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
