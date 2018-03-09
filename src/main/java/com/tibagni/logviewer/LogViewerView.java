@@ -205,7 +205,7 @@ public class LogViewerView implements LogViewer.View {
         JOptionPane.YES_NO_OPTION,
         JOptionPane.WARNING_MESSAGE);
 
-    if (userChoice == JOptionPane.NO_OPTION) return;
+    if (userChoice != JOptionPane.YES_OPTION) return;
 
     presenter.removeFilters(filtersList.getSelectedIndices());
   }
