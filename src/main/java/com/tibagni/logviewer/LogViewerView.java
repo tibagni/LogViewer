@@ -62,13 +62,13 @@ public class LogViewerView implements LogViewer.View {
 
     // Configure file drop
     new FileDrop(System.out, logsPane, files ->  presenter.loadLogs(files));
-    new FileDrop(System.out, filtersList, files -> {
-      if (files.length > 1) {
-        showErrorMessage("You can only open one filter file at a time!");
-      } else {
-        presenter.loadFilters(files[0]);
-      }
-    });
+//    new FileDrop(System.out, filtersList, files -> {
+//      if (files.length > 1) {
+//        showErrorMessage("You can only open one filter file at a time!");
+//      } else {
+//        presenter.loadFilters(files[0]);
+//      }
+//    });
   }
 
   JPanel getContentPane() {
