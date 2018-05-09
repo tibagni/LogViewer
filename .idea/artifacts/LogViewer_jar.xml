@@ -1,0 +1,16 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="LogViewer:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/LogViewer_jar</output-path>
+    <root id="archive" name="LogViewer.jar">
+      <element id="module-output" name="LogViewer_main" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/junit/junit/4.12/2973d150c0dc1fefe998f834810d68f278ea58ec/junit-4.12.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jgoodies/jgoodies-forms/1.6.0/a2a6ba2c9d9ae8ade3469f004d7ec02ba7d71f22/jgoodies-forms-1.6.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.objenesis/objenesis/2.6/639033469776fd37c08358c6b92a4761feb2af4b/objenesis-2.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jgoodies/jgoodies-common/1.4.0/6f9364fafb8d8f467ddbab16dfcaadfecaea6bdd/jgoodies-common-1.4.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy/1.7.4/d0e77888485e1683057f8399f916eda6049c4acf/byte-buddy-1.7.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.mockito/mockito-core/2.11.0/f819efbe6ef3f010382cdc1b4d33749e377e1cc4/mockito-core-2.11.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.7.4/66286677db75148b3c2fb94e72f1c61aceb20e33/byte-buddy-agent-1.7.4.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
