@@ -8,4 +8,4 @@ It allows you to analyze multiple log files at once and create (and apply) diffe
 * **Save your filters for later use** - Save your filters to disk so it is easy to just start using it next time, without worrying about creating them over and over again
 * **Use regular expressions to create your filters** - You can create simple filters or complex filters. It is up to you, any regex pattern is possible
 
-[[images/LogViewer.png]]
+![LogViewer](https://raw.githubusercontent.com/tibagni/LogViewer/master/images/LogViewer.png)
