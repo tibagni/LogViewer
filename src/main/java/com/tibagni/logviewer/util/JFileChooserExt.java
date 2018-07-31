@@ -51,7 +51,7 @@ public class JFileChooserExt extends JFileChooser {
   private void setExtensionToSavingFile() {
     File f = getSelectedFile();
     if (f != null && !StringUtils.isEmpty(saveExtension)) {
-      if (!f.getName().endsWith(saveExtension)) {
+      if (!f.getName().endsWith("." + saveExtension)) {
         setSelectedFile(new File(f.getPath() + "." + saveExtension));
       }
     }
