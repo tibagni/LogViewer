@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.util;
 
 import javax.xml.bind.DatatypeConverter;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 public class StringUtils {

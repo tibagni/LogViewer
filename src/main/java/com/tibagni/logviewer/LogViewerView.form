@@ -150,8 +150,23 @@
           <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
+          <borderPainted value="true"/>
+          <contentAreaFilled value="true"/>
+          <focusPainted value="true"/>
           <icon value="Icons/open_file.png"/>
           <text value="Open Logs..."/>
+        </properties>
+      </component>
+      <component id="8e9cb" class="javax.swing.JButton" binding="settingsBtn">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <borderPainted value="true"/>
+          <focusPainted value="true"/>
+          <icon value="Icons/settings.png"/>
+          <opaque value="true"/>
+          <text value=""/>
         </properties>
       </component>
     </children>

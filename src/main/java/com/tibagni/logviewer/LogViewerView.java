@@ -6,6 +6,8 @@ import com.tibagni.logviewer.filter.FilterCellRenderer;
 import com.tibagni.logviewer.log.LogCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogListTableModel;
+import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
 
 import javax.swing.*;
@@ -27,6 +29,7 @@ public class LogViewerView implements LogViewer.View {
   private JButton applyFiltersBtn;
   private JButton openLogsBtn;
   private JSplitPane logsPane;
+  private JButton settingsBtn;
 
   private final LogViewer.Presenter presenter;
   private final JFileChooserExt logFileChooser;
@@ -37,11 +40,21 @@ public class LogViewerView implements LogViewer.View {
   private LogListTableModel filteredLogListTableModel;
   private Frame parent;
 
+  final private LogViewerPreferences userPrefs;
+
   public LogViewerView(Frame parent) {
     this.parent = parent;
+    userPrefs = LogViewerPreferences.getInstance();
     presenter = new LogViewerPresenter(this);
+
     logFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
-    filterFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
+    filterFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
+    userPrefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
+      @Override
+      public void onDefaultFiltersPathChanged() {
+        filterFileChooser.setCurrentDirectory(userPrefs.getDefaultFiltersPath());
+      }
+    });
 
     addNewFilterBtn.addActionListener(e -> addFilter());
 
@@ -59,6 +72,8 @@ public class LogViewerView implements LogViewer.View {
     openLogsBtn.addActionListener(e -> openLogs());
     saveFilterBtn.addActionListener(e -> saveFilter());
     openFilterBtn.addActionListener(e -> openFilter());
+
+    settingsBtn.addActionListener(e -> openUserPreferences());
 
     // Configure file drop
     new FileDrop(System.out, logsPane, files ->  presenter.loadLogs(files));
@@ -266,5 +281,9 @@ public class LogViewerView implements LogViewer.View {
 
     filteredLogListTableModel = new LogListTableModel("Filtered Logs");
     filteredLogList = new JTable(filteredLogListTableModel);
+  }
+
+  private void openUserPreferences() {
+    LogViewerPreferencesDialog.showPreferencesDialog(settingsBtn);
   }
 }

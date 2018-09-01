@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.util;
 
+import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -64,5 +66,19 @@ public final class SwingUtils {
     Rectangle visibleRectangle = viewport.getVisibleRect();
     SwingUtilities.invokeLater(() -> table.scrollRectToVisible(new Rectangle(cellRectangle.x,
         cellRectangle.y, (int) visibleRectangle.getWidth(), (int) visibleRectangle.getHeight())));
+  }
+
+  public static void setLookAndFeel(String className) {
+    try {
+      UIManager.setLookAndFeel(className);
+    } catch (Exception e) {
+      // Just ignore
+    }
+  }
+
+  public static void updateLookAndFeelAfterStart(String className, Frame frame) {
+    setLookAndFeel(className);
+    SwingUtilities.updateComponentTreeUI(frame);
+    frame.pack();
   }
 }
