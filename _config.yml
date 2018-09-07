@@ -1,1 +1,21 @@
+title: Log Viewer
+description: An easy-to-use tool that helps you analyze Android logs.
+show_downloads: true
+
+# Build settings
+markdown: kramdown
 theme: jekyll-theme-architect
+plugins:
+  - jekyll-feed
+
+# Exclude from processing.
+# The following items will not be processed, by default. Create a custom list
+# to override the default setting.
+# exclude:
+#   - Gemfile
+#   - Gemfile.lock
+#   - node_modules
+#   - vendor/bundle/
+#   - vendor/cache/
+#   - vendor/gems/
+#   - vendor/ruby/
