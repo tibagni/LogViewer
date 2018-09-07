@@ -7,10 +7,12 @@ import com.tibagni.logviewer.log.FileLogReader;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogReaderException;
 import com.tibagni.logviewer.log.parser.LogParser;
+import com.tibagni.logviewer.util.StringUtils;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Presenter {
   private final LogViewer.View view;
@@ -20,10 +22,15 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private LogEntry[] filteredLogs;
   private LogParser logParser;
 
+  private boolean hasUnsavedFilterChanges;
+  private List<String> currentlyOpenedFilters;
+
   public LogViewerPresenter(LogViewer.View view) {
     super(view);
     this.view = view;
     filters = new ArrayList<>();
+
+    currentlyOpenedFilters = new ArrayList<>();
   }
 
   private void setFilters(List<Filter> newFilters) {
@@ -37,6 +44,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     if (newFilter != null) {
       filters.add(newFilter);
       view.configureFiltersList(filters.toArray(new Filter[0]));
+      checkForUnsavedChanges();
     }
   }
 
@@ -49,6 +57,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     view.configureFiltersList(filters.toArray(new Filter[0]));
+
+    // Do not mark as unsaved changes if all filters were removed.
+    // User will not save an empty filter set
+    if (filters.size() > 0) {
+      checkForUnsavedChanges();
+    }
   }
 
   @Override
@@ -59,6 +73,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     Filter filter = filters.remove(orig);
     filters.add(destIndex, filter);
     view.configureFiltersList(filters.toArray(new Filter[0]));
+    checkForUnsavedChanges();
   }
 
   @Override
@@ -114,33 +129,50 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     try {
       boolean firstLoop = true;
       BufferedWriter fileWriter = new BufferedWriter(new FileWriter(filterFile));
-      for (Filter f : filters) {
+      List<String> serializedFilters = getSerializedFilters();
+      for (String serializedFilter : serializedFilters) {
         if (firstLoop) {
           firstLoop = false;
         } else {
           fileWriter.newLine();
         }
 
-        fileWriter.write(f.serializeFilter());
+        fileWriter.write(serializedFilter);
       }
       fileWriter.close();
+
+      // Now that we saved the filters, make it the currently opened filters
+      currentlyOpenedFilters.clear();
+      currentlyOpenedFilters.addAll(serializedFilters);
+
+      // Call checkForUnsavedChanges to clear the 'unsaved changes' state
+      checkForUnsavedChanges();
     } catch (IOException e) {
       view.showErrorMessage(e.getMessage());
     }
   }
 
+  private List<String> getSerializedFilters() {
+    return filters.stream().map(f -> f.serializeFilter()).
+        collect(Collectors.toList());
+  }
+
   @Override
   public void loadFilters(File filtersFile) {
     BufferedReader bufferedReader = null;
+    currentlyOpenedFilters.clear();
     try {
       bufferedReader = new BufferedReader(new FileReader(filtersFile));
       String line;
       List<Filter> filtersFromFile = new ArrayList<>();
       while ((line = bufferedReader.readLine()) != null && line.trim().length() > 0) {
         filtersFromFile.add(Filter.createFromString(line));
+        currentlyOpenedFilters.add(line);
       }
-
       setFilters(filtersFromFile);
+
+      // Call checkForUnsavedChanges to clear the 'unsaved changes' state
+      checkForUnsavedChanges();
     } catch (FilterException | IOException e) {
       view.showErrorMessage(e.getMessage());
     } finally {
@@ -208,6 +240,18 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   }
 
+  @Override
+  public void filterEdited() {
+    checkForUnsavedChanges();
+  }
+
+  @Override
+  public void finishing() {
+    if (hasUnsavedFilterChanges) {
+      view.showAskToSaveFilterDialog();
+    }
+  }
+
   private void cleanUpFilteredColors() {
     if (filteredLogs != null) {
       for (LogEntry entry : filteredLogs) {
@@ -220,5 +264,39 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     for (Filter filter : filters) {
       filter.resetTemporaryInfo();
     }
+  }
+
+  private void checkForUnsavedChanges() {
+    boolean filtersChanged = haveFiltersChanged();
+
+    if (hasUnsavedFilterChanges != filtersChanged) {
+      hasUnsavedFilterChanges = filtersChanged;
+
+      if (hasUnsavedFilterChanges) {
+        view.showUnsavedTitle();
+      } else {
+        view.hideUnsavedTitle();
+      }
+    }
+  }
+
+  private boolean haveFiltersChanged() {
+    // Here we check if the current filters are different from
+    // the filters saved in disk (Which we have cached in memory,
+    // stored in 'currentlyOpenedFilters' to make this method efficient)
+    List<String> serializedFilters = getSerializedFilters();
+    if (serializedFilters.size() > 0 &&
+        serializedFilters.size() != currentlyOpenedFilters.size()) {
+      return true;
+    }
+
+    for (int i = 0; i < serializedFilters.size(); i++) {
+      if (!StringUtils.areEquals(serializedFilters.get(i),
+          currentlyOpenedFilters.get(i))) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

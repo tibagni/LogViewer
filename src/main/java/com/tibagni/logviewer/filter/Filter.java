@@ -3,6 +3,7 @@ package com.tibagni.logviewer.filter;
 import com.tibagni.logviewer.util.StringUtils;
 
 import java.awt.*;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 

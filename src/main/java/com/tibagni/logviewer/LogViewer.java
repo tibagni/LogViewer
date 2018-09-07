@@ -12,6 +12,9 @@ public class LogViewer {
     void showErrorMessage(String message);
     void showLogs(LogEntry[] logEntries);
     void showFilteredLogs(LogEntry[] logEntries);
+    void showUnsavedTitle();
+    void hideUnsavedTitle();
+    void showAskToSaveFilterDialog();
   }
 
   public interface Presenter {
@@ -24,5 +27,8 @@ public class LogViewer {
     void loadFilters(File filtersFile);
     void loadLogs(File[] logFiles);
     void applyFilters(int[] filterIndices);
+    void filterEdited();
+
+    void finishing();
   }
 }

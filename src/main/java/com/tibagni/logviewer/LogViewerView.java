@@ -42,10 +42,19 @@ public class LogViewerView implements LogViewer.View {
 
   final private LogViewerPreferences userPrefs;
 
+  private static final String UNSAVED_INDICATOR = " (*)";
+
   public LogViewerView(Frame parent) {
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
     presenter = new LogViewerPresenter(this);
+
+    this.parent.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosing(WindowEvent e) {
+        presenter.finishing();
+      }
+    });
 
     logFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
     filterFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
@@ -76,7 +85,7 @@ public class LogViewerView implements LogViewer.View {
     settingsBtn.addActionListener(e -> openUserPreferences());
 
     // Configure file drop
-    new FileDrop(System.out, logsPane, files ->  presenter.loadLogs(files));
+    new FileDrop(System.out, logsPane, files -> presenter.loadLogs(files));
 //    new FileDrop(System.out, filtersList, files -> {
 //      if (files.length > 1) {
 //        showErrorMessage("You can only open one filter file at a time!");
@@ -110,6 +119,32 @@ public class LogViewerView implements LogViewer.View {
     filteredLogListTableModel.setLogs(logEntries);
     logList.updateUI();
     filtersList.updateUI();
+  }
+
+  @Override
+  public void showUnsavedTitle() {
+    String currentTitle = parent.getTitle();
+    parent.setTitle(currentTitle + UNSAVED_INDICATOR);
+  }
+
+  @Override
+  public void hideUnsavedTitle() {
+    String currentTitle = parent.getTitle();
+    parent.setTitle(currentTitle.replace(UNSAVED_INDICATOR, ""));
+  }
+
+  @Override
+  public void showAskToSaveFilterDialog() {
+    int userChoice = JOptionPane.showConfirmDialog(
+        mainPanel.getParent(),
+        "There are unsaved changes to your filters, do you want to save it?",
+        "Unsaved changes",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.WARNING_MESSAGE);
+
+    if (userChoice != JOptionPane.YES_OPTION) return;
+
+    saveFilter();
   }
 
   private void setupFiltersContextActions() {
@@ -195,9 +230,17 @@ public class LogViewerView implements LogViewer.View {
 
   private void editSelectedFilter() {
     if (filtersList.getSelectedIndices().length == 1) {
-      // We don't care about the return value here
-      EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn,
-          filtersList.getModel().getElementAt(filtersList.getSelectedIndex()));
+      Filter selectedFilter = filtersList.getModel().getElementAt(
+          filtersList.getSelectedIndex());
+
+      // We don't care about the result here. The filter is automatically
+      // updated by this dialog
+      EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn, selectedFilter);
+
+      // Tell the presenter a filter was edited. It will not update the filters
+      // as filters are updated by EditFilterDialog itself, it will only determine
+      // if the filter was, in fact, updated and mark unsaved changes if necessary.
+      presenter.filterEdited();
     }
   }
 
