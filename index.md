@@ -21,7 +21,5 @@ It also allows you to apply different filters on the set of logs, displaying a s
 1. [Managing filters](./managing-filters.html)
 1. [Navigating through the filters](./navigating-filters.html)
 
-## Downloads
-Download Log Viewer binary and start using it right now!
-
-[Go to Releases](https://github.com/tibagni/LogViewer/releases)
+## Releases
+[Check out all releases of LogViewer](https://github.com/tibagni/LogViewer/releases)
