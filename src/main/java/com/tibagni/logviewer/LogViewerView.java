@@ -48,6 +48,7 @@ public class LogViewerView implements LogViewer.View {
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
     presenter = new LogViewerPresenter(this);
+    presenter.init();
 
     this.parent.addWindowListener(new WindowAdapter() {
       @Override

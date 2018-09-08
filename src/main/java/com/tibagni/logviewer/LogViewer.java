@@ -18,6 +18,7 @@ public class LogViewer {
   }
 
   public interface Presenter {
+    void init();
     void addFilter(Filter newFilter);
     void removeFilters(int[] indices);
     void reorderFilters(int orig, int dest);

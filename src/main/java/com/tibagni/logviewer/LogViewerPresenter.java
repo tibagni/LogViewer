@@ -7,6 +7,7 @@ import com.tibagni.logviewer.log.FileLogReader;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogReaderException;
 import com.tibagni.logviewer.log.parser.LogParser;
+import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 
 import java.io.*;
@@ -25,12 +26,26 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private boolean hasUnsavedFilterChanges;
   private List<String> currentlyOpenedFilters;
 
+  private final LogViewerPreferences userPrefs;
+
   public LogViewerPresenter(LogViewer.View view) {
     super(view);
     this.view = view;
     filters = new ArrayList<>();
 
     currentlyOpenedFilters = new ArrayList<>();
+    userPrefs = LogViewerPreferences.getInstance();
+  }
+
+  @Override
+  public void init() {
+    // Check if we need to open the last opened filter
+    if (userPrefs.shouldOpenLastFilter()) {
+      File lastFilter = userPrefs.getLastFilterPath();
+      if (lastFilter != null) {
+        loadFilters(lastFilter);
+      }
+    }
   }
 
   private void setFilters(List<Filter> newFilters) {
@@ -173,6 +188,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
       // Call checkForUnsavedChanges to clear the 'unsaved changes' state
       checkForUnsavedChanges();
+
+      // Set this as the last filter opened
+      userPrefs.setLastFilterPath(filtersFile);
     } catch (FilterException | IOException e) {
       view.showErrorMessage(e.getMessage());
     } finally {
