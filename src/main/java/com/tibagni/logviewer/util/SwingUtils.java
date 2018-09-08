@@ -79,6 +79,5 @@ public final class SwingUtils {
   public static void updateLookAndFeelAfterStart(String className, Frame frame) {
     setLookAndFeel(className);
     SwingUtilities.updateComponentTreeUI(frame);
-    frame.pack();
   }
 }
