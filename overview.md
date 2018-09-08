@@ -9,6 +9,7 @@ layout: default
 Open the user settings screen, in which you can:
 * Customize Look and Feel
 * Select the default folder for filters
+* Select whether you want the last filter opened to be loaded when Log Viewer starts
 
 ### 2 - Open Logs
 Open one or more log files to be displayed on the 'Log View' panel. You can also just drag the log files from the file system and drop them on the 'Log View' panel.
@@ -33,8 +34,3 @@ You can save your filters o disk so it is easily accessible in the future. Witho
 
 ### 9 - Open filters
 Open a previously saved list of filters. (Default folders for filters is used as the starting point location of the file chooser)
-
-## In practice
-![Log Viewer](images/MainWindowFull.png)
-
-Above is a Screen shot of log Viewer with some filters applied. Note how you can see only what matters to you on the 'Filtered Logs' pane, and how you can differentiate each filter by its color

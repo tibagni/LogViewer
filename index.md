@@ -7,9 +7,9 @@ layout: default
 # About Log Viewer
 LogViewer is an easy-to-use tool intended to help with the analysis of Android logs.
 
-With Log Viewer, you can open multiple log files at once, and it will present you a single merged output containing all the logs in a single view already ordered by timestamp. This is very useful when you have different log files for _'main'_, _'system'_ and _'radio'_ logs, for example. Or simply if your logs are broken down in multiple files.
+With Log Viewer, you can open multiple log files at once and it will present you a single merged output containing all the logs already ordered by timestamp. This is very useful when you have different files for _'main'_, _'system'_ and _'radio'_ logs, for example. Or simply if your logs are broken down in multiple files.
 
-It also allows you to apply different filters on the set of logs, displaying a single filtered output, differentiating each filter by color. Filters can be as simple as a single word, or as complex as you want, using regex.
+It also allows you to apply different filters on the set of logs, displaying a single filtered output, differentiating each filter by color. Filters can be as simple as a single word, or as complex as you want using regex.
 
 ***
 

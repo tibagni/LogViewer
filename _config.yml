@@ -1,6 +1,6 @@
 title: Log Viewer
 description: An easy-to-use tool that helps you analyze Android logs.
-latest_version: 1.2
+latest_version: 1.4
 
 # Build settings
 markdown: kramdown
