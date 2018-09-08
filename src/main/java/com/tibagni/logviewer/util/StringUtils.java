@@ -1,8 +1,7 @@
 package com.tibagni.logviewer.util;
 
-import javax.xml.bind.DatatypeConverter;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public class StringUtils {
   public static final String LINE_SEPARATOR = System.lineSeparator();
@@ -16,11 +15,11 @@ public class StringUtils {
 
   public static String encodeBase64(String str) {
     byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-    return DatatypeConverter.printBase64Binary(bytes);
+    return Base64.getEncoder().encodeToString(bytes);
   }
 
   public static String decodeBase64(String base64) {
-    byte[] bytes = DatatypeConverter.parseBase64Binary(base64);
+    byte[] bytes = Base64.getDecoder().decode(base64);
     return new String(bytes, StandardCharsets.UTF_8);
   }
 
