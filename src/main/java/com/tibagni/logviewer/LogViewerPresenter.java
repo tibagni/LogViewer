@@ -29,12 +29,17 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private final LogViewerPreferences userPrefs;
 
   public LogViewerPresenter(LogViewer.View view) {
+    this(view, LogViewerPreferences.getInstance());
+  }
+
+  // Visible for testing
+  LogViewerPresenter(LogViewer.View view, LogViewerPreferences userPrefs) {
     super(view);
     this.view = view;
     filters = new ArrayList<>();
-
     currentlyOpenedFilters = new ArrayList<>();
-    userPrefs = LogViewerPreferences.getInstance();
+
+    this.userPrefs = userPrefs;
   }
 
   @Override
@@ -168,7 +173,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   private List<String> getSerializedFilters() {
-    return filters.stream().map(f -> f.serializeFilter()).
+    return filters.stream().map(Filter::serializeFilter).
         collect(Collectors.toList());
   }
 

@@ -8,21 +8,21 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class ParserTests {
 
   private LogParser logParser;
 
   @Mock
-  private
-  LogReader reader;
+  private LogReader reader;
 
   @Mock
-  private
-  ProgressReporter progressReporter;
+  private ProgressReporter progressReporter;
 
   @Before
   public void setUp() {
+    MockitoAnnotations.initMocks(this);
     logParser = new LogParser(reader, progressReporter);
   }
 

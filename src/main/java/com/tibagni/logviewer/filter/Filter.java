@@ -138,4 +138,21 @@ public class Filter {
   public static class ContextInfo {
     public int linesFound;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Filter filter = (Filter) o;
+    return flags == filter.flags &&
+        Objects.equals(name, filter.name) &&
+        Objects.equals(color, filter.color) &&
+        Objects.equals(pattern, filter.pattern) &&
+        Objects.equals(temporaryInfo, filter.temporaryInfo);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, color, pattern, flags, temporaryInfo);
+  }
 }
