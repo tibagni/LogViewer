@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -299,5 +300,70 @@ public class LogViewerPresenterTests {
     assertEquals("Test2", resultFilters[0].getName());
     assertEquals("Test3", resultFilters[1].getName());
     assertEquals("Test", resultFilters[2].getName());
+  }
+
+  @Test
+  public void testFinishingSaveChanges() throws FilterException {
+    Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
+
+    // Add a filter to simulate 'unsaved changes'
+    presenter.addFilter(filter);
+
+    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.YES_OPTION);
+    presenter.finishing();
+
+    verify(view).showSaveFilter();
+    verify(view).finish();
+  }
+
+  @Test
+  public void testFinishingDontSaveChanges() throws FilterException {
+    Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
+
+    // Add a filter to simulate 'unsaved changes'
+    presenter.addFilter(filter);
+
+    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.NO_OPTION);
+    presenter.finishing();
+
+    verify(view, never()).showSaveFilter();
+    verify(view).finish();
+  }
+
+  @Test
+  public void testFinishingCancelChanges() throws FilterException {
+    Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
+
+    // Add a filter to simulate 'unsaved changes'
+    presenter.addFilter(filter);
+
+    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.CANCEL_OPTION);
+    presenter.finishing();
+
+    verify(view, never()).showSaveFilter();
+    verify(view, never()).finish();
+  }
+
+  @Test
+  public void testFinishingCancelCloseChanges() throws FilterException {
+    Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
+
+    // Add a filter to simulate 'unsaved changes'
+    presenter.addFilter(filter);
+
+    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.CLOSED_OPTION);
+    presenter.finishing();
+
+    verify(view, never()).showSaveFilter();
+    verify(view, never()).finish();
+  }
+
+  @Test
+  public void testFinishingNoChanges() {
+    presenter.finishing();
+
+    verify(view, never()).showAskToSaveFilterDialog();
+    verify(view, never()).showSaveFilter();
+    verify(view).finish();
   }
 }

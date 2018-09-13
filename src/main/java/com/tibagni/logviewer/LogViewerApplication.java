@@ -29,7 +29,6 @@ public class LogViewerApplication {
     LogViewerView logViewer = new LogViewerView(frame);
 
     frame.setContentPane(logViewer.getContentPane());
-    frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     frame.pack();
     frame.setVisible(true);
   }

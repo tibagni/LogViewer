@@ -10,6 +10,7 @@ import com.tibagni.logviewer.log.parser.LogParser;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 
+import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -270,8 +271,22 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public void finishing() {
+    boolean shouldFinish = true;
     if (hasUnsavedFilterChanges) {
-      view.showAskToSaveFilterDialog();
+      int userSelection = view.showAskToSaveFilterDialog();
+
+      if (userSelection == JOptionPane.YES_OPTION) {
+        view.showSaveFilter();
+      }
+
+      // Do not close window if user has cancelled or closed the
+      // finishing dialog
+      shouldFinish = userSelection != JOptionPane.CANCEL_OPTION &&
+          userSelection != JOptionPane.CLOSED_OPTION;
+    }
+
+    if (shouldFinish) {
+      view.finish();
     }
   }
 

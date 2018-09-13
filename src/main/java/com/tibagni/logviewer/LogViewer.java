@@ -3,6 +3,7 @@ package com.tibagni.logviewer;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.log.LogEntry;
 
+import javax.swing.*;
 import java.io.File;
 
 public class LogViewer {
@@ -14,7 +15,9 @@ public class LogViewer {
     void showFilteredLogs(LogEntry[] logEntries);
     void showUnsavedTitle();
     void hideUnsavedTitle();
-    void showAskToSaveFilterDialog();
+    int showAskToSaveFilterDialog();
+    void showSaveFilter();
+    void finish();
   }
 
   public interface Presenter {

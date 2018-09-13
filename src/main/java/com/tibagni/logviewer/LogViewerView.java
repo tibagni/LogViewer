@@ -14,7 +14,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
-import java.awt.Frame;
 import java.awt.event.*;
 import java.util.stream.IntStream;
 
@@ -38,18 +37,19 @@ public class LogViewerView implements LogViewer.View {
 
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
-  private Frame parent;
+  private JFrame parent;
 
   final private LogViewerPreferences userPrefs;
 
   private static final String UNSAVED_INDICATOR = " (*)";
 
-  public LogViewerView(Frame parent) {
+  public LogViewerView(JFrame parent) {
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
     presenter = new LogViewerPresenter(this);
     presenter.init();
 
+    this.parent.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     this.parent.addWindowListener(new WindowAdapter() {
       @Override
       public void windowClosing(WindowEvent e) {
@@ -135,17 +135,29 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public void showAskToSaveFilterDialog() {
+  public int showAskToSaveFilterDialog() {
     int userChoice = JOptionPane.showConfirmDialog(
         mainPanel.getParent(),
         "There are unsaved changes to your filters, do you want to save it?",
         "Unsaved changes",
-        JOptionPane.YES_NO_OPTION,
+        JOptionPane.YES_NO_CANCEL_OPTION,
         JOptionPane.WARNING_MESSAGE);
 
-    if (userChoice != JOptionPane.YES_OPTION) return;
+    if (userChoice == JOptionPane.YES_OPTION) {
+      saveFilter();
+    }
 
+    return userChoice;
+  }
+
+  @Override
+  public void showSaveFilter() {
     saveFilter();
+  }
+
+  @Override
+  public void finish() {
+    parent.dispose();
   }
 
   private void setupFiltersContextActions() {
