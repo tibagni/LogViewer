@@ -135,7 +135,7 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public int showAskToSaveFilterDialog() {
+  public LogViewer.UserSelection showAskToSaveFilterDialog() {
     int userChoice = JOptionPane.showConfirmDialog(
         mainPanel.getParent(),
         "There are unsaved changes to your filters, do you want to save it?",
@@ -143,11 +143,7 @@ public class LogViewerView implements LogViewer.View {
         JOptionPane.YES_NO_CANCEL_OPTION,
         JOptionPane.WARNING_MESSAGE);
 
-    if (userChoice == JOptionPane.YES_OPTION) {
-      saveFilter();
-    }
-
-    return userChoice;
+    return LogViewer.convertFromSwing(userChoice);
   }
 
   @Override

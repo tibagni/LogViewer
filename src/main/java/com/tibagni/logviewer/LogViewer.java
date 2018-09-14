@@ -8,6 +8,23 @@ import java.io.File;
 
 public class LogViewer {
 
+  public enum UserSelection {
+    CONFIRMED,
+    REJECTED,
+    CANCELLED
+  }
+
+  static UserSelection convertFromSwing(int swingOption) {
+    switch (swingOption) {
+      case JOptionPane.YES_OPTION: return UserSelection.CONFIRMED;
+      case JOptionPane.NO_OPTION: return UserSelection.REJECTED;
+      case JOptionPane.CANCEL_OPTION:
+      case JOptionPane.CLOSED_OPTION: return UserSelection.CANCELLED;
+    }
+
+    throw new IllegalArgumentException("Invalid option: " + swingOption);
+  }
+
   public interface View extends AsyncPresenter.AsyncView {
     void configureFiltersList(Filter[] filters);
     void showErrorMessage(String message);
@@ -15,7 +32,7 @@ public class LogViewer {
     void showFilteredLogs(LogEntry[] logEntries);
     void showUnsavedTitle();
     void hideUnsavedTitle();
-    int showAskToSaveFilterDialog();
+    UserSelection showAskToSaveFilterDialog();
     void showSaveFilter();
     void finish();
   }

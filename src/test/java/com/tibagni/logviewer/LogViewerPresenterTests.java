@@ -10,7 +10,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -309,7 +308,7 @@ public class LogViewerPresenterTests {
     // Add a filter to simulate 'unsaved changes'
     presenter.addFilter(filter);
 
-    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.YES_OPTION);
+    when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.CONFIRMED);
     presenter.finishing();
 
     verify(view).showSaveFilter();
@@ -323,7 +322,7 @@ public class LogViewerPresenterTests {
     // Add a filter to simulate 'unsaved changes'
     presenter.addFilter(filter);
 
-    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.NO_OPTION);
+    when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.REJECTED);
     presenter.finishing();
 
     verify(view, never()).showSaveFilter();
@@ -337,21 +336,7 @@ public class LogViewerPresenterTests {
     // Add a filter to simulate 'unsaved changes'
     presenter.addFilter(filter);
 
-    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.CANCEL_OPTION);
-    presenter.finishing();
-
-    verify(view, never()).showSaveFilter();
-    verify(view, never()).finish();
-  }
-
-  @Test
-  public void testFinishingCancelCloseChanges() throws FilterException {
-    Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
-
-    // Add a filter to simulate 'unsaved changes'
-    presenter.addFilter(filter);
-
-    when(view.showAskToSaveFilterDialog()).thenReturn(JOptionPane.CLOSED_OPTION);
+    when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.CANCELLED);
     presenter.finishing();
 
     verify(view, never()).showSaveFilter();
