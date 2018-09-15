@@ -1,14 +1,22 @@
 package com.tibagni.logviewer.log.parser;
 
 import com.tibagni.logviewer.ProgressReporter;
-import com.tibagni.logviewer.log.LogLevel;
-import com.tibagni.logviewer.log.LogReader;
-import com.tibagni.logviewer.log.LogTimestamp;
+import com.tibagni.logviewer.log.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class ParserTests {
 
@@ -64,5 +72,56 @@ public class ParserTests {
 
     Assert.assertEquals(expected, actual);
     Assert.assertEquals(expected2, actual2);
+  }
+
+  @Test
+  public void testParseLogs() throws LogReaderException {
+    final String TEST_LOG_LINE = "10-12 22:32:50.264  2646  2664 I test  : Test log Test Log";
+    final Set<String> logNames = new HashSet<>();
+    logNames.add("main");
+    logNames.add("radio");
+    logNames.add("system");
+    logNames.add("events");
+    final String[] expectedLogs = new String[] {
+        TEST_LOG_LINE,
+        TEST_LOG_LINE,
+        TEST_LOG_LINE,
+        TEST_LOG_LINE
+    };
+
+    when(reader.getAvailableLogsNames()).thenReturn(logNames);
+    when(reader.get(any())).thenReturn(TEST_LOG_LINE);
+
+    LogEntry[] entries = logParser.parseLogs();
+
+    ArgumentCaptor<Integer> progressCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<String> descriptionCaptor = ArgumentCaptor.forClass(String.class);
+    verify(progressReporter, times(7))
+        .onProgress(progressCaptor.capture(), descriptionCaptor.capture());
+
+    List<Integer> progresses = progressCaptor.getAllValues();
+    List<String> descriptions = descriptionCaptor.getAllValues();
+
+    assertTrue(progresses.contains(0));
+    assertTrue(progresses.contains(15));
+    assertTrue(progresses.contains(30));
+    assertTrue(progresses.contains(45));
+    assertTrue(progresses.contains(80));
+    assertTrue(progresses.contains(95));
+    assertTrue(progresses.contains(100));
+
+    assertTrue(descriptions.contains("Reading main..."));
+    assertTrue(descriptions.contains("Reading radio..."));
+    assertTrue(descriptions.contains("Reading system..."));
+    assertTrue(descriptions.contains("Reading events..."));
+    assertTrue(descriptions.contains("Sorting..."));
+    assertTrue(descriptions.contains("Setting index..."));
+    assertTrue(descriptions.contains("Completed"));
+
+    String[] actualLogs = Arrays.stream(entries)
+        .map(it -> it.getLogText())
+        .collect(Collectors.toList())
+        .toArray(new String[0]);
+    assertArrayEquals(expectedLogs, actualLogs);
   }
 }

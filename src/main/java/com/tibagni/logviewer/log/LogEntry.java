@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.log;
 
 import java.awt.*;
+import java.util.Objects;
 
 public class LogEntry implements Comparable<LogEntry> {
 
@@ -42,6 +43,10 @@ public class LogEntry implements Comparable<LogEntry> {
 
   public void setIndex(int index) {
     this.index = index;
+  }
+
+  public LogTimestamp getTimestamp() {
+    return timestamp;
   }
 
   public void setTimestamp(LogTimestamp timestamp) {
