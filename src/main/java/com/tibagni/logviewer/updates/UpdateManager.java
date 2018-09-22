@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.updates;
 
+import com.tibagni.logviewer.logger.Logger;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,6 +23,7 @@ public class UpdateManager {
     try {
       return Double.parseDouble(strVal);
     } catch (NumberFormatException nfe) {
+      Logger.error("Not possible to parse current version: " + strVal, nfe);
       return -1;
     }
   }
@@ -29,17 +31,23 @@ public class UpdateManager {
   public void checkForUpdates(UpdateListener listener) {
     // If we fail to read the current version for some reason, do not proceed
     if (CURRENT_VERSION < 0) {
+      Logger.error("Not a valid current version. Do not check for updates");
       return;
     }
 
+    Logger.debug("Start checking for updates...");
     new Thread(() -> {
       try {
         ReleaseInfo latest = getLatestReleaseInfo();
         if (latest.getVersion() > CURRENT_VERSION) {
+          Logger.debug("New version available: " + latest.getVersionName());
           SwingUtilities.invokeLater(() -> listener.onNewVersionFound(latest));
+        } else {
+          Logger.debug("LogViewer is already up to date!");
         }
       } catch (InvalidReleaseException e) {
         // Just ignore the update check if the latest version is invalid for some reason
+        Logger.error("Not possible to get latest release info", e);
       }
     }).start();
   }
