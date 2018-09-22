@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="LogViewer_main:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/LogViewer_main_jar</output-path>
+    <root id="archive" name="LogViewer_main.jar">
+      <element id="module-output" name="LogViewer_main" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jgoodies/jgoodies-forms/1.6.0/a2a6ba2c9d9ae8ade3469f004d7ec02ba7d71f22/jgoodies-forms-1.6.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jgoodies/jgoodies-common/1.4.0/6f9364fafb8d8f467ddbab16dfcaadfecaea6bdd/jgoodies-common-1.4.0.jar" path-in-jar="/" />
+      <element id="dir-copy" path="$PROJECT_DIR$/src/main/resources" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.json/json/20180813/8566b2b0391d9d4479ea225645c6ed47ef17fe41/json-20180813.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.6/815893df5f31da2ece4040fe0a12fd44b577afaf/commons-io-2.6.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

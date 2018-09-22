@@ -11,4 +11,4 @@ mkdir -p ../out/release
 mv LogViewer.jar ../out/release/LogViewer_$VERSION.jar
 cd ..
 rm -rf temp
-echo "Release is ready on out/releaseLogViewer_$VERSION.jar..."
+echo "Release is ready on out/release/LogViewer_$VERSION.jar..."
