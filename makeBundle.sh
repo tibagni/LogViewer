@@ -8,6 +8,6 @@ javapackager -deploy \
   -outdir out/native \
   -outfile LogViewer \
   -vendor tibagni \
-  -srcdir "out/artifacts/LogViewer_jar" \
+  -srcdir $1 \
   -Bicon="resources/log_viewer.icns" \
   -BappVersion=$VERSION

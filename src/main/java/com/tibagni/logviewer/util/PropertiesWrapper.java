@@ -1,7 +1,7 @@
 package com.tibagni.logviewer.util;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class PropertiesWrapper {
@@ -15,9 +15,8 @@ public class PropertiesWrapper {
       throw new IOException("Invalid properties file provided");
     }
 
-    FileInputStream objFileInputStream =
-        new FileInputStream(objClassLoader.getResource(propertiesFilename).getFile());
-    appProperties.load(objFileInputStream);
+    InputStream inputStream = objClassLoader.getResourceAsStream(propertiesFilename);
+    appProperties.load(inputStream);
   }
 
   public String get(String key) {
