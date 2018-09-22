@@ -1,6 +1,9 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.updates.ReleaseInfo;
+import com.tibagni.logviewer.updates.UpdateAvailableDialog;
+import com.tibagni.logviewer.updates.UpdateManager;
 import com.tibagni.logviewer.util.PropertiesWrapper;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
@@ -9,13 +12,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 
-public class LogViewerApplication {
+public class LogViewerApplication implements UpdateManager.UpdateListener {
   private static final String APPLICATION_NAME = "Log Viewer";
+  private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/tibagni/LogViewer/releases/latest";
 
   private static final String APP_PROPERTIES_FILE = "properties/app.properties";
   private static final String VERSION_KEY = "version";
 
-  private LogViewerApplication() { }
+  private LogViewerApplication() {
+  }
 
   public static void main(String[] args) {
     LogViewerApplication application = new LogViewerApplication();
@@ -23,6 +28,7 @@ public class LogViewerApplication {
   }
 
   private void start() {
+    startCheckingForUpdates();
     initLookAndFeel();
     JFrame frame = new JFrame(getApplicationTitle());
     watchLookAndFeelUpdates(frame);
@@ -36,7 +42,7 @@ public class LogViewerApplication {
   private void initLookAndFeel() {
     String lookAndFeel = LogViewerPreferences.getInstance().getLookAndFeel();
     if (!StringUtils.isEmpty(lookAndFeel)) {
-        SwingUtils.setLookAndFeel(lookAndFeel);
+      SwingUtils.setLookAndFeel(lookAndFeel);
     }
   }
 
@@ -49,7 +55,8 @@ public class LogViewerApplication {
     try {
       PropertiesWrapper appProperties = new PropertiesWrapper(APP_PROPERTIES_FILE);
       currentVersion = appProperties.get(VERSION_KEY);
-    } catch (IOException e) {}
+    } catch (IOException e) {
+    }
 
     return currentVersion;
   }
@@ -65,5 +72,15 @@ public class LogViewerApplication {
         }
       }
     });
+  }
+
+  private void startCheckingForUpdates() {
+    UpdateManager updateManager = new UpdateManager(LATEST_RELEASE_URL, getCurrentVersion());
+    updateManager.checkForUpdates(this);
+  }
+
+  @Override
+  public void onNewVersionFound(ReleaseInfo newRelease) {
+    UpdateAvailableDialog.showUpdateAvailableDialog(newRelease);
   }
 }

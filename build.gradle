@@ -13,4 +13,6 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile "org.mockito:mockito-core:2.11.0"
     compile group: 'com.jgoodies', name: 'jgoodies-forms', version: '1.6.0'
+    compile group: 'org.json', name: 'json', version: '20180813'
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
 }
