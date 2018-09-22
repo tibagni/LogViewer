@@ -11,7 +11,7 @@ To create a JAR for LogViewer:
   - Select 'JAR > From modules with dependencies...'
   - Select the module and Main class and keep 'extract to the target JAR' option selected
   - *Note*: It might be necessary to remove 'src/main/java/META-INF/MANIFEST.MF' first
-  - Make sure all libraries are included (Note: It mught be necessary to update the artifact when a new gradle dependency is added)
+  - Make sure all libraries are included (Note: It will be necessary to update the artifact when a new gradle dependency is added)
   - Make sure resources folder is included. If not include it manually
     - Click on '+' sign and select 'Directory content'
     -  Choose the Resources folder (src/main/resources)
