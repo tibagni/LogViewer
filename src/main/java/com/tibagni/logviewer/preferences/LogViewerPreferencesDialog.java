@@ -130,8 +130,8 @@ public class LogViewerPreferencesDialog extends JDialog {
   public static void showPreferencesDialog(Component relativeTo) {
     LogViewerPreferencesDialog dialog = new LogViewerPreferencesDialog();
 
-    dialog.setLocationRelativeTo(relativeTo);
     dialog.pack();
+    dialog.setLocationRelativeTo(relativeTo);
     dialog.setVisible(true);
   }
 }

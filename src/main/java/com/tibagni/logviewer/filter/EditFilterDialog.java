@@ -149,8 +149,8 @@ public class EditFilterDialog extends JDialog {
 
   public static Filter showEditFilterDialog(Frame parent, Component relativeTo, Filter editingFilter) {
     EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter);
-    dialog.setLocationRelativeTo(relativeTo);
     dialog.pack();
+    dialog.setLocationRelativeTo(relativeTo);
     dialog.setVisible(true);
 
     return dialog.filter;

@@ -122,8 +122,8 @@ public class RegexEditorDialog extends JDialog {
     dialog.applyRegexToPreview();
     dialog.updateOkButton();
 
-    dialog.setLocationRelativeTo(relativeTo);
     dialog.pack();
+    dialog.setLocationRelativeTo(relativeTo);
     dialog.setVisible(true);
 
     return dialog.result;
