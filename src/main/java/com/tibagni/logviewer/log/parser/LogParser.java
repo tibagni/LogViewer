@@ -2,6 +2,7 @@ package com.tibagni.logviewer.log.parser;
 
 import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.*;
+import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 
 import java.util.ArrayList;
@@ -113,6 +114,7 @@ public class LogParser {
     } catch (Exception ignore) {
       // Don't add a timestamp if we couldn't parse it
       // This should never happen anyway
+      Logger.error("Failed to parse timestamp for: " + logLine, ignore);
     }
 
     return timestamp;

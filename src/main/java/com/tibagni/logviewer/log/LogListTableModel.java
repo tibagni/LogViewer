@@ -1,7 +1,5 @@
 package com.tibagni.logviewer.log;
 
-import com.tibagni.logviewer.log.LogEntry;
-
 import javax.swing.table.AbstractTableModel;
 
 public class LogListTableModel extends AbstractTableModel {

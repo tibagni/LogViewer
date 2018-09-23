@@ -6,6 +6,7 @@ import com.tibagni.logviewer.filter.FilterCellRenderer;
 import com.tibagni.logviewer.log.LogCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogListTableModel;
+import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
@@ -86,7 +87,7 @@ public class LogViewerView implements LogViewer.View {
     settingsBtn.addActionListener(e -> openUserPreferences());
 
     // Configure file drop
-    new FileDrop(System.out, logsPane, files -> presenter.loadLogs(files));
+    new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
 //    new FileDrop(System.out, filtersList, files -> {
 //      if (files.length > 1) {
 //        showErrorMessage("You can only open one filter file at a time!");

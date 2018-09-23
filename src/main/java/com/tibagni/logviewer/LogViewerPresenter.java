@@ -202,8 +202,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       if (bufferedReader != null) {
         try {
           bufferedReader.close();
-        } catch (IOException ignore) {
-        }
+        } catch (IOException ignore) { }
       }
     }
   }

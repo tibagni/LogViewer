@@ -1,5 +1,6 @@
 package com.tibagni.logviewer;
 
+import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
@@ -19,8 +20,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   private static final String APP_PROPERTIES_FILE = "properties/app.properties";
   private static final String VERSION_KEY = "version";
 
-  private LogViewerApplication() {
-  }
+  private LogViewerApplication() { }
 
   public static void main(String[] args) {
     LogViewerApplication application = new LogViewerApplication();
@@ -56,6 +56,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
       PropertiesWrapper appProperties = new PropertiesWrapper(APP_PROPERTIES_FILE);
       currentVersion = appProperties.get(VERSION_KEY);
     } catch (IOException e) {
+      Logger.error("Failed to get current version", e);
     }
 
     return currentVersion;

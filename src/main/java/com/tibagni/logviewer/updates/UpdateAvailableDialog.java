@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.updates;
 
+import com.tibagni.logviewer.logger.Logger;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -49,6 +51,7 @@ public class UpdateAvailableDialog extends JDialog {
     try {
       Desktop.getDesktop().browse(new URL(url).toURI());
     } catch (Exception e) {
+      Logger.error("Failed to download new Version from URL: " + url, e);
       dispose();
     }
   }
