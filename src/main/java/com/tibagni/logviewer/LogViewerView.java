@@ -351,13 +351,13 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void setupOptionsMenu() {
-    ImageIcon newWindowIcon = SwingUtils.getIconFromResource(this, "icons/new_window.png");
+    ImageIcon newWindowIcon = SwingUtils.getIconFromResource(this, "Icons/new_window.png");
     String newWindowText = "New Log Viewer Window";
     JMenuItem newWindow = new JMenuItem(newWindowText, newWindowIcon);
     newWindow.getAccessibleContext().setAccessibleDescription(newWindowText);
     newWindow.addActionListener(e -> openNewWindow());
 
-    ImageIcon settingsIcon = SwingUtils.getIconFromResource(this, "icons/settings.png");
+    ImageIcon settingsIcon = SwingUtils.getIconFromResource(this, "Icons/settings.png");
     String settingsText = "Settings";
     JMenuItem settings = new JMenuItem(settingsText, settingsIcon);
     settings.getAccessibleContext().setAccessibleDescription(settingsText);

@@ -2,8 +2,11 @@ package com.tibagni.logviewer.util;
 
 import com.tibagni.logviewer.logger.Logger;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -104,7 +107,13 @@ public final class SwingUtils {
   }
 
   public static ImageIcon getIconFromResource(Object object, String path) {
-    return new ImageIcon(object.getClass().getClassLoader().getResource(path));
+    try {
+      InputStream is = object.getClass().getClassLoader().getResourceAsStream(path);
+      return new ImageIcon(ImageIO.read(is));
+    } catch (IOException e) {
+      Logger.error("Failed to open " + path);
+      return null;
+    }
   }
 
   public static String truncateTextFor(JLabel dest,
