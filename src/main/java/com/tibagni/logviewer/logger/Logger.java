@@ -3,6 +3,8 @@ package com.tibagni.logviewer.logger;
 import java.io.PrintStream;
 
 public class Logger {
+  private static final boolean VERBOSE_LOGGING = false;
+
   private Logger() {}
 
   private static PrintStream debugStream = System.out;
@@ -14,6 +16,12 @@ public class Logger {
 
   public static PrintStream getErrorStream() {
     return errorStream;
+  }
+
+  public static void verbose(String message) {
+    if (VERBOSE_LOGGING) {
+      debugStream.println(message);
+    }
   }
 
   public static void debug(String message) {

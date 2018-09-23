@@ -29,6 +29,7 @@ public class LogViewer {
     void configureFiltersList(Filter[] filters);
     void showErrorMessage(String message);
     void showLogs(LogEntry[] logEntries);
+    void showCurrentLogsLocation(String logsPath);
     void showFilteredLogs(LogEntry[] logEntries);
     void showUnsavedTitle();
     void hideUnsavedTitle();

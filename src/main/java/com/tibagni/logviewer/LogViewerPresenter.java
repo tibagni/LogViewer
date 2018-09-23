@@ -9,6 +9,7 @@ import com.tibagni.logviewer.log.LogReaderException;
 import com.tibagni.logviewer.log.parser.LogParser;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -224,6 +225,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
           if (allLogs.length > 0) {
             view.showFilteredLogs(filteredLogs);
             view.showLogs(allLogs);
+
+            String logsPath = FilenameUtils.getPath(logFiles[0].getPath());
+            view.showCurrentLogsLocation(logsPath);
           } else {
             view.showErrorMessage("No logs found");
           }

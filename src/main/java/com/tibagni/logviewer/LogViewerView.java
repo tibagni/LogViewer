@@ -15,10 +15,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
+import java.awt.*;
 import java.awt.event.*;
 import java.util.stream.IntStream;
 
 public class LogViewerView implements LogViewer.View {
+  private LogViewerApplication application;
+
   private JTable logList;
   private JPanel mainPanel;
   private JTable filteredLogList;
@@ -29,7 +32,8 @@ public class LogViewerView implements LogViewer.View {
   private JButton applyFiltersBtn;
   private JButton openLogsBtn;
   private JSplitPane logsPane;
-  private JButton settingsBtn;
+  private JButton menuBtn;
+  private JLabel currentLogsLbl;
 
   private final LogViewer.Presenter presenter;
   private final JFileChooserExt logFileChooser;
@@ -39,12 +43,14 @@ public class LogViewerView implements LogViewer.View {
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
   private JFrame parent;
+  private JPopupMenu optionsMenu;
 
   final private LogViewerPreferences userPrefs;
 
   private static final String UNSAVED_INDICATOR = " (*)";
 
-  public LogViewerView(JFrame parent) {
+  public LogViewerView(JFrame parent, LogViewerApplication application) {
+    this.application = application;
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
     presenter = new LogViewerPresenter(this);
@@ -84,17 +90,13 @@ public class LogViewerView implements LogViewer.View {
     saveFilterBtn.addActionListener(e -> saveFilter());
     openFilterBtn.addActionListener(e -> openFilter());
 
-    settingsBtn.addActionListener(e -> openUserPreferences());
+    menuBtn.addActionListener(e -> showOptionsMenu());
+
+    optionsMenu = new JPopupMenu();
+    setupOptionsMenu();
 
     // Configure file drop
     new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
-//    new FileDrop(System.out, filtersList, files -> {
-//      if (files.length > 1) {
-//        showErrorMessage("You can only open one filter file at a time!");
-//      } else {
-//        presenter.loadFilters(files[0]);
-//      }
-//    });
   }
 
   JPanel getContentPane() {
@@ -114,6 +116,18 @@ public class LogViewerView implements LogViewer.View {
   @Override
   public void showLogs(LogEntry[] logEntries) {
     logListTableModel.setLogs(logEntries);
+  }
+
+  @Override
+  public void showCurrentLogsLocation(String logsPath) {
+    String text = SwingUtils.truncateTextFor(
+        currentLogsLbl,
+        "Logs path:",
+        logsPath,
+        mainPanel.getWidth(),
+        menuBtn,  openLogsBtn);
+
+    currentLogsLbl.setText(text);
   }
 
   @Override
@@ -336,7 +350,34 @@ public class LogViewerView implements LogViewer.View {
     filteredLogList = new JTable(filteredLogListTableModel);
   }
 
+  private void setupOptionsMenu() {
+    ImageIcon newWindowIcon = SwingUtils.getIconFromResource(this, "icons/new_window.png");
+    String newWindowText = "New Log Viewer Window";
+    JMenuItem newWindow = new JMenuItem(newWindowText, newWindowIcon);
+    newWindow.getAccessibleContext().setAccessibleDescription(newWindowText);
+    newWindow.addActionListener(e -> openNewWindow());
+
+    ImageIcon settingsIcon = SwingUtils.getIconFromResource(this, "icons/settings.png");
+    String settingsText = "Settings";
+    JMenuItem settings = new JMenuItem(settingsText, settingsIcon);
+    settings.getAccessibleContext().setAccessibleDescription(settingsText);
+    settings.addActionListener(e -> openUserPreferences());
+
+    optionsMenu.add(newWindow);
+    optionsMenu.add(settings);
+  }
+
+  private void openNewWindow() {
+    application.newLogViewerWindow();
+  }
+
+  private void showOptionsMenu() {
+    optionsMenu.setInvoker(menuBtn);
+    optionsMenu.setLocation(menuBtn.getLocationOnScreen());
+    optionsMenu.setVisible(true);
+  }
+
   private void openUserPreferences() {
-    LogViewerPreferencesDialog.showPreferencesDialog(settingsBtn);
+    LogViewerPreferencesDialog.showPreferencesDialog(menuBtn);
   }
 }

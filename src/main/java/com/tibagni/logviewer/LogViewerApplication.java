@@ -30,13 +30,8 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   private void start() {
     startCheckingForUpdates();
     initLookAndFeel();
-    JFrame frame = new JFrame(getApplicationTitle());
-    watchLookAndFeelUpdates(frame);
-    LogViewerView logViewer = new LogViewerView(frame);
 
-    frame.setContentPane(logViewer.getContentPane());
-    frame.pack();
-    frame.setVisible(true);
+    newLogViewerWindow();
   }
 
   private void initLookAndFeel() {
@@ -44,6 +39,16 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     if (!StringUtils.isEmpty(lookAndFeel)) {
       SwingUtils.setLookAndFeel(lookAndFeel);
     }
+  }
+
+  void newLogViewerWindow() {
+    JFrame frame = new JFrame(getApplicationTitle());
+    watchLookAndFeelUpdates(frame);
+    LogViewerView logViewer = new LogViewerView(frame, this);
+
+    frame.setContentPane(logViewer.getContentPane());
+    frame.pack();
+    frame.setVisible(true);
   }
 
   private String getApplicationTitle() {

@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.util;
 
+import com.tibagni.logviewer.logger.Logger;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -99,5 +101,53 @@ public final class SwingUtils {
         }
       }
     }).start();
+  }
+
+  public static ImageIcon getIconFromResource(Object object, String path) {
+    return new ImageIcon(object.getClass().getClassLoader().getResource(path));
+  }
+
+  public static String truncateTextFor(JLabel dest,
+                                       String prefix,
+                                       String variableText,
+                                       int totalWidth,
+                                       JComponent... components) {
+    String text = prefix + " " + variableText;
+    Logger.verbose("truncateTextFor: " + text);
+
+    int availableWidth = totalWidth;
+    for (JComponent component : components) {
+      Insets borderInsets = component.getBorder().getBorderInsets(component);
+      availableWidth -= component.getWidth();
+      availableWidth -= borderInsets.left - borderInsets.right;
+    }
+
+    FontMetrics fm = dest.getFontMetrics(dest.getFont());
+    int textWidth = fm.stringWidth(text);
+
+    Logger.verbose("AvailableWidth: " + availableWidth);
+    Logger.verbose("Text width: " + textWidth);
+
+    if (fm.stringWidth(text) > availableWidth) {
+      String newPrefix = prefix + " ...";
+
+      // HACK: Use extra chars here as margin to be sure it will
+      // only take available space
+      int currentWidth = fm.stringWidth(newPrefix + " ... ");
+
+      int truncateAt = 0;
+      for (int i = text.length() - 1; i > 0; i--) {
+        currentWidth += fm.charWidth(text.charAt(i));
+        Logger.verbose("text width now: " + currentWidth + " - " + text.substring(i + 1));
+
+        if (currentWidth >= availableWidth) {
+          truncateAt = i;
+          break;
+        }
+      }
+      return newPrefix + text.substring(truncateAt + 1);
+    }
+
+    return text;
   }
 }
