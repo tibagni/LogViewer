@@ -1,11 +1,11 @@
 package com.tibagni.logviewer.util;
 
-import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
-
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 /**
  * A collection of utility methods for Swing.
@@ -79,5 +79,25 @@ public final class SwingUtils {
   public static void updateLookAndFeelAfterStart(String className, Frame frame) {
     setLookAndFeel(className);
     SwingUtilities.updateComponentTreeUI(frame);
+  }
+
+  public static <T> void doAsync(Callable<T> onBackground,
+                                 Consumer<T> onComplete) {
+    doAsync(onBackground, onComplete, null);
+  }
+
+  public static <T> void doAsync(Callable<T> onBackground,
+                                    Consumer<T> onComplete,
+                                    Consumer<Throwable> onFailed) {
+    new Thread(() -> {
+      try {
+        T result = onBackground.call();
+        onComplete.accept(result);
+      } catch (Throwable tr) {
+        if (onFailed != null) {
+          SwingUtilities.invokeLater(() -> onFailed.accept(tr));
+        }
+      }
+    }).start();
   }
 }

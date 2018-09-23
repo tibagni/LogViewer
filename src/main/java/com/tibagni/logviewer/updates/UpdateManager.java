@@ -1,11 +1,11 @@
 package com.tibagni.logviewer.updates;
 
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.util.SwingUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import javax.swing.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -36,20 +36,20 @@ public class UpdateManager {
     }
 
     Logger.debug("Start checking for updates...");
-    new Thread(() -> {
-      try {
-        ReleaseInfo latest = getLatestReleaseInfo();
-        if (latest.getVersion() > CURRENT_VERSION) {
-          Logger.debug("New version available: " + latest.getVersionName());
-          SwingUtilities.invokeLater(() -> listener.onNewVersionFound(latest));
-        } else {
-          Logger.debug("LogViewer is already up to date!");
-        }
-      } catch (InvalidReleaseException e) {
-        // Just ignore the update check if the latest version is invalid for some reason
-        Logger.error("Not possible to get latest release info", e);
-      }
-    }).start();
+    SwingUtils.doAsync(
+        () ->  getLatestReleaseInfo(),
+        latest -> notifyIfUpdateAvailable(latest, listener),
+        tr -> Logger.error("Not possible to get latest release info", tr)
+    );
+  }
+
+  private void notifyIfUpdateAvailable(ReleaseInfo latest, UpdateListener listener) {
+    if (latest.getVersion() > CURRENT_VERSION) {
+      Logger.debug("New version available: " + latest.getVersionName());
+      listener.onNewVersionFound(latest);
+    } else {
+      Logger.debug("LogViewer is up to date on version " + CURRENT_VERSION);
+    }
   }
 
   private ReleaseInfo getLatestReleaseInfo() throws InvalidReleaseException {
