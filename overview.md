@@ -5,11 +5,10 @@ layout: default
 # Overview
 ## Basic functions
 ![Log Viewer](images/MainWindow.png)
-### 1 - Settings
-Open the user settings screen, in which you can:
-* Customize Look and Feel
-* Select the default folder for filters
-* Select whether you want the last filter opened to be loaded when Log Viewer starts
+### 1 - Menu
+Open options menu:
+* Settings (Custom user preferences)
+* Open new window (Useful when you need to compare different set of logs)
 
 ### 2 - Open Logs
 Open one or more log files to be displayed on the 'Log View' panel. You can also just drag the log files from the file system and drop them on the 'Log View' panel.
