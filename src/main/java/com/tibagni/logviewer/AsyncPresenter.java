@@ -2,11 +2,12 @@ package com.tibagni.logviewer;
 
 import javax.swing.*;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 class AsyncPresenter {
   private final AsyncView asyncView;
-  private final Executor executor = Executors.newSingleThreadExecutor();
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   AsyncPresenter(AsyncView asyncView) {
     this.asyncView = asyncView;
@@ -23,6 +24,10 @@ class AsyncPresenter {
 
   void doOnUiThread(Runnable runnable) {
     SwingUtilities.invokeLater(runnable);
+  }
+
+  void release() {
+    executor.shutdownNow();
   }
 
   public interface AsyncView {

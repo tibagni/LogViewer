@@ -289,6 +289,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     if (shouldFinish) {
       view.finish();
+      release();
     }
   }
 
