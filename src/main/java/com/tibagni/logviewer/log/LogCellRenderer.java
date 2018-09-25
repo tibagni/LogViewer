@@ -1,7 +1,5 @@
 package com.tibagni.logviewer.log;
 
-import sun.swing.DefaultLookup;
-
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
@@ -46,7 +44,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     } else {
       Color background = table.getBackground();
       if (background == null || background instanceof javax.swing.plaf.UIResource) {
-        Color alternateColor = DefaultLookup.getColor(this, ui, "Table.alternateRowColor");
+        Color alternateColor = UIManager.getColor("Table.alternateRowColor");
         if (alternateColor != null && row % 2 != 0) {
           background = alternateColor;
         }
