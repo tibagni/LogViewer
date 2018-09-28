@@ -75,7 +75,7 @@ public class ParserTests {
   }
 
   @Test
-  public void testParseLogs() throws LogReaderException {
+  public void testParseLogs() throws LogReaderException, LogParserException {
     final String TEST_LOG_LINE = "10-12 22:32:50.264  2646  2664 I test  : Test log Test Log";
     final Set<String> logNames = new HashSet<>();
     logNames.add("main");
@@ -123,5 +123,29 @@ public class ParserTests {
         .collect(Collectors.toList())
         .toArray(new String[0]);
     assertArrayEquals(expectedLogs, actualLogs);
+  }
+
+  @Test(expected = LogParserException.class)
+  public void testParseInvalidLogs() throws LogReaderException, LogParserException {
+    final String TEST_LOG_LINE = buildHugeLogPayload();
+    final Set<String> logNames = new HashSet<>();
+    logNames.add("bugreport");
+
+    when(reader.getAvailableLogsNames()).thenReturn(logNames);
+    when(reader.get(any())).thenReturn(TEST_LOG_LINE);
+
+    logParser.parseLogs();
+  }
+
+  private String buildHugeLogPayload() {
+    StringBuilder builder = new StringBuilder();
+    builder.append("10-12 22:32:50.264  2646  2664 I test  : Test log Test Log");
+
+    for (int i = 0; i < 1000; i++) {
+      builder.append(" Test log Test Log test");
+      builder.append(System.lineSeparator());
+    }
+
+    return builder.toString();
   }
 }

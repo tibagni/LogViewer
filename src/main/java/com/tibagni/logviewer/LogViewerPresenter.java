@@ -7,6 +7,7 @@ import com.tibagni.logviewer.log.FileLogReader;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogReaderException;
 import com.tibagni.logviewer.log.parser.LogParser;
+import com.tibagni.logviewer.log.parser.LogParserException;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -232,7 +233,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
             view.showErrorMessage("No logs found");
           }
         });
-      } catch (LogReaderException e) {
+      } catch (LogReaderException | LogParserException e) {
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
       }
     });

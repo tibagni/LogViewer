@@ -53,6 +53,10 @@ public class LogEntry implements Comparable<LogEntry> {
     this.timestamp = timestamp;
   }
 
+  public int getLength() {
+    return logText.length();
+  }
+
   @Override
   public String toString() {
     return getLogText();

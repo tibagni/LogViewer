@@ -13,6 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LogParser {
+  // This is the maximum size of a payload log from Android
+  private static final int LOGGER_ENTRY_MAX_PAYLOAD = 4068;
+
   private static final Pattern LOG_LEVEL_PATTERN =
       Pattern.compile("^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}.*?([VDIWE])");
   private static final String LOG_START_PATTERN = "^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.*";
@@ -29,34 +32,39 @@ public class LogParser {
     this.logEntries = new ArrayList<>();
   }
 
-  public LogEntry[] parseLogs() throws LogReaderException {
+  public LogEntry[] parseLogs() throws LogReaderException, LogParserException {
     if (logReader == null || logEntries == null || progressReporter == null) {
       throw new IllegalStateException("LogParser was already released. Cannot use it...");
     }
 
     logReader.readLogs();
     Set<String> availableLogs = logReader.getAvailableLogsNames();
-    int logsRead = 0;
-    for (String log : availableLogs) {
-      int progress = logsRead++ * 60 / availableLogs.size();
-      progressReporter.onProgress(progress, "Reading " + log + "...");
-      logEntries.addAll(getLogEntries(logReader.get(log)));
+
+    try {
+      int logsRead = 0;
+      for (String log : availableLogs) {
+        int progress = logsRead++ * 60 / availableLogs.size();
+        progressReporter.onProgress(progress, "Reading " + log + "...");
+        logEntries.addAll(getLogEntries(logReader.get(log)));
+      }
+
+      if (availableLogs.size() > 1) {
+        progressReporter.onProgress(80, "Sorting...");
+        Collections.sort(logEntries);
+      }
+
+      progressReporter.onProgress(95, "Setting index...");
+      int index = 0;
+      for (LogEntry entry : logEntries) {
+        entry.setIndex(index++);
+      }
+
+      progressReporter.onProgress(100, "Completed");
+      return logEntries.toArray(new LogEntry[0]);
+    } catch (LogParserException e) {
+      progressReporter.failProgress();
+      throw e;
     }
-
-    if (availableLogs.size() > 1) {
-      progressReporter.onProgress(80, "Sorting...");
-      Collections.sort(logEntries);
-    }
-
-    progressReporter.onProgress(95, "Setting index...");
-
-    int index = 0;
-    for (LogEntry entry : logEntries) {
-      entry.setIndex(index++);
-    }
-
-    progressReporter.onProgress(100, "Completed");
-    return logEntries.toArray(new LogEntry[0]);
   }
 
   public void release() {
@@ -69,7 +77,7 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText) {
+  private List<LogEntry> getLogEntries(String logText) throws LogParserException {
     String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
@@ -80,6 +88,10 @@ public class LogParser {
       } else if (!shouldIgnoreLine(line) && logLines.size() > 0) {
         // This is probably a continuation of a already started log line. Append to it
         LogEntry currentLine = logLines.get(logLines.size() - 1);
+        if (currentLine.getLength() > LOGGER_ENTRY_MAX_PAYLOAD) {
+          throw new LogParserException("Incorrect format. Found log line with "
+              + currentLine.getLength() + " bytes");
+        }
         currentLine.appendText(StringUtils.LINE_SEPARATOR + line);
       }
     }
