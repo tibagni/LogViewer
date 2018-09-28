@@ -15,6 +15,11 @@ import java.util.regex.Pattern;
 public class LogParser {
   // This is the maximum size of a payload log from Android
   private static final int LOGGER_ENTRY_MAX_PAYLOAD = 4068;
+  // Even though Android limits its buffer for log payload to LOGGER_ENTRY_MAX_PAYLOAD
+  // There are other parts of the log, like TAG, timestamp, pid, tid...
+  // So, to be absolute sure we will not discard a valid log file because
+  // of size restriction, set our maximum to twice the Android's payload size.
+  private static final int MAX_LOG_LINE_ALLOWED = LOGGER_ENTRY_MAX_PAYLOAD * 2;
 
   private static final Pattern LOG_LEVEL_PATTERN =
       Pattern.compile("^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}.*?([VDIWE])");
@@ -88,9 +93,10 @@ public class LogParser {
       } else if (!shouldIgnoreLine(line) && logLines.size() > 0) {
         // This is probably a continuation of a already started log line. Append to it
         LogEntry currentLine = logLines.get(logLines.size() - 1);
-        if (currentLine.getLength() > LOGGER_ENTRY_MAX_PAYLOAD) {
+        if (currentLine.getLength() > MAX_LOG_LINE_ALLOWED) {
           throw new LogParserException("Incorrect format. Found log line with "
-              + currentLine.getLength() + " bytes");
+              + currentLine.getLength() + " bytes. Android limit is "
+              + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
         }
         currentLine.appendText(StringUtils.LINE_SEPARATOR + line);
       }
