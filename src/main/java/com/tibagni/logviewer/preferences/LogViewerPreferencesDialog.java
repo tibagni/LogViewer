@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.preferences;
 
+import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
+import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.util.JFileChooserExt;
 
 import javax.swing.*;
@@ -9,6 +11,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LogViewerPreferencesDialog extends JDialog {
@@ -67,24 +70,26 @@ public class LogViewerPreferencesDialog extends JDialog {
   }
 
   private void initLookAndFeelPreference() {
-    String currLnf = UIManager.getLookAndFeel().getName();
-    LookAndFeel selectedItem = null;
-    for (UIManager.LookAndFeelInfo lnf : UIManager.getInstalledLookAndFeels()) {
-      LookAndFeel item = new LookAndFeel(lnf);
-      lookAndFeelCbx.addItem(item);
+    LookNFeelProvider lnfProvider = LookNFeelProvider.getInstance();
+    List<LookNFeel> lookAndFeels = lnfProvider.getAvailableLookNFeels();
 
+    String currLnf = UIManager.getLookAndFeel().getName();
+    LookNFeel selectedItem = null;
+    for (LookNFeel lnf : lookAndFeels) {
+      lookAndFeelCbx.addItem(lnf);
       if (currLnf != null && currLnf.equals(lnf.getName())) {
-        selectedItem = item;
+        selectedItem = lnf;
       }
     }
+
     if (selectedItem != null) {
       lookAndFeelCbx.setSelectedItem(selectedItem);
     }
 
     lookAndFeelCbx.addActionListener(l -> {
-      LookAndFeel lookAndFeel = (LookAndFeel) lookAndFeelCbx.getSelectedItem();
+      LookNFeel lookNFeel = (LookNFeel) lookAndFeelCbx.getSelectedItem();
       saveActions.put(LOOK_FEEL_PREF_ID, () -> {
-        String lnfClass = lookAndFeel.lnfInfo.getClassName();
+        String lnfClass = lookNFeel.getCls();
         userPrefs.setLookAndFeel(lnfClass);
       });
     });
@@ -112,19 +117,6 @@ public class LogViewerPreferencesDialog extends JDialog {
   private void onOpenLastFilterChanged() {
     boolean isChecked = openLastFilterChbx.getModel().isSelected();
     saveActions.put(LAST_FILTER_OPEN_ID, () -> userPrefs.setOpenLastFilter(isChecked));
-  }
-
-  private class LookAndFeel {
-    UIManager.LookAndFeelInfo lnfInfo;
-
-    LookAndFeel(UIManager.LookAndFeelInfo lnfInfo) {
-      this.lnfInfo = lnfInfo;
-    }
-
-    @Override
-    public String toString() {
-      return lnfInfo.getName();
-    }
   }
 
   public static void showPreferencesDialog(Component relativeTo) {

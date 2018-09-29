@@ -1,6 +1,8 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.lookandfeel.LookNFeel;
+import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
@@ -10,7 +12,6 @@ import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 
 public class LogViewerApplication implements UpdateManager.UpdateListener {
@@ -35,15 +36,23 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private void initLookAndFeel() {
+    LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
     String lookAndFeel = LogViewerPreferences.getInstance().getLookAndFeel();
+    if (lookNFeelProvider.getByName(lookAndFeel) == null) {
+      lookAndFeel = lookNFeelProvider.getAvailableLookNFeels().get(0).getCls();
+    }
+
     if (!StringUtils.isEmpty(lookAndFeel)) {
+      LookNFeel lnf = lookNFeelProvider.getByClass(lookAndFeel);
+      lookNFeelProvider.applyTheme(lnf);
+
       SwingUtils.setLookAndFeel(lookAndFeel);
     }
+    watchLookAndFeelUpdates();
   }
 
   void newLogViewerWindow() {
     JFrame frame = new JFrame(getApplicationTitle());
-    watchLookAndFeelUpdates(frame);
     LogViewerView logViewer = new LogViewerView(frame, this);
 
     frame.setContentPane(logViewer.getContentPane());
@@ -67,14 +76,17 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     return currentVersion;
   }
 
-  private void watchLookAndFeelUpdates(Frame frame) {
+  private void watchLookAndFeelUpdates() {
     LogViewerPreferences prefs = LogViewerPreferences.getInstance();
     prefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
       @Override
       public void onLookAndFeelChanged() {
         String lookAndFeel = prefs.getLookAndFeel();
         if (!StringUtils.isEmpty(lookAndFeel)) {
-          SwingUtils.updateLookAndFeelAfterStart(lookAndFeel, frame);
+          LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
+          LookNFeel lnf = lookNFeelProvider.getByClass(lookAndFeel);
+          lookNFeelProvider.applyTheme(lnf);
+          SwingUtils.updateLookAndFeelAfterStart(lookAndFeel);
         }
       }
     });

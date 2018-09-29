@@ -81,9 +81,14 @@ public final class SwingUtils {
     }
   }
 
-  public static void updateLookAndFeelAfterStart(String className, Frame frame) {
+  public static void updateLookAndFeelAfterStart(String className) {
     setLookAndFeel(className);
-    SwingUtilities.updateComponentTreeUI(frame);
+    Window windows[] = Window.getWindows();
+    for (Window window : windows) {
+      if (window.isDisplayable()) {
+        SwingUtilities.updateComponentTreeUI(window);
+      }
+    }
   }
 
   public static <T> void doAsync(Callable<T> onBackground,
