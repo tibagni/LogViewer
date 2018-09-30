@@ -164,4 +164,8 @@ public final class SwingUtils {
 
     return text;
   }
+
+  public static Color changeColorAlpha(Color source, int alpha) {
+    return new Color(source.getRed(), source.getGreen(), source.getBlue(), alpha);
+  }
 }

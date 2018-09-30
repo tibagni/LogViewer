@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,6 +25,13 @@ public class FilterCellRenderer extends DefaultListCellRenderer {
 
     Component renderComponent = super.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
     renderComponent.setForeground(filter.getColor());
+
+    // Since our filters have their own colors as foreground, add a little alpha to selection background
+    // so filter text is still easy to visualize
+    if (isSelected) {
+      Color selectedBgColor = SwingUtils.changeColorAlpha(list.getSelectionBackground(), 60);
+      renderComponent.setBackground(selectedBgColor);
+    }
     return renderComponent;
   }
 }

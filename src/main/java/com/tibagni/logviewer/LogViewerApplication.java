@@ -39,7 +39,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
     String lookAndFeel = LogViewerPreferences.getInstance().getLookAndFeel();
     if (lookNFeelProvider.getByClass(lookAndFeel) == null) {
-      lookAndFeel = lookNFeelProvider.getAvailableLookNFeels().get(0).getCls();
+      lookAndFeel = lookNFeelProvider.getDefaultLookNFeel().getCls();
     }
 
     if (!StringUtils.isEmpty(lookAndFeel)) {

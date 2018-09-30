@@ -42,10 +42,16 @@ public class LookNFeelProvider {
       "com.jtattoo.plaf.acryl.AcrylLookAndFeel", true));
     availableLookNFeels.add(new LookNFeel("Aero","Aero",
         "com.jtattoo.plaf.aero.AeroLookAndFeel", true));
+    availableLookNFeels.add(new LookNFeel("Comfort","Comfort",
+        "com.tibagni.logviewer.lookandfeel.ComfortLookAndFeel", true));
     availableLookNFeels.add(new LookNFeel("HiFi",
         "HiFi (Dark)", "com.jtattoo.plaf.hifi.HiFiLookAndFeel", true));
     availableLookNFeels.add(new LookNFeel("Noire", "Noire (Dark)",
         "com.jtattoo.plaf.noire.NoireLookAndFeel", true));
+  }
+
+  public LookNFeel getDefaultLookNFeel() {
+    return getByName("Comfort");
   }
 
   public List<LookNFeel> getAvailableLookNFeels() {

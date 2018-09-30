@@ -89,9 +89,7 @@
                 <children>
                   <component id="464fe" class="com.tibagni.logviewer.util.ReorderableList" binding="filtersList">
                     <constraints/>
-                    <properties>
-                      <selectionBackground color="-1315861"/>
-                    </properties>
+                    <properties/>
                   </component>
                 </children>
               </scrollpane>
