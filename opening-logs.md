@@ -5,8 +5,8 @@ layout: default
 # Opening Logs
 To open a new set of logs, you have 2 options:
 
-## Open logs dialog
-Click on the 'Open Logs...' button
+## Open logs menu
+Choose 'Logs > Open Logs' from the toolbar menu
 
 ![Open Button](images/OpenLogs.png)
 
