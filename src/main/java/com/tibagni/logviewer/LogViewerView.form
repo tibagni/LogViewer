@@ -76,26 +76,7 @@
                 </constraints>
                 <properties/>
                 <border type="none"/>
-                <children>
-                  <component id="ff075" class="javax.swing.JButton" binding="saveFilterBtn">
-                    <constraints/>
-                    <properties>
-                      <actionCommand value="Save"/>
-                      <icon value="Icons/save_file.png"/>
-                      <text value=""/>
-                      <toolTipText value="Save your filters to disk"/>
-                    </properties>
-                  </component>
-                  <component id="1f89b" class="javax.swing.JButton" binding="openFilterBtn">
-                    <constraints/>
-                    <properties>
-                      <actionCommand value="Open"/>
-                      <icon value="Icons/open_file.png"/>
-                      <text value=""/>
-                      <toolTipText value="Load filters from disk"/>
-                    </properties>
-                  </component>
-                </children>
+                <children/>
               </grid>
               <scrollpane id="85e2a">
                 <constraints>
@@ -125,8 +106,7 @@
                     <constraints/>
                     <properties>
                       <actionCommand value="Add"/>
-                      <icon value="Icons/plus.png"/>
-                      <text value=""/>
+                      <text value="+"/>
                     </properties>
                   </component>
                   <component id="b8415" class="javax.swing.JButton" binding="applyFiltersBtn">
@@ -134,7 +114,6 @@
                     <properties>
                       <actionCommand value="Apply"/>
                       <enabled value="false"/>
-                      <icon value="Icons/tick.png"/>
                       <text value="Apply"/>
                       <toolTipText value="Apply the selected filters to the text"/>
                     </properties>
@@ -145,30 +124,6 @@
           </grid>
         </children>
       </splitpane>
-      <component id="b7d87" class="javax.swing.JButton" binding="openLogsBtn">
-        <constraints>
-          <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <borderPainted value="true"/>
-          <contentAreaFilled value="true"/>
-          <focusPainted value="true"/>
-          <icon value="Icons/open_file.png"/>
-          <text value="Open Logs..."/>
-        </properties>
-      </component>
-      <component id="8e9cb" class="javax.swing.JButton" binding="menuBtn">
-        <constraints>
-          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <borderPainted value="true"/>
-          <focusPainted value="true"/>
-          <icon value="Icons/menu.png"/>
-          <opaque value="true"/>
-          <text value=""/>
-        </properties>
-      </component>
       <component id="c3fa7" class="javax.swing.JLabel" binding="currentLogsLbl">
         <constraints>
           <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>

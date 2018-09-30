@@ -1,12 +1,20 @@
 package com.tibagni.logviewer.lookandfeel;
 
 public class LookNFeel {
+  private final String systemName;
   private final String name;
   private final String cls;
+  private final boolean canSetTheme;
 
-  public LookNFeel(String name, String cls) {
+  LookNFeel(String systemName, String name, String cls, boolean canSetTheme) {
     this.name = name;
     this.cls = cls;
+    this.systemName = systemName;
+    this.canSetTheme = canSetTheme;
+  }
+
+  String getSystemName() {
+    return systemName;
   }
 
   public String getName() {
@@ -15,6 +23,10 @@ public class LookNFeel {
 
   public String getCls() {
     return cls;
+  }
+
+  public boolean canSetTheme() {
+    return canSetTheme;
   }
 
   @Override

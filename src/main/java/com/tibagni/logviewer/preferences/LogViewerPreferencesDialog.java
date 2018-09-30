@@ -74,12 +74,9 @@ public class LogViewerPreferencesDialog extends JDialog {
     List<LookNFeel> lookAndFeels = lnfProvider.getAvailableLookNFeels();
 
     String currLnf = UIManager.getLookAndFeel().getName();
-    LookNFeel selectedItem = null;
+    LookNFeel selectedItem = lnfProvider.getBySystemName(currLnf);
     for (LookNFeel lnf : lookAndFeels) {
       lookAndFeelCbx.addItem(lnf);
-      if (currLnf != null && currLnf.equals(lnf.getName())) {
-        selectedItem = lnf;
-      }
     }
 
     if (selectedItem != null) {

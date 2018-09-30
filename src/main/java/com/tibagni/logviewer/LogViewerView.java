@@ -17,6 +17,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.stream.IntStream;
 
 public class LogViewerView implements LogViewer.View {
@@ -25,14 +28,10 @@ public class LogViewerView implements LogViewer.View {
   private JTable logList;
   private JPanel mainPanel;
   private JTable filteredLogList;
-  private JButton saveFilterBtn;
   private JButton addNewFilterBtn;
-  private JButton openFilterBtn;
   private ReorderableList<Filter> filtersList;
   private JButton applyFiltersBtn;
-  private JButton openLogsBtn;
   private JSplitPane logsPane;
-  private JButton menuBtn;
   private JLabel currentLogsLbl;
 
   private final LogViewer.Presenter presenter;
@@ -43,13 +42,13 @@ public class LogViewerView implements LogViewer.View {
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
   private JFrame parent;
-  private JPopupMenu optionsMenu;
 
   final private LogViewerPreferences userPrefs;
 
   private static final String UNSAVED_INDICATOR = " (*)";
 
   public LogViewerView(JFrame parent, LogViewerApplication application) {
+    configureMenuBar(parent);
     this.application = application;
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
@@ -86,17 +85,67 @@ public class LogViewerView implements LogViewer.View {
 
     applyFiltersBtn.addActionListener(e -> applySelectedFilters());
 
-    openLogsBtn.addActionListener(e -> openLogs());
-    saveFilterBtn.addActionListener(e -> saveFilter());
-    openFilterBtn.addActionListener(e -> openFilter());
-
-    menuBtn.addActionListener(e -> showOptionsMenu());
-
-    optionsMenu = new JPopupMenu();
-    setupOptionsMenu();
-
     // Configure file drop
     new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
+  }
+
+  private void configureMenuBar(JFrame frame) {
+    ImageIcon newWindowIcon = SwingUtils
+        .getIconFromResource(this, "Icons/new_window.png");
+    ImageIcon settingsIcon = SwingUtils
+        .getIconFromResource(this, "Icons/settings.png");
+    ImageIcon saveIcon = SwingUtils
+        .getIconFromResource(this, "Icons/save_file.png");
+    ImageIcon openIcon = SwingUtils
+        .getIconFromResource(this, "Icons/open_file.png");
+
+    JMenuBar menuBar = new JMenuBar();
+
+    JMenu fileMenu = new JMenu("File");
+    fileMenu.setMnemonic('F');
+
+    JMenuItem newWindowItem = new JMenuItem("New Window", newWindowIcon);
+    newWindowItem.setMnemonic('N');
+    newWindowItem.addActionListener(e -> openNewWindow());
+    fileMenu.add(newWindowItem);
+    JMenuItem settingsItem = new JMenuItem("Settings", settingsIcon);
+    settingsItem.setMnemonic('S');
+    settingsItem.addActionListener(e -> openUserPreferences());
+    fileMenu.add(settingsItem);
+    menuBar.add(fileMenu);
+
+    JMenu logsMenu = new JMenu("Logs");
+    JMenuItem openLogsItem = new JMenuItem("Open Logs...", openIcon);
+    openLogsItem.addActionListener(e -> openLogs());
+    logsMenu.add(openLogsItem);
+    menuBar.add(logsMenu);
+
+    JMenu filtersMenu = new JMenu("Filter");
+    JMenuItem openFilterItem = new JMenuItem("Open Filter...", openIcon);
+    openFilterItem.addActionListener(e -> openFilter());
+    JMenuItem saveFilterItem = new JMenuItem("Save Filter...", saveIcon);
+    saveFilterItem.addActionListener(e -> saveFilter());
+    filtersMenu.add(openFilterItem);
+    filtersMenu.add(saveFilterItem);
+    menuBar.add(filtersMenu);
+
+    JMenu helpMenu = new JMenu("Help");
+    JMenuItem aboutItem = new JMenuItem("About");
+    JMenuItem onlineHelpItem = new JMenuItem("User Guide");
+    onlineHelpItem.addActionListener(e -> openUserGuide());
+    helpMenu.add(aboutItem);
+    helpMenu.add(onlineHelpItem);
+    menuBar.add(helpMenu);
+
+    frame.setJMenuBar(menuBar);
+  }
+
+  private void openUserGuide() {
+    try {
+      Desktop.getDesktop().browse(new URL("https://tibagni.github.io/LogViewer/").toURI());
+    } catch (IOException | URISyntaxException e) {
+      Logger.error("Failed to open online help", e);
+    }
   }
 
   JPanel getContentPane() {
@@ -124,8 +173,7 @@ public class LogViewerView implements LogViewer.View {
         currentLogsLbl,
         "Logs path:",
         logsPath,
-        mainPanel.getWidth(),
-        menuBtn,  openLogsBtn);
+        mainPanel.getWidth());
 
     currentLogsLbl.setText(text);
   }
@@ -350,34 +398,11 @@ public class LogViewerView implements LogViewer.View {
     filteredLogList = new JTable(filteredLogListTableModel);
   }
 
-  private void setupOptionsMenu() {
-    ImageIcon newWindowIcon = SwingUtils.getIconFromResource(this, "Icons/new_window.png");
-    String newWindowText = "New Log Viewer Window";
-    JMenuItem newWindow = new JMenuItem(newWindowText, newWindowIcon);
-    newWindow.getAccessibleContext().setAccessibleDescription(newWindowText);
-    newWindow.addActionListener(e -> openNewWindow());
-
-    ImageIcon settingsIcon = SwingUtils.getIconFromResource(this, "Icons/settings.png");
-    String settingsText = "Settings";
-    JMenuItem settings = new JMenuItem(settingsText, settingsIcon);
-    settings.getAccessibleContext().setAccessibleDescription(settingsText);
-    settings.addActionListener(e -> openUserPreferences());
-
-    optionsMenu.add(newWindow);
-    optionsMenu.add(settings);
-  }
-
   private void openNewWindow() {
     application.newLogViewerWindow();
   }
 
-  private void showOptionsMenu() {
-    optionsMenu.setInvoker(menuBtn);
-    optionsMenu.setLocation(menuBtn.getLocationOnScreen());
-    optionsMenu.setVisible(true);
-  }
-
   private void openUserPreferences() {
-    LogViewerPreferencesDialog.showPreferencesDialog(menuBtn);
+    LogViewerPreferencesDialog.showPreferencesDialog(null);
   }
 }

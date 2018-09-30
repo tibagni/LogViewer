@@ -2,6 +2,7 @@ package com.tibagni.logviewer.lookandfeel;
 
 import com.tibagni.logviewer.logger.Logger;
 
+import javax.swing.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -22,10 +23,29 @@ public class LookNFeelProvider {
   }
 
   private void init() {
-    availableLookNFeels.add(new LookNFeel("Acryl", "com.jtattoo.plaf.acryl.AcrylLookAndFeel"));
-    availableLookNFeels.add(new LookNFeel("Aero", "com.jtattoo.plaf.aero.AeroLookAndFeel"));
-    availableLookNFeels.add(new LookNFeel("HiFi (Dark)", "com.jtattoo.plaf.hifi.HiFiLookAndFeel"));
-    availableLookNFeels.add(new LookNFeel("Noire (Dark)", "com.jtattoo.plaf.noire.NoireLookAndFeel"));
+    // First add the system Look And Feels
+    addStockLookAndFeels();
+
+    // Then add some other Look nd Feels from JTatoo
+    addCustomLookAndFeels();
+  }
+
+  private void addStockLookAndFeels() {
+    for (UIManager.LookAndFeelInfo lnf : UIManager.getInstalledLookAndFeels()) {
+      availableLookNFeels.add(new LookNFeel(lnf.getName(),
+          lnf.getName(), lnf.getClassName(), false));
+    }
+  }
+
+  private void addCustomLookAndFeels() {
+    availableLookNFeels.add(new LookNFeel("Acryl","Acryl",
+      "com.jtattoo.plaf.acryl.AcrylLookAndFeel", true));
+    availableLookNFeels.add(new LookNFeel("Aero","Aero",
+        "com.jtattoo.plaf.aero.AeroLookAndFeel", true));
+    availableLookNFeels.add(new LookNFeel("HiFi",
+        "HiFi (Dark)", "com.jtattoo.plaf.hifi.HiFiLookAndFeel", true));
+    availableLookNFeels.add(new LookNFeel("Noire", "Noire (Dark)",
+        "com.jtattoo.plaf.noire.NoireLookAndFeel", true));
   }
 
   public List<LookNFeel> getAvailableLookNFeels() {
@@ -37,6 +57,16 @@ public class LookNFeelProvider {
   public LookNFeel getByName(String name) {
     for (LookNFeel lnf : availableLookNFeels) {
       if (lnf.getName().equals(name)) {
+        return lnf;
+      }
+    }
+
+    return null;
+  }
+
+  public LookNFeel getBySystemName(String name) {
+    for (LookNFeel lnf : availableLookNFeels) {
+      if (lnf.getSystemName().equals(name)) {
         return lnf;
       }
     }
@@ -56,7 +86,9 @@ public class LookNFeelProvider {
 
   public void applyTheme(LookNFeel lookNFeel) {
     Properties props = new Properties();
-    props.put("logoString", "Log Viewer");
+    props.put("logoString", "");
+
+    if (!lookNFeel.canSetTheme()) return;
 
     try {
       Class<?> lookNFeelClass = Class.forName(lookNFeel.getCls());
