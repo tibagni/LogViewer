@@ -59,7 +59,9 @@ public class ComfortLookAndFeel extends GraphiteLookAndFeel {
     @Override
     public void setUpColor() {
       super.setUpColor();
-      inputBackgroundColor = new ColorUIResource(235, 235, 235);
+      backgroundColor = new ColorUIResource(200, 200, 200);
+      inputBackgroundColor = new ColorUIResource(225, 225, 225);
+      disabledBackgroundColor = backgroundColor;
     }
   }
 }

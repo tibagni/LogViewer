@@ -51,7 +51,7 @@ public class LookNFeelProvider {
   }
 
   public LookNFeel getDefaultLookNFeel() {
-    return getByName("Comfort");
+    return getByName("Acryl");
   }
 
   public List<LookNFeel> getAvailableLookNFeels() {
