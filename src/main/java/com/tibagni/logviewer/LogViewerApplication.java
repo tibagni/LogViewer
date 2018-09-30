@@ -1,26 +1,17 @@
 package com.tibagni.logviewer;
 
-import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
-import com.tibagni.logviewer.util.PropertiesWrapper;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
-import java.io.IOException;
 
 public class LogViewerApplication implements UpdateManager.UpdateListener {
-  private static final String APPLICATION_NAME = "Log Viewer";
-  private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/tibagni/LogViewer/releases/latest";
-
-  private static final String APP_PROPERTIES_FILE = "properties/app.properties";
-  private static final String VERSION_KEY = "version";
-
   private LogViewerApplication() { }
 
   public static void main(String[] args) {
@@ -61,19 +52,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private String getApplicationTitle() {
-    return APPLICATION_NAME + " v" + getCurrentVersion();
-  }
-
-  private String getCurrentVersion() {
-    String currentVersion = "unknown";
-    try {
-      PropertiesWrapper appProperties = new PropertiesWrapper(APP_PROPERTIES_FILE);
-      currentVersion = appProperties.get(VERSION_KEY);
-    } catch (IOException e) {
-      Logger.error("Failed to get current version", e);
-    }
-
-    return currentVersion;
+    return AppInfo.APPLICATION_NAME + " v" + AppInfo.getCurrentVersion();
   }
 
   private void watchLookAndFeelUpdates() {
@@ -93,12 +72,22 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private void startCheckingForUpdates() {
-    UpdateManager updateManager = new UpdateManager(LATEST_RELEASE_URL, getCurrentVersion());
-    updateManager.checkForUpdates(this);
+    UpdateManager updateManager = new UpdateManager(this);
+    updateManager.checkForUpdates();
   }
 
   @Override
-  public void onNewVersionFound(ReleaseInfo newRelease) {
+  public void onUpdateFound(ReleaseInfo newRelease) {
     UpdateAvailableDialog.showUpdateAvailableDialog(newRelease);
+  }
+
+  @Override
+  public void onUpToDate() {
+    // Do Nothing
+  }
+
+  @Override
+  public void onFailedToCheckForUpdate(Throwable tr) {
+    // Do nothing
   }
 }

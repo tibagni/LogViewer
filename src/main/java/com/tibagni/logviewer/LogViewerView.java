@@ -1,5 +1,6 @@
 package com.tibagni.logviewer;
 
+import com.tibagni.logviewer.about.AboutDialog;
 import com.tibagni.logviewer.filter.EditFilterDialog;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.FilterCellRenderer;
@@ -132,6 +133,7 @@ public class LogViewerView implements LogViewer.View {
     JMenu helpMenu = new JMenu("Help");
     JMenuItem aboutItem = new JMenuItem("About");
     JMenuItem onlineHelpItem = new JMenuItem("User Guide");
+    aboutItem.addActionListener(e -> AboutDialog.showAboutDialog());
     onlineHelpItem.addActionListener(e -> openUserGuide());
     helpMenu.add(aboutItem);
     helpMenu.add(onlineHelpItem);
@@ -142,7 +144,7 @@ public class LogViewerView implements LogViewer.View {
 
   private void openUserGuide() {
     try {
-      Desktop.getDesktop().browse(new URL("https://tibagni.github.io/LogViewer/").toURI());
+      Desktop.getDesktop().browse(new URL(AppInfo.USER_GUIDE_URL).toURI());
     } catch (IOException | URISyntaxException e) {
       Logger.error("Failed to open online help", e);
     }
