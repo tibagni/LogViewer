@@ -133,7 +133,7 @@ public class LogViewerView implements LogViewer.View {
     JMenu helpMenu = new JMenu("Help");
     JMenuItem aboutItem = new JMenuItem("About");
     JMenuItem onlineHelpItem = new JMenuItem("User Guide");
-    aboutItem.addActionListener(e -> AboutDialog.showAboutDialog());
+    aboutItem.addActionListener(e -> AboutDialog.showAboutDialog(parent));
     onlineHelpItem.addActionListener(e -> openUserGuide());
     helpMenu.add(aboutItem);
     helpMenu.add(onlineHelpItem);
@@ -405,6 +405,6 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void openUserPreferences() {
-    LogViewerPreferencesDialog.showPreferencesDialog(null);
+    LogViewerPreferencesDialog.showPreferencesDialog(parent);
   }
 }

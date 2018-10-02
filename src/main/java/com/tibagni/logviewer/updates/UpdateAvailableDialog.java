@@ -60,11 +60,14 @@ public class UpdateAvailableDialog extends JDialog {
     dispose();
   }
 
-
   public static void showUpdateAvailableDialog(ReleaseInfo latest) {
+    showUpdateAvailableDialog(null, latest);
+  }
+
+  public static void showUpdateAvailableDialog(Component relativeTo, ReleaseInfo latest) {
     UpdateAvailableDialog dialog = new UpdateAvailableDialog(latest);
     dialog.pack();
-    dialog.setLocationRelativeTo(null);
+    dialog.setLocationRelativeTo(relativeTo);
     dialog.setVisible(true);
   }
 }

@@ -32,7 +32,8 @@ public class LogViewerPreferencesDialog extends JDialog {
 
   private Map<String, Runnable> saveActions = new HashMap<>();
 
-  public LogViewerPreferencesDialog() {
+  public LogViewerPreferencesDialog(JFrame owner) {
+    super(owner);
     setContentPane(contentPane);
     setModal(true);
     getRootPane().setDefaultButton(buttonOK);
@@ -116,11 +117,11 @@ public class LogViewerPreferencesDialog extends JDialog {
     saveActions.put(LAST_FILTER_OPEN_ID, () -> userPrefs.setOpenLastFilter(isChecked));
   }
 
-  public static void showPreferencesDialog(Component relativeTo) {
-    LogViewerPreferencesDialog dialog = new LogViewerPreferencesDialog();
+  public static void showPreferencesDialog(JFrame parent) {
+    LogViewerPreferencesDialog dialog = new LogViewerPreferencesDialog(parent);
 
     dialog.pack();
-    dialog.setLocationRelativeTo(relativeTo);
+    dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
   }
 }

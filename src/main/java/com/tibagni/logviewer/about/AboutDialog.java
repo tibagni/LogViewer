@@ -24,7 +24,8 @@ public class AboutDialog extends JDialog {
 
   private UpdateManager updateManager;
 
-  public AboutDialog() {
+  public AboutDialog(JFrame owner) {
+    super(owner);
     setContentPane(contentPane);
     setModal(true);
     getRootPane().setDefaultButton(buttonOK);
@@ -96,13 +97,13 @@ public class AboutDialog extends JDialog {
 
   private void onUpdate(ReleaseInfo newRelease) {
     dispose();
-    UpdateAvailableDialog.showUpdateAvailableDialog(newRelease);
+    UpdateAvailableDialog.showUpdateAvailableDialog(getParent(), newRelease);
   }
 
-  public static void showAboutDialog() {
-    AboutDialog dialog = new AboutDialog();
+  public static void showAboutDialog(JFrame parent) {
+    AboutDialog dialog = new AboutDialog(parent);
     dialog.pack();
-    dialog.setLocationRelativeTo(null);
+    dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
   }
 }
