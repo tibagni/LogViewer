@@ -4,18 +4,19 @@ It allows you to analyze multiple log files at once and create (and apply) diffe
 
 Check out more details on https://tibagni.github.io/LogViewer/
 
+### Opening the project on IntelliJ
+Just open the project folder on IntelliJ or import it as a gradle project. We use Gradle to manage the dependencies but not for compile due to the dependencies on IntelliJ's form design.
+From a development standpoint, it is a gradle project. All the libraries should be declared in the project's gradle files. But the JAR file needs to be built using IntelliJ using the *LogViewer_main artifact* (Instructions on hot to make the JAR from IntelliJ below)
+
 ### Creating a JAR artifact from IntelliJ
 To create a JAR for LogViewer:
-- Create an artifact on IntelliJ (If not already created)
-  - Go to 'File > Project Structure > Artifacts' and click on '+' sign
-  - Select 'JAR > From modules with dependencies...'
-  - Select the module and Main class and keep 'extract to the target JAR' option selected
-  - *Note*: It might be necessary to remove 'src/main/java/META-INF/MANIFEST.MF' first
-  - Make sure all libraries are included (Note: It will be necessary to update the artifact when a new gradle dependency is added)
-  - Make sure resources folder is included. If not include it manually
-    - Click on '+' sign and select 'Directory content'
-    -  Choose the Resources folder (src/main/resources)
-- Make a Jar release with _makeReleaseFromArtifact_ script
+- Build an artifact
+  - Go to 'Build > Build Artifacts...'
+  - Choose LogViewer_main:jar (Should be the only one)
+  - Select 'Rebuild' action
+  - *Note*: make sure to include any new library or resource folder to the artifact if that's the case
+    - Note: Extract the libraries to the artifact (This way there is no need to change the MANIFEST file)
+- Make a Jar release with _makeReleaseFromArtifact_ script (This will add the MANIFEST file to the release jar)
   - run _makeReleaseFromArtifact.sh <path_to_artifact.jar>_
 
 ### Increasing app version
@@ -24,6 +25,9 @@ To increase app version, change it on _app.properties_
 
 ### Making a stand alone bundle
 Run _makeBundle.sh <path_to_release_jar>_ to create a standalone java Bundle (.dmg). It is possible to create bundles for other platforms changing the _-native_ param passed to _javapackager_ inside the script. The script will read _app.properties_ to set the bundle version.
+
+### Running tests
+On IntelliJ, right click on 'test' folder (it is under 'src/test') and select "Run 'All Tests'"
 
 # License
 ```
