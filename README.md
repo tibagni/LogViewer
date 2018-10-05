@@ -18,13 +18,12 @@ To create a JAR for LogViewer:
     - Note: Extract the libraries to the artifact (This way there is no need to change the MANIFEST file)
 - Make a Jar release with _makeReleaseFromArtifact_ script (This will add the MANIFEST file to the release jar)
   - run _makeReleaseFromArtifact.sh <path_to_artifact.jar>_
+  - If [jar2app](https://github.com/tibagni/jar2app) is installed, a Mac OS _.app_ will also be generated
+  - Final release (Both .jar and .app) will be available at out/release
 
 ### Increasing app version
 To increase app version, change it on _app.properties_
 * _app.properties_ - This file is located on _src/main/resources/properties/app.properties_ and there is a symbolik link for it on root folder to make it easier to access
-
-### Making a stand alone bundle
-Run _makeBundle.sh <path_to_release_jar>_ to create a standalone java Bundle (.dmg). It is possible to create bundles for other platforms changing the _-native_ param passed to _javapackager_ inside the script. The script will read _app.properties_ to set the bundle version.
 
 ### Running tests
 On IntelliJ, right click on 'test' folder (it is under 'src/test') and select "Run 'All Tests'"
