@@ -11,6 +11,7 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
+import com.tibagni.logviewer.view.Toast;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -219,6 +220,16 @@ public class LogViewerView implements LogViewer.View {
   @Override
   public void finish() {
     parent.dispose();
+  }
+
+  @Override
+  public void showNavigationNextOver() {
+    Toast.showToast(parent, StringUtils.LEFT_ARROW_WITH_HOOK, Toast.LENGTH_SHORT);
+  }
+
+  @Override
+  public void showNavigationPrevOver() {
+    Toast.showToast(parent, StringUtils.RIGHT_ARROW_WITH_HOOK, Toast.LENGTH_SHORT);
   }
 
   private void setupFiltersContextActions() {

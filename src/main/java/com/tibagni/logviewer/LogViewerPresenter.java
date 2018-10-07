@@ -100,7 +100,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public int getNextFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
-    if (filterIndex < 0) {
+    if (filterIndex < 0 || filteredLogs.length == 0) {
       return -1;
     }
 
@@ -113,9 +113,16 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     Filter filter = filters.get(filterIndex);
-    for (int i = firstLogIndexSearch + 1; i < filteredLogs.length; i++) {
-      if (filter.appliesTo(filteredLogs[i].getLogText())) {
-        return i;
+    int startSearch = firstLogIndexSearch + 1;
+    int endSearch = filteredLogs.length;
+
+    for (int i = startSearch; i <= endSearch; i++) {
+      int index = i % filteredLogs.length;
+      if (filter.appliesTo(filteredLogs[index].getLogText())) {
+        if (index < firstLogIndexSearch) {
+          view.showNavigationNextOver();
+        }
+        return index;
       }
     }
 
@@ -124,7 +131,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public int getPrevFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
-    if (filterIndex < 0) {
+    if (filterIndex < 0 || filteredLogs.length == 0) {
       return -1;
     }
 
@@ -137,9 +144,16 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     Filter filter = filters.get(filterIndex);
-    for (int i = firstLogIndexSearch - 1; i >= 0; i--) {
-      if (filter.appliesTo(filteredLogs[i].getLogText())) {
-        return i;
+    int startSearch = firstLogIndexSearch < 0 ? firstLogIndexSearch : firstLogIndexSearch - 1;
+    int endSearch = startSearch - filteredLogs.length;
+
+    for (int i = startSearch; i >= endSearch; i--) {
+      int index = i >= 0 ? i : (filteredLogs.length + i);
+      if (filter.appliesTo(filteredLogs[index].getLogText())) {
+        if (index > firstLogIndexSearch && firstLogIndexSearch >= 0) {
+          view.showNavigationPrevOver();
+        }
+        return index;
       }
     }
 
@@ -340,5 +354,14 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     return false;
+  }
+
+  // Test helpers
+  void setFilteredLogsForTesting(LogEntry[] filteredLogs) {
+    this.filteredLogs = filteredLogs;
+  }
+
+  void setFiltersForTesting(List<Filter> filters) {
+    this.filters.addAll(filters);
   }
 }

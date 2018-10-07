@@ -9,6 +9,9 @@ public class StringUtils {
   public static final String LEFT_ARROW = "\u2190";
   public static final String VERTICAL_SEPARATOR = "\u2759";
 
+  public static final String LEFT_ARROW_WITH_HOOK = "\u21A9";
+  public static final String RIGHT_ARROW_WITH_HOOK = "\u21AA";
+
   public static boolean isEmpty(String str) {
     return str == null || str.trim().length() == 0;
   }

@@ -36,6 +36,8 @@ public class LogViewer {
     UserSelection showAskToSaveFilterDialog();
     void showSaveFilter();
     void finish();
+    void showNavigationNextOver();
+    void showNavigationPrevOver();
   }
 
   public interface Presenter {
