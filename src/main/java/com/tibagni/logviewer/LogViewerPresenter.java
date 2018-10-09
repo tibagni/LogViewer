@@ -114,7 +114,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     Filter filter = filters.get(filterIndex);
     int startSearch = firstLogIndexSearch + 1;
-    int endSearch = filteredLogs.length;
+    int endSearch = startSearch + filteredLogs.length;
 
     for (int i = startSearch; i <= endSearch; i++) {
       int index = i % filteredLogs.length;

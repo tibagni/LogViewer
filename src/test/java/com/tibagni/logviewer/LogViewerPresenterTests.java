@@ -437,6 +437,45 @@ public class LogViewerPresenterTests {
   }
 
   @Test
+  public void testNavigateNextMultipleFilters2() throws FilterException {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp)
+    });
+
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("name", "ABCDeF", Color.black));
+    presenter.setFiltersForTesting(filters);
+
+    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    assertEquals(2, actual);
+    verify(view, never()).showNavigationNextOver();
+
+    actual = presenter.getNextFilteredLogForFilter(0, 2);
+    assertEquals(3, actual);
+    verify(view, never()).showNavigationNextOver();
+
+    actual = presenter.getNextFilteredLogForFilter(0, 3);
+    assertEquals(5, actual);
+    verify(view, never()).showNavigationNextOver();
+
+    actual = presenter.getNextFilteredLogForFilter(0, 5);
+    assertEquals(2, actual);
+    verify(view, times(1)).showNavigationNextOver();
+  }
+
+  @Test
   public void testNavigatePrevSingleFilter() throws FilterException {
     LogTimestamp timestamp = new LogTimestamp(10,
         12,
@@ -512,6 +551,45 @@ public class LogViewerPresenterTests {
 
     actual = presenter.getPrevFilteredLogForFilter(0, 0);
     assertEquals(5, actual);
+    verify(view, times(1)).showNavigationPrevOver();
+  }
+
+  @Test
+  public void testNavigatePrevMultipleFilters2() throws FilterException {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABDeF log Test Log", LogLevel.INFO, timestamp),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp)
+    });
+
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("name", "ABCDeF", Color.black));
+    presenter.setFiltersForTesting(filters);
+
+    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    assertEquals(3, actual);
+    verify(view, never()).showNavigationPrevOver();
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 3);
+    assertEquals(2, actual);
+    verify(view, never()).showNavigationPrevOver();
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    assertEquals(0, actual);
+    verify(view, never()).showNavigationPrevOver();
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 0);
+    assertEquals(3, actual);
     verify(view, times(1)).showNavigationPrevOver();
   }
 }
