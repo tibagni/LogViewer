@@ -112,11 +112,13 @@ public class LogViewerView implements LogViewer.View {
     fileMenu.setMnemonic('F');
 
     JMenuItem newWindowItem = new JMenuItem("New Window", newWindowIcon);
-    newWindowItem.setMnemonic('N');
+    newWindowItem.setAccelerator(KeyStroke.getKeyStroke(
+        KeyEvent.VK_N, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
     newWindowItem.addActionListener(e -> openNewWindow());
     fileMenu.add(newWindowItem);
     JMenuItem settingsItem = new JMenuItem("Settings", settingsIcon);
-    settingsItem.setMnemonic('S');
+    settingsItem.setAccelerator(KeyStroke.getKeyStroke(
+        KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
     settingsItem.addActionListener(e -> openUserPreferences());
     fileMenu.add(settingsItem);
     menuBar.add(fileMenu);
@@ -131,6 +133,8 @@ public class LogViewerView implements LogViewer.View {
     JMenuItem openFilterItem = new JMenuItem("Open Filter...", openIcon);
     openFilterItem.addActionListener(e -> openFilter());
     JMenuItem saveFilterItem = new JMenuItem("Save Filter...", saveIcon);
+    saveFilterItem.setAccelerator(KeyStroke.getKeyStroke(
+        KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
     saveFilterItem.addActionListener(e -> saveFilter());
     filtersMenu.add(openFilterItem);
     filtersMenu.add(saveFilterItem);
