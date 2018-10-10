@@ -65,12 +65,17 @@ public class LogViewerView implements LogViewer.View {
       }
     });
 
-    logFileChooser = new JFileChooserExt(FileSystemView.getFileSystemView().getHomeDirectory());
+    logFileChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
     filterFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
     userPrefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
       @Override
       public void onDefaultFiltersPathChanged() {
         filterFileChooser.setCurrentDirectory(userPrefs.getDefaultFiltersPath());
+      }
+
+      @Override
+      public void onDefaultLogsPathChanged() {
+        logFileChooser.setCurrentDirectory(userPrefs.getDefaultLogsPath());
       }
     });
 

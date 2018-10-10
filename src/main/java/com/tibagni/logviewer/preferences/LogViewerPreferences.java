@@ -15,6 +15,7 @@ public class LogViewerPreferences {
   private static final String FILTERS_PATH = "filters_path";
   private static final String LAST_FILTER_PATH = "last_filter_path";
   private static final String OPEN_LAST_FILTER = "open_last_filter";
+  private static final String LOGS_PATH = "logs_path";
   private static final String LOOK_AND_FEEL = "look_and_feel";
 
   private LogViewerPreferences() {
@@ -48,6 +49,7 @@ public class LogViewerPreferences {
     preferences.put(FILTERS_PATH, defaultFolder.getAbsolutePath());
     listeners.forEach(l -> l.onDefaultFiltersPathChanged());
   }
+
   public File getLastFilterPath() {
     String path = preferences.get(LAST_FILTER_PATH, null);
     return path != null ? new File(path) : null;
@@ -61,6 +63,18 @@ public class LogViewerPreferences {
   public void setOpenLastFilter(boolean openLastFilter) {
     preferences.putBoolean(OPEN_LAST_FILTER, openLastFilter);
     listeners.forEach(l -> l.onOpenLastFilterChanged());
+  }
+
+  public File getDefaultLogsPath() {
+    String path = preferences.get(LOGS_PATH, null);
+
+    return path != null ? new File(path) :
+        FileSystemView.getFileSystemView().getHomeDirectory();
+  }
+
+  public void setDefaultLogsPath(File defaultFolder) {
+    preferences.put(LOGS_PATH, defaultFolder.getAbsolutePath());
+    listeners.forEach(l -> l.onDefaultLogsPathChanged());
   }
 
   public boolean shouldOpenLastFilter() {
@@ -81,6 +95,7 @@ public class LogViewerPreferences {
     void onDefaultFiltersPathChanged();
     void onLastFilterPathChanged();
     void onOpenLastFilterChanged();
+    void onDefaultLogsPathChanged();
   }
 
   public static abstract class Adapter implements Listener {
@@ -88,5 +103,6 @@ public class LogViewerPreferences {
     @Override public void onDefaultFiltersPathChanged() { }
     @Override public void onLastFilterPathChanged() { }
     @Override public void onOpenLastFilterChanged() { }
+    @Override public void onDefaultLogsPathChanged() { }
   }
 }

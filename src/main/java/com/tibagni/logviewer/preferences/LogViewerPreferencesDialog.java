@@ -5,7 +5,6 @@ import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.util.JFileChooserExt;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -17,6 +16,7 @@ import java.util.Map;
 public class LogViewerPreferencesDialog extends JDialog {
   private static final String FILTER_PATH_PREF_ID = "filter_path";
   private static final String LAST_FILTER_OPEN_ID = "open_last_filter";
+  private static final String LOG_PATH_PREF_ID = "log_path";
   private static final String LOOK_FEEL_PREF_ID = "look_and_feel";
 
   private JPanel contentPane;
@@ -26,8 +26,11 @@ public class LogViewerPreferencesDialog extends JDialog {
   private JTextField filtersPathTxt;
   private JButton filtersPathBtn;
   private JCheckBox openLastFilterChbx;
+  private JTextField logsPathTxt;
+  private JButton logsPathBtn;
 
-  private JFileChooser folderChooser;
+  private JFileChooser filterFolderChooser;
+  private JFileChooser logsFolderChooser;
   private final LogViewerPreferences userPrefs;
 
   private Map<String, Runnable> saveActions = new HashMap<>();
@@ -43,6 +46,7 @@ public class LogViewerPreferencesDialog extends JDialog {
     buttonCancel.addActionListener(e -> onCancel());
 
     initFiltersPathPreference();
+    initLogsPathPreference();
     initLookAndFeelPreference();
 
     // call onCancel() when cross is clicked
@@ -60,14 +64,22 @@ public class LogViewerPreferencesDialog extends JDialog {
   }
 
   private void initFiltersPathPreference() {
-    folderChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
-    folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    filterFolderChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
+    filterFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
     filtersPathBtn.addActionListener(e -> onSelectFilterPath());
     filtersPathTxt.setText(userPrefs.getDefaultFiltersPath().getAbsolutePath());
 
     openLastFilterChbx.addActionListener(e -> onOpenLastFilterChanged());
     openLastFilterChbx.setSelected(userPrefs.shouldOpenLastFilter());
+  }
+
+  private void initLogsPathPreference() {
+    logsFolderChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
+    logsFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+    logsPathBtn.addActionListener(e -> onSelectLogsPath());
+    logsPathTxt.setText(userPrefs.getDefaultLogsPath().getAbsolutePath());
   }
 
   private void initLookAndFeelPreference() {
@@ -103,12 +115,22 @@ public class LogViewerPreferencesDialog extends JDialog {
   }
 
   private void onSelectFilterPath() {
-    int selectedOption = folderChooser.showOpenDialog(this);
+    int selectedOption = filterFolderChooser.showOpenDialog(this);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      File selectedFolder = folderChooser.getSelectedFile();
+      File selectedFolder = filterFolderChooser.getSelectedFile();
       filtersPathTxt.setText(selectedFolder.getAbsolutePath());
       saveActions.put(FILTER_PATH_PREF_ID,
           () -> userPrefs.setDefaultFiltersPath(selectedFolder));
+    }
+  }
+
+  private void onSelectLogsPath() {
+    int selectedOption = logsFolderChooser.showOpenDialog(this);
+    if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      File selectedFolder = logsFolderChooser.getSelectedFile();
+      logsPathTxt.setText(selectedFolder.getAbsolutePath());
+      saveActions.put(LOG_PATH_PREF_ID,
+          () -> userPrefs.setDefaultLogsPath(selectedFolder));
     }
   }
 
