@@ -1,5 +1,6 @@
 package com.tibagni.logviewer;
 
+import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
@@ -29,7 +30,9 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   private void initLookAndFeel() {
     LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
     String lookAndFeel = LogViewerPreferences.getInstance().getLookAndFeel();
-    if (lookNFeelProvider.getByClass(lookAndFeel) == null) {
+    if (!StringUtils.isEmpty(lookAndFeel) &&
+        lookNFeelProvider.getByClass(lookAndFeel) == null) {
+      Logger.debug(lookAndFeel + " not found. Fallback to default...");
       lookAndFeel = lookNFeelProvider.getDefaultLookNFeel().getCls();
     }
 
