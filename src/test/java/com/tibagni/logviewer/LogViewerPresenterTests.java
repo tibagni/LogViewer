@@ -4,6 +4,7 @@ import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.FilterException;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLevel;
+import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.LogTimestamp;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import org.junit.Before;
@@ -591,5 +592,254 @@ public class LogViewerPresenterTests {
     actual = presenter.getPrevFilteredLogForFilter(0, 0);
     assertEquals(3, actual);
     verify(view, times(1)).showNavigationPrevOver();
+  }
+
+  @Test
+  public void testAllowedStreamsSetNotAllowed() {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp, "radio"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "events"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp, "main")
+    });
+    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
+    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
+    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
+    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
+    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+
+    presenter.setStreamAllowed(LogStream.MAIN, false);
+
+    ArgumentCaptor<LogEntry[]> argument = ArgumentCaptor.forClass(LogEntry[].class);
+    verify(view).showFilteredLogs(argument.capture());
+
+    LogEntry[] filteredLogs = argument.getValue();
+    assertEquals(1, filteredLogs.length);
+  }
+
+  @Test
+  public void testAllowedStreamsSetAllowed() {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp, "radio"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "events"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp, "main")
+    });
+    presenter.setStreamAllowedForTesting(LogStream.MAIN, false);
+    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
+    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
+    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
+    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+
+    presenter.setStreamAllowed(LogStream.MAIN, true);
+
+    ArgumentCaptor<LogEntry[]> argument = ArgumentCaptor.forClass(LogEntry[].class);
+    verify(view).showFilteredLogs(argument.capture());
+
+    LogEntry[] filteredLogs = argument.getValue();
+    assertEquals(3, filteredLogs.length);
+  }
+
+  @Test
+  public void testNavigateNextMultipleFiltersWithAllowedStreams() throws FilterException {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "events"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+    });
+
+    // This will make the filtered logs shown in UI to have only 3 entries
+    // (2 for main and 1 for system)
+    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
+    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
+    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
+    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
+    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("name", "ABCDeF", Color.black));
+    presenter.setFiltersForTesting(filters);
+
+    // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+
+    // So we need to test the indices based on the above array, not the original one
+
+    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    assertEquals(0, actual);
+
+    actual = presenter.getNextFilteredLogForFilter(0, 0);
+    assertEquals(1, actual);
+
+    actual = presenter.getNextFilteredLogForFilter(0, 1);
+    assertEquals(2, actual);
+  }
+
+  @Test
+  public void testNavigateNextMultipleFiltersWithAllowedStreams2() throws FilterException {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABeF log Test Log", LogLevel.INFO, timestamp, "main"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "events"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+    });
+
+    // This will make the filtered logs shown in UI to have only 3 entries
+    // (2 for main and 1 for system)
+    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
+    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
+    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
+    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
+    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("name", "ABCDeF", Color.black));
+    presenter.setFiltersForTesting(filters);
+
+    // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABeF log Test Log", LogLevel.INFO, timestamp, "main"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+
+    // So we need to test the indices based on the above array, not the original one
+
+    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    assertEquals(1, actual);
+
+    actual = presenter.getNextFilteredLogForFilter(0, 1);
+    assertEquals(2, actual);
+  }
+
+  @Test
+  public void testNavigatePrevMultipleFiltersWithAllowedStreams() throws FilterException {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "events"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+    });
+
+    // This will make the filtered logs shown in UI to have only 3 entries
+    // (2 for main and 1 for system)
+    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
+    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
+    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
+    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
+    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("name", "ABCDeF", Color.black));
+    presenter.setFiltersForTesting(filters);
+
+    // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+
+    // So we need to test the indices based on the above array, not the original one
+
+    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    assertEquals(2, actual);
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    assertEquals(1, actual);
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 1);
+    assertEquals(0, actual);
+  }
+
+  @Test
+  public void testNavigatePrevMultipleFiltersWithAllowedStreams2() throws FilterException {
+    LogTimestamp timestamp = new LogTimestamp(10,
+        12,
+        22,
+        32,
+        50,
+        264);
+
+    presenter.setFilteredLogsForTesting(new LogEntry[] {
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABeF log Test Log", LogLevel.INFO, timestamp, "main"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "events"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
+        new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+    });
+
+    // This will make the filtered logs shown in UI to have only 3 entries
+    // (2 for main and 1 for system)
+    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
+    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
+    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
+    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
+    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("name", "ABCDeF", Color.black));
+    presenter.setFiltersForTesting(filters);
+
+    // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABeF log Test Log", LogLevel.INFO, timestamp, "main"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
+    //LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main")
+
+    // So we need to test the indices based on the above array, not the original one
+
+    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    assertEquals(2, actual);
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    assertEquals(1, actual);
+
+    actual = presenter.getPrevFilteredLogForFilter(0, 1);
+    assertEquals(2, actual);
   }
 }

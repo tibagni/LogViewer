@@ -23,9 +23,7 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class LogViewerView implements LogViewer.View {
@@ -48,6 +46,8 @@ public class LogViewerView implements LogViewer.View {
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
   private JFrame parent;
+
+  private Set<LogStream> logStreams;
 
   final private LogViewerPreferences userPrefs;
 
@@ -144,6 +144,8 @@ public class LogViewerView implements LogViewer.View {
     filtersMenu.add(saveFilterItem);
     menuBar.add(filtersMenu);
 
+    configureStreamsMenu(menuBar);
+
     JMenu helpMenu = new JMenu("Help");
     JMenuItem aboutItem = new JMenuItem("About");
     JMenuItem onlineHelpItem = new JMenuItem("User Guide");
@@ -154,6 +156,23 @@ public class LogViewerView implements LogViewer.View {
     menuBar.add(helpMenu);
 
     frame.setJMenuBar(menuBar);
+  }
+
+  private void configureStreamsMenu(JMenuBar menuBar) {
+    if (logStreams == null || logStreams.size() <= 1) {
+      // We don't need to show the streams menu if there is only one stream
+      return;
+    }
+
+    JMenu streamsMenu = new JMenu("Streams");
+    for (LogStream stream : logStreams) {
+      JCheckBoxMenuItem item = new JCheckBoxMenuItem(stream.toString());
+      item.setState(presenter.isStreamAllowed(stream));
+      item.addItemListener(e -> presenter.setStreamAllowed(stream, item.isSelected()));
+      streamsMenu.add(item);
+    }
+
+    menuBar.add(streamsMenu);
   }
 
   private void openUserGuide() {
@@ -196,16 +215,18 @@ public class LogViewerView implements LogViewer.View {
 
   @Override
   public void showFilteredLogs(LogEntry[] logEntries) {
-    filteredLogListTableModel.setLogs(excludeHiddenStreams(logEntries));
+    filteredLogListTableModel.setLogs(logEntries);
     logList.updateUI();
     filtersList.updateUI();
   }
 
   @Override
   public void showAvailableLogStreams(Set<LogStream> logStreams) {
-    for (LogStream s : logStreams) {
-      Logger.debug("Available Stream found: " + s);
-    }
+    this.logStreams = logStreams;
+
+    // Reconfigure menu bar to show the streams if necessary
+    configureMenuBar(parent);
+    SwingUtilities.updateComponentTreeUI(parent);
   }
 
   @Override
@@ -437,19 +458,5 @@ public class LogViewerView implements LogViewer.View {
 
   private void openUserPreferences() {
     LogViewerPreferencesDialog.showPreferencesDialog(parent);
-  }
-
-  private LogEntry[] excludeHiddenStreams(LogEntry[] entries) {
-    return entries;
-    // TODO
-//    ArrayList<LogEntry> result = new ArrayList<>();
-//    Set<LogStream> allowedStreams = CommonUtils.setOf(LogStream.EVENTS);
-//    for (LogEntry entry : entries) {
-//      if (allowedStreams.contains(entry.getStream())) {
-//        result.add(entry);
-//      }
-//    }
-//
-//    return result.toArray(new LogEntry[0]);
   }
 }
