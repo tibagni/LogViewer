@@ -3,12 +3,14 @@ package com.tibagni.logviewer.log;
 import com.tibagni.logviewer.logger.Logger;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
 public class LogCellRenderer extends JPanel implements TableCellRenderer {
   protected final JTextArea textView;
   private final JPanel colorIndicator;
+  private final JLabel streamIndicator;
 
   public LogCellRenderer() {
     setLayout(new BorderLayout());
@@ -21,8 +23,27 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     textView.setWrapStyleWord(true);
     textView.setMargin(new Insets(5, 10,5 ,10));
     textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-
     add(textView);
+
+    // Create the stream indicator component but do not show initially
+    // Wait until we know it is necessary to show (see showStreams(boolean))
+    streamIndicator = new JLabel();
+    streamIndicator.setBorder(new EmptyBorder(5, 5, 5, 5));
+    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, 12));
+  }
+
+  public void showStreams(boolean showStreams) {
+    if (showStreams) {
+      // Add the component if not already added
+      if (streamIndicator.getParent() == null) {
+        add(streamIndicator, BorderLayout.LINE_END);
+      }
+    } else {
+      // Remove if the component is added
+      if (streamIndicator.getParent() != null) {
+        remove(streamIndicator);
+      }
+    }
   }
 
   @Override
@@ -43,6 +64,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     textView.setLineWrap(true);
 
     colorIndicator.setBackground(getColorForLogLevel(logEntry.getLogLevel()));
+    streamIndicator.setText(logEntry.getStream().getSymbol());
 
     setSize(table.getColumnModel().getColumn(column).getWidth(), getPreferredSize().height);
     if (table.getRowHeight(row) != getPreferredSize().height) {
@@ -96,5 +118,4 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
     return logColor;
   }
-
 }

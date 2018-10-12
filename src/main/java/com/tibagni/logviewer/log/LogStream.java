@@ -53,4 +53,8 @@ public enum LogStream {
     String str = super.toString();
     return str.charAt(0) + str.substring(1).toLowerCase();
   }
+
+  public String getSymbol() {
+    return super.toString().substring(0, 1).toLowerCase();
+  }
 }

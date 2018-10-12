@@ -17,7 +17,6 @@ import com.tibagni.logviewer.view.Toast;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -38,6 +37,8 @@ public class LogViewerView implements LogViewer.View {
   private JSplitPane logsPane;
   private JLabel currentLogsLbl;
 
+  private final LogCellRenderer logRenderer;
+
   private final LogViewer.Presenter presenter;
   private final JFileChooserExt logFileChooser;
   private final JFileChooserExt filterFileChooser;
@@ -54,12 +55,14 @@ public class LogViewerView implements LogViewer.View {
   private static final String UNSAVED_INDICATOR = " (*)";
 
   public LogViewerView(JFrame parent, LogViewerApplication application) {
-    configureMenuBar(parent);
+    configureMenuBar(parent, false);
     this.application = application;
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
     presenter = new LogViewerPresenter(this);
     presenter.init();
+
+    logRenderer = new LogCellRenderer();
 
     this.parent.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     this.parent.addWindowListener(new WindowAdapter() {
@@ -89,9 +92,8 @@ public class LogViewerView implements LogViewer.View {
     filtersList.setReorderedListener(presenter::reorderFilters);
     setupFiltersContextActions();
 
-    logList.setDefaultRenderer(LogEntry.class, new LogCellRenderer());
-
-    filteredLogList.setDefaultRenderer(LogEntry.class, new LogCellRenderer());
+    logList.setDefaultRenderer(LogEntry.class, logRenderer);
+    filteredLogList.setDefaultRenderer(LogEntry.class, logRenderer);
     setupFilteredLogsContextActions();
 
     applyFiltersBtn.addActionListener(e -> applySelectedFilters());
@@ -100,7 +102,7 @@ public class LogViewerView implements LogViewer.View {
     new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
   }
 
-  private void configureMenuBar(JFrame frame) {
+  private void configureMenuBar(JFrame frame, boolean showStreamsMenu) {
     ImageIcon newWindowIcon = SwingUtils
         .getIconFromResource(this, "Icons/new_window.png");
     ImageIcon settingsIcon = SwingUtils
@@ -144,7 +146,9 @@ public class LogViewerView implements LogViewer.View {
     filtersMenu.add(saveFilterItem);
     menuBar.add(filtersMenu);
 
-    configureStreamsMenu(menuBar);
+    if (showStreamsMenu) {
+      configureStreamsMenu(menuBar);
+    }
 
     JMenu helpMenu = new JMenu("Help");
     JMenuItem aboutItem = new JMenuItem("About");
@@ -159,11 +163,6 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void configureStreamsMenu(JMenuBar menuBar) {
-    if (logStreams == null || logStreams.size() <= 1) {
-      // We don't need to show the streams menu if there is only one stream
-      return;
-    }
-
     JMenu streamsMenu = new JMenu("Streams");
     for (LogStream stream : logStreams) {
       JCheckBoxMenuItem item = new JCheckBoxMenuItem(stream.toString());
@@ -224,8 +223,12 @@ public class LogViewerView implements LogViewer.View {
   public void showAvailableLogStreams(Set<LogStream> logStreams) {
     this.logStreams = logStreams;
 
+    // We don't need to show the streams menu if there is only one stream
+    boolean showStreams = logStreams != null && logStreams.size() > 1;
+
     // Reconfigure menu bar to show the streams if necessary
-    configureMenuBar(parent);
+    logRenderer.showStreams(showStreams);
+    configureMenuBar(parent, showStreams);
     SwingUtilities.updateComponentTreeUI(parent);
   }
 
