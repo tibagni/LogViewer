@@ -14,10 +14,11 @@ public class FilterCellRenderer extends DefaultListCellRenderer {
     String text = filter.getName();
     Filter.ContextInfo tempInfo = filter.getTemporaryInfo();
     if (tempInfo != null) {
-      text += String.format(" {%d}", tempInfo.linesFound);
+      int totalLinesFound = tempInfo.getTotalLinesFound();
+      text += String.format(" {%d}", totalLinesFound);
 
       // Show the navigation shortcuts
-      if (tempInfo.linesFound > 0) {
+      if (totalLinesFound > 0) {
         text += String.format(" %s %s(,) / %s(.)", StringUtils.VERTICAL_SEPARATOR,
             StringUtils.LEFT_ARROW, StringUtils.RIGHT_ARROW);
       }

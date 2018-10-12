@@ -297,9 +297,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     doAsync(() -> {
       filteredLogs = Filters.applyMultipleFilters(allLogs, filters, this::updateAsyncProgress);
+      updateFiltersContextInfo();
       doOnUiThread(() -> view.showFilteredLogs(excludeNonAllowedStreams(filteredLogs)));
     });
-
   }
 
   @Override
@@ -315,7 +315,24 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     availableStreams.put(stream, allowed);
+    updateFiltersContextInfo();
     view.showFilteredLogs(excludeNonAllowedStreams(filteredLogs));
+  }
+
+  private void updateFiltersContextInfo() {
+    Set<LogStream> allowedStreams = new HashSet<>();
+    for (Map.Entry<LogStream, Boolean> entry : availableStreams.entrySet()) {
+      if (entry.getValue()) {
+        allowedStreams.add(entry.getKey());
+      }
+    }
+
+    for (Filter filter : filters) {
+      Filter.ContextInfo filterTemporaryInfo = filter.getTemporaryInfo();
+      if (filterTemporaryInfo != null) {
+        filterTemporaryInfo.setAllowedStreams(allowedStreams);
+      }
+    }
   }
 
   @Override
