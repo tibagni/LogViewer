@@ -2,6 +2,7 @@ package com.tibagni.logviewer.log.parser;
 
 import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.*;
+import com.tibagni.logviewer.util.CommonUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -147,5 +148,93 @@ public class ParserTests {
     }
 
     return builder.toString();
+  }
+
+  @Test
+  public void testAvailableLogStreamsUNKOWN() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "bla",
+        "nothing",
+        "bugreport.txt",
+        "logcat.txt",
+        "myLogs.txt"));
+
+    assertEquals(CommonUtils.setOf(LogStream.UNKNOWN), logParser.getAvailableStreams());
+  }
+
+  @Test
+  public void testAvailableLogStreamsMAIN() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "main.txt",
+        "aplogd-m.txt"));
+
+    assertEquals(CommonUtils.setOf(LogStream.MAIN), logParser.getAvailableStreams());
+  }
+
+  @Test
+  public void testAvailableLogStreamsSYSTEM() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "system.txt",
+        "aplogd-s.txt"));
+
+    assertEquals(CommonUtils.setOf(LogStream.SYSTEM), logParser.getAvailableStreams());
+  }
+
+  @Test
+  public void testAvailableLogStreamsRADIO() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "radio.txt",
+        "aplogd-r.txt"));
+
+    assertEquals(CommonUtils.setOf(LogStream.RADIO), logParser.getAvailableStreams());
+  }
+
+  @Test
+  public void testAvailableLogStreamsEVENTS() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "events.txt",
+        "aplogd-e.txt"));
+
+    assertEquals(CommonUtils.setOf(LogStream.EVENTS), logParser.getAvailableStreams());
+  }
+
+  @Test
+  public void testAvailableLogStreamsALL() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "aplogd-e.txt",
+        "main.txt",
+        "radio.txt",
+        "aplogd-s.txt"));
+
+    Set<LogStream> expected = CommonUtils.setOf(
+        LogStream.MAIN,
+        LogStream.SYSTEM,
+        LogStream.RADIO,
+        LogStream.EVENTS);
+    Set<LogStream> actual = logParser.getAvailableStreams();
+
+    assertEquals(expected.size(), actual.size());
+    assertTrue(actual.containsAll(expected));
+  }
+
+  @Test
+  public void testAvailableLogStreamsALLwithUNKNOWN() {
+    when(reader.getAvailableLogsNames()).thenReturn(CommonUtils.setOf(
+        "bla.txt",
+        "aplogd-e.txt",
+        "main.txt",
+        "radio.txt",
+        "aplogd-s.txt"));
+
+    Set<LogStream> expected = CommonUtils.setOf(
+        LogStream.MAIN,
+        LogStream.SYSTEM,
+        LogStream.RADIO,
+        LogStream.EVENTS,
+        LogStream.UNKNOWN);
+    Set<LogStream> actual = logParser.getAvailableStreams();
+
+    assertEquals(expected.size(), actual.size());
+    assertTrue(actual.containsAll(expected));
   }
 }

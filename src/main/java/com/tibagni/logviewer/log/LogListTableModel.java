@@ -43,4 +43,8 @@ public class LogListTableModel extends AbstractTableModel {
     this.entries = entries;
     fireTableRowsInserted(0, entries.length - 1);
   }
+
+  public LogEntry[] getLogs() {
+    return entries;
+  }
 }

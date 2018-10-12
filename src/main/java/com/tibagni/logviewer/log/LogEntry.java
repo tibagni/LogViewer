@@ -9,12 +9,21 @@ public class LogEntry implements Comparable<LogEntry> {
   private LogTimestamp timestamp;
   private final StringBuilder logText;
   private final LogLevel logLevel;
+  private final String logName;
+  private final LogStream logStream;
+
   private Color filterColor;
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp) {
+    this(logText, logLevel, timestamp, "");
+  }
+
+  public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, String logName) {
     this.logText = new StringBuilder(logText);
     this.logLevel = logLevel;
     this.timestamp = timestamp;
+    this.logName = logName;
+    this.logStream = LogStream.inferLogStreamFromName(logName);
   }
 
   public String getLogText() {
@@ -51,6 +60,10 @@ public class LogEntry implements Comparable<LogEntry> {
 
   public void setTimestamp(LogTimestamp timestamp) {
     this.timestamp = timestamp;
+  }
+
+  public LogStream getStream() {
+    return logStream;
   }
 
   public int getLength() {

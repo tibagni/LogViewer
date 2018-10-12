@@ -2,6 +2,9 @@ package com.tibagni.logviewer.util;
 
 import com.tibagni.logviewer.logger.Logger;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class CommonUtils {
 
   public static void sleepSilently(long duration) {
@@ -10,5 +13,14 @@ public class CommonUtils {
     } catch (InterruptedException e) {
       Logger.error("Thread.sleep was interrupted", e);
     }
+  }
+
+  public static <E> Set setOf(E... args) {
+    Set<E> s = new HashSet<>();
+    for (E e : args) {
+      s.add(e);
+    }
+
+    return s;
   }
 }

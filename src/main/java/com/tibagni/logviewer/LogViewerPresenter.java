@@ -6,6 +6,7 @@ import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.FileLogReader;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogReaderException;
+import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.parser.LogParser;
 import com.tibagni.logviewer.log.parser.LogParserException;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
@@ -15,12 +16,14 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Presenter {
   private final LogViewer.View view;
 
   private final List<Filter> filters;
+  private Set<LogStream> allLogsStreams;
   private LogEntry[] allLogs;
   private LogEntry[] filteredLogs;
   private LogParser logParser;
@@ -231,6 +234,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       try {
         // After loading new logs, clear the filtered logs as well as it is no longer valid
         allLogs = logParser.parseLogs();
+        allLogsStreams = logParser.getAvailableStreams();
         filteredLogs = new LogEntry[0];
 
         logParser.release();
@@ -240,6 +244,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
           if (allLogs.length > 0) {
             view.showFilteredLogs(filteredLogs);
             view.showLogs(allLogs);
+            view.showAvailableLogStreams(allLogsStreams);
 
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getPath());
             view.showCurrentLogsLocation(logsPath);

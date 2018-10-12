@@ -7,6 +7,7 @@ import com.tibagni.logviewer.filter.FilterCellRenderer;
 import com.tibagni.logviewer.log.LogCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogListTableModel;
+import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
@@ -22,6 +23,9 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public class LogViewerView implements LogViewer.View {
@@ -192,9 +196,16 @@ public class LogViewerView implements LogViewer.View {
 
   @Override
   public void showFilteredLogs(LogEntry[] logEntries) {
-    filteredLogListTableModel.setLogs(logEntries);
+    filteredLogListTableModel.setLogs(excludeHiddenStreams(logEntries));
     logList.updateUI();
     filtersList.updateUI();
+  }
+
+  @Override
+  public void showAvailableLogStreams(Set<LogStream> logStreams) {
+    for (LogStream s : logStreams) {
+      Logger.debug("Available Stream found: " + s);
+    }
   }
 
   @Override
@@ -426,5 +437,19 @@ public class LogViewerView implements LogViewer.View {
 
   private void openUserPreferences() {
     LogViewerPreferencesDialog.showPreferencesDialog(parent);
+  }
+
+  private LogEntry[] excludeHiddenStreams(LogEntry[] entries) {
+    return entries;
+    // TODO
+//    ArrayList<LogEntry> result = new ArrayList<>();
+//    Set<LogStream> allowedStreams = CommonUtils.setOf(LogStream.EVENTS);
+//    for (LogEntry entry : entries) {
+//      if (allowedStreams.contains(entry.getStream())) {
+//        result.add(entry);
+//      }
+//    }
+//
+//    return result.toArray(new LogEntry[0]);
   }
 }
