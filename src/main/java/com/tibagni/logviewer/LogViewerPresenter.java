@@ -23,6 +23,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private final List<Filter> filters;
   private LogEntry[] allLogs;
   private LogEntry[] filteredLogs;
+  private LogEntry[] cachedAllowedFilteredLogs;
   private LogParser logParser;
 
   private boolean hasUnsavedFilterChanges;
@@ -103,10 +104,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   @Override
   public int getNextFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
     // we need to navigate on the logs that are being shown on the UI,
-    // so apply the 'excludeNonAllowedStreams' here before we perform any navigation
-    LogEntry[] filteredLogs = excludeNonAllowedStreams(this.filteredLogs);
-
-    if (filterIndex < 0 || filteredLogs.length == 0) {
+    // so use 'cachedAllowedFilteredLogs' here
+    if (filterIndex < 0 || cachedAllowedFilteredLogs.length == 0) {
       return -1;
     }
 
@@ -114,17 +113,17 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       firstLogIndexSearch = -1;
     }
 
-    if (firstLogIndexSearch >= filteredLogs.length) {
-      firstLogIndexSearch = filteredLogs.length - 1;
+    if (firstLogIndexSearch >= cachedAllowedFilteredLogs.length) {
+      firstLogIndexSearch = cachedAllowedFilteredLogs.length - 1;
     }
 
     Filter filter = filters.get(filterIndex);
     int startSearch = firstLogIndexSearch + 1;
-    int endSearch = startSearch + filteredLogs.length;
+    int endSearch = startSearch + cachedAllowedFilteredLogs.length;
 
     for (int i = startSearch; i <= endSearch; i++) {
-      int index = i % filteredLogs.length;
-      if (filter.appliesTo(filteredLogs[index].getLogText())) {
+      int index = i % cachedAllowedFilteredLogs.length;
+      if (filter.appliesTo(cachedAllowedFilteredLogs[index].getLogText())) {
         if (index < firstLogIndexSearch) {
           view.showNavigationNextOver();
         }
@@ -138,10 +137,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   @Override
   public int getPrevFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
     // we need to navigate on the logs that are being shown on the UI,
-    // so apply the 'excludeNonAllowedStreams' here before we perform any navigation
-    LogEntry[] filteredLogs = excludeNonAllowedStreams(this.filteredLogs);
-
-    if (filterIndex < 0 || filteredLogs.length == 0) {
+    // so use 'cachedAllowedFilteredLogs' here
+    if (filterIndex < 0 || cachedAllowedFilteredLogs.length == 0) {
       return -1;
     }
 
@@ -149,17 +146,17 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       firstLogIndexSearch = -1;
     }
 
-    if (firstLogIndexSearch >= filteredLogs.length) {
-      firstLogIndexSearch = filteredLogs.length - 1;
+    if (firstLogIndexSearch >= cachedAllowedFilteredLogs.length) {
+      firstLogIndexSearch = cachedAllowedFilteredLogs.length - 1;
     }
 
     Filter filter = filters.get(filterIndex);
     int startSearch = firstLogIndexSearch < 0 ? firstLogIndexSearch : firstLogIndexSearch - 1;
-    int endSearch = startSearch - filteredLogs.length;
+    int endSearch = startSearch - cachedAllowedFilteredLogs.length;
 
     for (int i = startSearch; i >= endSearch; i--) {
-      int index = i >= 0 ? i : (filteredLogs.length + i);
-      if (filter.appliesTo(filteredLogs[index].getLogText())) {
+      int index = i >= 0 ? i : (cachedAllowedFilteredLogs.length + i);
+      if (filter.appliesTo(cachedAllowedFilteredLogs[index].getLogText())) {
         if (index > firstLogIndexSearch && firstLogIndexSearch >= 0) {
           view.showNavigationPrevOver();
         }
@@ -243,13 +240,14 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         allLogs = logParser.parseLogs();
         availableStreams = buildLogStreamsMap(logParser.getAvailableStreams());
         filteredLogs = new LogEntry[0];
+        cachedAllowedFilteredLogs = excludeNonAllowedStreams(filteredLogs);
 
         logParser.release();
         logParser = null;
 
         doOnUiThread(() -> {
           if (allLogs.length > 0) {
-            view.showFilteredLogs(excludeNonAllowedStreams(filteredLogs));
+            view.showFilteredLogs(cachedAllowedFilteredLogs);
             view.showLogs(allLogs);
             view.showAvailableLogStreams(availableStreams.keySet());
 
@@ -297,8 +295,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     doAsync(() -> {
       filteredLogs = Filters.applyMultipleFilters(allLogs, filters, this::updateAsyncProgress);
+      cachedAllowedFilteredLogs = excludeNonAllowedStreams(filteredLogs);
       updateFiltersContextInfo();
-      doOnUiThread(() -> view.showFilteredLogs(excludeNonAllowedStreams(filteredLogs)));
+      doOnUiThread(() -> view.showFilteredLogs(cachedAllowedFilteredLogs));
     });
   }
 
@@ -316,7 +315,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     availableStreams.put(stream, allowed);
     updateFiltersContextInfo();
-    view.showFilteredLogs(excludeNonAllowedStreams(filteredLogs));
+    cachedAllowedFilteredLogs = excludeNonAllowedStreams(filteredLogs);
+    view.showFilteredLogs(cachedAllowedFilteredLogs);
   }
 
   private void updateFiltersContextInfo() {
@@ -448,7 +448,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   void setFiltersForTesting(List<Filter> filters) {
     this.filters.addAll(filters);
   }
-  void setStreamAllowedForTesting(LogStream stream, boolean allowed) {
-    availableStreams.put(stream, allowed);
+  void setAvailableStreamsForTesting(Set<LogStream> streams, boolean initiallyAllowed) {
+    for (LogStream stream : streams) {
+      availableStreams.put(stream, initiallyAllowed);
+    }
+  }
+  void setAvailableStreamsForTesting(Set<LogStream> streams) {
+    setAvailableStreamsForTesting(streams, false);
   }
 }

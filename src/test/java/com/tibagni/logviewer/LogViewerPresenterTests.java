@@ -7,6 +7,7 @@ import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.LogTimestamp;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.util.CommonUtils;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -377,6 +378,10 @@ public class LogViewerPresenterTests {
     filters.add(new Filter("name", "ABCDeF", Color.black));
     presenter.setFiltersForTesting(filters);
 
+    // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.UNKNOWN, true);
+
     int actual = presenter.getNextFilteredLogForFilter(0, -1);
     assertEquals(0, actual);
     verify(view, never()).showNavigationNextOver();
@@ -415,6 +420,10 @@ public class LogViewerPresenterTests {
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
     presenter.setFiltersForTesting(filters);
+
+    // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
     int actual = presenter.getNextFilteredLogForFilter(0, -1);
     assertEquals(0, actual);
@@ -459,6 +468,10 @@ public class LogViewerPresenterTests {
     filters.add(new Filter("name", "ABCDeF", Color.black));
     presenter.setFiltersForTesting(filters);
 
+    // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.UNKNOWN, true);
+
     int actual = presenter.getNextFilteredLogForFilter(0, -1);
     assertEquals(2, actual);
     verify(view, never()).showNavigationNextOver();
@@ -494,6 +507,10 @@ public class LogViewerPresenterTests {
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
     presenter.setFiltersForTesting(filters);
+
+    // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
     int actual = presenter.getPrevFilteredLogForFilter(0, -1);
     assertEquals(2, actual);
@@ -533,6 +550,10 @@ public class LogViewerPresenterTests {
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
     presenter.setFiltersForTesting(filters);
+
+    // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
     int actual = presenter.getPrevFilteredLogForFilter(0, -1);
     assertEquals(5, actual);
@@ -577,6 +598,10 @@ public class LogViewerPresenterTests {
     filters.add(new Filter("name", "ABCDeF", Color.black));
     presenter.setFiltersForTesting(filters);
 
+    // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.UNKNOWN, true);
+
     int actual = presenter.getPrevFilteredLogForFilter(0, -1);
     assertEquals(3, actual);
     verify(view, never()).showNavigationPrevOver();
@@ -611,18 +636,29 @@ public class LogViewerPresenterTests {
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp, "main")
     });
-    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
-    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
-    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
-    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
-    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
-
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.MAIN,
+        LogStream.EVENTS, LogStream.RADIO, LogStream.SYSTEM, LogStream.UNKNOWN), true);
     presenter.setStreamAllowed(LogStream.MAIN, false);
+    presenter.setStreamAllowed(LogStream.EVENTS, false);
+    presenter.setStreamAllowed(LogStream.RADIO, false);
+    presenter.setStreamAllowed(LogStream.UNKNOWN, false);
 
+    // 'showFilteredLogs' should be called 4 times (one for each time we called 'setStreamAllowed')
+    // So we need to validate the output of all executions
     ArgumentCaptor<LogEntry[]> argument = ArgumentCaptor.forClass(LogEntry[].class);
-    verify(view).showFilteredLogs(argument.capture());
+    verify(view, times(4)).showFilteredLogs(argument.capture());
 
-    LogEntry[] filteredLogs = argument.getValue();
+    List<LogEntry[]> allValues = argument.getAllValues();
+    LogEntry[] filteredLogs = allValues.get(0);
+    assertEquals(4, filteredLogs.length);
+
+    filteredLogs = allValues.get(1);
+    assertEquals(3, filteredLogs.length);
+
+    filteredLogs = allValues.get(2);
+    assertEquals(2, filteredLogs.length);
+
+    filteredLogs = allValues.get(3);
     assertEquals(1, filteredLogs.length);
   }
 
@@ -643,18 +679,21 @@ public class LogViewerPresenterTests {
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABDeF log Test Log", LogLevel.INFO, timestamp, "bla"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp, "main")
     });
-    presenter.setStreamAllowedForTesting(LogStream.MAIN, false);
-    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
-    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
-    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
-    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
-
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.MAIN,
+        LogStream.EVENTS, LogStream.RADIO, LogStream.SYSTEM, LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.SYSTEM, true);
     presenter.setStreamAllowed(LogStream.MAIN, true);
 
+    // 'showFilteredLogs' should be called 2 times (one for each time we called 'setStreamAllowed')
+    // So we need to validate the output of all executions
     ArgumentCaptor<LogEntry[]> argument = ArgumentCaptor.forClass(LogEntry[].class);
-    verify(view).showFilteredLogs(argument.capture());
+    verify(view, times(2)).showFilteredLogs(argument.capture());
 
-    LogEntry[] filteredLogs = argument.getValue();
+    List<LogEntry[]> allValues = argument.getAllValues();
+    LogEntry[] filteredLogs = allValues.get(0);
+    assertEquals(1, filteredLogs.length);
+
+    filteredLogs = allValues.get(1);
     assertEquals(3, filteredLogs.length);
   }
 
@@ -678,11 +717,10 @@ public class LogViewerPresenterTests {
 
     // This will make the filtered logs shown in UI to have only 3 entries
     // (2 for main and 1 for system)
-    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
-    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
-    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
-    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
-    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.MAIN,
+        LogStream.EVENTS, LogStream.RADIO, LogStream.SYSTEM, LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.MAIN, true);
+    presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
@@ -725,11 +763,10 @@ public class LogViewerPresenterTests {
 
     // This will make the filtered logs shown in UI to have only 3 entries
     // (2 for main and 1 for system)
-    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
-    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
-    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
-    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
-    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.MAIN,
+        LogStream.EVENTS, LogStream.RADIO, LogStream.SYSTEM, LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.MAIN, true);
+    presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
@@ -769,11 +806,10 @@ public class LogViewerPresenterTests {
 
     // This will make the filtered logs shown in UI to have only 3 entries
     // (2 for main and 1 for system)
-    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
-    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
-    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
-    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
-    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.MAIN,
+        LogStream.EVENTS, LogStream.RADIO, LogStream.SYSTEM, LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.MAIN, true);
+    presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
@@ -816,11 +852,10 @@ public class LogViewerPresenterTests {
 
     // This will make the filtered logs shown in UI to have only 3 entries
     // (2 for main and 1 for system)
-    presenter.setStreamAllowedForTesting(LogStream.MAIN, true);
-    presenter.setStreamAllowedForTesting(LogStream.EVENTS, false);
-    presenter.setStreamAllowedForTesting(LogStream.RADIO, false);
-    presenter.setStreamAllowedForTesting(LogStream.SYSTEM, true);
-    presenter.setStreamAllowedForTesting(LogStream.UNKNOWN, false);
+    presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.MAIN,
+        LogStream.EVENTS, LogStream.RADIO, LogStream.SYSTEM, LogStream.UNKNOWN));
+    presenter.setStreamAllowed(LogStream.MAIN, true);
+    presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("name", "ABCDeF", Color.black));
