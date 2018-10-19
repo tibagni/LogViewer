@@ -241,7 +241,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
             view.showFilteredLogs(filteredLogs);
             view.showLogs(allLogs);
 
-            String logsPath = FilenameUtils.getPath(logFiles[0].getPath());
+            String logsPath = FilenameUtils.getFullPath(logFiles[0].getPath());
             view.showCurrentLogsLocation(logsPath);
           } else {
             view.showErrorMessage("No logs found");
