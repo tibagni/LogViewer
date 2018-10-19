@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.log;
 
+import com.tibagni.logviewer.logger.Logger;
+
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
@@ -27,6 +29,15 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                  boolean hasFocus, int row, int column) {
     LogEntry logEntry = (LogEntry) value;
+    if (logEntry == null) {
+      Logger.debug("getTableCellRenderedComponent passed a null value at position (" + row + ", " + column + ")");
+      logEntry = (LogEntry) table.getModel().getValueAt(row, column);
+      if (logEntry == null) {
+        Logger.error("TableModel has a null value at position (" + row + ", " + column + ")");
+        return null;
+      }
+    }
+
     textView.setText(logEntry.getLogText());
     textView.setWrapStyleWord(true);
     textView.setLineWrap(true);
