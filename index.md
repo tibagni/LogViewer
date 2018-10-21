@@ -20,6 +20,7 @@ It also allows you to apply different filters on the set of logs, displaying a s
 1. [The regex editor](./regex-editor.html)
 1. [Managing filters](./managing-filters.html)
 1. [Navigating through the filters](./navigating-filters.html)
+1. [Selecting streams at runtime](./streams.html)
 
 ## Releases
 [Check out all releases of LogViewer](https://github.com/tibagni/LogViewer/releases)
