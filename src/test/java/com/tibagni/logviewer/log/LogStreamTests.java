@@ -78,6 +78,24 @@ public class LogStreamTests {
   }
 
   @Test
+  public void testKernelLogs() {
+    LogStream actual = LogStream.inferLogStreamFromName("kernel.txt");
+    assertEquals(LogStream.KERNEL, actual);
+
+    actual = LogStream.inferLogStreamFromName("KERNEL.txt");
+    assertEquals(LogStream.KERNEL, actual);
+
+    actual = LogStream.inferLogStreamFromName("aplogd-kernel.txt");
+    assertEquals(LogStream.KERNEL, actual);
+
+    actual = LogStream.inferLogStreamFromName("aplogd-k.txt");
+    assertEquals(LogStream.KERNEL, actual);
+
+    actual = LogStream.inferLogStreamFromName("log-kernel.txt");
+    assertEquals(LogStream.KERNEL, actual);
+  }
+
+  @Test
   public void testUnknownLogs() {
     LogStream actual = LogStream.inferLogStreamFromName("bla.txt");
     assertEquals(LogStream.UNKNOWN, actual);

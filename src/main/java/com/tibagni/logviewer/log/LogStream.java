@@ -8,6 +8,7 @@ public enum LogStream {
   SYSTEM,
   RADIO,
   EVENTS,
+  KERNEL,
   UNKNOWN;
 
   private static Map<LogStream, String[]> logNamesMap = new HashMap<>();
@@ -16,10 +17,12 @@ public enum LogStream {
     String[] systemLogNames = {"system", "-s."};
     String[] radioLogNames = {"radio", "-r."};
     String[] eventsLogNames = {"events", "-e."};
+    String[] kernelLogNames = {"kernel", "-k."};
     logNamesMap.put(MAIN, mainLogNames);
     logNamesMap.put(SYSTEM, systemLogNames);
     logNamesMap.put(RADIO, radioLogNames);
     logNamesMap.put(EVENTS, eventsLogNames);
+    logNamesMap.put(KERNEL, kernelLogNames);
   }
 
   public static LogStream inferLogStreamFromName(String logName) {
