@@ -3,12 +3,13 @@ layout: default
 ---
 
 # Log Streams
-Android can separate its logs in different filters:
+Android can separate its logs in different streams:
 * main
 * radio
 * system
 * events
 * kernel
+
 LogViewer will identify these streams when more than one log file is opened (and these log files follow the android naming standard - which includes the stream)
 
 ## Identifying different streams
