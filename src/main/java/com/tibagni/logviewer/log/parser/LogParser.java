@@ -5,10 +5,7 @@ import com.tibagni.logviewer.log.*;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,9 +35,7 @@ public class LogParser {
   }
 
   public LogEntry[] parseLogs() throws LogReaderException, LogParserException {
-    if (logReader == null || logEntries == null || progressReporter == null) {
-      throw new IllegalStateException("LogParser was already released. Cannot use it...");
-    }
+    ensureState();
 
     logReader.readLogs();
     Set<String> availableLogs = logReader.getAvailableLogsNames();
@@ -50,7 +45,7 @@ public class LogParser {
       for (String log : availableLogs) {
         int progress = logsRead++ * 60 / availableLogs.size();
         progressReporter.onProgress(progress, "Reading " + log + "...");
-        logEntries.addAll(getLogEntries(logReader.get(log)));
+        logEntries.addAll(getLogEntries(logReader.get(log), log));
       }
 
       if (availableLogs.size() > 1) {
@@ -72,6 +67,24 @@ public class LogParser {
     }
   }
 
+  public Set<LogStream> getAvailableStreams() {
+    ensureState();
+
+    Set<LogStream> availableStreams = new HashSet<>();
+    Set<String> availableLogsNames = logReader.getAvailableLogsNames();
+    for (String logName : availableLogsNames) {
+      availableStreams.add(LogStream.inferLogStreamFromName(logName));
+    }
+
+    return availableStreams;
+  }
+
+  private void ensureState() {
+    if (logReader == null || logEntries == null || progressReporter == null) {
+      throw new IllegalStateException("LogParser was already released. Cannot use it...");
+    }
+  }
+
   public void release() {
     logEntries.clear();
     logEntries = null;
@@ -82,13 +95,13 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText) throws LogParserException {
+  private List<LogEntry> getLogEntries(String logText, String logName) throws LogParserException {
     String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
     for (String line : lines) {
       if (isLogLine(line)) {
-        LogEntry entry = new LogEntry(line, findLogLevel(line), findTimestamp(line));
+        LogEntry entry = new LogEntry(line, findLogLevel(line), findTimestamp(line), logName);
         logLines.add(entry);
       } else if (!shouldIgnoreLine(line) && logLines.size() > 0) {
         // This is probably a continuation of a already started log line. Append to it

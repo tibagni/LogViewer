@@ -1,9 +1,13 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.util.StringUtils;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -136,7 +140,36 @@ public class Filter {
   }
 
   public static class ContextInfo {
-    public int linesFound;
+    private final Map<LogStream, Integer> linesFound;
+    private Set<LogStream> allowedStreams;
+
+    private ContextInfo() {
+      linesFound = new HashMap<>();
+    }
+
+    public void setAllowedStreams(Set<LogStream> allowedStreams) {
+      this.allowedStreams = allowedStreams;
+    }
+
+    public int getTotalLinesFound() {
+      int totalLinesFound = 0;
+      for (Map.Entry<LogStream, Integer> entry : linesFound.entrySet()) {
+        if (allowedStreams == null || allowedStreams.contains(entry.getKey())) {
+          totalLinesFound += entry.getValue();
+        }
+      }
+
+      return totalLinesFound;
+    }
+
+    public void incrementLineCount(LogStream stream) {
+      int currentCount = 0;
+      if (linesFound.containsKey(stream)) {
+        currentCount = linesFound.get(stream);
+      }
+
+      linesFound.put(stream, currentCount + 1);
+    }
   }
 
   @Override

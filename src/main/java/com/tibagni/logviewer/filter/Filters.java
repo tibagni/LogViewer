@@ -15,7 +15,7 @@ public class Filters {
     List<LogEntry> filtered = new Vector<>();
     AtomicInteger logsRead = new AtomicInteger();
     Arrays.stream(input).parallel().forEach(entry -> {
-      Filter appliedFilter = getAppliedFilter(entry.getLogText(), filters);
+      Filter appliedFilter = getAppliedFilter(entry, filters);
       if (appliedFilter != null) {
         entry.setFilterColor(appliedFilter.getColor());
         filtered.add(entry);
@@ -34,7 +34,8 @@ public class Filters {
     }
   }
 
-  private static Filter getAppliedFilter(String inputLine, Filter[] filters) {
+  private static Filter getAppliedFilter(LogEntry entry, Filter[] filters) {
+    String inputLine = entry.getLogText();
     Filter firstFound = null;
     for (Filter filter : filters) {
       if (filter.appliesTo(inputLine)) {
@@ -44,7 +45,7 @@ public class Filters {
 
         // Increment the filter's 'linesFound' so we can show to the user
         // how many times each filter has matched
-        filter.getTemporaryInfo().linesFound++;
+        filter.getTemporaryInfo().incrementLineCount(entry.getStream());
       }
     }
 
