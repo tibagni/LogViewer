@@ -8,6 +8,7 @@ public class StringUtils {
   public static final String RIGHT_ARROW = "\u2192";
   public static final String LEFT_ARROW = "\u2190";
   public static final String VERTICAL_SEPARATOR = "\u2759";
+  public static final String CHECK_SYMBOL = "\u2714";
 
   public static final String LEFT_ARROW_WITH_HOOK = "\u21A9";
   public static final String RIGHT_ARROW_WITH_HOOK = "\u21AA";

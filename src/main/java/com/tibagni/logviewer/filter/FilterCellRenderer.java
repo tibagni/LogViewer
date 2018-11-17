@@ -22,6 +22,8 @@ public class FilterCellRenderer extends DefaultListCellRenderer {
         text += String.format(" %s %s(,) / %s(.)", StringUtils.VERTICAL_SEPARATOR,
             StringUtils.LEFT_ARROW, StringUtils.RIGHT_ARROW);
       }
+
+      text = String.format("%s %s", StringUtils.CHECK_SYMBOL, text);
     }
 
     Component renderComponent = super.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
@@ -33,6 +35,7 @@ public class FilterCellRenderer extends DefaultListCellRenderer {
       Color selectedBgColor = SwingUtils.changeColorAlpha(list.getSelectionBackground(), 60);
       renderComponent.setBackground(selectedBgColor);
     }
+
     return renderComponent;
   }
 }
