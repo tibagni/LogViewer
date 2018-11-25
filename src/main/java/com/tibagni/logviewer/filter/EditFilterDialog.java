@@ -121,6 +121,7 @@ public class EditFilterDialog extends JDialog {
   }
 
   private void onCancel() {
+    filter = null;
     dispose();
   }
 

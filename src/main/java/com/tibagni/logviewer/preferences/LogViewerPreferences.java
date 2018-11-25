@@ -17,6 +17,7 @@ public class LogViewerPreferences {
   private static final String OPEN_LAST_FILTER = "open_last_filter";
   private static final String LOGS_PATH = "logs_path";
   private static final String LOOK_AND_FEEL = "look_and_feel";
+  private static final String REAPPLY_FILTERS_AFTER_EDIT = "reaply_filters_after_edit";
 
   private LogViewerPreferences() {
     preferences = Preferences.userRoot().node(getClass().getName());
@@ -90,12 +91,22 @@ public class LogViewerPreferences {
     listeners.forEach(l -> l.onLookAndFeelChanged());
   }
 
+  public void setReapplyFiltersAfterEdit(boolean reApply) {
+    preferences.putBoolean(REAPPLY_FILTERS_AFTER_EDIT, reApply);
+    listeners.forEach(l -> l.onReapplyFiltersConfigChanged());
+  }
+
+  public boolean shouldReapplyFiltersAfterEdit() {
+    return preferences.getBoolean(REAPPLY_FILTERS_AFTER_EDIT, true);
+  }
+
   public interface Listener {
     void onLookAndFeelChanged();
     void onDefaultFiltersPathChanged();
     void onLastFilterPathChanged();
     void onOpenLastFilterChanged();
     void onDefaultLogsPathChanged();
+    void onReapplyFiltersConfigChanged();
   }
 
   public static abstract class Adapter implements Listener {
@@ -104,5 +115,6 @@ public class LogViewerPreferences {
     @Override public void onLastFilterPathChanged() { }
     @Override public void onOpenLastFilterChanged() { }
     @Override public void onDefaultLogsPathChanged() { }
+    @Override public void onReapplyFiltersConfigChanged() { }
   }
 }

@@ -362,14 +362,16 @@ public class LogViewerView implements LogViewer.View {
       Filter selectedFilter = filtersList.getModel().getElementAt(
           filtersList.getSelectedIndex());
 
-      // We don't care about the result here. The filter is automatically
-      // updated by this dialog
-      EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn, selectedFilter);
+      // The filter is automatically updated by this dialog. We only check the result
+      // to determine if the dialog was canceled or not
+      Filter edited = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn, selectedFilter);
 
-      // Tell the presenter a filter was edited. It will not update the filters
-      // as filters are updated by EditFilterDialog itself, it will only determine
-      // if the filter was, in fact, updated and mark unsaved changes if necessary.
-      presenter.filterEdited();
+      if (edited != null) {
+        // Tell the presenter a filter was edited. It will not update the filters
+        // as filters are updated by EditFilterDialog itself, it will only determine
+        // if the filter was, in fact, updated and mark unsaved changes if necessary.
+        presenter.filterEdited(selectedFilter);
+      }
     }
   }
 

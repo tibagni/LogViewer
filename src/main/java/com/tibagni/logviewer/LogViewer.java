@@ -54,7 +54,7 @@ public class LogViewer {
     void loadFilters(File filtersFile);
     void loadLogs(File[] logFiles);
     void applyFilters(int[] filterIndices);
-    void filterEdited();
+    void filterEdited(Filter filter);
 
     void setStreamAllowed(LogStream stream, boolean allowed);
     boolean isStreamAllowed(LogStream stream);

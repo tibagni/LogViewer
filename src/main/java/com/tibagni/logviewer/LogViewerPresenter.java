@@ -10,6 +10,7 @@ import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.parser.LogParser;
 import com.tibagni.logviewer.log.parser.LogParserException;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -70,6 +71,16 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       filters.add(newFilter);
       view.configureFiltersList(filters.toArray(new Filter[0]));
       checkForUnsavedChanges();
+
+      if (userPrefs.shouldReapplyFiltersAfterEdit() &&
+          allLogs != null && allLogs.length > 0) {
+        List<Integer> appliedFilters = getAppliedFilters();
+        // Make sure to add the new filter to the 'applied' list
+        // so it gets applied now (We always add to the end, so
+        // just add the last index as well)
+        appliedFilters.add(filters.size() - 1);
+        applyFilters(CommonUtils.toIntArray(appliedFilters));
+      }
     }
   }
 
@@ -302,8 +313,32 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void filterEdited() {
+  public void filterEdited(Filter filter) {
     checkForUnsavedChanges();
+
+    if (userPrefs.shouldReapplyFiltersAfterEdit() &&
+        allLogs != null && allLogs.length > 0) {
+      List<Integer> appliedFilters = getAppliedFilters();
+      int editedIndex = filters.indexOf(filter);
+      if (editedIndex >= 0 && !appliedFilters.contains(editedIndex)) {
+        // Make sure the edited filter will also be re-applied.
+        // If it was not previously applied, apply now
+        appliedFilters.add(editedIndex);
+      }
+
+      applyFilters(CommonUtils.toIntArray(appliedFilters));
+    }
+  }
+
+  private List<Integer> getAppliedFilters() {
+    List<Integer> appliedFilters = new ArrayList<>();
+    for (int i = 0; i < filters.size(); i++) {
+      if (filters.get(i).getTemporaryInfo() != null) {
+        appliedFilters.add(i);
+      }
+    }
+
+    return appliedFilters;
   }
 
   @Override
