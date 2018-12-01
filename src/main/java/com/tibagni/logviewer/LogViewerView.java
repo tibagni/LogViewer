@@ -200,11 +200,13 @@ public class LogViewerView implements LogViewer.View {
 
   @Override
   public void showCurrentLogsLocation(String logsPath) {
-    String text = SwingUtils.truncateTextFor(
-        currentLogsLbl,
-        "Logs path:",
-        logsPath,
-        mainPanel.getWidth());
+    String text = logsPath == null ?
+        null :
+        SwingUtils.truncateTextFor(
+            currentLogsLbl,
+            "Logs path:",
+            logsPath,
+            mainPanel.getWidth());
 
     currentLogsLbl.setText(text);
   }

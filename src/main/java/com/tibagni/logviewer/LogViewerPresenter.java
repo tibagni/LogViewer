@@ -258,11 +258,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         logParser = null;
 
         doOnUiThread(() -> {
-          if (allLogs.length > 0) {
-            view.showFilteredLogs(cachedAllowedFilteredLogs);
-            view.showLogs(allLogs);
-            view.showAvailableLogStreams(availableStreams.keySet());
+          view.showFilteredLogs(cachedAllowedFilteredLogs);
+          view.showLogs(allLogs);
+          view.showAvailableLogStreams(availableStreams.keySet());
 
+          if (allLogs.length > 0) {
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getPath());
             view.showCurrentLogsLocation(logsPath);
 
@@ -271,6 +271,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
               applyFilters();
             }
           } else {
+            view.showCurrentLogsLocation(null);
             view.showErrorMessage("No logs found");
           }
         });
