@@ -6,11 +6,11 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
 
-public class ReorderableList<E> extends JList<E> implements DragGestureListener, DragSourceListener {
+public class ReorderableCheckBoxList<E> extends CheckBoxList<E> implements DragGestureListener, DragSourceListener {
   private final DragSource dragSource = new DragSource();
   private OnReorderedListener reorderedListener;
 
-  public ReorderableList() {
+  public ReorderableCheckBoxList() {
     super();
     setDragEnabled(true);
     setDropMode(DropMode.INSERT);

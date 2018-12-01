@@ -32,8 +32,7 @@ public class LogViewerView implements LogViewer.View {
   private JPanel mainPanel;
   private JTable filteredLogList;
   private JButton addNewFilterBtn;
-  private ReorderableList<Filter> filtersList;
-  private JButton applyFiltersBtn;
+  private ReorderableCheckBoxList<Filter> filtersList;
   private JSplitPane logsPane;
   private JLabel currentLogsLbl;
 
@@ -95,8 +94,6 @@ public class LogViewerView implements LogViewer.View {
     logList.setDefaultRenderer(LogEntry.class, logRenderer);
     filteredLogList.setDefaultRenderer(LogEntry.class, logRenderer);
     setupFilteredLogsContextActions();
-
-    applyFiltersBtn.addActionListener(e -> applySelectedFilters());
 
     // Configure file drop
     new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
@@ -338,7 +335,10 @@ public class LogViewerView implements LogViewer.View {
       }
     });
 
-    filtersList.addListSelectionListener(e -> applyFiltersBtn.setEnabled(!filtersList.isSelectionEmpty()));
+    filtersList.setItemsCheckListener((CheckBoxList.ItemsCheckListener<Filter>) elements -> {
+      elements.forEach(f -> f.setApplied(!f.isApplied()));
+      presenter.applyFilters();
+    });
   }
 
   private void setupFilteredLogsContextActions() {
@@ -380,10 +380,6 @@ public class LogViewerView implements LogViewer.View {
     if (newFilter != null) {
       presenter.addFilter(newFilter);
     }
-  }
-
-  private void applySelectedFilters() {
-    presenter.applyFilters(filtersList.getSelectedIndices());
   }
 
   private void deleteSelectedFilters() {

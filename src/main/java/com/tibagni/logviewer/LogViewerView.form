@@ -87,7 +87,7 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="464fe" class="com.tibagni.logviewer.util.ReorderableList" binding="filtersList">
+                  <component id="464fe" class="com.tibagni.logviewer.util.ReorderableCheckBoxList" binding="filtersList">
                     <constraints/>
                     <properties/>
                   </component>
@@ -105,15 +105,6 @@
                     <properties>
                       <actionCommand value="Add"/>
                       <text value="+"/>
-                    </properties>
-                  </component>
-                  <component id="b8415" class="javax.swing.JButton" binding="applyFiltersBtn">
-                    <constraints/>
-                    <properties>
-                      <actionCommand value="Apply"/>
-                      <enabled value="false"/>
-                      <text value="Apply"/>
-                      <toolTipText value="Apply the selected filters to the text"/>
                     </properties>
                   </component>
                 </children>

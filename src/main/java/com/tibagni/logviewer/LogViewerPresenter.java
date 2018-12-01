@@ -74,12 +74,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
       if (userPrefs.shouldReapplyFiltersAfterEdit() &&
           allLogs != null && allLogs.length > 0) {
-        List<Integer> appliedFilters = getAppliedFilters();
         // Make sure to add the new filter to the 'applied' list
         // so it gets applied now (We always add to the end, so
         // just add the last index as well)
-        appliedFilters.add(filters.size() - 1);
-        applyFilters(CommonUtils.toIntArray(appliedFilters));
+        newFilter.setApplied(true);
+        applyFilters();
       }
     }
   }
@@ -245,6 +244,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   public void loadLogs(File[] logFiles) {
     logParser = new LogParser(new FileLogReader(logFiles), this::updateAsyncProgress);
 
+    // Clean up the filters info as it does not apply anymore
+    cleanUpFilterTempInfo();
     doAsync(() -> {
       try {
         // After loading new logs, clear the filtered logs as well as it is no longer valid
@@ -264,6 +265,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getPath());
             view.showCurrentLogsLocation(logsPath);
+
+            long appliedFiltersCount = filters.stream().filter(f -> f.isApplied()).count();
+            if (appliedFiltersCount > 0) {
+              applyFilters();
+            }
           } else {
             view.showErrorMessage("No logs found");
           }
@@ -272,9 +278,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
       }
     });
-
-    // Clean up the filters info as it does not apply anymore
-    cleanUpFilterTempInfo();
   }
 
   private Map<LogStream, Boolean> buildLogStreamsMap(Set<LogStream> availableStreams) {
@@ -287,9 +290,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void applyFilters(int[] filterIndices) {
+  public void applyFilters() {
     if (allLogs == null || allLogs.length == 0) {
-      view.showErrorMessage("There are no logs to filter...");
+      //view.showErrorMessage("There are no logs to filter...");
       return;
     }
 
@@ -298,14 +301,10 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     cleanUpFilteredColors();
     cleanUpFilterTempInfo();
 
-    Filter[] filters = new Filter[filterIndices.length];
-    int i = 0;
-    for (int filterIndex : filterIndices) {
-      filters[i++] = this.filters.get(filterIndex);
-    }
+    List<Filter> toApply = filters.stream().filter(f -> f.isApplied()).collect(Collectors.toList());
 
     doAsync(() -> {
-      filteredLogs = Filters.applyMultipleFilters(allLogs, filters, this::updateAsyncProgress);
+      filteredLogs = Filters.applyMultipleFilters(allLogs, toApply.toArray(new Filter[0]), this::updateAsyncProgress);
       cachedAllowedFilteredLogs = excludeNonAllowedStreams(filteredLogs);
       updateFiltersContextInfo();
       doOnUiThread(() -> view.showFilteredLogs(cachedAllowedFilteredLogs));
@@ -318,27 +317,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     if (userPrefs.shouldReapplyFiltersAfterEdit() &&
         allLogs != null && allLogs.length > 0) {
-      List<Integer> appliedFilters = getAppliedFilters();
-      int editedIndex = filters.indexOf(filter);
-      if (editedIndex >= 0 && !appliedFilters.contains(editedIndex)) {
-        // Make sure the edited filter will also be re-applied.
-        // If it was not previously applied, apply now
-        appliedFilters.add(editedIndex);
-      }
-
-      applyFilters(CommonUtils.toIntArray(appliedFilters));
+      // Make sure the edited filter will also be re-applied.
+      // If it was not previously applied, apply now
+      filter.setApplied(true);
+      applyFilters();
     }
-  }
-
-  private List<Integer> getAppliedFilters() {
-    List<Integer> appliedFilters = new ArrayList<>();
-    for (int i = 0; i < filters.size(); i++) {
-      if (filters.get(i).getTemporaryInfo() != null) {
-        appliedFilters.add(i);
-      }
-    }
-
-    return appliedFilters;
   }
 
   @Override

@@ -14,6 +14,7 @@ import java.util.regex.PatternSyntaxException;
 public class Filter {
   public static final String FILE_EXTENSION = "filter";
 
+  private boolean applied;
   private String name;
   private Color color;
 
@@ -49,6 +50,14 @@ public class Filter {
     this.name = name;
     this.color = color;
     this.pattern = getPattern(pattern);
+  }
+
+  public boolean isApplied() {
+    return applied;
+  }
+
+  public void setApplied(boolean applied) {
+    this.applied = applied;
   }
 
   public String getName() {
@@ -100,7 +109,8 @@ public class Filter {
 
   @Override
   public String toString() {
-    return String.format("Filter: [Name=%s, pattern=%s, regexFlags=%d, color=%s]", name, pattern, flags, color);
+    return String.format("Filter: [Name=%s, pattern=%s, regexFlags=%d, color=%s, applied=%b]",
+        name, pattern, flags, color, applied);
   }
 
   public String serializeFilter() {

@@ -4,9 +4,22 @@ import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.io.Serializable;
 
-public class FilterCellRenderer extends DefaultListCellRenderer {
+public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Object>, Serializable {
+
+  private static final Border DEFAULT_NO_FOCUS_BORDER = new EmptyBorder(1, 1, 1, 1);
+
+  public FilterCellRenderer() {
+    super();
+    setOpaque(true);
+    setBorder(DEFAULT_NO_FOCUS_BORDER);
+    setName("List.cellRenderer");
+  }
+
   @Override
   public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
                                                 boolean cellHasFocus) {
@@ -22,20 +35,32 @@ public class FilterCellRenderer extends DefaultListCellRenderer {
         text += String.format(" %s %s(,) / %s(.)", StringUtils.VERTICAL_SEPARATOR,
             StringUtils.LEFT_ARROW, StringUtils.RIGHT_ARROW);
       }
+    }
+    setComponentOrientation(list.getComponentOrientation());
+    setSelected(filter.isApplied());
 
-      text = String.format("%s %s", StringUtils.CHECK_SYMBOL, text);
+    JList.DropLocation dropLocation = list.getDropLocation();
+    if (dropLocation != null
+        && !dropLocation.isInsert()
+        && dropLocation.getIndex() == index) {
+
+      isSelected = true;
     }
 
-    Component renderComponent = super.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
-    renderComponent.setForeground(filter.getColor());
-
-    // Since our filters have their own colors as foreground, add a little alpha to selection background
-    // so filter text is still easy to visualize
     if (isSelected) {
-      Color selectedBgColor = SwingUtils.changeColorAlpha(list.getSelectionBackground(), 60);
-      renderComponent.setBackground(selectedBgColor);
+      // Since our filters have their own colors as foreground, add a little alpha to selection background
+      // so filter text is still easy to visualize
+      Color selectedBgColor = SwingUtils.changeColorAlpha(list.getSelectionBackground(), 25);
+      setBackground(selectedBgColor);
+    } else {
+      setBackground(list.getBackground());
     }
+    setForeground(filter.getColor());
+    setText(text);
 
-    return renderComponent;
+    setEnabled(list.isEnabled());
+    setFont(list.getFont());
+
+    return this;
   }
 }

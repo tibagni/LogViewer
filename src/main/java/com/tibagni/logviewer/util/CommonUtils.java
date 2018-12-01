@@ -2,9 +2,7 @@ package com.tibagni.logviewer.util;
 
 import com.tibagni.logviewer.logger.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class CommonUtils {
 
@@ -16,13 +14,22 @@ public class CommonUtils {
     }
   }
 
-  public static <E> Set setOf(E... args) {
+  public static <E> Set setOf(E... elements) {
     Set<E> s = new HashSet<>();
-    for (E e : args) {
+    for (E e : elements) {
       s.add(e);
     }
 
     return s;
+  }
+
+  public static <E> List<E> listOf(E... elements) {
+    List<E> l = new ArrayList<>();
+    for (E e : elements) {
+      l.add(e);
+    }
+
+    return l;
   }
 
   public static int[] toIntArray(Collection<Integer> collection) {
