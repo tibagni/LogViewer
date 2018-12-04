@@ -108,6 +108,8 @@ public class LogViewerView implements LogViewer.View {
         .getIconFromResource(this, "Icons/save_file.png");
     ImageIcon openIcon = SwingUtils
         .getIconFromResource(this, "Icons/open_file.png");
+    ImageIcon refreshIcon = SwingUtils
+        .getIconFromResource(this, "Icons/refresh.png");
 
     JMenuBar menuBar = new JMenuBar();
 
@@ -130,6 +132,11 @@ public class LogViewerView implements LogViewer.View {
     JMenuItem openLogsItem = new JMenuItem("Open Logs...", openIcon);
     openLogsItem.addActionListener(e -> openLogs());
     logsMenu.add(openLogsItem);
+    menuBar.add(logsMenu);
+    JMenuItem refreshLogsItem = new JMenuItem("Refresh...", refreshIcon);
+    refreshLogsItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+    refreshLogsItem.addActionListener(e -> presenter.refreshLogs());
+    logsMenu.add(refreshLogsItem);
     menuBar.add(logsMenu);
 
     JMenu filtersMenu = new JMenu("Filter");

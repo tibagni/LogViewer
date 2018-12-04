@@ -10,7 +10,6 @@ import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.parser.LogParser;
 import com.tibagni.logviewer.log.parser.LogParserException;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
-import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -21,6 +20,7 @@ import java.util.stream.Collectors;
 public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Presenter {
   private final LogViewer.View view;
 
+  private File[] currentlyOpenedLogFiles;
   private final List<Filter> filters;
   private LogEntry[] allLogs;
   private LogEntry[] filteredLogs;
@@ -270,15 +270,28 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
             if (appliedFiltersCount > 0) {
               applyFilters();
             }
+
+            currentlyOpenedLogFiles = Arrays.copyOf(logFiles, logFiles.length);
           } else {
             view.showCurrentLogsLocation(null);
             view.showErrorMessage("No logs found");
+            currentlyOpenedLogFiles = null;
           }
         });
       } catch (LogReaderException | LogParserException e) {
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
+        currentlyOpenedLogFiles = null;
       }
     });
+  }
+
+  @Override
+  public void refreshLogs() {
+    if (currentlyOpenedLogFiles != null && currentlyOpenedLogFiles.length > 0) {
+      loadLogs(currentlyOpenedLogFiles);
+    } else {
+      view.showErrorMessage("No logs to be refreshed");
+    }
   }
 
   private Map<LogStream, Boolean> buildLogStreamsMap(Set<LogStream> availableStreams) {

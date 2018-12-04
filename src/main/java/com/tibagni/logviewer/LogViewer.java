@@ -53,6 +53,7 @@ public class LogViewer {
     void saveFilters(File filterFile);
     void loadFilters(File filtersFile);
     void loadLogs(File[] logFiles);
+    void refreshLogs();
     void applyFilters();
     void filterEdited(Filter filter);
 
