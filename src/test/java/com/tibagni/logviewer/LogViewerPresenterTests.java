@@ -67,14 +67,14 @@ public class LogViewerPresenterTests {
     when(mockPrefs.shouldOpenLastFilter()).thenReturn(false);
     presenter.init();
 
-    verify(mockPrefs, never()).getLastFilterPath();
+    verify(mockPrefs, never()).getLastFilterPaths();
     verify(view, never()).configureFiltersList(any());
   }
 
   @Test
   public void testInitLoadingLastFilterNoFilterAvailable() {
     when(mockPrefs.shouldOpenLastFilter()).thenReturn(true);
-    when(mockPrefs.getLastFilterPath()).thenReturn(null);
+    when(mockPrefs.getLastFilterPaths()).thenReturn(null);
     presenter.init();
 
     verify(view, never()).configureFiltersList(any());
@@ -84,7 +84,7 @@ public class LogViewerPresenterTests {
   public void testInitLoadingLastFilter() {
     File filtersTempFile = createTempFiltersFile();
     when(mockPrefs.shouldOpenLastFilter()).thenReturn(true);
-    when(mockPrefs.getLastFilterPath()).thenReturn(filtersTempFile);
+    when(mockPrefs.getLastFilterPaths()).thenReturn(filtersTempFile);
     presenter.init();
 
     // Check that correct filter was loaded
@@ -103,11 +103,11 @@ public class LogViewerPresenterTests {
   @Test
   public void testAddFilter() throws FilterException {
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
-    presenter.addFilter(toAdd);
+    presenter.addFilterForTests(toAdd);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view).configureFiltersList(argument.capture());
-    verify(view).showUnsavedTitle();
+    verify(view).showUnsavedFilterIndication();
 
     Filter[] addedFilters = argument.getValue();
     assertEquals(1, addedFilters.length);
@@ -119,12 +119,12 @@ public class LogViewerPresenterTests {
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
 
     // First we add 2 filters
-    presenter.addFilter(toAdd);
-    presenter.addFilter(toAdd2);
+    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(toAdd2);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view, times(2)).configureFiltersList(argument.capture());
-    verify(view).showUnsavedTitle();
+    verify(view).showUnsavedFilterIndication();
 
     Filter[] resultFilters = argument.getValue();
     assertEquals(2, resultFilters.length);
@@ -149,13 +149,13 @@ public class LogViewerPresenterTests {
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilter(toAdd);
-    presenter.addFilter(toAdd2);
-    presenter.addFilter(toAdd3);
+    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(toAdd2);
+    presenter.addFilterForTests(toAdd3);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view, times(3)).configureFiltersList(argument.capture());
-    verify(view).showUnsavedTitle();
+    verify(view).showUnsavedFilterIndication();
 
     Filter[] resultFilters = argument.getValue();
     assertEquals(3, resultFilters.length);
@@ -180,9 +180,9 @@ public class LogViewerPresenterTests {
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilter(toAdd);
-    presenter.addFilter(toAdd2);
-    presenter.addFilter(toAdd3);
+    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(toAdd2);
+    presenter.addFilterForTests(toAdd3);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view, times(3)).configureFiltersList(argument.capture());
@@ -214,9 +214,9 @@ public class LogViewerPresenterTests {
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilter(toAdd);
-    presenter.addFilter(toAdd2);
-    presenter.addFilter(toAdd3);
+    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(toAdd2);
+    presenter.addFilterForTests(toAdd3);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view, times(3)).configureFiltersList(argument.capture());
@@ -248,9 +248,9 @@ public class LogViewerPresenterTests {
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilter(toAdd);
-    presenter.addFilter(toAdd2);
-    presenter.addFilter(toAdd3);
+    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(toAdd2);
+    presenter.addFilterForTests(toAdd3);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view, times(3)).configureFiltersList(argument.capture());
@@ -281,9 +281,9 @@ public class LogViewerPresenterTests {
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilter(toAdd);
-    presenter.addFilter(toAdd2);
-    presenter.addFilter(toAdd3);
+    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(toAdd2);
+    presenter.addFilterForTests(toAdd3);
 
     ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
     verify(view, times(3)).configureFiltersList(argument.capture());
@@ -313,12 +313,12 @@ public class LogViewerPresenterTests {
     Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
 
     // Add a filter to simulate 'unsaved changes'
-    presenter.addFilter(filter);
+    presenter.addFilterForTests(filter);
 
     when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.CONFIRMED);
     presenter.finishing();
 
-    verify(view).showSaveFilter();
+    verify(view).showSaveFilters();
     verify(view).finish();
   }
 
@@ -327,12 +327,12 @@ public class LogViewerPresenterTests {
     Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
 
     // Add a filter to simulate 'unsaved changes'
-    presenter.addFilter(filter);
+    presenter.addFilterForTests(filter);
 
     when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.REJECTED);
     presenter.finishing();
 
-    verify(view, never()).showSaveFilter();
+    verify(view, never()).showSaveFilters();
     verify(view).finish();
   }
 
@@ -341,12 +341,12 @@ public class LogViewerPresenterTests {
     Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
 
     // Add a filter to simulate 'unsaved changes'
-    presenter.addFilter(filter);
+    presenter.addFilterForTests(filter);
 
     when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.CANCELLED);
     presenter.finishing();
 
-    verify(view, never()).showSaveFilter();
+    verify(view, never()).showSaveFilters();
     verify(view, never()).finish();
   }
 
@@ -355,7 +355,7 @@ public class LogViewerPresenterTests {
     presenter.finishing();
 
     verify(view, never()).showAskToSaveFilterDialog();
-    verify(view, never()).showSaveFilter();
+    verify(view, never()).showSaveFilters();
     verify(view).finish();
   }
 

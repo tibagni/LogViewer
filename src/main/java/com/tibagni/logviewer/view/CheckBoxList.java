@@ -1,4 +1,6 @@
-package com.tibagni.logviewer.util;
+package com.tibagni.logviewer.view;
+
+import com.tibagni.logviewer.util.CommonUtils;
 
 import javax.swing.*;
 import java.awt.*;

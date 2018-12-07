@@ -3,6 +3,7 @@ package com.tibagni.logviewer.preferences;
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.prefs.Preferences;
 
@@ -51,13 +52,35 @@ public class LogViewerPreferences {
     listeners.forEach(l -> l.onDefaultFiltersPathChanged());
   }
 
-  public File getLastFilterPath() {
-    String path = preferences.get(LAST_FILTER_PATH, null);
-    return path != null ? new File(path) : null;
+  public File[] getLastFilterPaths() {
+    String pathStrings = preferences.get(LAST_FILTER_PATH, null);
+    String[] paths = pathStrings.split("\\$");
+
+    if (paths != null && paths.length > 0) {
+      File[] files = new File[paths.length];
+      for (int i = 0; i < paths.length; i++) {
+        files[i] = new File(paths[i]);
+      }
+
+      return files;
+    }
+    return null;
   }
 
-  public void setLastFilterPath(File filterPath) {
-    preferences.put(LAST_FILTER_PATH, filterPath.getAbsolutePath());
+  public void setLastFilterPaths(List<File> filterPaths) {
+    StringBuilder pathsString = new StringBuilder();
+    boolean addSeparator = false;
+    for (File file : filterPaths) {
+      if (addSeparator) {
+        pathsString.append("$");
+      } else {
+        addSeparator = true;
+      }
+
+      pathsString.append(file.getAbsolutePath());
+    }
+
+    preferences.put(LAST_FILTER_PATH, pathsString.toString());
     listeners.forEach(l -> l.onLastFilterPathChanged());
   }
 

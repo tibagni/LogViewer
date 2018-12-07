@@ -2,7 +2,7 @@ package com.tibagni.logviewer.preferences;
 
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
-import com.tibagni.logviewer.util.JFileChooserExt;
+import com.tibagni.logviewer.view.JFileChooserExt;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;

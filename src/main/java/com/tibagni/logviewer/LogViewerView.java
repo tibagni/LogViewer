@@ -3,7 +3,7 @@ package com.tibagni.logviewer;
 import com.tibagni.logviewer.about.AboutDialog;
 import com.tibagni.logviewer.filter.EditFilterDialog;
 import com.tibagni.logviewer.filter.Filter;
-import com.tibagni.logviewer.filter.FilterCellRenderer;
+import com.tibagni.logviewer.filter.FiltersList;
 import com.tibagni.logviewer.log.LogCellRenderer;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogListTableModel;
@@ -12,18 +12,21 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
+import com.tibagni.logviewer.view.FileDrop;
+import com.tibagni.logviewer.view.JFileChooserExt;
+import com.tibagni.logviewer.view.ProgressMonitorExt;
 import com.tibagni.logviewer.view.Toast;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.IntStream;
+import java.util.List;
 
 public class LogViewerView implements LogViewer.View {
   private LogViewerApplication application;
@@ -32,15 +35,16 @@ public class LogViewerView implements LogViewer.View {
   private JPanel mainPanel;
   private JTable filteredLogList;
   private JButton addNewFilterBtn;
-  private ReorderableCheckBoxList<Filter> filtersList;
   private JSplitPane logsPane;
   private JLabel currentLogsLbl;
+  private FiltersList filtersPane;
 
   private final LogCellRenderer logRenderer;
 
   private final LogViewer.Presenter presenter;
   private final JFileChooserExt logFileChooser;
-  private final JFileChooserExt filterFileChooser;
+  private final JFileChooserExt filterSaveFileChooser;
+  private final JFileChooserExt filterOpenFileChooser;
   private ProgressMonitorExt progressMonitor;
 
   private LogListTableModel logListTableModel;
@@ -51,10 +55,9 @@ public class LogViewerView implements LogViewer.View {
 
   final private LogViewerPreferences userPrefs;
 
-  private static final String UNSAVED_INDICATOR = " (*)";
-
   public LogViewerView(JFrame parent, LogViewerApplication application) {
     configureMenuBar(parent, false);
+
     this.application = application;
     this.parent = parent;
     userPrefs = LogViewerPreferences.getInstance();
@@ -72,11 +75,13 @@ public class LogViewerView implements LogViewer.View {
     });
 
     logFileChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
-    filterFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
+    filterSaveFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
+    filterOpenFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
     userPrefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
       @Override
       public void onDefaultFiltersPathChanged() {
-        filterFileChooser.setCurrentDirectory(userPrefs.getDefaultFiltersPath());
+        filterSaveFileChooser.setCurrentDirectory(userPrefs.getDefaultFiltersPath());
+        filterOpenFileChooser.setCurrentDirectory(userPrefs.getDefaultFiltersPath());
       }
 
       @Override
@@ -85,10 +90,7 @@ public class LogViewerView implements LogViewer.View {
       }
     });
 
-    addNewFilterBtn.addActionListener(e -> addFilter());
-
-    filtersList.setCellRenderer(new FilterCellRenderer());
-    filtersList.setReorderedListener(presenter::reorderFilters);
+    addNewFilterBtn.addActionListener(e -> addGroup());
     setupFiltersContextActions();
 
     logList.setDefaultRenderer(LogEntry.class, logRenderer);
@@ -100,28 +102,17 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void configureMenuBar(JFrame frame, boolean showStreamsMenu) {
-    ImageIcon newWindowIcon = SwingUtils
-        .getIconFromResource(this, "Icons/new_window.png");
-    ImageIcon settingsIcon = SwingUtils
-        .getIconFromResource(this, "Icons/settings.png");
-    ImageIcon saveIcon = SwingUtils
-        .getIconFromResource(this, "Icons/save_file.png");
-    ImageIcon openIcon = SwingUtils
-        .getIconFromResource(this, "Icons/open_file.png");
-    ImageIcon refreshIcon = SwingUtils
-        .getIconFromResource(this, "Icons/refresh.png");
-
     JMenuBar menuBar = new JMenuBar();
 
     JMenu fileMenu = new JMenu("File");
     fileMenu.setMnemonic('F');
 
-    JMenuItem newWindowItem = new JMenuItem("New Window", newWindowIcon);
+    JMenuItem newWindowItem = new JMenuItem("New Window");
     newWindowItem.setAccelerator(KeyStroke.getKeyStroke(
         KeyEvent.VK_N, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
     newWindowItem.addActionListener(e -> openNewWindow());
     fileMenu.add(newWindowItem);
-    JMenuItem settingsItem = new JMenuItem("Settings", settingsIcon);
+    JMenuItem settingsItem = new JMenuItem("Settings");
     settingsItem.setAccelerator(KeyStroke.getKeyStroke(
         KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
     settingsItem.addActionListener(e -> openUserPreferences());
@@ -129,25 +120,20 @@ public class LogViewerView implements LogViewer.View {
     menuBar.add(fileMenu);
 
     JMenu logsMenu = new JMenu("Logs");
-    JMenuItem openLogsItem = new JMenuItem("Open Logs...", openIcon);
+    JMenuItem openLogsItem = new JMenuItem("Open Logs...");
     openLogsItem.addActionListener(e -> openLogs());
     logsMenu.add(openLogsItem);
     menuBar.add(logsMenu);
-    JMenuItem refreshLogsItem = new JMenuItem("Refresh...", refreshIcon);
+    JMenuItem refreshLogsItem = new JMenuItem("Refresh...");
     refreshLogsItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
     refreshLogsItem.addActionListener(e -> presenter.refreshLogs());
     logsMenu.add(refreshLogsItem);
     menuBar.add(logsMenu);
 
-    JMenu filtersMenu = new JMenu("Filter");
-    JMenuItem openFilterItem = new JMenuItem("Open Filter...", openIcon);
-    openFilterItem.addActionListener(e -> openFilter());
-    JMenuItem saveFilterItem = new JMenuItem("Save Filter...", saveIcon);
-    saveFilterItem.setAccelerator(KeyStroke.getKeyStroke(
-        KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
-    saveFilterItem.addActionListener(e -> saveFilter());
+    JMenu filtersMenu = new JMenu("Filters");
+    JMenuItem openFilterItem = new JMenuItem("Open Filters...");
+    openFilterItem.addActionListener(e -> openFilters());
     filtersMenu.add(openFilterItem);
-    filtersMenu.add(saveFilterItem);
     menuBar.add(filtersMenu);
 
     if (showStreamsMenu) {
@@ -191,8 +177,8 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public void configureFiltersList(Filter[] filters) {
-    filtersList.setListData(filters);
+  public void configureFiltersList(Map<String, List<Filter>> filters) {
+    filtersPane.setFilters(new HashMap<>(filters));
   }
 
   @Override
@@ -222,7 +208,7 @@ public class LogViewerView implements LogViewer.View {
   public void showFilteredLogs(LogEntry[] logEntries) {
     filteredLogListTableModel.setLogs(logEntries);
     logList.updateUI();
-    filtersList.updateUI();
+    filtersPane.updateUI();
   }
 
   @Override
@@ -239,22 +225,20 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public void showUnsavedTitle() {
-    String currentTitle = parent.getTitle();
-    parent.setTitle(currentTitle + UNSAVED_INDICATOR);
+  public void showUnsavedFilterIndication(String group) {
+    filtersPane.showUnsavedIndication(group, true);
   }
 
   @Override
-  public void hideUnsavedTitle() {
-    String currentTitle = parent.getTitle();
-    parent.setTitle(currentTitle.replace(UNSAVED_INDICATOR, ""));
+  public void hideUnsavedFilterIndication(String group) {
+    filtersPane.showUnsavedIndication(group, false);
   }
 
   @Override
-  public LogViewer.UserSelection showAskToSaveFilterDialog() {
+  public LogViewer.UserSelection showAskToSaveFilterDialog(String group) {
     int userChoice = JOptionPane.showConfirmDialog(
         mainPanel.getParent(),
-        "There are unsaved changes to your filters, do you want to save it?",
+        group + " has unsaved changes. Do you want to save it?",
         "Unsaved changes",
         JOptionPane.YES_NO_CANCEL_OPTION,
         JOptionPane.WARNING_MESSAGE);
@@ -263,8 +247,16 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public void showSaveFilter() {
-    saveFilter();
+  public File showSaveFilters(String group) {
+    filterSaveFileChooser.resetChoosableFileFilters();
+    filterSaveFileChooser.setMultiSelectionEnabled(false);
+    filterSaveFileChooser.setDialogTitle("Save Filter...");
+    filterSaveFileChooser.setSaveExtension(Filter.FILE_EXTENSION);
+    int selectedOption = filterSaveFileChooser.showSaveDialog(mainPanel);
+    if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      return filterSaveFileChooser.getSelectedFile();
+    }
+    return null;
   }
 
   @Override
@@ -283,70 +275,74 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void setupFiltersContextActions() {
-    JPopupMenu popup = new JPopupMenu();
-    final JLabel menuTitle = new JLabel();
-    menuTitle.setBorder(new EmptyBorder(0, 10, 0, 0));
-    popup.add(menuTitle);
-    popup.add(new JPopupMenu.Separator());
-    JMenuItem deleteMenuItem = popup.add("Delete");
-    JMenuItem editMenuItem = popup.add("Edit");
-
-    deleteMenuItem.addActionListener(e -> deleteSelectedFilters());
-    editMenuItem.addActionListener(e -> editSelectedFilter());
-
-    filtersList.addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent me) {
-        int indexClicked = filtersList.locationToIndex(me.getPoint());
-
-        if (SwingUtilities.isRightMouseButton(me) && !filtersList.isSelectionEmpty()) {
-          int[] selectedIndices = filtersList.getSelectedIndices();
-          if (IntStream.of(selectedIndices).anyMatch(i -> i == indexClicked)) {
-            int selectedFilters = selectedIndices.length;
-            menuTitle.setText(selectedFilters + " item(s) selected");
-            editMenuItem.setVisible(selectedFilters == 1);
-
-            popup.show(filtersList, me.getX(), me.getY());
-          }
-        } else if (me.getClickCount() == 2) {
-          // Edit filter on double click
-          editSelectedFilter();
-        }
-      }
-    });
-
-    // Add the shortcuts for the context menu
-    filtersList.addKeyListener(new KeyAdapter() {
+    filtersPane.setFiltersListener(new FiltersList.FiltersListener() {
       @Override
-      public void keyPressed(KeyEvent e) {
-        if (!filtersList.isSelectionEmpty() && filtersList.getModel().getSize() > 0 &&
-            (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE)) {
-          deleteSelectedFilters();
-        } else if (e.getKeyCode() == KeyEvent.VK_ENTER && filtersList.getSelectedIndices().length == 1) {
-          editSelectedFilter();
-        } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-          filtersList.clearSelection();
-        } else if (e.getKeyChar() == ',' || e.getKeyChar() == '.') {
-          int filteredLogIdx;
-          int selectedFilter = filtersList.getSelectedIndex();
-          int selectedFilteredLog = filteredLogList.getSelectedRow();
+      public void onReordered(String group, int orig, int dest) {
+       presenter.reorderFilters(group, orig, dest);
+      }
 
-          if (e.getKeyChar() == ',') {
-            filteredLogIdx = presenter.getPrevFilteredLogForFilter(selectedFilter, selectedFilteredLog);
-          } else {
-            filteredLogIdx = presenter.getNextFilteredLogForFilter(selectedFilter, selectedFilteredLog);
-          }
+      @Override
+      public void onFiltersApplied() {
+        presenter.applyFilters();
+      }
 
-          if (filteredLogIdx != -1) {
-            SwingUtils.scrollToVisible(filteredLogList, filteredLogIdx);
-            filteredLogList.setRowSelectionInterval(filteredLogIdx, filteredLogIdx);
-          }
+      @Override
+      public void onEditFilter(Filter filter) {
+        // The filter is automatically updated by this dialog. We only check the result
+        // to determine if the dialog was canceled or not
+        Filter edited = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn, filter);
+
+        if (edited != null) {
+          // Tell the presenter a filter was edited. It will not update the filters
+          // as filters are updated by EditFilterDialog itself, it will only determine
+          // if the filter was, in fact, updated and mark unsaved changes if necessary.
+          presenter.filterEdited(filter);
         }
       }
-    });
 
-    filtersList.setItemsCheckListener((CheckBoxList.ItemsCheckListener<Filter>) elements -> {
-      elements.forEach(f -> f.setApplied(!f.isApplied()));
-      presenter.applyFilters();
+      @Override
+      public void onDeleteFilters(String group, int[] indices) {
+        int userChoice = JOptionPane.showConfirmDialog(
+            mainPanel.getParent(),
+            "Are you sure you want to delete the selected filter(s)?",
+            "Are you sure?",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+        if (userChoice != JOptionPane.YES_OPTION) return;
+
+        presenter.removeFilters(group, indices);
+      }
+
+      @Override
+      public void onNavigateNextFilteredLog(Filter filter) {
+        int selectedFilteredLog = filteredLogList.getSelectedRow();
+        int filteredLogIdx = presenter.getNextFilteredLogForFilter(filter, selectedFilteredLog);
+        if (filteredLogIdx != -1) {
+          SwingUtils.scrollToVisible(filteredLogList, filteredLogIdx);
+          filteredLogList.setRowSelectionInterval(filteredLogIdx, filteredLogIdx);
+        }
+      }
+
+      @Override
+      public void onNavigatePrevFilteredLog(Filter filter) {
+        int selectedFilteredLog = filteredLogList.getSelectedRow();
+        int filteredLogIdx = presenter.getPrevFilteredLogForFilter(filter, selectedFilteredLog);
+        if (filteredLogIdx != -1) {
+          SwingUtils.scrollToVisible(filteredLogList, filteredLogIdx);
+          filteredLogList.setRowSelectionInterval(filteredLogIdx, filteredLogIdx);
+        }
+      }
+
+      @Override
+      public void onAddFilter(String group) {
+        addFilter(group);
+      }
+
+      @Override
+      public void onSaveFilters(String group) {
+        saveFilter(group);
+      }
     });
   }
 
@@ -366,42 +362,24 @@ public class LogViewerView implements LogViewer.View {
     });
   }
 
-  private void editSelectedFilter() {
-    if (filtersList.getSelectedIndices().length == 1) {
-      Filter selectedFilter = filtersList.getModel().getElementAt(
-          filtersList.getSelectedIndex());
+  private void addGroup() {
+    String newGroupName = JOptionPane.showInputDialog(parent,
+        "What is the name of your new Filters Group?",
+        "New Filters Group",
+        JOptionPane.PLAIN_MESSAGE);
 
-      // The filter is automatically updated by this dialog. We only check the result
-      // to determine if the dialog was canceled or not
-      Filter edited = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn, selectedFilter);
-
-      if (edited != null) {
-        // Tell the presenter a filter was edited. It will not update the filters
-        // as filters are updated by EditFilterDialog itself, it will only determine
-        // if the filter was, in fact, updated and mark unsaved changes if necessary.
-        presenter.filterEdited(selectedFilter);
-      }
+    if (!StringUtils.isEmpty(newGroupName)) {
+      // If this name is already taken, a number will be appended to the end of the name
+      String addedGroupName = presenter.addGroup(newGroupName);
+      addFilter(addedGroupName);
     }
   }
 
-  private void addFilter() {
+  private void addFilter(String group) {
     Filter newFilter = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn);
     if (newFilter != null) {
-      presenter.addFilter(newFilter);
+      presenter.addFilter(group, newFilter);
     }
-  }
-
-  private void deleteSelectedFilters() {
-    int userChoice = JOptionPane.showConfirmDialog(
-        mainPanel.getParent(),
-        "Are you sure you want to delete the selected filter(s)?",
-        "Are you sure?",
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.WARNING_MESSAGE);
-
-    if (userChoice != JOptionPane.YES_OPTION) return;
-
-    presenter.removeFilters(filtersList.getSelectedIndices());
   }
 
   private void openLogs() {
@@ -414,25 +392,18 @@ public class LogViewerView implements LogViewer.View {
     }
   }
 
-  private void saveFilter() {
-    filterFileChooser.resetChoosableFileFilters();
-    filterFileChooser.setMultiSelectionEnabled(false);
-    filterFileChooser.setDialogTitle("Save Filter...");
-    filterFileChooser.setSaveExtension(Filter.FILE_EXTENSION);
-    int selectedOption = filterFileChooser.showSaveDialog(mainPanel);
-    if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.saveFilters(filterFileChooser.getSelectedFile());
-    }
+  private void saveFilter(String filtersGroup) {
+    presenter.saveFilters(filtersGroup);
   }
 
-  private void openFilter() {
-    filterFileChooser.resetChoosableFileFilters();
-    filterFileChooser.setFileFilter(new FileNameExtensionFilter("Filter files", Filter.FILE_EXTENSION));
-    filterFileChooser.setMultiSelectionEnabled(false);
-    filterFileChooser.setDialogTitle("Open Filter...");
-    int selectedOption = filterFileChooser.showOpenDialog(mainPanel);
+  private void openFilters() {
+    filterOpenFileChooser.resetChoosableFileFilters();
+    filterOpenFileChooser.setFileFilter(new FileNameExtensionFilter("Filter files", Filter.FILE_EXTENSION));
+    filterOpenFileChooser.setMultiSelectionEnabled(true);
+    filterOpenFileChooser.setDialogTitle("Open Filters...");
+    int selectedOption = filterOpenFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.loadFilters(filterFileChooser.getSelectedFile());
+      presenter.loadFilters(filterOpenFileChooser.getSelectedFiles());
     }
   }
 

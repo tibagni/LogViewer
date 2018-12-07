@@ -41,4 +41,11 @@ public class CommonUtils {
 
     return returnArray;
   }
+
+  public static
+  <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
+    List<T> list = new ArrayList<>(c);
+    Collections.sort(list);
+    return list;
+  }
 }

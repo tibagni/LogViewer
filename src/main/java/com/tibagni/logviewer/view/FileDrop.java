@@ -1,4 +1,4 @@
-package com.tibagni.logviewer.util;
+package com.tibagni.logviewer.view;
 
 import java.awt.datatransfer.DataFlavor;
 import java.io.BufferedReader;

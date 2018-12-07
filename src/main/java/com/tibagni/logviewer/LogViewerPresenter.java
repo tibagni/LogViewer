@@ -15,23 +15,23 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Presenter {
   private final LogViewer.View view;
 
   private File[] currentlyOpenedLogFiles;
-  private final List<Filter> filters;
+  private final Map<String, List<Filter>> filters;
+  private final Map<String, File> filtersFilesMap;
+  private final Map<String, List<String>> currentlyOpenedFilters;
   private LogEntry[] allLogs;
   private LogEntry[] filteredLogs;
   private LogEntry[] cachedAllowedFilteredLogs;
   private LogParser logParser;
-
-  private boolean hasUnsavedFilterChanges;
-  private List<String> currentlyOpenedFilters;
-
+  private final List<String> unsavedFilterGroups;
   private Map<LogStream, Boolean> availableStreams = new HashMap<>();
-
   private final LogViewerPreferences userPrefs;
 
   public LogViewerPresenter(LogViewer.View view) {
@@ -42,8 +42,10 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   LogViewerPresenter(LogViewer.View view, LogViewerPreferences userPrefs) {
     super(view);
     this.view = view;
-    filters = new ArrayList<>();
-    currentlyOpenedFilters = new ArrayList<>();
+    filters = new HashMap<>();
+    filtersFilesMap = new HashMap<>();
+    currentlyOpenedFilters = new HashMap<>();
+    unsavedFilterGroups = new ArrayList<>();
 
     this.userPrefs = userPrefs;
   }
@@ -52,24 +54,32 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   public void init() {
     // Check if we need to open the last opened filter
     if (userPrefs.shouldOpenLastFilter()) {
-      File lastFilter = userPrefs.getLastFilterPath();
-      if (lastFilter != null) {
-        loadFilters(lastFilter);
+      File[] lastFilters = userPrefs.getLastFilterPaths();
+      if (lastFilters != null && lastFilters.length > 0) {
+        loadFilters(lastFilters);
       }
     }
   }
 
-  private void setFilters(List<Filter> newFilters) {
+  private void setFilters(Map<String, List<Filter>> newFilters) {
     filters.clear();
-    filters.addAll(newFilters);
-    view.configureFiltersList(filters.toArray(new Filter[0]));
+    filters.putAll(newFilters);
+    view.configureFiltersList(filters);
   }
 
   @Override
-  public void addFilter(Filter newFilter) {
-    if (newFilter != null) {
-      filters.add(newFilter);
-      view.configureFiltersList(filters.toArray(new Filter[0]));
+  public void addFilter(String group, Filter newFilter) {
+    if (!StringUtils.isEmpty(group) && newFilter != null) {
+      if (filters.containsKey(group)) {
+        List<Filter> filtersFromGroup = filters.get(group);
+        filtersFromGroup.add(newFilter);
+      } else {
+        List<Filter> filtersFromGroup = new ArrayList<>();
+        filtersFromGroup.add(newFilter);
+        filters.put(group, filtersFromGroup);
+      }
+
+      view.configureFiltersList(filters);
       checkForUnsavedChanges();
 
       if (userPrefs.shouldReapplyFiltersAfterEdit() &&
@@ -84,14 +94,32 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void removeFilters(int[] indices) {
-    // Iterate backwards otherwise the indices will change
-    // and we will end up deleting wrong items
-    for (int i = indices.length - 1; i >= 0; i--) {
-      filters.remove(indices[i]);
+  public String addGroup(String group) {
+    if (!StringUtils.isEmpty(group)) {
+      int n = 1;
+      String groupName = group;
+      while(filters.containsKey(groupName)) {
+        groupName = group + n++;
+      }
+
+      filters.put(groupName, new ArrayList<>());
+      view.configureFiltersList(filters);
+      return groupName;
     }
 
-    view.configureFiltersList(filters.toArray(new Filter[0]));
+    return null;
+  }
+
+  @Override
+  public void removeFilters(String group, int[] indices) {
+    // Iterate backwards otherwise the indices will change
+    // and we will end up deleting wrong items
+    List<Filter> filtersFromGroup = filters.get(group);
+    for (int i = indices.length - 1; i >= 0; i--) {
+      filtersFromGroup.remove(indices[i]);
+    }
+
+    view.configureFiltersList(filters);
 
     // Do not mark as unsaved changes if all filters were removed.
     // User will not save an empty filter set
@@ -101,21 +129,22 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void reorderFilters(int orig, int dest) {
+  public void reorderFilters(String group, int orig, int dest) {
     if (orig == dest) return;
 
     int destIndex = dest > orig ? (dest - 1) : dest;
-    Filter filter = filters.remove(orig);
-    filters.add(destIndex, filter);
-    view.configureFiltersList(filters.toArray(new Filter[0]));
+    List<Filter> filtersFromGroup = filters.get(group);
+    Filter filter = filtersFromGroup.remove(orig);
+    filtersFromGroup.add(destIndex, filter);
+    view.configureFiltersList(filters);
     checkForUnsavedChanges();
   }
 
   @Override
-  public int getNextFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
+  public int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch) {
     // we need to navigate on the logs that are being shown on the UI,
     // so use 'cachedAllowedFilteredLogs' here
-    if (filterIndex < 0 || cachedAllowedFilteredLogs.length == 0) {
+    if (cachedAllowedFilteredLogs == null || cachedAllowedFilteredLogs.length == 0) {
       return -1;
     }
 
@@ -127,7 +156,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       firstLogIndexSearch = cachedAllowedFilteredLogs.length - 1;
     }
 
-    Filter filter = filters.get(filterIndex);
     int startSearch = firstLogIndexSearch + 1;
     int endSearch = startSearch + cachedAllowedFilteredLogs.length;
 
@@ -145,10 +173,10 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public int getPrevFilteredLogForFilter(int filterIndex, int firstLogIndexSearch) {
+  public int getPrevFilteredLogForFilter(Filter filter, int firstLogIndexSearch) {
     // we need to navigate on the logs that are being shown on the UI,
     // so use 'cachedAllowedFilteredLogs' here
-    if (filterIndex < 0 || cachedAllowedFilteredLogs.length == 0) {
+    if (cachedAllowedFilteredLogs == null || cachedAllowedFilteredLogs.length == 0) {
       return -1;
     }
 
@@ -160,7 +188,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       firstLogIndexSearch = cachedAllowedFilteredLogs.length - 1;
     }
 
-    Filter filter = filters.get(filterIndex);
     int startSearch = firstLogIndexSearch < 0 ? firstLogIndexSearch : firstLogIndexSearch - 1;
     int endSearch = startSearch - cachedAllowedFilteredLogs.length;
 
@@ -178,11 +205,22 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void saveFilters(File filterFile) {
+  public void saveFilters(String group) {
+    File saveFile = filtersFilesMap.get(group);
+    if (saveFile == null) {
+      saveFile = view.showSaveFilters(group);
+    }
+
+    if (saveFile != null) {
+      saveFilters(saveFile, group);
+    }
+  }
+
+  public void saveFilters(File filterFile, String group) {
     try {
       boolean firstLoop = true;
       BufferedWriter fileWriter = new BufferedWriter(new FileWriter(filterFile));
-      List<String> serializedFilters = getSerializedFilters();
+      List<String> serializedFilters = getSerializedFilters(group);
       for (String serializedFilter : serializedFilters) {
         if (firstLoop) {
           firstLoop = false;
@@ -194,9 +232,10 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       }
       fileWriter.close();
 
+      filtersFilesMap.put(group, filterFile);
       // Now that we saved the filters, make it the currently opened filters
-      currentlyOpenedFilters.clear();
-      currentlyOpenedFilters.addAll(serializedFilters);
+      currentlyOpenedFilters.remove(group);
+      currentlyOpenedFilters.put(group, serializedFilters);
 
       // Call checkForUnsavedChanges to clear the 'unsaved changes' state
       checkForUnsavedChanges();
@@ -205,39 +244,57 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
   }
 
-  private List<String> getSerializedFilters() {
-    return filters.stream().map(Filter::serializeFilter).
+  private List<String> getSerializedFilters(String group) {
+    List<Filter> filtersFromGroup = filters.get(group);
+    if (filtersFromGroup == null) {
+      return Collections.emptyList();
+    }
+
+    return filtersFromGroup.stream().map(Filter::serializeFilter).
         collect(Collectors.toList());
   }
 
   @Override
-  public void loadFilters(File filtersFile) {
-    BufferedReader bufferedReader = null;
+  public void loadFilters(File[] filtersFiles) {
+    List<File> successfulOpenedFiles = new ArrayList<>();
+    Map<String, List<Filter>> filtersFromFiles = new HashMap<>();
+
     currentlyOpenedFilters.clear();
-    try {
-      bufferedReader = new BufferedReader(new FileReader(filtersFile));
-      String line;
-      List<Filter> filtersFromFile = new ArrayList<>();
-      while ((line = bufferedReader.readLine()) != null && line.trim().length() > 0) {
-        filtersFromFile.add(Filter.createFromString(line));
-        currentlyOpenedFilters.add(line);
-      }
-      setFilters(filtersFromFile);
+    filtersFilesMap.clear();
+    for (File file : filtersFiles) {
+      BufferedReader bufferedReader = null;
+      String group = file.getName();
 
-      // Call checkForUnsavedChanges to clear the 'unsaved changes' state
-      checkForUnsavedChanges();
+      try {
+        bufferedReader = new BufferedReader(new FileReader(file));
+        String line;
+        List<Filter> filters = new ArrayList<>();
+        List<String> serializedFilters = new ArrayList<>();
+        while ((line = bufferedReader.readLine()) != null && line.trim().length() > 0) {
+          filters.add(Filter.createFromString(line));
+          serializedFilters.add(line);
+        }
+        currentlyOpenedFilters.put(group, serializedFilters);
+        filtersFilesMap.put(group, file);
 
-      // Set this as the last filter opened
-      userPrefs.setLastFilterPath(filtersFile);
-    } catch (FilterException | IOException e) {
-      view.showErrorMessage(e.getMessage());
-    } finally {
-      if (bufferedReader != null) {
-        try {
-          bufferedReader.close();
-        } catch (IOException ignore) { }
+        filtersFromFiles.put(group, filters);
+        successfulOpenedFiles.add(file);
+      } catch (FilterException | IOException e) {
+        view.showErrorMessage(e.getMessage());
+      } finally {
+        if (bufferedReader != null) {
+          try {
+            bufferedReader.close();
+          } catch (IOException ignore) { }
+        }
       }
     }
+    setFilters(filtersFromFiles);
+    // Call checkForUnsavedChanges to clear the 'unsaved changes' state
+    checkForUnsavedChanges();
+
+    // Set this as the last filter opened
+    userPrefs.setLastFilterPaths(successfulOpenedFiles);
   }
 
   @Override
@@ -266,7 +323,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getPath());
             view.showCurrentLogsLocation(logsPath);
 
-            long appliedFiltersCount = filters.stream().filter(f -> f.isApplied()).count();
+            long appliedFiltersCount = getFiltersThat(filter -> filter.isApplied()).size();
             if (appliedFiltersCount > 0) {
               applyFilters();
             }
@@ -315,8 +372,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     cleanUpFilteredColors();
     cleanUpFilterTempInfo();
 
-    List<Filter> toApply = filters.stream().filter(f -> f.isApplied()).collect(Collectors.toList());
-
+    List<Filter> toApply = getFiltersThat(filter -> filter.isApplied());
     doAsync(() -> {
       filteredLogs = Filters.applyMultipleFilters(allLogs, toApply.toArray(new Filter[0]), this::updateAsyncProgress);
       cachedAllowedFilteredLogs = excludeNonAllowedStreams(filteredLogs);
@@ -359,12 +415,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       }
     }
 
-    for (Filter filter : filters) {
+    forEachFilter(filter -> {
       Filter.ContextInfo filterTemporaryInfo = filter.getTemporaryInfo();
       if (filterTemporaryInfo != null) {
         filterTemporaryInfo.setAllowedStreams(allowedStreams);
       }
-    }
+    });
   }
 
   @Override
@@ -406,17 +462,19 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   @Override
   public void finishing() {
     boolean shouldFinish = true;
-    if (hasUnsavedFilterChanges) {
-      LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog();
+    // 'unsavedFilterGroups' can be changed while we are iterating over it
+    // create an array with its elements to be safe instead
+    String[] unsavedGroups = unsavedFilterGroups.toArray(new String[0]);
 
+    for (String unsavedGroup : unsavedGroups) {
+      LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog(unsavedGroup);
       if (userSelection == LogViewer.UserSelection.CONFIRMED) {
-        view.showSaveFilter();
+        saveFilters(unsavedGroup);
+      } else if (userSelection == LogViewer.UserSelection.CANCELLED) {
+        // Cancel all
+        shouldFinish = false;
+        break;
       }
-
-      // Do not close window if user has cancelled or closed the
-      // finishing dialog
-      shouldFinish = (userSelection !=
-          LogViewer.UserSelection.CANCELLED);
     }
 
     if (shouldFinish) {
@@ -434,38 +492,39 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   private void cleanUpFilterTempInfo() {
-    for (Filter filter : filters) {
-      filter.resetTemporaryInfo();
-    }
+    forEachFilter(filter -> filter.resetTemporaryInfo());
   }
 
   private void checkForUnsavedChanges() {
-    boolean filtersChanged = haveFiltersChanged();
-
-    if (hasUnsavedFilterChanges != filtersChanged) {
-      hasUnsavedFilterChanges = filtersChanged;
-
-      if (hasUnsavedFilterChanges) {
-        view.showUnsavedTitle();
+    unsavedFilterGroups.clear();
+    for (String group : filters.keySet()) {
+      if (haveFiltersChanged(group)) {
+        view.showUnsavedFilterIndication(group);
+        unsavedFilterGroups.add(group);
       } else {
-        view.hideUnsavedTitle();
+        view.hideUnsavedFilterIndication(group);
       }
     }
   }
 
-  private boolean haveFiltersChanged() {
+  private boolean haveFiltersChanged(String group) {
     // Here we check if the current filters are different from
     // the filters saved in disk (Which we have cached in memory,
     // stored in 'currentlyOpenedFilters' to make this method efficient)
-    List<String> serializedFilters = getSerializedFilters();
+    List<String> serializedFilters = getSerializedFilters(group);
+    List<String> currentFilters = currentlyOpenedFilters.get(group);
+    if (serializedFilters.size() > 0 && currentFilters == null) {
+      return true;
+    }
+
     if (serializedFilters.size() > 0 &&
-        serializedFilters.size() != currentlyOpenedFilters.size()) {
+        serializedFilters.size() != currentFilters.size()) {
       return true;
     }
 
     for (int i = 0; i < serializedFilters.size(); i++) {
       if (!StringUtils.areEquals(serializedFilters.get(i),
-          currentlyOpenedFilters.get(i))) {
+          currentFilters.get(i))) {
         return true;
       }
     }
@@ -473,12 +532,35 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     return false;
   }
 
+  private void forEachFilter(Consumer<Filter> consumer) {
+    for (Map.Entry<String, List<Filter>> entry : filters.entrySet()) {
+      List<Filter> filtersFromGroup = entry.getValue();
+      for (Filter f : filtersFromGroup) {
+        consumer.accept(f);
+      }
+    }
+  }
+
+  private List<Filter> getFiltersThat(Predicate<Filter> condition) {
+    List<Filter> resultFilters = new ArrayList<>();
+    for (Map.Entry<String, List<Filter>> entry : filters.entrySet()) {
+      List<Filter> filtersFromGroup = entry.getValue();
+      for (Filter f : filtersFromGroup) {
+        if (condition.test(f)) {
+          resultFilters.add(f);
+        }
+      }
+    }
+
+    return resultFilters;
+  }
+
   // Test helpers
   void setFilteredLogsForTesting(LogEntry[] filteredLogs) {
     this.filteredLogs = filteredLogs;
   }
   void setFiltersForTesting(List<Filter> filters) {
-    this.filters.addAll(filters);
+    this.filters.put("Test", filters);
   }
   void setAvailableStreamsForTesting(Set<LogStream> streams, boolean initiallyAllowed) {
     for (LogStream stream : streams) {
@@ -487,5 +569,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
   void setAvailableStreamsForTesting(Set<LogStream> streams) {
     setAvailableStreamsForTesting(streams, false);
+  }
+  public void addFilterForTests(Filter newFilter) {
+    addFilter("Test", newFilter);
   }
 }
