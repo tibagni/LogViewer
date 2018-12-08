@@ -10,7 +10,9 @@ import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.CommonUtils;
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -22,6 +24,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,7 +53,7 @@ public class LogViewerPresenterTests {
 
   private File createTempFiltersFile() {
     try {
-      File tempFile =  File.createTempFile(TEMP_FILE_NAME, TEMP_FILE_EXT);
+      File tempFile = File.createTempFile(TEMP_FILE_NAME, TEMP_FILE_EXT);
 
       BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
       writer.write(TEST_SERIALIZED_FILTER);
@@ -84,269 +87,283 @@ public class LogViewerPresenterTests {
   public void testInitLoadingLastFilter() {
     File filtersTempFile = createTempFiltersFile();
     when(mockPrefs.shouldOpenLastFilter()).thenReturn(true);
-    when(mockPrefs.getLastFilterPaths()).thenReturn(filtersTempFile);
+    when(mockPrefs.getLastFilterPaths()).thenReturn(new File[]{filtersTempFile});
     presenter.init();
 
     // Check that correct filter was loaded
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view).configureFiltersList(argument.capture());
 
-    Filter[] loadedFilters = argument.getValue();
+    List<Filter> loadedFilters = argument.getValue().get(filtersTempFile.getName());
     assertNotNull(loadedFilters);
-    assertEquals(1, loadedFilters.length);
-    assertEquals("Test", loadedFilters[0].getName());
-    assertEquals(new Color(255, 0, 0), loadedFilters[0].getColor());
+    assertEquals(1, loadedFilters.size());
+    assertEquals("Test", loadedFilters.get(0).getName());
+    assertEquals(new Color(255, 0, 0), loadedFilters.get(0).getColor());
 
     filtersTempFile.delete();
   }
 
   @Test
   public void testAddFilter() throws FilterException {
+    final String testGroup = "testGroup";
+
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
-    presenter.addFilterForTests(toAdd);
+    presenter.addFilterForTests(testGroup, toAdd);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view).configureFiltersList(argument.capture());
-    verify(view).showUnsavedFilterIndication();
+    verify(view).showUnsavedFilterIndication(testGroup);
 
-    Filter[] addedFilters = argument.getValue();
-    assertEquals(1, addedFilters.length);
+    Map<String, List<Filter>> filtersMap = argument.getValue();
+    assertEquals(1, filtersMap.size());
+    assertEquals(1, filtersMap.get(testGroup).size());
   }
 
   @Test
   public void testRemoveOneFilter() throws FilterException {
+    final String testGroup = "testGroup";
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
 
     // First we add 2 filters
-    presenter.addFilterForTests(toAdd);
-    presenter.addFilterForTests(toAdd2);
+    presenter.addFilterForTests(testGroup, toAdd);
+    presenter.addFilterForTests(testGroup, toAdd2);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view, times(2)).configureFiltersList(argument.capture());
-    verify(view).showUnsavedFilterIndication();
+    verify(view, atLeastOnce()).showUnsavedFilterIndication(testGroup);
 
-    Filter[] resultFilters = argument.getValue();
-    assertEquals(2, resultFilters.length);
+    Map<String, List<Filter>> resultFilters = argument.getValue();
+    assertEquals(1, resultFilters.size());
+    assertEquals(2, resultFilters.get(testGroup).size());
 
     // Now we remove the first filter
-    presenter.removeFilters(new int[] {0});
+    presenter.removeFilters(testGroup, new int[]{0});
     // times refers to all times the method was called (2 for add + 1 for remove now)
     verify(view, times(3)).configureFiltersList(argument.capture());
 
     // And check the it was, in fact, removed
     resultFilters = argument.getValue();
-    assertEquals(1, resultFilters.length);
+    assertEquals(1, resultFilters.get(testGroup).size());
 
     // Verify that the other filter remains
-    assertEquals("Test2", resultFilters[0].getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(0).getName());
   }
 
   @Test
   public void testRemoveTwoFilters() throws FilterException {
+    final String testGroup = "testGroup";
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilterForTests(toAdd);
-    presenter.addFilterForTests(toAdd2);
-    presenter.addFilterForTests(toAdd3);
+    presenter.addFilterForTests(testGroup, toAdd);
+    presenter.addFilterForTests(testGroup, toAdd2);
+    presenter.addFilterForTests(testGroup, toAdd3);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view, times(3)).configureFiltersList(argument.capture());
-    verify(view).showUnsavedFilterIndication();
+    verify(view, atLeastOnce()).showUnsavedFilterIndication(testGroup);
 
-    Filter[] resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
+    Map<String, List<Filter>> resultFilters = argument.getValue();
+    assertEquals(3, resultFilters.get(testGroup).size());
 
     // Now we remove the first filter
-    presenter.removeFilters(new int[] {0, 1});
+    presenter.removeFilters(testGroup, new int[]{0, 1});
     // times refers to all times the method was called (3 for add + 1 for remove now)
     verify(view, times(4)).configureFiltersList(argument.capture());
 
     // And check that it was, in fact, removed
     resultFilters = argument.getValue();
-    assertEquals(1, resultFilters.length);
+    assertEquals(1, resultFilters.get(testGroup).size());
 
     // Verify that the other filter remains
-    assertEquals("Test3", resultFilters[0].getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(0).getName());
   }
 
   @Test
   public void testReorderFilters() throws FilterException {
+    final String testGroup = "testGroup";
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilterForTests(toAdd);
-    presenter.addFilterForTests(toAdd2);
-    presenter.addFilterForTests(toAdd3);
+    presenter.addFilterForTests(testGroup, toAdd);
+    presenter.addFilterForTests(testGroup, toAdd2);
+    presenter.addFilterForTests(testGroup, toAdd3);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view, times(3)).configureFiltersList(argument.capture());
 
     // Ensure the order is the added order
-    Filter[] resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test", resultFilters[0].getName());
-    assertEquals("Test2", resultFilters[1].getName());
-    assertEquals("Test3", resultFilters[2].getName());
+    Map<String, List<Filter>> resultFilters = argument.getValue();
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(2).getName());
 
     // Now we exchange Test3 with Test2
-    presenter.reorderFilters(2, 1);
+    presenter.reorderFilters(testGroup, 2, 1);
     // times refers to all times the method was called (3 for add + 1 for reorder now)
     verify(view, times(4)).configureFiltersList(argument.capture());
 
     // And now check the new order
     resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test", resultFilters[0].getName());
-    assertEquals("Test3", resultFilters[1].getName());
-    assertEquals("Test2", resultFilters[2].getName());
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(2).getName());
   }
 
   @Test
   public void testReorderFilters2() throws FilterException {
+    final String testGroup = "testGroup";
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilterForTests(toAdd);
-    presenter.addFilterForTests(toAdd2);
-    presenter.addFilterForTests(toAdd3);
+    presenter.addFilterForTests(testGroup, toAdd);
+    presenter.addFilterForTests(testGroup, toAdd2);
+    presenter.addFilterForTests(testGroup, toAdd3);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view, times(3)).configureFiltersList(argument.capture());
 
     // Ensure the order is the added order
-    Filter[] resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test", resultFilters[0].getName());
-    assertEquals("Test2", resultFilters[1].getName());
-    assertEquals("Test3", resultFilters[2].getName());
+    Map<String, List<Filter>> resultFilters = argument.getValue();
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(2).getName());
 
     // Now we exchange Test3 with Test2
-    presenter.reorderFilters(2, 0);
+    presenter.reorderFilters(testGroup, 2, 0);
     // times refers to all times the method was called (3 for add + 1 for reorder now)
     verify(view, times(4)).configureFiltersList(argument.capture());
 
     // And now check the new order
     resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test3", resultFilters[0].getName());
-    assertEquals("Test", resultFilters[1].getName());
-    assertEquals("Test2", resultFilters[2].getName());
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test3", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(2).getName());
   }
 
   @Test
   public void testReorderFilters3() throws FilterException {
+    final String testGroup = "testGroup";
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilterForTests(toAdd);
-    presenter.addFilterForTests(toAdd2);
-    presenter.addFilterForTests(toAdd3);
+    presenter.addFilterForTests(testGroup, toAdd);
+    presenter.addFilterForTests(testGroup, toAdd2);
+    presenter.addFilterForTests(testGroup, toAdd3);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view, times(3)).configureFiltersList(argument.capture());
 
     // Ensure the order is the added order
-    Filter[] resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test", resultFilters[0].getName());
-    assertEquals("Test2", resultFilters[1].getName());
-    assertEquals("Test3", resultFilters[2].getName());
+    Map<String, List<Filter>> resultFilters = argument.getValue();
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(2).getName());
 
     // Now we exchange Test3 with Test2
-    presenter.reorderFilters(0, 2);
+    presenter.reorderFilters(testGroup, 0, 2);
     // times refers to all times the method was called (3 for add + 1 for reorder now)
     verify(view, times(4)).configureFiltersList(argument.capture());
 
     // And now check the new order
     resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test2", resultFilters[0].getName());
-    assertEquals("Test", resultFilters[1].getName());
-    assertEquals("Test3", resultFilters[2].getName());
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test2", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(2).getName());
   }
+
   @Test
   public void testReorderFilters4() throws FilterException {
+    final String testGroup = "testGroup";
     Filter toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER);
     Filter toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2);
     Filter toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3);
 
     // First we add 3 filters
-    presenter.addFilterForTests(toAdd);
-    presenter.addFilterForTests(toAdd2);
-    presenter.addFilterForTests(toAdd3);
+    presenter.addFilterForTests(testGroup, toAdd);
+    presenter.addFilterForTests(testGroup, toAdd2);
+    presenter.addFilterForTests(testGroup, toAdd3);
 
-    ArgumentCaptor<Filter[]> argument = ArgumentCaptor.forClass(Filter[].class);
+    ArgumentCaptor<Map<String, List<Filter>>> argument = ArgumentCaptor.forClass(Map.class);
     verify(view, times(3)).configureFiltersList(argument.capture());
 
     // Ensure the order is the added order
-    Filter[] resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test", resultFilters[0].getName());
-    assertEquals("Test2", resultFilters[1].getName());
-    assertEquals("Test3", resultFilters[2].getName());
+    Map<String, List<Filter>> resultFilters = argument.getValue();
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test2", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(2).getName());
 
     // Now we exchange Test3 with Test2
-    presenter.reorderFilters(0, 3);
+    presenter.reorderFilters(testGroup, 0, 3);
     // times refers to all times the method was called (3 for add + 1 for reorder now)
     verify(view, times(4)).configureFiltersList(argument.capture());
 
     // And now check the new order
     resultFilters = argument.getValue();
-    assertEquals(3, resultFilters.length);
-    assertEquals("Test2", resultFilters[0].getName());
-    assertEquals("Test3", resultFilters[1].getName());
-    assertEquals("Test", resultFilters[2].getName());
+    assertEquals(3, resultFilters.get(testGroup).size());
+    assertEquals("Test2", resultFilters.get(testGroup).get(0).getName());
+    assertEquals("Test3", resultFilters.get(testGroup).get(1).getName());
+    assertEquals("Test", resultFilters.get(testGroup).get(2).getName());
   }
 
   @Test
   public void testFinishingSaveChanges() throws FilterException {
+    final String testGroup = "testGroup";
     Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
 
     // Add a filter to simulate 'unsaved changes'
-    presenter.addFilterForTests(filter);
+    presenter.addFilterForTests(testGroup, filter);
 
-    when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.CONFIRMED);
+    when(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.CONFIRMED);
     presenter.finishing();
 
-    verify(view).showSaveFilters();
+    verify(view).showSaveFilters(testGroup);
     verify(view).finish();
   }
 
   @Test
   public void testFinishingDontSaveChanges() throws FilterException {
+    final String testGroup = "testGroup";
     Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
 
     // Add a filter to simulate 'unsaved changes'
-    presenter.addFilterForTests(filter);
+    presenter.addFilterForTests(testGroup, filter);
 
-    when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.REJECTED);
+    when(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.REJECTED);
     presenter.finishing();
 
-    verify(view, never()).showSaveFilters();
+    verify(view, never()).showSaveFilters(testGroup);
     verify(view).finish();
   }
 
   @Test
   public void testFinishingCancelChanges() throws FilterException {
+    final String testGroup = "testGroup";
     Filter filter = Filter.createFromString(TEST_SERIALIZED_FILTER);
 
     // Add a filter to simulate 'unsaved changes'
-    presenter.addFilterForTests(filter);
+    presenter.addFilterForTests(testGroup, filter);
 
-    when(view.showAskToSaveFilterDialog()).thenReturn(LogViewer.UserSelection.CANCELLED);
+    when(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.CANCELLED);
     presenter.finishing();
 
-    verify(view, never()).showSaveFilters();
+    verify(view, never()).showSaveFilters(testGroup);
     verify(view, never()).finish();
   }
 
@@ -354,8 +371,8 @@ public class LogViewerPresenterTests {
   public void testFinishingNoChanges() {
     presenter.finishing();
 
-    verify(view, never()).showAskToSaveFilterDialog();
-    verify(view, never()).showSaveFilters();
+    verify(view, never()).showAskToSaveFilterDialog(any());
+    verify(view, never()).showSaveFilters(any());
     verify(view).finish();
   }
 
@@ -368,33 +385,34 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp)
     });
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
     presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
     presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
-    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    int actual = presenter.getNextFilteredLogForFilter(filter, -1);
     assertEquals(0, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 0);
+    actual = presenter.getNextFilteredLogForFilter(filter, 0);
     assertEquals(1, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 1);
+    actual = presenter.getNextFilteredLogForFilter(filter, 1);
     assertEquals(2, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 2);
+    actual = presenter.getNextFilteredLogForFilter(filter, 2);
     assertEquals(0, actual);
     verify(view, times(1)).showNavigationNextOver();
   }
@@ -408,7 +426,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
@@ -418,30 +436,31 @@ public class LogViewerPresenterTests {
     });
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
     presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
     presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
-    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    int actual = presenter.getNextFilteredLogForFilter(filter, -1);
     assertEquals(0, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 0);
+    actual = presenter.getNextFilteredLogForFilter(filter, 0);
     assertEquals(2, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 2);
+    actual = presenter.getNextFilteredLogForFilter(filter, 2);
     assertEquals(3, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 3);
+    actual = presenter.getNextFilteredLogForFilter(filter, 3);
     assertEquals(5, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 5);
+    actual = presenter.getNextFilteredLogForFilter(filter, 5);
     assertEquals(0, actual);
     verify(view, times(1)).showNavigationNextOver();
   }
@@ -455,7 +474,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCD log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
@@ -465,26 +484,27 @@ public class LogViewerPresenterTests {
     });
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
     presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
     presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
-    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    int actual = presenter.getNextFilteredLogForFilter(filter, -1);
     assertEquals(2, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 2);
+    actual = presenter.getNextFilteredLogForFilter(filter, 2);
     assertEquals(3, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 3);
+    actual = presenter.getNextFilteredLogForFilter(filter, 3);
     assertEquals(5, actual);
     verify(view, never()).showNavigationNextOver();
 
-    actual = presenter.getNextFilteredLogForFilter(0, 5);
+    actual = presenter.getNextFilteredLogForFilter(filter, 5);
     assertEquals(2, actual);
     verify(view, times(1)).showNavigationNextOver();
   }
@@ -498,33 +518,34 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp)
     });
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
     presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
     presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
-    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    int actual = presenter.getPrevFilteredLogForFilter(filter, -1);
     assertEquals(2, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 2);
     assertEquals(1, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 1);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 1);
     assertEquals(0, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 0);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 0);
     assertEquals(2, actual);
     verify(view, times(1)).showNavigationPrevOver();
   }
@@ -538,7 +559,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
@@ -548,30 +569,31 @@ public class LogViewerPresenterTests {
     });
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
     presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
     presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
-    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    int actual = presenter.getPrevFilteredLogForFilter(filter, -1);
     assertEquals(5, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 5);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 5);
     assertEquals(3, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 3);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 3);
     assertEquals(2, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 2);
     assertEquals(0, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 0);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 0);
     assertEquals(5, actual);
     verify(view, times(1)).showNavigationPrevOver();
   }
@@ -585,7 +607,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp),
@@ -595,26 +617,27 @@ public class LogViewerPresenterTests {
     });
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Set 'unknown' stream allowed as we just want to test navigation (and default stream is unknown)
     presenter.setAvailableStreamsForTesting(CommonUtils.setOf(LogStream.UNKNOWN));
     presenter.setStreamAllowed(LogStream.UNKNOWN, true);
 
-    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    int actual = presenter.getPrevFilteredLogForFilter(filter, -1);
     assertEquals(3, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 3);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 3);
     assertEquals(2, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 2);
     assertEquals(0, actual);
     verify(view, never()).showNavigationPrevOver();
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 0);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 0);
     assertEquals(3, actual);
     verify(view, times(1)).showNavigationPrevOver();
   }
@@ -628,7 +651,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp, "radio"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
@@ -671,7 +694,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : AB log Test Log", LogLevel.INFO, timestamp, "radio"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
@@ -706,7 +729,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
@@ -723,7 +746,8 @@ public class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
@@ -733,13 +757,13 @@ public class LogViewerPresenterTests {
 
     // So we need to test the indices based on the above array, not the original one
 
-    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    int actual = presenter.getNextFilteredLogForFilter(filter, -1);
     assertEquals(0, actual);
 
-    actual = presenter.getNextFilteredLogForFilter(0, 0);
+    actual = presenter.getNextFilteredLogForFilter(filter, 0);
     assertEquals(1, actual);
 
-    actual = presenter.getNextFilteredLogForFilter(0, 1);
+    actual = presenter.getNextFilteredLogForFilter(filter, 1);
     assertEquals(2, actual);
   }
 
@@ -752,7 +776,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABeF log Test Log", LogLevel.INFO, timestamp, "main"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
@@ -769,7 +793,8 @@ public class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
@@ -779,10 +804,10 @@ public class LogViewerPresenterTests {
 
     // So we need to test the indices based on the above array, not the original one
 
-    int actual = presenter.getNextFilteredLogForFilter(0, -1);
+    int actual = presenter.getNextFilteredLogForFilter(filter, -1);
     assertEquals(1, actual);
 
-    actual = presenter.getNextFilteredLogForFilter(0, 1);
+    actual = presenter.getNextFilteredLogForFilter(filter, 1);
     assertEquals(2, actual);
   }
 
@@ -795,7 +820,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "main"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
@@ -812,7 +837,8 @@ public class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
@@ -822,13 +848,13 @@ public class LogViewerPresenterTests {
 
     // So we need to test the indices based on the above array, not the original one
 
-    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    int actual = presenter.getPrevFilteredLogForFilter(filter, -1);
     assertEquals(2, actual);
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 2);
     assertEquals(1, actual);
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 1);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 1);
     assertEquals(0, actual);
   }
 
@@ -841,7 +867,7 @@ public class LogViewerPresenterTests {
         50,
         264);
 
-    presenter.setFilteredLogsForTesting(new LogEntry[] {
+    presenter.setFilteredLogsForTesting(new LogEntry[]{
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABeF log Test Log", LogLevel.INFO, timestamp, "main"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "radio"),
         new LogEntry("10-12 22:32:50.264  2646  2664 I test  : ABCDeF log Test Log", LogLevel.INFO, timestamp, "system"),
@@ -858,7 +884,8 @@ public class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.SYSTEM, true);
 
     List<Filter> filters = new ArrayList<>();
-    filters.add(new Filter("name", "ABCDeF", Color.black));
+    Filter filter = new Filter("name", "ABCDeF", Color.black);
+    filters.add(filter);
     presenter.setFiltersForTesting(filters);
 
     // Because of the allowed streams we set earlier, the filters shown on UI should be something like below:
@@ -868,13 +895,13 @@ public class LogViewerPresenterTests {
 
     // So we need to test the indices based on the above array, not the original one
 
-    int actual = presenter.getPrevFilteredLogForFilter(0, -1);
+    int actual = presenter.getPrevFilteredLogForFilter(filter, -1);
     assertEquals(2, actual);
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 2);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 2);
     assertEquals(1, actual);
 
-    actual = presenter.getPrevFilteredLogForFilter(0, 1);
+    actual = presenter.getPrevFilteredLogForFilter(filter, 1);
     assertEquals(2, actual);
   }
 }

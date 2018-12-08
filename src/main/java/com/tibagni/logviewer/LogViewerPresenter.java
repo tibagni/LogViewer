@@ -615,7 +615,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   void setAvailableStreamsForTesting(Set<LogStream> streams) {
     setAvailableStreamsForTesting(streams, false);
   }
-  public void addFilterForTests(Filter newFilter) {
-    addFilter("Test", newFilter);
+  public void addFilterForTests(String group, Filter newFilter) {
+    addFilter(group, newFilter);
   }
 }
