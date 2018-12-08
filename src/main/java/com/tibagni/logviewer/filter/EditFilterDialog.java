@@ -4,12 +4,35 @@ import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.util.StringUtils;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.colorchooser.AbstractColorChooserPanel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Random;
 
 public class EditFilterDialog extends JDialog {
+  private static final Color[] INITIAL_COLORS = new Color[]{
+      Color.black,
+      Color.blue,
+      Color.darkGray,
+      Color.red,
+      Color.yellow,
+      Color.cyan,
+      Color.green,
+      Color.magenta,
+      Color.orange,
+      Color.pink,
+      new Color(102, 102, 0),
+      new Color(0, 102, 153),
+      new Color(0, 102, 102),
+      new Color(102, 0, 0),
+      new Color(51, 204, 255),
+      new Color(255, 6, 250),
+      new Color(255, 113, 41)
+  };
+
   private JPanel contentPane;
   private JButton buttonOK;
   private JButton buttonCancel;
@@ -20,10 +43,8 @@ public class EditFilterDialog extends JDialog {
   private JLabel colorLbl;
   private JLabel caseSensitiveLbl;
   private JCheckBox caseSensitiveCbx;
-  private JButton chooseColorButton;
-  private JPanel colorPreview;
   private JButton regexEditorBtn;
-  private Color selectedColor;
+  private JColorChooser colorChooser;
 
   private Filter filter;
 
@@ -46,7 +67,6 @@ public class EditFilterDialog extends JDialog {
 
   private EditFilterDialog(Frame owner, Filter editingFilter) {
     super(owner);
-    setSelectedColor(Color.RED); // Set RED by default
 
     setContentPane(contentPane);
     setModal(true);
@@ -54,8 +74,9 @@ public class EditFilterDialog extends JDialog {
 
     buttonOK.addActionListener(e -> onOK());
     buttonCancel.addActionListener(e -> onCancel());
-    chooseColorButton.addActionListener(e -> onSelectColor());
     regexEditorBtn.addActionListener(e -> onEditRegex());
+
+    colorChooser.setColor(getInitialColor());
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -74,7 +95,7 @@ public class EditFilterDialog extends JDialog {
       filter = editingFilter;
       nameTxt.setText(filter.getName());
       regexTxt.setText(filter.getPatternString());
-      setSelectedColor(filter.getColor());
+      colorChooser.setColor(filter.getColor());
       caseSensitiveCbx.setSelected(filter.isCaseSensitive());
       nameIsPattern = StringUtils.areEquals(filter.getName(), filter.getPatternString());
     }
@@ -100,7 +121,7 @@ public class EditFilterDialog extends JDialog {
 
   private void onOK() {
     // add your code here
-    Color selectedColor = colorPreview.getBackground();
+    Color selectedColor = colorChooser.getColor();
     String name = nameTxt.getText();
     String pattern = regexTxt.getText();
     boolean caseSensitive = caseSensitiveCbx.isSelected();
@@ -125,13 +146,6 @@ public class EditFilterDialog extends JDialog {
     dispose();
   }
 
-  private void onSelectColor() {
-    Color color = JColorChooser.showDialog(this, "Select Color...", selectedColor);
-    if (color != null) {
-      setSelectedColor(color);
-    }
-  }
-
   private void onEditRegex() {
     RegexEditorDialog.Result edited = RegexEditorDialog.showEditRegexDialog(this, this,
         regexTxt.getText(), caseSensitiveCbx.isSelected());
@@ -140,12 +154,6 @@ public class EditFilterDialog extends JDialog {
       regexTxt.setText(edited.pattern);
       caseSensitiveCbx.setSelected(edited.caseSensitive);
     }
-  }
-
-  private void setSelectedColor(Color color) {
-    selectedColor = color;
-    colorPreview.setBackground(selectedColor);
-    colorPreview.invalidate();
   }
 
   public static Filter showEditFilterDialog(Frame parent, Component relativeTo, Filter editingFilter) {
@@ -159,5 +167,34 @@ public class EditFilterDialog extends JDialog {
 
   public static Filter showEditFilterDialog(Frame parent, Component relativeTo) {
     return showEditFilterDialog(parent, relativeTo, null);
+  }
+
+  private void createUIComponents() {
+    colorChooser = new JColorChooser();
+    AbstractColorChooserPanel swatchPanel = getSwatchPanel(colorChooser.getChooserPanels());
+
+    // Keep only the swatch panel
+    colorChooser.setChooserPanels(new AbstractColorChooserPanel[]{swatchPanel});
+
+    // Show a simple text field for preview
+    JTextField preview = new JTextField("Filtered text color preview");
+    preview.setBorder(new EmptyBorder(5, 15, 5, 15));
+    colorChooser.setPreviewPanel(preview);
+  }
+
+  private AbstractColorChooserPanel getSwatchPanel(AbstractColorChooserPanel[] panels) {
+    for (AbstractColorChooserPanel colorPanel : panels) {
+      if (colorPanel.getClass().getName().contains("DefaultSwatchChooserPanel")) {
+        return colorPanel;
+      }
+    }
+
+    return null;
+  }
+
+  private Color getInitialColor() {
+    // Set a random color for the filter initially
+    final Random r = new Random();
+    return INITIAL_COLORS[r.nextInt(INITIAL_COLORS.length)];
   }
 }

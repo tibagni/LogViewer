@@ -290,7 +290,7 @@ public class LogViewerView implements LogViewer.View {
       public void onEditFilter(Filter filter) {
         // The filter is automatically updated by this dialog. We only check the result
         // to determine if the dialog was canceled or not
-        Filter edited = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn, filter);
+        Filter edited = EditFilterDialog.showEditFilterDialog(parent, parent, filter);
 
         if (edited != null) {
           // Tell the presenter a filter was edited. It will not update the filters
@@ -376,7 +376,7 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void addFilter(String group) {
-    Filter newFilter = EditFilterDialog.showEditFilterDialog(parent, addNewFilterBtn);
+    Filter newFilter = EditFilterDialog.showEditFilterDialog(parent, parent);
     if (newFilter != null) {
       presenter.addFilter(group, newFilter);
     }
