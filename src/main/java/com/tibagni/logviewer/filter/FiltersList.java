@@ -169,6 +169,7 @@ public class FiltersList extends JPanel {
 
     public void setListData(Filter[] filters) {
       list.setListData(filters);
+      updatePreferredSize();
     }
 
     private void toggleGroupVisibility() {
