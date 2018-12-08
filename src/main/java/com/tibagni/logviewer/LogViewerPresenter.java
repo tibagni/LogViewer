@@ -259,6 +259,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     List<File> successfulOpenedFiles = new ArrayList<>();
     Map<String, List<Filter>> filtersFromFiles = new HashMap<>();
 
+    if (userPrefs.shouldRememberReappliedFilters()) {
+      // First remember which filters are applied for the current files
+      // So the next time these files are opened, we can re-apply the same filters
+      rememberAppliedFilters();
+    }
+
     currentlyOpenedFilters.clear();
     filtersFilesMap.clear();
     for (File file : filtersFiles) {
@@ -295,6 +301,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     // Set this as the last filter opened
     userPrefs.setLastFilterPaths(successfulOpenedFiles);
+    if (userPrefs.shouldRememberReappliedFilters()) {
+      reapplyRememberedFilters();
+    }
   }
 
   @Override
@@ -478,6 +487,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     if (shouldFinish) {
+      if (userPrefs.shouldRememberReappliedFilters()) {
+        // Remember which filters are applied for the current files, so the next
+        // time these files are opened, we can re-apply the same filters
+        rememberAppliedFilters();
+      }
+
       view.finish();
       release();
     }
@@ -553,6 +568,36 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     return resultFilters;
+  }
+
+  private void rememberAppliedFilters() {
+    for (Map.Entry<String, List<Filter>> entry : filters.entrySet()) {
+      List<Filter> filtersFromGroup = entry.getValue();
+      List<Integer> appliedIndices = new ArrayList<>();
+      for (int i = 0; i < filtersFromGroup.size(); i++) {
+        if (filtersFromGroup.get(i).isApplied()) {
+          appliedIndices.add(i);
+        }
+        userPrefs.setAppliedFiltersIndices(entry.getKey(), appliedIndices);
+      }
+    }
+  }
+
+  private void reapplyRememberedFilters() {
+    for (Map.Entry<String, List<Filter>> entry : filters.entrySet()) {
+      List<Integer> appliedIndices = userPrefs.getAppliedFiltersIndices(entry.getKey());
+
+      if (!appliedIndices.isEmpty()) {
+        List<Filter> filtersFromGroup = entry.getValue();
+        for (int i = 0; i < filtersFromGroup.size(); i++) {
+          if (appliedIndices.contains(i)) {
+            filtersFromGroup.get(i).setApplied(true);
+          }
+        }
+      }
+    }
+
+    applyFilters();
   }
 
   // Test helpers

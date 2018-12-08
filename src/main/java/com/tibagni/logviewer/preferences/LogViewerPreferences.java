@@ -2,6 +2,7 @@ package com.tibagni.logviewer.preferences;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,7 +19,9 @@ public class LogViewerPreferences {
   private static final String OPEN_LAST_FILTER = "open_last_filter";
   private static final String LOGS_PATH = "logs_path";
   private static final String LOOK_AND_FEEL = "look_and_feel";
-  private static final String REAPPLY_FILTERS_AFTER_EDIT = "reaply_filters_after_edit";
+  private static final String REAPPLY_FILTERS_AFTER_EDIT = "reapply_filters_after_edit";
+  private static final String REMEMBER_APPLIED_FILTERS = "remember_applied_filters";
+  private static final String REMEMBER_APPLIED_FILTERS_PREFIX = "applied_for_group_";
 
   private LogViewerPreferences() {
     preferences = Preferences.userRoot().node(getClass().getName());
@@ -123,6 +126,44 @@ public class LogViewerPreferences {
     return preferences.getBoolean(REAPPLY_FILTERS_AFTER_EDIT, true);
   }
 
+  public void setRememberAppliedFilters(boolean remember) {
+    preferences.putBoolean(REMEMBER_APPLIED_FILTERS, remember);
+    listeners.forEach(l -> l.onRememberAppliedFiltersConfigChanged());
+  }
+
+  public boolean shouldRememberReappliedFilters() {
+    return preferences.getBoolean(REMEMBER_APPLIED_FILTERS, true);
+  }
+
+  public void setAppliedFiltersIndices(String group, List<Integer> indices) {
+    StringBuilder saveData = new StringBuilder();
+    boolean isFirst = true;
+    for (int index : indices) {
+      if (isFirst) {
+        isFirst = false;
+      } else {
+        saveData.append(",");
+      }
+
+      saveData.append(index);
+    }
+
+    preferences.put(REMEMBER_APPLIED_FILTERS_PREFIX + group, saveData.toString());
+  }
+
+  public List<Integer> getAppliedFiltersIndices(String group) {
+    String savedData = preferences.get(REMEMBER_APPLIED_FILTERS_PREFIX + group, "");
+    String[] indicesString = savedData.split(",");
+    List<Integer> indices = new ArrayList<>();
+    for (String strIndex : indicesString) {
+      try {
+        indices.add(Integer.parseInt(strIndex));
+      } catch (NumberFormatException nfe) {}
+    }
+
+    return indices;
+  }
+
   public interface Listener {
     void onLookAndFeelChanged();
     void onDefaultFiltersPathChanged();
@@ -130,6 +171,7 @@ public class LogViewerPreferences {
     void onOpenLastFilterChanged();
     void onDefaultLogsPathChanged();
     void onReapplyFiltersConfigChanged();
+    void onRememberAppliedFiltersConfigChanged();
   }
 
   public static abstract class Adapter implements Listener {
@@ -139,5 +181,6 @@ public class LogViewerPreferences {
     @Override public void onOpenLastFilterChanged() { }
     @Override public void onDefaultLogsPathChanged() { }
     @Override public void onReapplyFiltersConfigChanged() { }
+    @Override public void onRememberAppliedFiltersConfigChanged() { }
   }
 }

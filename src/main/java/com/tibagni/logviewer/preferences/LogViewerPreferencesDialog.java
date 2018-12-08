@@ -19,6 +19,7 @@ public class LogViewerPreferencesDialog extends JDialog {
   private static final String LOG_PATH_PREF_ID = "log_path";
   private static final String LOOK_FEEL_PREF_ID = "look_and_feel";
   private static final String APPLY_FILTER_EDIT_ID = "apply_filter_edit";
+  private static final String REMEMBER_APPLIED_FILTERS_ID = "remember_applied_filters";
 
   private JPanel contentPane;
   private JButton buttonOK;
@@ -30,6 +31,7 @@ public class LogViewerPreferencesDialog extends JDialog {
   private JTextField logsPathTxt;
   private JButton logsPathBtn;
   private JCheckBox applyFiltersAfterEditChbx;
+  private JCheckBox rememberAppliedFiltersChbx;
 
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
@@ -77,6 +79,9 @@ public class LogViewerPreferencesDialog extends JDialog {
 
     applyFiltersAfterEditChbx.addActionListener(e -> onApplyFiltersAfterEditChanged());
     applyFiltersAfterEditChbx.setSelected(userPrefs.shouldReapplyFiltersAfterEdit());
+
+    rememberAppliedFiltersChbx.addActionListener(e -> onRememberAppliedFiltersChanged());
+    rememberAppliedFiltersChbx.setSelected(userPrefs.shouldRememberReappliedFilters());
   }
 
   private void initLogsPathPreference() {
@@ -147,6 +152,11 @@ public class LogViewerPreferencesDialog extends JDialog {
   private void onApplyFiltersAfterEditChanged() {
     boolean isChecked = applyFiltersAfterEditChbx.getModel().isSelected();
     saveActions.put(APPLY_FILTER_EDIT_ID, () -> userPrefs.setReapplyFiltersAfterEdit(isChecked));
+  }
+
+  private void onRememberAppliedFiltersChanged() {
+    boolean isChecked = rememberAppliedFiltersChbx.getModel().isSelected();
+    saveActions.put(REMEMBER_APPLIED_FILTERS_ID, () -> userPrefs.setRememberAppliedFilters(isChecked));
   }
 
   public static void showPreferencesDialog(JFrame parent) {
