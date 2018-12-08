@@ -7,7 +7,7 @@
     </constraints>
     <properties>
       <minimumSize width="400" height="200"/>
-      <preferredSize width="600" height="350"/>
+      <preferredSize width="650" height="350"/>
     </properties>
     <border type="none"/>
     <children>
@@ -145,8 +145,7 @@
               <forms/>
             </constraints>
             <properties>
-              <icon value="Icons/edit.png"/>
-              <text value=""/>
+              <text value="Editor"/>
               <toolTipText value="Open the regex editor window"/>
             </properties>
           </component>
