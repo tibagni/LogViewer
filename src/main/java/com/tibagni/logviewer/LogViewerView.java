@@ -18,6 +18,7 @@ import com.tibagni.logviewer.view.ProgressMonitorExt;
 import com.tibagni.logviewer.view.Toast;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
@@ -95,6 +96,7 @@ public class LogViewerView implements LogViewer.View {
 
     logList.setDefaultRenderer(LogEntry.class, logRenderer);
     filteredLogList.setDefaultRenderer(LogEntry.class, logRenderer);
+    setupLogsContextActions();
     setupFilteredLogsContextActions();
 
     // Configure file drop
@@ -290,7 +292,7 @@ public class LogViewerView implements LogViewer.View {
       public void onEditFilter(Filter filter) {
         // The filter is automatically updated by this dialog. We only check the result
         // to determine if the dialog was canceled or not
-        Filter edited = EditFilterDialog.showEditFilterDialog(parent, parent, filter);
+        Filter edited = EditFilterDialog.showEditFilterDialog(parent, filter);
 
         if (edited != null) {
           // Tell the presenter a filter was edited. It will not update the filters
@@ -346,6 +348,23 @@ public class LogViewerView implements LogViewer.View {
     });
   }
 
+  private void setupLogsContextActions() {
+    logList.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mouseClicked(MouseEvent e) {
+        if (SwingUtilities.isRightMouseButton(e) && logList.getSelectedRowCount() == 1) {
+          JPopupMenu popup = new JPopupMenu();
+          JMenuItem createFilterItem = popup.add("Create Filter from this line...");
+          createFilterItem.addActionListener(l -> {
+            LogEntry entry = (LogEntry) logListTableModel.getValueAt(logList.getSelectedRow(), 0);
+            addFilterFromLogLine(entry.getLogText());
+          });
+          popup.show(logList, e.getX(), e.getY());
+        }
+      }
+    });
+  }
+
   private void setupFilteredLogsContextActions() {
     filteredLogList.addMouseListener(new MouseAdapter() {
       @Override
@@ -376,9 +395,35 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void addFilter(String group) {
-    Filter newFilter = EditFilterDialog.showEditFilterDialog(parent, parent);
+    Filter newFilter = EditFilterDialog.showEditFilterDialog(parent);
     if (newFilter != null) {
       presenter.addFilter(group, newFilter);
+    }
+  }
+
+  private void addFilterFromLogLine(String logLine) {
+    Filter filter = EditFilterDialog.showEditFilterDialogWithText(parent, logLine);
+    if (filter != null) {
+      List<String> groups = presenter.getGroups();
+      String group = groups.size() == 1 ? groups.get(0) : null;
+
+      if (StringUtils.isEmpty(group)) {
+        String[] options = groups.toArray(new String[0]);
+        int choice = JOptionPane.showOptionDialog(null,
+            "Which group do you want to add this filter to?",
+            "Select Filter group",
+            -1,
+            JOptionPane.QUESTION_MESSAGE,
+            null, options, null);
+
+        if (choice >= 0) {
+          group = options[choice];
+        }
+      }
+
+      if (!StringUtils.isEmpty(group)) {
+        presenter.addFilter(group, filter);
+      }
     }
   }
 

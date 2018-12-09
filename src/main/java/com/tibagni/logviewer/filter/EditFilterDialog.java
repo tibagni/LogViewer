@@ -47,6 +47,7 @@ public class EditFilterDialog extends JDialog {
   private JColorChooser colorChooser;
 
   private Filter filter;
+  private String previewText;
 
   private final DocumentListener regexDocumentListener = new DocumentListener() {
     @Override
@@ -66,7 +67,12 @@ public class EditFilterDialog extends JDialog {
   };
 
   private EditFilterDialog(Frame owner, Filter editingFilter) {
+    this(owner, editingFilter, null);
+  }
+
+  private EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
     super(owner);
+    previewText = preDefinedText;
 
     setContentPane(contentPane);
     setModal(true);
@@ -117,6 +123,16 @@ public class EditFilterDialog extends JDialog {
     }
 
     SwingUtilities.invokeLater(() -> regexTxt.requestFocus());
+
+    if (!StringUtils.isEmpty(preDefinedText)) {
+      regexTxt.setText(preDefinedText);
+      addWindowListener(new WindowAdapter() {
+        @Override
+        public void windowOpened(WindowEvent e) {
+          regexEditorBtn.doClick();
+        }
+      });
+    }
   }
 
   private void onOK() {
@@ -148,25 +164,12 @@ public class EditFilterDialog extends JDialog {
 
   private void onEditRegex() {
     RegexEditorDialog.Result edited = RegexEditorDialog.showEditRegexDialog(this, this,
-        regexTxt.getText(), caseSensitiveCbx.isSelected());
+        regexTxt.getText(), previewText, caseSensitiveCbx.isSelected());
 
     if (edited != null) {
       regexTxt.setText(edited.pattern);
       caseSensitiveCbx.setSelected(edited.caseSensitive);
     }
-  }
-
-  public static Filter showEditFilterDialog(Frame parent, Component relativeTo, Filter editingFilter) {
-    EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter);
-    dialog.pack();
-    dialog.setLocationRelativeTo(relativeTo);
-    dialog.setVisible(true);
-
-    return dialog.filter;
-  }
-
-  public static Filter showEditFilterDialog(Frame parent, Component relativeTo) {
-    return showEditFilterDialog(parent, relativeTo, null);
   }
 
   private void createUIComponents() {
@@ -196,5 +199,29 @@ public class EditFilterDialog extends JDialog {
     // Set a random color for the filter initially
     final Random r = new Random();
     return INITIAL_COLORS[r.nextInt(INITIAL_COLORS.length)];
+  }
+
+  public static Filter showEditFilterDialog(Frame parent, Filter editingFilter) {
+    EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter);
+    dialog.pack();
+    dialog.setLocationRelativeTo(parent);
+    dialog.setVisible(true);
+
+    return dialog.filter;
+  }
+
+  public static Filter showEditFilterDialog(Frame parent) {
+    return showEditFilterDialog(parent, null);
+  }
+
+  // This is used to create a Filter from an existing predefined String
+  // It will open the Edit Dialog directly on the RegEx Editor
+  public static Filter showEditFilterDialogWithText(Frame parent, String preDefinedText) {
+    EditFilterDialog dialog = new EditFilterDialog(parent, null, preDefinedText);
+    dialog.pack();
+    dialog.setLocationRelativeTo(parent);
+    dialog.setVisible(true);
+
+    return dialog.filter;
   }
 }

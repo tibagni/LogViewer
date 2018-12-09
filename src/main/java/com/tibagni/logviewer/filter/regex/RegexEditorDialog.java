@@ -16,7 +16,7 @@ public class RegexEditorDialog extends JDialog {
   private JPanel contentPane;
   private JButton buttonOK;
   private JButton buttonCancel;
-  private JTextField regexEdit;
+  private JTextArea regexEdit;
   private JTextArea regexPreview;
   private JCheckBox caseSensitive;
 
@@ -115,10 +115,15 @@ public class RegexEditorDialog extends JDialog {
     }
   }
 
-  public static Result showEditRegexDialog(Dialog parent, Component relativeTo, String pattern, boolean caseSensitive) {
+  public static Result showEditRegexDialog(Dialog parent, Component relativeTo,
+                                           String pattern, String previewText,
+                                           boolean caseSensitive) {
     RegexEditorDialog dialog = new RegexEditorDialog(parent);
     dialog.caseSensitive.setSelected(caseSensitive);
     dialog.regexEdit.setText(pattern);
+    if (!StringUtils.isEmpty(previewText)) {
+      dialog.regexPreview.setText(previewText);
+    }
     dialog.applyRegexToPreview();
     dialog.updateOkButton();
 

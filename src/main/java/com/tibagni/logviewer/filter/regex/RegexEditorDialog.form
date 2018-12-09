@@ -74,15 +74,6 @@
               <text value="Regex:"/>
             </properties>
           </component>
-          <component id="29f33" class="javax.swing.JTextField" binding="regexEdit">
-            <constraints>
-              <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-                <preferred-size width="150" height="-1"/>
-              </grid>
-              <forms defaultalign-horz="false"/>
-            </constraints>
-            <properties/>
-          </component>
           <component id="2ccf5" class="javax.swing.JLabel">
             <constraints>
               <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
@@ -97,7 +88,10 @@
               <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
               <forms defaultalign-horz="false" defaultalign-vert="false"/>
             </constraints>
-            <properties/>
+            <properties>
+              <preferredSize width="500" height="200"/>
+              <requestFocusEnabled value="true"/>
+            </properties>
             <border type="none"/>
             <children>
               <component id="6073a" class="javax.swing.JTextArea" binding="regexPreview">
@@ -105,7 +99,8 @@
                 <properties>
                   <lineWrap value="true"/>
                   <maximumSize width="-1" height="-1"/>
-                  <preferredSize width="500" height="180"/>
+                  <preferredSize width="500" height="340"/>
+                  <rows value="20"/>
                   <text value="Sample text for testing: &#10;abcdefghijklmnopqrstuvwxyz &#10;ABCDEFGHIJKLMNOPQRSTUVWXYZ &#10;0123456789 _+-.,!@#$%^&amp;*();\/|&lt;&gt;&quot;'&#10;12345 -98.7 3.141 .6180 9,000 &#10;+42 555.123.4567 +1-(800)-555-2468 &#10;foo@demo.net bar.ba@test.co.uk &#10;www.demo.com http://foo.co.uk/"/>
                   <wrapStyleWord value="true"/>
                 </properties>
@@ -130,6 +125,27 @@
               <text value="Flags:"/>
             </properties>
           </component>
+          <scrollpane id="1e727">
+            <constraints>
+              <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+              <forms defaultalign-horz="false" defaultalign-vert="false"/>
+            </constraints>
+            <properties>
+              <preferredSize width="0" height="50"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="fb1b3" class="javax.swing.JTextArea" binding="regexEdit">
+                <constraints/>
+                <properties>
+                  <lineWrap value="true"/>
+                  <preferredSize width="0" height="85"/>
+                  <requestFocusEnabled value="true"/>
+                  <rows value="5"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
         </children>
       </grid>
     </children>

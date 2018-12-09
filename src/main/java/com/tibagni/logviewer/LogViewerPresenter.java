@@ -111,6 +111,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
+  public List<String> getGroups() {
+    return new ArrayList<>(filters.keySet());
+  }
+
+  @Override
   public void removeFilters(String group, int[] indices) {
     // Iterate backwards otherwise the indices will change
     // and we will end up deleting wrong items

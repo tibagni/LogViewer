@@ -49,6 +49,7 @@ public class LogViewer {
     void init();
     void addFilter(String group, Filter newFilter);
     String addGroup(String group);
+    List<String> getGroups();
     void removeFilters(String group, int[] indices);
     void reorderFilters(String group, int orig, int dest);
     int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
