@@ -15,12 +15,10 @@ It also allows you to apply different filters on the set of logs, displaying a s
 
 ## User Guide
 1. [Overview](./overview.html)
-1. [Opening logs](./opening-logs.html)
-1. [Creating filters](./creating-filters.html)
+1. [Logs](./logs.html)
+1. [Filters](./filters.html)
 1. [The regex editor](./regex-editor.html)
-1. [Managing filters](./managing-filters.html)
-1. [Navigating through the filters](./navigating-filters.html)
-1. [Selecting streams at runtime](./streams.html)
+1. [Streams](./streams.html)
 
 ## Releases
 [Check out all releases of LogViewer](https://github.com/tibagni/LogViewer/releases)
