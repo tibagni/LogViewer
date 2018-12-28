@@ -409,7 +409,7 @@ public class LogViewerView implements LogViewer.View {
 
       if (StringUtils.isEmpty(group)) {
         String[] options = groups.toArray(new String[0]);
-        int choice = JOptionPane.showOptionDialog(null,
+        int choice = JOptionPane.showOptionDialog(parent,
             "Which group do you want to add this filter to?",
             "Select Filter group",
             -1,

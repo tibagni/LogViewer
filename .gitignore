@@ -6,6 +6,8 @@
 .idea/**/tasks.xml
 .idea/dictionaries
 .idea/vcs.xml
+.idea/modules
+.idea/kotlinc.xml
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
