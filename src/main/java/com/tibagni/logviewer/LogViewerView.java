@@ -317,6 +317,20 @@ public class LogViewerView implements LogViewer.View {
       }
 
       @Override
+      public void onDeleteGroup(String group){
+        int userChoice = JOptionPane.showConfirmDialog(
+                mainPanel.getParent(),
+                "Are you sure you want to delete this whole group?",
+                "Are you sure?",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if(userChoice != JOptionPane.YES_NO_OPTION) return;
+
+        presenter.removeGroup(group);
+      }
+
+      @Override
       public void onNavigateNextFilteredLog(Filter filter) {
         int selectedFilteredLog = filteredLogList.getSelectedRow();
         int filteredLogIdx = presenter.getNextFilteredLogForFilter(filter, selectedFilteredLog);
