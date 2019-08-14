@@ -147,7 +147,7 @@ public class FiltersList extends JPanel {
       addBtn = new FlatButton("+");
       saveBtn = new FlatButton("Save");
       saveBtn.setVisible(false);
-      deleteBtn = new FlatButton("x");
+      deleteBtn = new FlatButton("⨯");
 
       list = new ReorderableCheckBoxList<>();
       list.setCellRenderer(cellRenderer);
