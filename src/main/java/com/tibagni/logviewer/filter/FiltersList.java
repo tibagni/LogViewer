@@ -92,6 +92,7 @@ public class FiltersList extends JPanel {
     }
 
     revalidate();
+    repaint();
   }
 
   private void addGroup(String group, Filter[] filters) {
@@ -127,6 +128,7 @@ public class FiltersList extends JPanel {
     private JButton nextBtn;
     private JButton addBtn;
     private JButton saveBtn;
+    private JButton deleteBtn;
     private ReorderableCheckBoxList<Filter> list;
     private FilterCellRenderer cellRenderer;
 
@@ -145,6 +147,7 @@ public class FiltersList extends JPanel {
       addBtn = new FlatButton("+");
       saveBtn = new FlatButton("Save");
       saveBtn.setVisible(false);
+      deleteBtn = new FlatButton("⨯");
 
       list = new ReorderableCheckBoxList<>();
       list.setCellRenderer(cellRenderer);
@@ -156,6 +159,7 @@ public class FiltersList extends JPanel {
       prevNextPane.add(addBtn);
       prevNextPane.add(prevBtn);
       prevNextPane.add(nextBtn);
+      prevNextPane.add(deleteBtn);
       optionsPane.add(prevNextPane, BorderLayout.EAST);
       add(optionsPane, BorderLayout.NORTH);
       add(list);
@@ -251,6 +255,11 @@ public class FiltersList extends JPanel {
           listener.onSaveFilters(groupName);
         }
       });
+      deleteBtn.addActionListener(l -> {
+        if(listener != null){
+          listener.onDeleteGroup(groupName);
+        }
+      });
 
       list.addListSelectionListener(e -> updateNavigationButtons());
       list.setReorderedListener(this::reorderFilters);
@@ -324,6 +333,7 @@ public class FiltersList extends JPanel {
     void onFiltersApplied();
     void onEditFilter(Filter filter);
     void onDeleteFilters(String group, int[] indices);
+    void onDeleteGroup(String group);
     void onNavigateNextFilteredLog(Filter filter);
     void onNavigatePrevFilteredLog(Filter filter);
     void onAddFilter(String group);

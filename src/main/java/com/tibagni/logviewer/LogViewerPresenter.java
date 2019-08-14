@@ -134,6 +134,25 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
+  public void removeGroup(String group){
+    if(!StringUtils.isEmpty(group)){
+
+      boolean unsavedChange = unsavedFilterGroups.contains(group);
+
+      if(unsavedChange){
+        LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog(group);
+        if (userSelection == LogViewer.UserSelection.CONFIRMED) {
+          saveFilters(group);
+        }
+      }
+
+      filters.remove(group);
+      view.configureFiltersList(filters);
+      checkForUnsavedChanges();
+    }
+  }
+
+  @Override
   public void reorderFilters(String group, int orig, int dest) {
     if (orig == dest) return;
 
