@@ -4,6 +4,7 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
@@ -29,7 +30,8 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
   private void initLookAndFeel() {
     LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
-    String lookAndFeel = LogViewerPreferences.getInstance().getLookAndFeel();
+    LogViewerPreferences prefs = LogViewerPreferencesImpl.INSTANCE;
+    String lookAndFeel = prefs.getLookAndFeel();
     if (!StringUtils.isEmpty(lookAndFeel) &&
         lookNFeelProvider.getByClass(lookAndFeel) == null) {
       Logger.debug(lookAndFeel + " not found. Fallback to default...");
@@ -59,8 +61,8 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private void watchLookAndFeelUpdates() {
-    LogViewerPreferences prefs = LogViewerPreferences.getInstance();
-    prefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
+    LogViewerPreferences prefs = LogViewerPreferencesImpl.INSTANCE;
+    prefs.addPreferenceListener(new LogViewerPreferencesImpl.Adapter() {
       @Override
       public void onLookAndFeelChanged() {
         String lookAndFeel = prefs.getLookAndFeel();

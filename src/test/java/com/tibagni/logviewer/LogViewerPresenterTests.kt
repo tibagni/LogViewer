@@ -41,7 +41,7 @@ class LogViewerPresenterTests {
 
     @Test
     fun testInitNotLoadingLastFilter() {
-        `when`(mockPrefs.shouldOpenLastFilter()).thenReturn(false)
+        `when`(mockPrefs.openLastFilter).thenReturn(false)
         presenter.init()
 
         verify(mockPrefs, never()).lastFilterPaths
@@ -50,7 +50,7 @@ class LogViewerPresenterTests {
 
     @Test
     fun testInitLoadingLastFilterNoFilterAvailable() {
-        `when`(mockPrefs.shouldOpenLastFilter()).thenReturn(true)
+        `when`(mockPrefs.openLastFilter).thenReturn(true)
         `when`(mockPrefs.lastFilterPaths).thenReturn(null)
         presenter.init()
 
@@ -60,7 +60,7 @@ class LogViewerPresenterTests {
     @Test
     fun testInitLoadingLastFilter() {
         val filtersTempFile = createTempFiltersFile()
-        `when`(mockPrefs.shouldOpenLastFilter()).thenReturn(true)
+        `when`(mockPrefs.openLastFilter).thenReturn(true)
         `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf(filtersTempFile))
         presenter.init()
 

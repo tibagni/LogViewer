@@ -10,6 +10,7 @@ import com.tibagni.logviewer.log.LogListTableModel;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
 import com.tibagni.logviewer.view.FileDrop;
@@ -18,7 +19,6 @@ import com.tibagni.logviewer.view.ProgressMonitorExt;
 import com.tibagni.logviewer.view.Toast;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
@@ -61,7 +61,7 @@ public class LogViewerView implements LogViewer.View {
 
     this.application = application;
     this.parent = parent;
-    userPrefs = LogViewerPreferences.getInstance();
+    userPrefs = LogViewerPreferencesImpl.INSTANCE;
     presenter = new LogViewerPresenter(this);
     presenter.init();
 
@@ -78,7 +78,7 @@ public class LogViewerView implements LogViewer.View {
     logFileChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
     filterSaveFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
     filterOpenFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
-    userPrefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
+    userPrefs.addPreferenceListener(new LogViewerPreferencesImpl.Adapter() {
       @Override
       public void onDefaultFiltersPathChanged() {
         filterSaveFileChooser.setCurrentDirectory(userPrefs.getDefaultFiltersPath());

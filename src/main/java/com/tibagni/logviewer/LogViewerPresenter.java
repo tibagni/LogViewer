@@ -10,6 +10,7 @@ import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.parser.LogParser;
 import com.tibagni.logviewer.log.parser.LogParserException;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -35,7 +36,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private final LogViewerPreferences userPrefs;
 
   public LogViewerPresenter(LogViewer.View view) {
-    this(view, LogViewerPreferences.getInstance());
+    this(view, LogViewerPreferencesImpl.INSTANCE);
   }
 
   // Visible for testing
@@ -53,7 +54,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   @Override
   public void init() {
     // Check if we need to open the last opened filter
-    if (userPrefs.shouldOpenLastFilter()) {
+    if (userPrefs.getOpenLastFilter()) {
       File[] lastFilters = userPrefs.getLastFilterPaths();
       if (lastFilters != null && lastFilters.length > 0) {
         loadFilters(lastFilters);
@@ -82,7 +83,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       view.configureFiltersList(filters);
       checkForUnsavedChanges();
 
-      if (userPrefs.shouldReapplyFiltersAfterEdit() &&
+      if (userPrefs.getReapplyFiltersAfterEdit() &&
           allLogs != null && allLogs.length > 0) {
         // Make sure to add the new filter to the 'applied' list
         // so it gets applied now (We always add to the end, so
@@ -283,7 +284,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     List<File> successfulOpenedFiles = new ArrayList<>();
     Map<String, List<Filter>> filtersFromFiles = new HashMap<>();
 
-    if (userPrefs.shouldRememberReappliedFilters()) {
+    if (userPrefs.getRememberAppliedFilters()) {
       // First remember which filters are applied for the current files
       // So the next time these files are opened, we can re-apply the same filters
       rememberAppliedFilters();
@@ -324,8 +325,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     checkForUnsavedChanges();
 
     // Set this as the last filter opened
-    userPrefs.setLastFilterPaths(successfulOpenedFiles);
-    if (userPrefs.shouldRememberReappliedFilters()) {
+    userPrefs.setLastFilterPaths(successfulOpenedFiles.toArray(new File[0]));
+    if (userPrefs.getRememberAppliedFilters()) {
       reapplyRememberedFilters();
     }
   }
@@ -418,7 +419,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   public void filterEdited(Filter filter) {
     checkForUnsavedChanges();
 
-    if (userPrefs.shouldReapplyFiltersAfterEdit() &&
+    if (userPrefs.getReapplyFiltersAfterEdit() &&
         allLogs != null && allLogs.length > 0) {
       // Make sure the edited filter will also be re-applied.
       // If it was not previously applied, apply now
@@ -511,7 +512,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
 
     if (shouldFinish) {
-      if (userPrefs.shouldRememberReappliedFilters()) {
+      if (userPrefs.getRememberAppliedFilters()) {
         // Remember which filters are applied for the current files, so the next
         // time these files are opened, we can re-apply the same filters
         rememberAppliedFilters();

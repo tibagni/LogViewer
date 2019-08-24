@@ -44,7 +44,7 @@ public class LogViewerPreferencesDialog extends JDialog {
     setContentPane(contentPane);
     setModal(true);
     getRootPane().setDefaultButton(buttonOK);
-    userPrefs = LogViewerPreferences.getInstance();
+    userPrefs = LogViewerPreferencesImpl.INSTANCE;
 
     buttonOK.addActionListener(e -> onOK());
     buttonCancel.addActionListener(e -> onCancel());
@@ -75,13 +75,13 @@ public class LogViewerPreferencesDialog extends JDialog {
     filtersPathTxt.setText(userPrefs.getDefaultFiltersPath().getAbsolutePath());
 
     openLastFilterChbx.addActionListener(e -> onOpenLastFilterChanged());
-    openLastFilterChbx.setSelected(userPrefs.shouldOpenLastFilter());
+    openLastFilterChbx.setSelected(userPrefs.getOpenLastFilter());
 
     applyFiltersAfterEditChbx.addActionListener(e -> onApplyFiltersAfterEditChanged());
-    applyFiltersAfterEditChbx.setSelected(userPrefs.shouldReapplyFiltersAfterEdit());
+    applyFiltersAfterEditChbx.setSelected(userPrefs.getReapplyFiltersAfterEdit());
 
     rememberAppliedFiltersChbx.addActionListener(e -> onRememberAppliedFiltersChanged());
-    rememberAppliedFiltersChbx.setSelected(userPrefs.shouldRememberReappliedFilters());
+    rememberAppliedFiltersChbx.setSelected(userPrefs.getRememberAppliedFilters());
   }
 
   private void initLogsPathPreference() {
