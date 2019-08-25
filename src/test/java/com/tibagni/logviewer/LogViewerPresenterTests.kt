@@ -7,8 +7,7 @@ import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.LogTimestamp
 import com.tibagni.logviewer.preferences.LogViewerPreferences
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentCaptor
@@ -845,6 +844,94 @@ class LogViewerPresenterTests {
 
         actual = presenter.getPrevFilteredLogForFilter(filter, 1)
         assertEquals(2, actual)
+    }
+
+    @Test
+    fun testRemoveGroup() {
+        val groupToRemove = "removeGroup"
+        val testGroup = "testGroup"
+
+        presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.setFiltersForTesting(groupToRemove, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
+                Filter.createFromString(TEST_SERIALIZED_FILTER3)))
+
+        presenter.removeGroup(groupToRemove)
+
+        verify(view, never()).showAskToSaveFilterDialog(any())
+
+        val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
+        verify(view, times(1)).configureFiltersList(argument.capture())
+
+        assertEquals(1, argument.value.keys.size)
+        assertTrue(argument.value.containsKey(testGroup))
+        assertFalse(argument.value.containsKey(groupToRemove))
+    }
+
+    @Test
+    fun testRemoveGroupUnsaved() {
+        val groupToRemove = "removeGroup"
+        val testGroup = "testGroup"
+
+        presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.setFiltersForTesting(groupToRemove, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
+                Filter.createFromString(TEST_SERIALIZED_FILTER3)))
+        presenter.setUnsavedGroupForTesting(groupToRemove)
+
+        presenter.removeGroup(groupToRemove)
+
+        verify(view, times(1)).showAskToSaveFilterDialog(any())
+
+        val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
+        verify(view, times(1)).configureFiltersList(argument.capture())
+
+        assertEquals(1, argument.value.keys.size)
+        assertTrue(argument.value.containsKey(testGroup))
+        assertFalse(argument.value.containsKey(groupToRemove))
+    }
+
+    @Test
+    fun testRemoveGroupInvalid() {
+        val testGroup = "testGroup"
+        val testGroup2 = "testGroup2"
+
+        presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.setFiltersForTesting(testGroup2, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
+                Filter.createFromString(TEST_SERIALIZED_FILTER3)))
+
+        presenter.removeGroup("invalidGroup")
+
+        verify(view, never()).showAskToSaveFilterDialog(any())
+        verify(view, never()).configureFiltersList(any())
+    }
+
+    @Test
+    fun testRemoveGroupEmpty() {
+        val testGroup = "testGroup"
+        val testGroup2 = "testGroup2"
+
+        presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.setFiltersForTesting(testGroup2, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
+                Filter.createFromString(TEST_SERIALIZED_FILTER3)))
+
+        presenter.removeGroup("")
+
+        verify(view, never()).showAskToSaveFilterDialog(any())
+        verify(view, never()).configureFiltersList(any())
+    }
+
+    @Test
+    fun testRemoveGroupNull() {
+        val testGroup = "testGroup"
+        val testGroup2 = "testGroup2"
+
+        presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.setFiltersForTesting(testGroup2, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
+                Filter.createFromString(TEST_SERIALIZED_FILTER3)))
+
+        presenter.removeGroup(null)
+
+        verify(view, never()).showAskToSaveFilterDialog(any())
+        verify(view, never()).configureFiltersList(any())
     }
 
     companion object {

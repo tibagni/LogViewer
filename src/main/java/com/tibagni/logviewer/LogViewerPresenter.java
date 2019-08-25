@@ -135,21 +135,22 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void removeGroup(String group){
-    if(!StringUtils.isEmpty(group)){
-
+  public void removeGroup(String group) {
+    if (!StringUtils.isEmpty(group)) {
       boolean unsavedChange = unsavedFilterGroups.contains(group);
 
-      if(unsavedChange){
+      if (unsavedChange) {
         LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog(group);
         if (userSelection == LogViewer.UserSelection.CONFIRMED) {
           saveFilters(group);
         }
       }
 
-      filters.remove(group);
-      view.configureFiltersList(filters);
-      checkForUnsavedChanges();
+      List<Filter> removed = filters.remove(group);
+      if (removed != null) {
+        view.configureFiltersList(filters);
+        checkForUnsavedChanges();
+      }
     }
   }
 
@@ -632,6 +633,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   void setFiltersForTesting(List<Filter> filters) {
     this.filters.put("Test", filters);
   }
+  void setFiltersForTesting(String group, List<Filter> filters) {
+    this.filters.put(group, filters);
+  }
   void setAvailableStreamsForTesting(Set<LogStream> streams, boolean initiallyAllowed) {
     for (LogStream stream : streams) {
       availableStreams.put(stream, initiallyAllowed);
@@ -640,7 +644,10 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   void setAvailableStreamsForTesting(Set<LogStream> streams) {
     setAvailableStreamsForTesting(streams, false);
   }
-  public void addFilterForTests(String group, Filter newFilter) {
+  void addFilterForTests(String group, Filter newFilter) {
     addFilter(group, newFilter);
+  }
+  void setUnsavedGroupForTesting(String group) {
+    unsavedFilterGroups.add(group);
   }
 }
