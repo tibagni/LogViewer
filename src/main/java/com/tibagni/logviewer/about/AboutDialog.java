@@ -5,6 +5,8 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
+import com.tibagni.logviewer.util.layout.FontBuilder;
+import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,6 +28,8 @@ public class AboutDialog extends JDialog {
 
   public AboutDialog(JFrame owner) {
     super(owner);
+    buildUi();
+
     setContentPane(contentPane);
     setModal(true);
     getRootPane().setDefaultButton(buttonOK);
@@ -105,5 +109,122 @@ public class AboutDialog extends JDialog {
     dialog.pack();
     dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
+  }
+
+  private void buildUi() {
+    contentPane = new JPanel();
+    contentPane.setLayout(new GridBagLayout());
+    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    contentPane.add(buildButtonPane(),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(1)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+    contentPane.add(buildInfoPane(),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+  }
+
+  private JPanel buildButtonPane() {
+    final JPanel buttonPane = new JPanel();
+    buttonPane.setLayout(new GridBagLayout());
+    buttonOK = new JButton();
+    buttonOK.setText("OK");
+    buttonPane.add(buttonOK,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.EAST)
+            .build());
+
+    return buttonPane;
+  }
+
+  private JPanel buildInfoPane() {
+    final JPanel infoPane = new JPanel();
+    infoPane.setLayout(new GridBagLayout());
+
+    applicationName = new JLabel();
+    applicationName.setFont(new FontBuilder(applicationName)
+        .withStyle(Font.BOLD)
+        .withSize(20)
+        .build());
+    applicationName.setText("");
+    infoPane.add(applicationName,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .withGridWidth(3)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.WEST)
+            .build());
+
+
+    openSourceInfo = new JLabel();
+    openSourceInfo.setText("Open Source Software available on");
+    infoPane.add(openSourceInfo,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(1)
+            .withGridWidth(2)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.WEST)
+            .build());
+
+    versionStatus = new JLabel();
+    versionStatus.setText("");
+    infoPane.add(versionStatus,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(2)
+            .withGridWidth(2)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.WEST)
+            .build());
+
+    updateStatusProgress = new JProgressBar();
+    updateStatusProgress.setIndeterminate(true);
+    infoPane.add(updateStatusProgress,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(4)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .build());
+
+    final JLabel aboutImage = new JLabel();
+    aboutImage.setIcon(new ImageIcon(getClass().getResource("/Images/about.png")));
+    aboutImage.setText("");
+    infoPane.add(aboutImage,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(5)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.WEST)
+            .build());
+
+    updateBtn = new JButton();
+    updateBtn.setText("Update");
+    infoPane.add(updateBtn,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(3)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .build());
+
+    return infoPane;
   }
 }
