@@ -13,6 +13,7 @@ import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
+import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.FileDrop;
 import com.tibagni.logviewer.view.JFileChooserExt;
 import com.tibagni.logviewer.view.ProgressMonitorExt;
@@ -57,6 +58,7 @@ public class LogViewerView implements LogViewer.View {
   final private LogViewerPreferences userPrefs;
 
   public LogViewerView(JFrame parent, LogViewerApplication application) {
+    buildUi();
     configureMenuBar(parent, false);
 
     this.application = application;
@@ -484,19 +486,95 @@ public class LogViewerView implements LogViewer.View {
     progressMonitor.setNote(note);
   }
 
-  private void createUIComponents() {
-    logListTableModel = new LogListTableModel("All Logs");
-    logList = new JTable(logListTableModel);
-
-    filteredLogListTableModel = new LogListTableModel("Filtered Logs");
-    filteredLogList = new JTable(filteredLogListTableModel);
-  }
-
   private void openNewWindow() {
     application.newLogViewerWindow();
   }
 
   private void openUserPreferences() {
     LogViewerPreferencesDialog.showPreferencesDialog(parent);
+  }
+
+  private void buildUi() {
+    mainPanel = new JPanel();
+    mainPanel.setLayout(new GridBagLayout());
+    mainPanel.setPreferredSize(new Dimension(1000, 500));
+
+    currentLogsLbl = new JLabel();
+    currentLogsLbl.setAutoscrolls(true);
+    currentLogsLbl.setText("");
+    mainPanel.add(currentLogsLbl,
+        new GBConstraintsBuilder()
+            .withGridx(1)
+            .withGridy(0)
+            .withAnchor(GridBagConstraints.WEST)
+            .build());
+
+    final JSplitPane mainSplitPane = new JSplitPane();
+    mainSplitPane.setResizeWeight(0.1);
+    mainPanel.add(mainSplitPane,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(1)
+            .withGridWidth(6)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+    logsPane = new JSplitPane();
+    logsPane.setDividerSize(10);
+    logsPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+    logsPane.setResizeWeight(0.6);
+
+    logListTableModel = new LogListTableModel("All Logs");
+    logList = new JTable(logListTableModel);
+    logsPane.setLeftComponent(new JScrollPane(logList)); // Left or above (above in this case)
+
+    filteredLogListTableModel = new LogListTableModel("Filtered Logs");
+    filteredLogList = new JTable(filteredLogListTableModel);
+    logsPane.setRightComponent(new JScrollPane(filteredLogList)); // Right or below (below in this case)
+
+    mainSplitPane.setRightComponent(logsPane);
+
+    final JPanel filtersMainPane = new JPanel();
+    filtersMainPane.setLayout(new GridBagLayout());
+    filtersMainPane.setBorder(BorderFactory.createTitledBorder("Filters"));
+    final JPanel emptyPane = new JPanel();
+    emptyPane.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+    filtersMainPane.add(emptyPane,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(2)
+            .withWeightx(1.0)
+            .withAnchor(GridBagConstraints.SOUTH)
+            .build());
+
+    filtersPane = new FiltersList();
+    filtersMainPane.add(new JScrollPane(filtersPane),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(1)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+
+    final JPanel filterButtonsPane = new JPanel();
+    filterButtonsPane.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+    addNewFilterBtn = new JButton();
+    addNewFilterBtn.setActionCommand("Add");
+    addNewFilterBtn.setText("+");
+    filterButtonsPane.add(addNewFilterBtn);
+
+    filtersMainPane.add(filterButtonsPane,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.VERTICAL)
+            .build());
+
+    mainSplitPane.setLeftComponent(filtersMainPane);
   }
 }
