@@ -1,7 +1,10 @@
 package com.tibagni.logviewer.filter;
 
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -73,6 +76,7 @@ public class EditFilterDialog extends JDialog {
   private EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
     super(owner);
     previewText = preDefinedText;
+    buildUi();
 
     setContentPane(contentPane);
     setModal(true);
@@ -172,19 +176,6 @@ public class EditFilterDialog extends JDialog {
     }
   }
 
-  private void createUIComponents() {
-    colorChooser = new JColorChooser();
-    AbstractColorChooserPanel swatchPanel = getSwatchPanel(colorChooser.getChooserPanels());
-
-    // Keep only the swatch panel
-    colorChooser.setChooserPanels(new AbstractColorChooserPanel[]{swatchPanel});
-
-    // Show a simple text field for preview
-    JTextField preview = new JTextField("Filtered text color preview");
-    preview.setBorder(new EmptyBorder(5, 15, 5, 15));
-    colorChooser.setPreviewPanel(preview);
-  }
-
   private AbstractColorChooserPanel getSwatchPanel(AbstractColorChooserPanel[] panels) {
     for (AbstractColorChooserPanel colorPanel : panels) {
       if (colorPanel.getClass().getName().contains("DefaultSwatchChooserPanel")) {
@@ -223,5 +214,104 @@ public class EditFilterDialog extends JDialog {
     dialog.setVisible(true);
 
     return dialog.filter;
+  }
+
+  private void buildUi() {
+    contentPane = new JPanel();
+    contentPane.setLayout(new GridBagLayout());
+    contentPane.setMinimumSize(new Dimension(400, 200));
+    contentPane.setPreferredSize(new Dimension(650, 350));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    contentPane.add(buildButtonsPane(),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(1)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+    contentPane.add(buildEditPane(),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+  }
+
+  private JPanel buildButtonsPane() {
+    final JPanel buttonsPane = new JPanel();
+    buttonsPane.setLayout(new GridBagLayout());
+
+    buttonOK = new JButton();
+    buttonOK.setText("OK");
+    buttonsPane.add(buttonOK,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .build());
+
+    buttonCancel = new JButton();
+    buttonCancel.setText("Cancel");
+    buttonsPane.add(buttonCancel,
+        new GBConstraintsBuilder()
+            .withGridx(1)
+            .withGridy(0)
+            .build());
+
+    return buttonsPane;
+  }
+
+  private JPanel buildEditPane() {
+    final JPanel editPane = new JPanel();
+    editPane.setLayout(new FormLayout(
+        "fill:d:noGrow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:max(d;4px):noGrow",
+        "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow"));
+
+    nameLbl = new JLabel();
+    nameLbl.setText("Filter name:");
+    nameLbl.setToolTipText("Give a name to your filter to appear on the filters list");
+    CellConstraints cc = new CellConstraints();
+    editPane.add(nameLbl, cc.xy(1, 1));
+    nameTxt = new JTextField();
+    nameTxt.setEnabled(true);
+    editPane.add(nameTxt, cc.xy(3, 1, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    regexLbl = new JLabel();
+    regexLbl.setText("Regex:");
+    regexLbl.setToolTipText("The regular expression of your filter");
+    editPane.add(regexLbl, cc.xy(1, 3));
+    regexTxt = new JTextField();
+    editPane.add(regexTxt, cc.xy(3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    regexEditorBtn = new JButton();
+    regexEditorBtn.setText("Editor");
+    regexEditorBtn.setToolTipText("Open the regex editor window");
+    editPane.add(regexEditorBtn, cc.xy(5, 3));
+
+    caseSensitiveLbl = new JLabel();
+    caseSensitiveLbl.setText("Case sensitive:");
+    editPane.add(caseSensitiveLbl, cc.xy(1, 5));
+    caseSensitiveCbx = new JCheckBox();
+    caseSensitiveCbx.setText("Enable case sensitive for this filter");
+    editPane.add(caseSensitiveCbx, cc.xy(3, 5));
+
+    colorLbl = new JLabel();
+    colorLbl.setText("Color:");
+    colorLbl.setToolTipText("Choose a color to diferentiate your filter");
+    editPane.add(colorLbl, cc.xy(1, 7));
+    colorChooser = new JColorChooser();
+    AbstractColorChooserPanel swatchPanel = getSwatchPanel(colorChooser.getChooserPanels());
+    // Keep only the swatch panel
+    colorChooser.setChooserPanels(new AbstractColorChooserPanel[]{swatchPanel});
+    // Show a simple text field for preview
+    JTextField preview = new JTextField("Filtered text color preview");
+    preview.setBorder(new EmptyBorder(5, 15, 5, 15));
+    colorChooser.setPreviewPanel(preview);
+    editPane.add(colorChooser, cc.xy(3, 7));
+
+    return editPane;
   }
 }
