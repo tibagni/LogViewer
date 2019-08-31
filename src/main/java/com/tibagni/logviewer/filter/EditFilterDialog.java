@@ -5,6 +5,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -15,7 +16,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Random;
 
-public class EditFilterDialog extends JDialog {
+public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private static final Color[] INITIAL_COLORS = new Color[]{
       Color.black,
       Color.blue,
@@ -36,9 +37,8 @@ public class EditFilterDialog extends JDialog {
       new Color(255, 113, 41)
   };
 
+  private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  private JButton buttonOK;
-  private JButton buttonCancel;
   private JLabel nameLbl;
   private JTextField nameTxt;
   private JLabel regexLbl;
@@ -80,10 +80,8 @@ public class EditFilterDialog extends JDialog {
 
     setContentPane(contentPane);
     setModal(true);
-    getRootPane().setDefaultButton(buttonOK);
+    buttonsPane.setDefaultButtonOk();
 
-    buttonOK.addActionListener(e -> onOK());
-    buttonCancel.addActionListener(e -> onCancel());
     regexEditorBtn.addActionListener(e -> onEditRegex());
 
     colorChooser.setColor(getInitialColor());
@@ -139,7 +137,8 @@ public class EditFilterDialog extends JDialog {
     }
   }
 
-  private void onOK() {
+  @Override
+  public void onOk() {
     // add your code here
     Color selectedColor = colorChooser.getColor();
     String name = nameTxt.getText();
@@ -161,7 +160,8 @@ public class EditFilterDialog extends JDialog {
     dispose();
   }
 
-  private void onCancel() {
+  @Override
+  public void onCancel() {
     filter = null;
     dispose();
   }
@@ -223,7 +223,8 @@ public class EditFilterDialog extends JDialog {
     contentPane.setPreferredSize(new Dimension(650, 350));
     contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-    contentPane.add(buildButtonsPane(),
+    buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
+    contentPane.add(buttonsPane,
         new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(1)
@@ -240,29 +241,6 @@ public class EditFilterDialog extends JDialog {
             .withWeighty(1.0)
             .withFill(GridBagConstraints.BOTH)
             .build());
-  }
-
-  private JPanel buildButtonsPane() {
-    final JPanel buttonsPane = new JPanel();
-    buttonsPane.setLayout(new GridBagLayout());
-
-    buttonOK = new JButton();
-    buttonOK.setText("OK");
-    buttonsPane.add(buttonOK,
-        new GBConstraintsBuilder()
-            .withGridx(0)
-            .withGridy(0)
-            .build());
-
-    buttonCancel = new JButton();
-    buttonCancel.setText("Cancel");
-    buttonsPane.add(buttonCancel,
-        new GBConstraintsBuilder()
-            .withGridx(1)
-            .withGridy(0)
-            .build());
-
-    return buttonsPane;
   }
 
   private JPanel buildEditPane() {

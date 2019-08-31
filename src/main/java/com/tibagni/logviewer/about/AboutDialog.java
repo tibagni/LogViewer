@@ -7,6 +7,7 @@ import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
 import com.tibagni.logviewer.util.layout.FontBuilder;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,9 +16,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-public class AboutDialog extends JDialog {
+public class AboutDialog extends JDialog implements ButtonsPane.Listener {
+  private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  private JButton buttonOK;
   private JLabel applicationName;
   private JLabel versionStatus;
   private JProgressBar updateStatusProgress;
@@ -32,20 +33,18 @@ public class AboutDialog extends JDialog {
 
     setContentPane(contentPane);
     setModal(true);
-    getRootPane().setDefaultButton(buttonOK);
-
-    buttonOK.addActionListener(e -> onOK());
+    buttonsPane.setDefaultButtonOk();
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
     addWindowListener(new WindowAdapter() {
       public void windowClosing(WindowEvent e) {
-        onOK();
+        onCancel();
       }
     });
 
     // call onCancel() on ESCAPE
-    contentPane.registerKeyboardAction(e -> onOK(),
+    contentPane.registerKeyboardAction(e -> onCancel(),
         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
         JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
@@ -95,7 +94,13 @@ public class AboutDialog extends JDialog {
     updateManager.checkForUpdates();
   }
 
-  private void onOK() {
+  @Override
+  public void onOk() {
+    dispose();
+  }
+
+  @Override
+  public void onCancel() {
     dispose();
   }
 
@@ -116,7 +121,8 @@ public class AboutDialog extends JDialog {
     contentPane.setLayout(new GridBagLayout());
     contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-    contentPane.add(buildButtonPane(),
+    buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_ONLY, this);
+    contentPane.add(buttonsPane,
         new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(1)
@@ -132,23 +138,6 @@ public class AboutDialog extends JDialog {
             .withWeighty(1.0)
             .withFill(GridBagConstraints.BOTH)
             .build());
-  }
-
-  private JPanel buildButtonPane() {
-    final JPanel buttonPane = new JPanel();
-    buttonPane.setLayout(new GridBagLayout());
-    buttonOK = new JButton();
-    buttonOK.setText("OK");
-    buttonPane.add(buttonOK,
-        new GBConstraintsBuilder()
-            .withGridx(0)
-            .withGridy(0)
-            .withWeightx(1.0)
-            .withWeighty(1.0)
-            .withFill(GridBagConstraints.EAST)
-            .build());
-
-    return buttonPane;
   }
 
   private JPanel buildInfoPane() {

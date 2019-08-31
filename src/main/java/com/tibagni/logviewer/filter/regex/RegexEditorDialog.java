@@ -4,6 +4,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -15,10 +16,9 @@ import java.awt.event.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RegexEditorDialog extends JDialog {
+public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
+  private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  private JButton buttonOK;
-  private JButton buttonCancel;
   private JTextArea regexEdit;
   private JTextArea regexPreview;
   private JCheckBox caseSensitive;
@@ -36,11 +36,8 @@ public class RegexEditorDialog extends JDialog {
 
     setContentPane(contentPane);
     setModal(true);
-    getRootPane().setDefaultButton(buttonOK);
+    buttonsPane.setDefaultButtonOk();
     defaultRegexEditBg = regexEdit.getBackground();
-
-    buttonOK.addActionListener(e -> onOK());
-    buttonCancel.addActionListener(e -> onCancel());
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -70,12 +67,14 @@ public class RegexEditorDialog extends JDialog {
     updateOkButton();
   }
 
-  private void onOK() {
+  @Override
+  public void onOk() {
     result = new Result(regexEdit.getText(), caseSensitive.isSelected());
     dispose();
   }
 
-  private void onCancel() {
+  @Override
+  public void onCancel() {
     dispose();
   }
 
@@ -107,7 +106,7 @@ public class RegexEditorDialog extends JDialog {
 
   private void updateOkButton() {
     String regexPattern = regexEdit.getText();
-    buttonOK.setEnabled(!StringUtils.isEmpty(regexPattern) && isRegexValid);
+    buttonsPane.enableOkButton(!StringUtils.isEmpty(regexPattern) && isRegexValid);
   }
 
   /**
@@ -122,8 +121,8 @@ public class RegexEditorDialog extends JDialog {
     contentPane.setLayout(new GridBagLayout());
     contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-
-    contentPane.add(buildButtonsPane(),
+    buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
+    contentPane.add(buttonsPane,
         new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(1)
@@ -139,30 +138,6 @@ public class RegexEditorDialog extends JDialog {
             .withWeighty(1.0)
             .withFill(GridBagConstraints.BOTH)
             .build());
-  }
-
-  private JPanel buildButtonsPane() {
-    final JPanel buttonsPane = new JPanel();
-    buttonsPane.setLayout(new GridBagLayout());
-
-    buttonOK = new JButton();
-    buttonOK.setEnabled(false);
-    buttonOK.setText("OK");
-    buttonsPane.add(buttonOK,
-        new GBConstraintsBuilder()
-            .withGridx(0)
-            .withGridy(0)
-            .build());
-
-    buttonCancel = new JButton();
-    buttonCancel.setText("Cancel");
-    buttonsPane.add(buttonCancel,
-        new GBConstraintsBuilder()
-            .withGridx(1)
-            .withGridy(0)
-            .build());
-
-    return buttonsPane;
   }
 
   private JPanel buildRegexPane() {

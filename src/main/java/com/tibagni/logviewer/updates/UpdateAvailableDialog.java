@@ -3,28 +3,26 @@ package com.tibagni.logviewer.updates;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.layout.FontBuilder;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
 
-public class UpdateAvailableDialog extends JDialog {
+public class UpdateAvailableDialog extends JDialog implements ButtonsPane.Listener {
+  private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  private JButton buttonOK;
-  private JButton buttonCancel;
   private JTextArea releaseInfo;
+  private ReleaseInfo latestInfo;
 
   public UpdateAvailableDialog(ReleaseInfo latestInfo) {
+    this.latestInfo = latestInfo;
     buildUi();
 
     setContentPane(contentPane);
     setModal(true);
-    getRootPane().setDefaultButton(buttonOK);
-
-    buttonOK.addActionListener(e -> onDownload(latestInfo.getReleaseUrl()));
-
-    buttonCancel.addActionListener(e -> onCancel());
+    buttonsPane.setDefaultButtonOk();
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -58,7 +56,13 @@ public class UpdateAvailableDialog extends JDialog {
     }
   }
 
-  private void onCancel() {
+  @Override
+  public void onOk() {
+    onDownload(latestInfo.getReleaseUrl());
+  }
+
+  @Override
+  public void onCancel() {
     dispose();
   }
 
@@ -80,7 +84,8 @@ public class UpdateAvailableDialog extends JDialog {
     contentPane.setPreferredSize(new Dimension(550, 250));
     contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-    contentPane.add(buildButtonsPane(),
+    buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
+    contentPane.add(buttonsPane,
         new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(1)
@@ -96,31 +101,6 @@ public class UpdateAvailableDialog extends JDialog {
             .withWeighty(1.0)
             .withFill(GridBagConstraints.BOTH)
             .build());
-  }
-
-  private JPanel buildButtonsPane() {
-    final JPanel buttonsPane = new JPanel();
-    buttonsPane.setLayout(new GridBagLayout());
-
-    buttonOK = new JButton();
-    buttonOK.setText("Download");
-    buttonsPane.add(buttonOK,
-        new GBConstraintsBuilder()
-            .withGridx(0)
-            .withGridy(0)
-            .withFill(GridBagConstraints.HORIZONTAL)
-            .build());
-
-    buttonCancel = new JButton();
-    buttonCancel.setText("Cancel");
-    buttonsPane.add(buttonCancel,
-        new GBConstraintsBuilder()
-            .withGridx(1)
-            .withGridy(0)
-            .withFill(GridBagConstraints.HORIZONTAL)
-            .build());
-
-    return buttonsPane;
   }
 
   private JPanel buildReleaseInfoPane() {

@@ -5,6 +5,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.view.ButtonsPane;
 import com.tibagni.logviewer.view.JFileChooserExt;
 
 import javax.swing.*;
@@ -17,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LogViewerPreferencesDialog extends JDialog {
+public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.Listener {
   private static final String FILTER_PATH_PREF_ID = "filter_path";
   private static final String LAST_FILTER_OPEN_ID = "open_last_filter";
   private static final String LOG_PATH_PREF_ID = "log_path";
@@ -25,9 +26,8 @@ public class LogViewerPreferencesDialog extends JDialog {
   private static final String APPLY_FILTER_EDIT_ID = "apply_filter_edit";
   private static final String REMEMBER_APPLIED_FILTERS_ID = "remember_applied_filters";
 
+  private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  private JButton buttonOK;
-  private JButton buttonCancel;
   private JComboBox lookAndFeelCbx;
   private JTextField filtersPathTxt;
   private JButton filtersPathBtn;
@@ -48,11 +48,8 @@ public class LogViewerPreferencesDialog extends JDialog {
     buildUi();
     setContentPane(contentPane);
     setModal(true);
-    getRootPane().setDefaultButton(buttonOK);
+    buttonsPane.setDefaultButtonOk();
     userPrefs = LogViewerPreferencesImpl.INSTANCE;
-
-    buttonOK.addActionListener(e -> onOK());
-    buttonCancel.addActionListener(e -> onCancel());
 
     initFiltersPathPreference();
     initLogsPathPreference();
@@ -120,12 +117,14 @@ public class LogViewerPreferencesDialog extends JDialog {
     });
   }
 
-  private void onOK() {
+  @Override
+  public void onOk() {
     saveActions.forEach((s, runnable) -> runnable.run());
     dispose();
   }
 
-  private void onCancel() {
+  @Override
+  public void onCancel() {
     dispose();
   }
 
@@ -180,7 +179,8 @@ public class LogViewerPreferencesDialog extends JDialog {
     contentPane.setRequestFocusEnabled(true);
     contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-    contentPane.add(buildButtonsPane(),
+    buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
+    contentPane.add(buttonsPane,
         new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(1)
@@ -198,29 +198,6 @@ public class LogViewerPreferencesDialog extends JDialog {
             .withWeighty(1.0)
             .withFill(GridBagConstraints.BOTH)
             .build());
-  }
-
-  private JPanel buildButtonsPane() {
-    final JPanel buttonsPane = new JPanel();
-    buttonsPane.setLayout(new GridBagLayout());
-
-    buttonOK = new JButton();
-    buttonOK.setText("OK");
-    buttonsPane.add(buttonOK,
-        new GBConstraintsBuilder()
-            .withGridx(0)
-            .withGridy(0)
-            .build());
-
-    buttonCancel = new JButton();
-    buttonCancel.setText("Cancel");
-    buttonsPane.add(buttonCancel,
-        new GBConstraintsBuilder()
-            .withGridx(1)
-            .withGridy(0)
-            .build());
-
-    return buttonsPane;
   }
 
   private JPanel buildFormPane() {
