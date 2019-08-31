@@ -1,10 +1,14 @@
 package com.tibagni.logviewer.preferences;
 
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
+import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.JFileChooserExt;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -41,6 +45,7 @@ public class LogViewerPreferencesDialog extends JDialog {
 
   public LogViewerPreferencesDialog(JFrame owner) {
     super(owner);
+    buildUi();
     setContentPane(contentPane);
     setModal(true);
     getRootPane().setDefaultButton(buttonOK);
@@ -165,5 +170,123 @@ public class LogViewerPreferencesDialog extends JDialog {
     dialog.pack();
     dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
+  }
+
+  private void buildUi() {
+    contentPane = new JPanel();
+    contentPane.setLayout(new GridBagLayout());
+    contentPane.setMinimumSize(new Dimension(400, 250));
+    contentPane.setPreferredSize(new Dimension(600, 350));
+    contentPane.setRequestFocusEnabled(true);
+    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    contentPane.add(buildButtonsPane(),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(1)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+
+    contentPane.add(buildFormPane(),
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .withWeightx(1.0)
+            .withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+  }
+
+  private JPanel buildButtonsPane() {
+    final JPanel buttonsPane = new JPanel();
+    buttonsPane.setLayout(new GridBagLayout());
+
+    buttonOK = new JButton();
+    buttonOK.setText("OK");
+    buttonsPane.add(buttonOK,
+        new GBConstraintsBuilder()
+            .withGridx(0)
+            .withGridy(0)
+            .build());
+
+    buttonCancel = new JButton();
+    buttonCancel.setText("Cancel");
+    buttonsPane.add(buttonCancel,
+        new GBConstraintsBuilder()
+            .withGridx(1)
+            .withGridy(0)
+            .build());
+
+    return buttonsPane;
+  }
+
+  private JPanel buildFormPane() {
+    final JPanel formPane = new JPanel();
+    formPane.setLayout(new FormLayout(
+        "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+
+
+    final JLabel lookNFeelLbl = new JLabel();
+    lookNFeelLbl.setText("Look And Feel");
+    CellConstraints cc = new CellConstraints();
+    formPane.add(lookNFeelLbl, cc.xy(1, 1));
+    lookAndFeelCbx = new JComboBox();
+    formPane.add(lookAndFeelCbx, cc.xy(3, 1));
+
+    final JSeparator sep1 = new JSeparator();
+    formPane.add(sep1, cc.xyw(1, 3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    final JLabel defaultLogsLbl = new JLabel();
+    defaultLogsLbl.setText("Default path for log files");
+    formPane.add(defaultLogsLbl, cc.xy(1, 5));
+    logsPathTxt = new JTextField();
+    logsPathTxt.setEditable(false);
+    formPane.add(logsPathTxt, cc.xy(3, 5, CellConstraints.FILL, CellConstraints.DEFAULT));
+    logsPathBtn = new JButton();
+    logsPathBtn.setText("...");
+    formPane.add(logsPathBtn, cc.xy(5, 5));
+
+    final JSeparator sep2 = new JSeparator();
+    formPane.add(sep2, cc.xyw(1, 7, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    final JLabel defaultFiltersLbl = new JLabel();
+    defaultFiltersLbl.setText("Default path for filter files");
+    formPane.add(defaultFiltersLbl, cc.xy(1, 9));
+    filtersPathTxt = new JTextField();
+    filtersPathTxt.setEditable(false);
+    formPane.add(filtersPathTxt, cc.xy(3, 9, CellConstraints.FILL, CellConstraints.DEFAULT));
+    filtersPathBtn = new JButton();
+    filtersPathBtn.setText("...");
+    formPane.add(filtersPathBtn, cc.xy(5, 9));
+
+    final JLabel openLastLbl = new JLabel();
+    openLastLbl.setText("Open last filters on startup");
+    formPane.add(openLastLbl, cc.xy(1, 11));
+    openLastFilterChbx = new JCheckBox();
+    openLastFilterChbx.setText("");
+    formPane.add(openLastFilterChbx, cc.xy(3, 11));
+
+    final JSeparator sep3 = new JSeparator();
+    formPane.add(sep3, cc.xyw(1, 13, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    final JLabel applyFiltersLbl = new JLabel();
+    applyFiltersLbl.setText("Apply filters after edit");
+    formPane.add(applyFiltersLbl, cc.xy(1, 15));
+    applyFiltersAfterEditChbx = new JCheckBox();
+    applyFiltersAfterEditChbx.setText("");
+    formPane.add(applyFiltersAfterEditChbx, cc.xy(3, 15));
+
+    final JLabel rememberFiltersLbl = new JLabel();
+    rememberFiltersLbl.setText("Remember applied filters");
+    formPane.add(rememberFiltersLbl, cc.xy(1, 17));
+    rememberAppliedFiltersChbx = new JCheckBox();
+    rememberAppliedFiltersChbx.setText("");
+    formPane.add(rememberAppliedFiltersChbx, cc.xy(3, 17));
+
+    return formPane;
   }
 }
