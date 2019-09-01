@@ -64,6 +64,7 @@ class LogViewerPresenterTests {
         presenter.init()
 
         // Check that correct filter was loaded
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view).configureFiltersList(argument.capture())
 
@@ -83,6 +84,7 @@ class LogViewerPresenterTests {
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         presenter.addFilterForTests(testGroup, toAdd)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view).configureFiltersList(argument.capture())
         verify<LogViewerView>(view).showUnsavedFilterIndication(testGroup)
@@ -102,6 +104,7 @@ class LogViewerPresenterTests {
         presenter.addFilterForTests(testGroup, toAdd)
         presenter.addFilterForTests(testGroup, toAdd2)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view, times(2)).configureFiltersList(argument.capture())
         verify<LogViewerView>(view, atLeastOnce()).showUnsavedFilterIndication(testGroup)
@@ -135,6 +138,7 @@ class LogViewerPresenterTests {
         presenter.addFilterForTests(testGroup, toAdd2)
         presenter.addFilterForTests(testGroup, toAdd3)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
         verify<LogViewerView>(view, atLeastOnce()).showUnsavedFilterIndication(testGroup)
@@ -167,6 +171,7 @@ class LogViewerPresenterTests {
         presenter.addFilterForTests(testGroup, toAdd2)
         presenter.addFilterForTests(testGroup, toAdd3)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
 
@@ -202,6 +207,7 @@ class LogViewerPresenterTests {
         presenter.addFilterForTests(testGroup, toAdd2)
         presenter.addFilterForTests(testGroup, toAdd3)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
 
@@ -238,6 +244,7 @@ class LogViewerPresenterTests {
         presenter.addFilterForTests(testGroup, toAdd2)
         presenter.addFilterForTests(testGroup, toAdd3)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
 
@@ -274,6 +281,7 @@ class LogViewerPresenterTests {
         presenter.addFilterForTests(testGroup, toAdd2)
         presenter.addFilterForTests(testGroup, toAdd3)
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
 
@@ -859,6 +867,7 @@ class LogViewerPresenterTests {
 
         verify(view, never()).showAskToSaveFilterDialog(any())
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify(view, times(1)).configureFiltersList(argument.capture())
 
@@ -881,6 +890,7 @@ class LogViewerPresenterTests {
 
         verify(view, times(1)).showAskToSaveFilterDialog(any())
 
+        @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
         verify(view, times(1)).configureFiltersList(argument.capture())
 
