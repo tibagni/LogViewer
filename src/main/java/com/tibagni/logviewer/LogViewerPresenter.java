@@ -132,6 +132,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     if (filters.size() > 0) {
       checkForUnsavedChanges();
     }
+
+    applyFilters();
   }
 
   @Override
@@ -150,6 +152,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       if (removed != null) {
         view.configureFiltersList(filters);
         checkForUnsavedChanges();
+        applyFilters();
       }
     }
   }
