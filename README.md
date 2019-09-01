@@ -11,7 +11,7 @@ From a development standpoint, it is a gradle project. All the libraries should 
 
 ### Creating a JAR artifact from IntelliJ
 To create a JAR for LogViewer:
-./gradlew shadowJar
+./gradlew shadowJar\
 Output will be *build/libs/LogViewer-{version}-all.jar*
 
 ### Increasing app version
@@ -19,7 +19,7 @@ To increase app version, change it on _app.properties_
 * _app.properties_ - This file is located on _src/main/resources/properties/app.properties_ and there is a symbolik link for it on root folder to make it easier to access
 
 ### Running tests
-On IntelliJ, right click on 'test' folder (it is under 'src/test') and select "Run 'All Tests'"
+On IntelliJ, right click on 'test' folder (it is under 'src/test') and select "Run 'All Tests'"\
 Or run ./gradlew test
 
 # License
