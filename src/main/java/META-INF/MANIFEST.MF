@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: com.tibagni.logviewer.LogViewerApplication
-SplashScreen-Image: Images/splash.gif
