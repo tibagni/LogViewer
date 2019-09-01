@@ -1086,6 +1086,28 @@ class LogViewerPresenterTests {
         verify(view, never()).configureFiltersList(any())
     }
 
+    @Test
+    fun testFilterEditedNoReapply() {
+        val filter = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+
+        presenter.filterEdited(filter)
+
+        assertFalse(filter.isApplied)
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testFilterEditedReapply() {
+        val filter = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+
+        presenter.filterEdited(filter)
+
+        assertTrue(filter.isApplied)
+        assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    }
+
     companion object {
         private const val TEMP_FILE_NAME = "tempFilter"
         private const val TEMP_FILE_EXT = ".tmp"

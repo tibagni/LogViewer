@@ -413,7 +413,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     testStats.applyFiltersCallCount++;
 
     if (allLogs == null || allLogs.length == 0) {
-      //view.showErrorMessage("There are no logs to filter...");
       return;
     }
 
@@ -435,8 +434,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   public void filterEdited(Filter filter) {
     checkForUnsavedChanges();
 
-    if (userPrefs.getReapplyFiltersAfterEdit() &&
-        allLogs != null && allLogs.length > 0) {
+    if (userPrefs.getReapplyFiltersAfterEdit()) {
       // Make sure the edited filter will also be re-applied.
       // If it was not previously applied, apply now
       filter.setApplied(true);
