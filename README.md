@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/tibagni/LogViewer.svg?branch=master)](https://travis-ci.org/tibagni/LogViewer)
 # LogViewer
 LogViewer is a simple tool to help you analyze Android logs.
 It allows you to analyze multiple log files at once and create (and apply) different filters on this set of log files showing a single filtered output differentiating each filter by a different color (defined by you)
@@ -10,16 +11,8 @@ From a development standpoint, it is a gradle project. All the libraries should 
 
 ### Creating a JAR artifact from IntelliJ
 To create a JAR for LogViewer:
-- Build an artifact
-  - Go to 'Build > Build Artifacts...'
-  - Choose LogViewer_main:jar (Should be the only one)
-  - Select 'Rebuild' action
-  - *Note*: make sure to include any new library or resource folder to the artifact if that's the case
-    - Note: Extract the libraries to the artifact (This way there is no need to change the MANIFEST file)
-- Make a Jar release with _makeReleaseFromArtifact_ script (This will add the MANIFEST file to the release jar)
-  - run _makeReleaseFromArtifact.sh <path_to_artifact.jar>_
-  - If [jar2app](https://github.com/tibagni/jar2app) is installed, a Mac OS _.app_ will also be generated
-  - Final release (Both .jar and .app) will be available at out/release
+./gradlew shadowJar
+Output will be *build/libs/LogViewer-{version}-all.jar*
 
 ### Increasing app version
 To increase app version, change it on _app.properties_
@@ -27,6 +20,7 @@ To increase app version, change it on _app.properties_
 
 ### Running tests
 On IntelliJ, right click on 'test' folder (it is under 'src/test') and select "Run 'All Tests'"
+Or run ./gradlew test
 
 # License
 ```
