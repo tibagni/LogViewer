@@ -78,11 +78,13 @@ class LogViewerPresenterTests {
     }
 
     @Test
-    fun testAddFilter() {
+    fun testAddFilterNoApplyOnAdd() {
         val testGroup = "testGroup"
 
+        `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
-        presenter.addFilterForTests(testGroup, toAdd)
+        presenter.addFilter(testGroup, toAdd)
 
         @Suppress("UNCHECKED_CAST")
         val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
@@ -92,10 +94,35 @@ class LogViewerPresenterTests {
         val filtersMap = argument.value
         assertEquals(1, filtersMap.size)
         assertEquals(1, filtersMap[testGroup]?.size)
+
+        // Verify filter was NOT applied
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
     }
 
     @Test
-    fun testRemoveOneFilter() {
+    fun testAddFilterApplyOnAdd() {
+        val testGroup = "testGroup"
+
+        `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+
+        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        presenter.addFilter(testGroup, toAdd)
+
+        @Suppress("UNCHECKED_CAST")
+        val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
+        verify<LogViewerView>(view).configureFiltersList(argument.capture())
+        verify<LogViewerView>(view).showUnsavedFilterIndication(testGroup)
+
+        val filtersMap = argument.value
+        assertEquals(1, filtersMap.size)
+        assertEquals(1, filtersMap[testGroup]?.size)
+
+        // Verify filter was applied
+        assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testRemoveOneNotAppliedFilter() {
         val testGroup = "testGroup"
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
@@ -124,10 +151,51 @@ class LogViewerPresenterTests {
 
         // Verify that the other filter remains
         assertEquals("Test2", resultFilters[testGroup]?.first()?.name)
+
+        // Verify filters were reapplied after removal
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
     }
 
     @Test
-    fun testRemoveTwoFilters() {
+    fun testRemoveOneAppliedFilter() {
+        val testGroup = "testGroup"
+        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
+
+        // mark the first one as applied
+        toAdd.isApplied = true
+
+        // First we add 2 filters
+        presenter.addFilterForTests(testGroup, toAdd)
+        presenter.addFilterForTests(testGroup, toAdd2)
+
+        @Suppress("UNCHECKED_CAST")
+        val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
+        verify<LogViewerView>(view, times(2)).configureFiltersList(argument.capture())
+        verify<LogViewerView>(view, atLeastOnce()).showUnsavedFilterIndication(testGroup)
+
+        var resultFilters = argument.value
+        assertEquals(1, resultFilters.size)
+        assertEquals(2, resultFilters[testGroup]?.size)
+
+        // Now we remove the first filter
+        presenter.removeFilters(testGroup, intArrayOf(0))
+        // times refers to all times the method was called (2 for add + 1 for remove now)
+        verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
+
+        // And check the it was, in fact, removed
+        resultFilters = argument.value
+        assertEquals(1, resultFilters[testGroup]?.size)
+
+        // Verify that the other filter remains
+        assertEquals("Test2", resultFilters[testGroup]?.first()?.name)
+
+        // Verify filters were reapplied after removal
+        assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testRemoveTwoNotAppliedFilters() {
         val testGroup = "testGroup"
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
@@ -157,6 +225,48 @@ class LogViewerPresenterTests {
 
         // Verify that the other filter remains
         assertEquals("Test3", resultFilters[testGroup]?.first()?.name)
+
+        // Verify filters were reapplied after removal
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testRemoveTwoFiltersOneApplied() {
+        val testGroup = "testGroup"
+        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
+        val toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3)
+
+        // mark the first one as applied
+        toAdd.isApplied = true
+
+        // First we add 3 filters
+        presenter.addFilterForTests(testGroup, toAdd)
+        presenter.addFilterForTests(testGroup, toAdd2)
+        presenter.addFilterForTests(testGroup, toAdd3)
+
+        @Suppress("UNCHECKED_CAST")
+        val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
+        verify<LogViewerView>(view, times(3)).configureFiltersList(argument.capture())
+        verify<LogViewerView>(view, atLeastOnce()).showUnsavedFilterIndication(testGroup)
+
+        var resultFilters = argument.value
+        assertEquals(3, resultFilters[testGroup]?.size)
+
+        // Now we remove the first filter
+        presenter.removeFilters(testGroup, intArrayOf(0, 1))
+        // times refers to all times the method was called (3 for add + 1 for remove now)
+        verify<LogViewerView>(view, times(4)).configureFiltersList(argument.capture())
+
+        // And check that it was, in fact, removed
+        resultFilters = argument.value
+        assertEquals(1, resultFilters[testGroup]?.size)
+
+        // Verify that the other filter remains
+        assertEquals("Test3", resultFilters[testGroup]?.first()?.name)
+
+        // Verify filters were reapplied after removal
+        assertEquals(1, presenter.testStats.applyFiltersCallCount)
     }
 
     @Test
@@ -855,7 +965,7 @@ class LogViewerPresenterTests {
     }
 
     @Test
-    fun testRemoveGroup() {
+    fun testRemoveGroupNoFiltersApplied() {
         val groupToRemove = "removeGroup"
         val testGroup = "testGroup"
 
@@ -874,6 +984,38 @@ class LogViewerPresenterTests {
         assertEquals(1, argument.value.keys.size)
         assertTrue(argument.value.containsKey(testGroup))
         assertFalse(argument.value.containsKey(groupToRemove))
+
+        // Verify filter was re-applied after group is removed
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testRemoveGroupOneFilterApplied() {
+        val groupToRemove = "removeGroup"
+        val testGroup = "testGroup"
+
+        // Mark at least one filter as applied
+        val toRemoveFilters = listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
+                Filter.createFromString(TEST_SERIALIZED_FILTER3))
+        toRemoveFilters[0].isApplied = true
+
+        presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.setFiltersForTesting(groupToRemove, toRemoveFilters)
+
+        presenter.removeGroup(groupToRemove)
+
+        verify(view, never()).showAskToSaveFilterDialog(any())
+
+        @Suppress("UNCHECKED_CAST")
+        val argument = ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, List<Filter>>>
+        verify(view, times(1)).configureFiltersList(argument.capture())
+
+        assertEquals(1, argument.value.keys.size)
+        assertTrue(argument.value.containsKey(testGroup))
+        assertFalse(argument.value.containsKey(groupToRemove))
+
+        // Verify filter was re-applied after group is removed
+        assertEquals(1, presenter.testStats.applyFiltersCallCount)
     }
 
     @Test

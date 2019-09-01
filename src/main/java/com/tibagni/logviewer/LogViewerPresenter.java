@@ -83,8 +83,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       view.configureFiltersList(filters);
       checkForUnsavedChanges();
 
-      if (userPrefs.getReapplyFiltersAfterEdit() &&
-          allLogs != null && allLogs.length > 0) {
+      if (userPrefs.getReapplyFiltersAfterEdit()) {
         // Make sure to add the new filter to the 'applied' list
         // so it gets applied now (We always add to the end, so
         // just add the last index as well)
@@ -118,11 +117,14 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public void removeFilters(String group, int[] indices) {
+    boolean shouldReapply = false;
+
     // Iterate backwards otherwise the indices will change
     // and we will end up deleting wrong items
     List<Filter> filtersFromGroup = filters.get(group);
     for (int i = indices.length - 1; i >= 0; i--) {
-      filtersFromGroup.remove(indices[i]);
+      Filter removedFilter = filtersFromGroup.remove(indices[i]);
+      shouldReapply |= removedFilter.isApplied();
     }
 
     view.configureFiltersList(filters);
@@ -133,7 +135,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       checkForUnsavedChanges();
     }
 
-    applyFilters();
+    // Only re-apply the filters if the at least one of the removed filters
+    // were applied
+    if (shouldReapply) {
+      applyFilters();
+    }
   }
 
   @Override
@@ -152,7 +158,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       if (removed != null) {
         view.configureFiltersList(filters);
         checkForUnsavedChanges();
-        applyFilters();
+
+        boolean shouldReapply = removed.stream().anyMatch(f -> f.isApplied());
+        if (shouldReapply) {
+          applyFilters();
+        }
       }
     }
   }
@@ -400,6 +410,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public void applyFilters() {
+    testStats.applyFiltersCallCount++;
+
     if (allLogs == null || allLogs.length == 0) {
       //view.showErrorMessage("There are no logs to filter...");
       return;
@@ -630,6 +642,15 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   // Test helpers
+  static class Stats {
+    int applyFiltersCallCount;
+  }
+  private Stats testStats = new Stats();
+  Stats getTestStats() {
+    return testStats;
+  }
+
+
   void setFilteredLogsForTesting(LogEntry[] filteredLogs) {
     this.filteredLogs = filteredLogs;
   }
