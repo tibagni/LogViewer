@@ -41,10 +41,13 @@ public class LogViewerView implements LogViewer.View {
   private JLabel currentLogsLbl;
   private FiltersList filtersPane;
 
+  private JMenuItem saveFilteredLogs;
+
   private final LogCellRenderer logRenderer;
 
   private final LogViewer.Presenter presenter;
-  private final JFileChooserExt logFileChooser;
+  private final JFileChooserExt logSaveFileChooser;
+  private final JFileChooserExt logOpenFileChooser;
   private final JFileChooserExt filterSaveFileChooser;
   private final JFileChooserExt filterOpenFileChooser;
   private ProgressMonitorExt progressMonitor;
@@ -77,7 +80,8 @@ public class LogViewerView implements LogViewer.View {
       }
     });
 
-    logFileChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
+    logSaveFileChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
+    logOpenFileChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
     filterSaveFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
     filterOpenFileChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
     userPrefs.addPreferenceListener(new LogViewerPreferencesImpl.Adapter() {
@@ -89,7 +93,7 @@ public class LogViewerView implements LogViewer.View {
 
       @Override
       public void onDefaultLogsPathChanged() {
-        logFileChooser.setCurrentDirectory(userPrefs.getDefaultLogsPath());
+        logOpenFileChooser.setCurrentDirectory(userPrefs.getDefaultLogsPath());
       }
     });
 
@@ -132,6 +136,11 @@ public class LogViewerView implements LogViewer.View {
     refreshLogsItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
     refreshLogsItem.addActionListener(e -> presenter.refreshLogs());
     logsMenu.add(refreshLogsItem);
+    logsMenu.addSeparator();
+    saveFilteredLogs = new JMenuItem("Save Filtered Logs");
+    saveFilteredLogs.addActionListener(e -> saveFilteredLogs());
+    saveFilteredLogs.setEnabled(filteredLogListTableModel.getRowCount() > 0);
+    logsMenu.add(saveFilteredLogs);
     menuBar.add(logsMenu);
 
     JMenu filtersMenu = new JMenu("Filters");
@@ -213,6 +222,9 @@ public class LogViewerView implements LogViewer.View {
     filteredLogListTableModel.setLogs(logEntries);
     logList.updateUI();
     filtersPane.updateUI();
+
+    // Update the save menu option availability
+    saveFilteredLogs.setEnabled(logEntries != null && logEntries.length > 0);
   }
 
   @Override
@@ -444,12 +456,12 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void openLogs() {
-    logFileChooser.resetChoosableFileFilters();
-    logFileChooser.setMultiSelectionEnabled(true);
-    logFileChooser.setDialogTitle("Open Logs...");
-    int selectedOption = logFileChooser.showOpenDialog(mainPanel);
+    logOpenFileChooser.resetChoosableFileFilters();
+    logOpenFileChooser.setMultiSelectionEnabled(true);
+    logOpenFileChooser.setDialogTitle("Open Logs...");
+    int selectedOption = logOpenFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.loadLogs(logFileChooser.getSelectedFiles());
+      presenter.loadLogs(logOpenFileChooser.getSelectedFiles());
     }
   }
 
@@ -465,6 +477,16 @@ public class LogViewerView implements LogViewer.View {
     int selectedOption = filterOpenFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
       presenter.loadFilters(filterOpenFileChooser.getSelectedFiles());
+    }
+  }
+
+  private void saveFilteredLogs() {
+    logSaveFileChooser.resetChoosableFileFilters();
+    logSaveFileChooser.setMultiSelectionEnabled(false);
+    logSaveFileChooser.setDialogTitle("Save Filtered Logs...");
+    int selectedOption = logSaveFileChooser.showSaveDialog(mainPanel);
+    if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      presenter.saveFilteredLogs(logSaveFileChooser.getSelectedFile());
     }
   }
 

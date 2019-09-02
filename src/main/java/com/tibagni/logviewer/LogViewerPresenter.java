@@ -255,7 +255,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     }
   }
 
-  public void saveFilters(File filterFile, String group) {
+  private void saveFilters(File filterFile, String group) {
     try {
       boolean firstLoop = true;
       BufferedWriter fileWriter = new BufferedWriter(new FileWriter(filterFile));
@@ -396,6 +396,20 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       loadLogs(currentlyOpenedLogFiles);
     } else {
       view.showErrorMessage("No logs to be refreshed");
+    }
+  }
+
+  @Override
+  public void saveFilteredLogs(File file) {
+    try {
+      BufferedWriter fileWriter = new BufferedWriter(new FileWriter(file));
+      for (LogEntry entry : filteredLogs) {
+        fileWriter.write(entry.toString());
+        fileWriter.newLine();
+      }
+      fileWriter.close();
+    } catch (IOException e) {
+      view.showErrorMessage(e.getMessage());
     }
   }
 
