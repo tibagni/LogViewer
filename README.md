@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/tibagni/LogViewer.svg?branch=master)](https://travis-ci.org/tibagni/LogViewer)
+[![Coverage Status](https://coveralls.io/repos/github/tibagni/LogViewer/badge.svg?branch=master)](https://coveralls.io/github/tibagni/LogViewer?branch=master)
 # LogViewer
 LogViewer is a simple tool to help you analyze Android logs.
 It allows you to analyze multiple log files at once and create (and apply) different filters on this set of log files showing a single filtered output differentiating each filter by a different color (defined by you)
