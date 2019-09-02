@@ -17,6 +17,16 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '5.1.0'
     id 'java'
     id "org.jetbrains.kotlin.jvm" version "$kotlin_version"
+    id 'com.adarshr.test-logger' version '1.7.0'
+    id 'jacoco'
+    id 'com.github.kt3k.coveralls' version '2.8.4'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
 }
 
 def props = new Properties()
