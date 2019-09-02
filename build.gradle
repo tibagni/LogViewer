@@ -27,6 +27,24 @@ jacocoTestReport {
         xml.enabled = true // coveralls plugin depends on xml format report
         html.enabled = true
     }
+    afterEvaluate {
+        // Exclude files that cannot be tested by jUnit (UI, Swing, ...)
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    'com/tibagni/logviewer/LogViewerView*',
+                    'com/tibagni/logviewer/about/AboutDialog*',
+                    'com/tibagni/logviewer/filter/EditFilterDialog*',
+                    'com/tibagni/logviewer/filter/FiltersList*',
+                    'com/tibagni/logviewer/filter/FilterCellRenderer*',
+                    'com/tibagni/logviewer/filter/regex/RegexEditorDialog*',
+                    'com/tibagni/logviewer/logger/*',
+                    'com/tibagni/logviewer/preferences/LogViewerPreferencesDialog*',
+                    'com/tibagni/logviewer/updates/UpdateAvailableDialog*',
+                    'com/tibagni/logviewer/util/SwingUtils*',
+                    'com/tibagni/logviewer/view/*'
+            ])
+        }))
+    }
 }
 
 def props = new Properties()
