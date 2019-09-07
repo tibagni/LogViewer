@@ -532,7 +532,7 @@ public class LogViewerView implements LogViewer.View {
             .build());
 
     final JSplitPane mainSplitPane = new JSplitPane();
-    mainSplitPane.setResizeWeight(0.1);
+    mainSplitPane.setResizeWeight(0.3);
     mainPanel.add(mainSplitPane,
         new GBConstraintsBuilder()
             .withGridx(0)

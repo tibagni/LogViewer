@@ -1,7 +1,5 @@
 package com.tibagni.logviewer.view;
 
-import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -17,33 +15,29 @@ public class ButtonsPane extends JPanel {
 
   public interface Listener {
     void onOk();
+
     void onCancel();
   }
 
   public ButtonsPane(ButtonsMode mode, Listener listener) {
-    setLayout(new GridBagLayout());
+    setLayout(new FlowLayout(FlowLayout.RIGHT));
+    JPanel innerPanel = new JPanel();
 
     if (mode != ButtonsMode.CANCEL_ONLY) {
       buttonOK = new JButton();
       buttonOK.setText("OK");
-      add(buttonOK,
-          new GBConstraintsBuilder()
-              .withGridx(0)
-              .withGridy(0)
-              .build());
+      innerPanel.add(buttonOK);
       buttonOK.addActionListener(e -> listener.onOk());
     }
 
     if (mode != ButtonsMode.OK_ONLY) {
       buttonCancel = new JButton();
       buttonCancel.setText("Cancel");
-      add(buttonCancel,
-          new GBConstraintsBuilder()
-              .withGridx(1)
-              .withGridy(0)
-              .build());
+      innerPanel.add(buttonCancel);
       buttonCancel.addActionListener(e -> listener.onCancel());
     }
+
+    add(innerPanel);
   }
 
   public void setDefaultButtonOk() {
