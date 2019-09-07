@@ -401,6 +401,10 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public void saveFilteredLogs(File file) {
+    if (filteredLogs == null) {
+      return;
+    }
+
     try {
       BufferedWriter fileWriter = new BufferedWriter(new FileWriter(file));
       for (LogEntry entry : filteredLogs) {
@@ -425,7 +429,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   @Override
   public void applyFilters() {
     testStats.applyFiltersCallCount++;
-
     if (allLogs == null || allLogs.length == 0) {
       return;
     }
@@ -662,7 +665,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     return testStats;
   }
 
-
   void setFilteredLogsForTesting(LogEntry[] filteredLogs) {
     this.filteredLogs = filteredLogs;
   }
@@ -685,5 +687,12 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
   void setUnsavedGroupForTesting(String group) {
     unsavedFilterGroups.add(group);
+  }
+  void setLogsForTesting(LogEntry[] testLogs) {
+    allLogs = testLogs;
+  }
+
+  Map<String, List<Filter>> verifyFiltersForTesting() {
+    return filters;
   }
 }

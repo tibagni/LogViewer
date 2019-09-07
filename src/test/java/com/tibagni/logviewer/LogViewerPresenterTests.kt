@@ -7,36 +7,59 @@ import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.LogTimestamp
 import com.tibagni.logviewer.preferences.LogViewerPreferences
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import java.awt.Color
 import java.io.File
+import java.io.IOException
 
 class LogViewerPresenterTests {
-    @Mock
-    private lateinit var mockPrefs: LogViewerPreferences
-
-    @Mock
-    private lateinit var view: LogViewerView
+    @Mock private lateinit var mockPrefs: LogViewerPreferences
+    @Mock private lateinit var view: LogViewerView
 
     private lateinit var presenter: LogViewerPresenter
+    private var tempFilterFile: File? = null
+    private var tempLogFile: File? = null
 
     @Before
     fun setUp() {
         MockitoAnnotations.initMocks(this)
         presenter = LogViewerPresenter(view, mockPrefs)
+        presenter.setBgExecutorService(MockExecutorService())
+        presenter.setUiExecutor { it.run() }
     }
 
-    private fun createTempFiltersFile() =
-            File.createTempFile(TEMP_FILE_NAME, TEMP_FILE_EXT).apply {
-                writeText(TEST_SERIALIZED_FILTER)
-            }
+    @After
+    fun tearDown() {
+        tempFilterFile?.delete()
+        tempLogFile?.delete()
+    }
+
+    private fun createTempFiltersFile() : File {
+        tempFilterFile = File.createTempFile(TEMP_FILTER_FILE_NAME, TEMP_FILE_EXT).apply {
+            writeText(TEST_SERIALIZED_FILTER)
+        }
+        return tempFilterFile!!
+    }
+
+    private fun createTempLogsFile() : File {
+        tempLogFile = File.createTempFile(TEMP_LOG_FILE_NAME, TEMP_FILE_EXT).apply {
+            writeText("01-06 20:46:26.091 821-2168/? V/ThermalMonitor: Foreground Application Changed: com.voidcorporation.carimbaai\n" +
+                    "01-06 20:46:26.091 821-2168/? D/ThermalMonitor: Foreground Application Changed: com.voidcorporation.carimbaai\n" +
+                    "01-06 20:46:42.501 821-2810/? I/ActivityManager: Process com.voidcorporation.carimbaai (pid 25175) (adj 0) has died.\n" +
+                    "01-06 20:46:39.491 821-1054/? W/ActivityManager:   Force finishing activity com.voidcorporation.carimbaai/.UserProfileActivity\n" +
+                    "01-06 20:46:39.481 25175-25175/? E/AndroidRuntime: FATAL EXCEPTION: main")
+        }
+        return tempLogFile!!
+    }
 
     @Test
     fun testInitNotLoadingLastFilter() {
@@ -80,10 +103,10 @@ class LogViewerPresenterTests {
     @Test
     fun testAddFilterNoApplyOnAdd() {
         val testGroup = "testGroup"
+        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
-
-        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         presenter.addFilter(testGroup, toAdd)
 
         @Suppress("UNCHECKED_CAST")
@@ -97,15 +120,16 @@ class LogViewerPresenterTests {
 
         // Verify filter was NOT applied
         assertEquals(0, presenter.testStats.applyFiltersCallCount)
+        verify(view, never()).showFilteredLogs(any())
     }
 
     @Test
     fun testAddFilterApplyOnAdd() {
         val testGroup = "testGroup"
+        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
-
-        val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         presenter.addFilter(testGroup, toAdd)
 
         @Suppress("UNCHECKED_CAST")
@@ -119,6 +143,7 @@ class LogViewerPresenterTests {
 
         // Verify filter was applied
         assertEquals(1, presenter.testStats.applyFiltersCallCount)
+        verify(view).showFilteredLogs(any())
     }
 
     @Test
@@ -126,6 +151,7 @@ class LogViewerPresenterTests {
         val testGroup = "testGroup"
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         // First we add 2 filters
         presenter.addFilterForTests(testGroup, toAdd)
@@ -154,6 +180,7 @@ class LogViewerPresenterTests {
 
         // Verify filters were reapplied after removal
         assertEquals(0, presenter.testStats.applyFiltersCallCount)
+        verify(view, never()).showFilteredLogs(any())
     }
 
     @Test
@@ -161,6 +188,7 @@ class LogViewerPresenterTests {
         val testGroup = "testGroup"
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         // mark the first one as applied
         toAdd.isApplied = true
@@ -192,6 +220,7 @@ class LogViewerPresenterTests {
 
         // Verify filters were reapplied after removal
         assertEquals(1, presenter.testStats.applyFiltersCallCount)
+        verify(view).showFilteredLogs(any())
     }
 
     @Test
@@ -200,6 +229,7 @@ class LogViewerPresenterTests {
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
         val toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         // First we add 3 filters
         presenter.addFilterForTests(testGroup, toAdd)
@@ -228,6 +258,7 @@ class LogViewerPresenterTests {
 
         // Verify filters were reapplied after removal
         assertEquals(0, presenter.testStats.applyFiltersCallCount)
+        verify(view, never()).showFilteredLogs(any())
     }
 
     @Test
@@ -236,6 +267,7 @@ class LogViewerPresenterTests {
         val toAdd = Filter.createFromString(TEST_SERIALIZED_FILTER)
         val toAdd2 = Filter.createFromString(TEST_SERIALIZED_FILTER2)
         val toAdd3 = Filter.createFromString(TEST_SERIALIZED_FILTER3)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         // mark the first one as applied
         toAdd.isApplied = true
@@ -267,6 +299,7 @@ class LogViewerPresenterTests {
 
         // Verify filters were reapplied after removal
         assertEquals(1, presenter.testStats.applyFiltersCallCount)
+        verify(view).showFilteredLogs(any())
     }
 
     @Test
@@ -969,6 +1002,7 @@ class LogViewerPresenterTests {
         val groupToRemove = "removeGroup"
         val testGroup = "testGroup"
 
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
         presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
         presenter.setFiltersForTesting(groupToRemove, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2),
                 Filter.createFromString(TEST_SERIALIZED_FILTER3)))
@@ -987,6 +1021,7 @@ class LogViewerPresenterTests {
 
         // Verify filter was re-applied after group is removed
         assertEquals(0, presenter.testStats.applyFiltersCallCount)
+        verify(view, never()).showFilteredLogs(any())
     }
 
     @Test
@@ -999,6 +1034,7 @@ class LogViewerPresenterTests {
                 Filter.createFromString(TEST_SERIALIZED_FILTER3))
         toRemoveFilters[0].isApplied = true
 
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
         presenter.setFiltersForTesting(testGroup, listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
         presenter.setFiltersForTesting(groupToRemove, toRemoveFilters)
 
@@ -1016,6 +1052,7 @@ class LogViewerPresenterTests {
 
         // Verify filter was re-applied after group is removed
         assertEquals(1, presenter.testStats.applyFiltersCallCount)
+        verify(view).showFilteredLogs(any())
     }
 
     @Test
@@ -1090,26 +1127,210 @@ class LogViewerPresenterTests {
     fun testFilterEditedNoReapply() {
         val filter = Filter.createFromString(TEST_SERIALIZED_FILTER)
         `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         presenter.filterEdited(filter)
 
         assertFalse(filter.isApplied)
         assertEquals(0, presenter.testStats.applyFiltersCallCount)
+        verify(view, never()).showFilteredLogs(any())
     }
 
     @Test
     fun testFilterEditedReapply() {
         val filter = Filter.createFromString(TEST_SERIALIZED_FILTER)
         `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+        presenter.setLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
 
         presenter.filterEdited(filter)
 
         assertTrue(filter.isApplied)
         assertEquals(1, presenter.testStats.applyFiltersCallCount)
+        verify(view).showFilteredLogs(any())
+    }
+
+    @Test
+    fun testLoadLogs() {
+        val logFile = createTempLogsFile()
+        presenter.loadLogs(arrayOf(logFile))
+
+        verify(view).showFilteredLogs(any())
+        verify(view).showLogs(any())
+        verify(view).showAvailableLogStreams(any())
+        verify(view).showCurrentLogsLocation(notNull())
+        verify(view, never()).showErrorMessage(any())
+
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testLoadLogsNoFile() {
+        presenter.loadLogs(emptyArray())
+
+        verify(view, never()).showFilteredLogs(any())
+        verify(view, never()).showLogs(any())
+        verify(view, never()).showAvailableLogStreams(any())
+        verify(view, never()).showCurrentLogsLocation(notNull())
+        verify(view).showErrorMessage(any())
+
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testLoadLogsInvalidFile() {
+        presenter.loadLogs(arrayOf(File("invalid_path")))
+
+        verify(view, never()).showFilteredLogs(any())
+        verify(view, never()).showLogs(any())
+        verify(view, never()).showAvailableLogStreams(any())
+        verify(view, never()).showCurrentLogsLocation(notNull())
+        verify(view).showErrorMessage(any())
+
+        assertEquals(0, presenter.testStats.applyFiltersCallCount)
+    }
+
+    @Test
+    fun testRefreshLogs() {
+        val logFile = createTempLogsFile()
+        presenter.loadLogs(arrayOf(logFile))
+        presenter.refreshLogs()
+
+        // Expect 2 times: One for loadLogs and one for refreshLogs
+        verify(view, times(2)).showLogs(any())
+        verify(view, never()).showErrorMessage(any())
+    }
+
+    @Test
+    fun testRefreshLogsNoLogsLoaded() {
+        presenter.refreshLogs()
+
+        verify(view, never()).showLogs(any())
+        verify(view).showErrorMessage(any())
+    }
+
+    @Test
+    fun testSaveFiltersNonExistentGroupNoSave() {
+        `when`(view.showSaveFilters(anyString())).thenReturn(null)
+        presenter.saveFilters("newGroup")
+
+        verify(view).showSaveFilters("newGroup")
+    }
+
+    @Test
+    fun testSaveFiltersNonExistentGroupSave() {
+        val tempFile = File.createTempFile("temp", ".tmp")
+        `when`(view.showSaveFilters(anyString())).thenReturn(tempFile)
+
+        presenter.setFiltersForTesting("newGroup", listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.saveFilters("newGroup")
+
+        verify(view).showSaveFilters("newGroup")
+        verify(view).hideUnsavedFilterIndication("newGroup")
+        verify(view, never()).showErrorMessage(any())
+        assertTrue(tempFile.readBytes().isNotEmpty())
+
+        tempFile.delete()
+    }
+
+    @Test
+    fun testSaveFiltersFail() {
+        // Create an invalid path name to force an exception
+        val tempFile = File("\u0000")
+
+        `when`(view.showSaveFilters(anyString())).thenReturn(tempFile)
+
+        presenter.setFiltersForTesting("newGroup", listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+        presenter.saveFilters("newGroup")
+
+        verify(view).showSaveFilters("newGroup")
+        verify(view, never()).hideUnsavedFilterIndication("newGroup")
+        verify(view).showErrorMessage(any())
+    }
+
+    @Test
+    fun testAddEmptyGroup() {
+        val addedGroup = presenter.addGroup("")
+
+        assertNull(addedGroup)
+        verify(view, never()).configureFiltersList(any())
+        assertEquals(0, presenter.verifyFiltersForTesting().size)
+    }
+
+    @Test
+    fun testAddNullGroup() {
+        val addedGroup = presenter.addGroup(null)
+
+        assertNull(addedGroup)
+        verify(view, never()).configureFiltersList(any())
+        assertEquals(0, presenter.verifyFiltersForTesting().size)
+    }
+
+    @Test
+    fun testAddNewGroup() {
+        val addedGroup = presenter.addGroup("newGroup")
+
+        assertEquals("newGroup", addedGroup)
+        verify(view).configureFiltersList(any())
+        assertEquals(1, presenter.verifyFiltersForTesting().size)
+    }
+
+    @Test
+    fun testAddExistingGroup() {
+        presenter.setFiltersForTesting("existingGroup", arrayListOf<Filter>())
+
+        val addedGroup = presenter.addGroup("existingGroup")
+
+        assertEquals("existingGroup1", addedGroup)
+        verify(view).configureFiltersList(any())
+        assertEquals(2, presenter.verifyFiltersForTesting().size)
+    }
+
+    @Test
+    fun testAddExistingGroup2() {
+        presenter.setFiltersForTesting("existingGroup", arrayListOf<Filter>())
+        presenter.setFiltersForTesting("existingGroup1", arrayListOf<Filter>())
+
+        val addedGroup = presenter.addGroup("existingGroup")
+
+        assertEquals("existingGroup2", addedGroup)
+        verify(view).configureFiltersList(any())
+        assertEquals(3, presenter.verifyFiltersForTesting().size)
+    }
+
+    @Test
+    fun testSaveFilteredLogs() {
+        val tempFile = File.createTempFile("temp", ".tmp")
+        presenter.setFilteredLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
+
+        presenter.saveFilteredLogs(tempFile)
+
+        assertTrue(tempFile.readBytes().isNotEmpty())
+        tempFile.delete()
+    }
+
+    @Test
+    fun testSaveFilteredLogsNoFilteredLogs() {
+        val tempFile = File.createTempFile("temp", ".tmp")
+
+        presenter.saveFilteredLogs(tempFile)
+
+        assertTrue(tempFile.readBytes().isEmpty())
+        tempFile.delete()
+    }
+
+    @Test
+    fun testSaveFilteredLogsFail() {
+        // Create an invalid path name to force an exception
+        val mockFile = File("\u0000")
+        presenter.setFilteredLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))
+
+        presenter.saveFilteredLogs(mockFile)
+        verify(view).showErrorMessage(any())
     }
 
     companion object {
-        private const val TEMP_FILE_NAME = "tempFilter"
+        private const val TEMP_LOG_FILE_NAME = "tempLog"
+        private const val TEMP_FILTER_FILE_NAME = "tempFilter"
         private const val TEMP_FILE_EXT = ".tmp"
 
         private const val TEST_SERIALIZED_FILTER = "Test,VGVzdA==,2,255:0:0"

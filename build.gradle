@@ -37,6 +37,7 @@ jacocoTestReport {
                     'com/tibagni/logviewer/filter/FiltersList*',
                     'com/tibagni/logviewer/filter/FilterCellRenderer*',
                     'com/tibagni/logviewer/filter/regex/RegexEditorDialog*',
+                    'com/tibagni/logviewer/log/LogCellRenderer*',
                     'com/tibagni/logviewer/logger/*',
                     'com/tibagni/logviewer/preferences/LogViewerPreferencesDialog*',
                     'com/tibagni/logviewer/updates/UpdateAvailableDialog*',

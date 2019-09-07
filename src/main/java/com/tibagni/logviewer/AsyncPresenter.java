@@ -7,7 +7,8 @@ import java.util.concurrent.Executors;
 
 class AsyncPresenter {
   private final AsyncView asyncView;
-  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private ExecutorService bgExecutorService = Executors.newSingleThreadExecutor();
+  private Executor uiExecutor = SwingUtilities::invokeLater;
 
   AsyncPresenter(AsyncView asyncView) {
     this.asyncView = asyncView;
@@ -15,23 +16,32 @@ class AsyncPresenter {
 
   void doAsync(Runnable runnable) {
     asyncView.showStartLoading();
-    executor.execute(runnable);
+    bgExecutorService.execute(runnable);
   }
 
   void updateAsyncProgress(int progress, String note) {
-    SwingUtilities.invokeLater(() -> asyncView.showLoadingProgress(progress, note));
+    uiExecutor.execute(() -> asyncView.showLoadingProgress(progress, note));
   }
 
   void doOnUiThread(Runnable runnable) {
-    SwingUtilities.invokeLater(runnable);
+    uiExecutor.execute(runnable);
   }
 
   void release() {
-    executor.shutdownNow();
+    bgExecutorService.shutdownNow();
   }
 
   public interface AsyncView {
     void showStartLoading();
     void showLoadingProgress(int progress, String note);
+  }
+
+
+  // Test helpers
+  public void setBgExecutorService(ExecutorService bgExecutorService) {
+    this.bgExecutorService = bgExecutorService;
+  }
+  public void setUiExecutor(Executor uiExecutor) {
+    this.uiExecutor = uiExecutor;
   }
 }
