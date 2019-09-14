@@ -14,10 +14,7 @@ import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
-import com.tibagni.logviewer.view.FileDrop;
-import com.tibagni.logviewer.view.JFileChooserExt;
-import com.tibagni.logviewer.view.ProgressMonitorExt;
-import com.tibagni.logviewer.view.Toast;
+import com.tibagni.logviewer.view.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -36,7 +33,7 @@ public class LogViewerView implements LogViewer.View {
   private JTable logList;
   private JPanel mainPanel;
   private JTable filteredLogList;
-  private JButton addNewFilterBtn;
+  private JButton addNewFilterGroupBtn;
   private JSplitPane logsPane;
   private JLabel currentLogsLbl;
   private FiltersList filtersPane;
@@ -97,7 +94,7 @@ public class LogViewerView implements LogViewer.View {
       }
     });
 
-    addNewFilterBtn.addActionListener(e -> addGroup());
+    addNewFilterGroupBtn.addActionListener(e -> addGroup());
     setupFiltersContextActions();
 
     logList.setDefaultRenderer(LogEntry.class, logRenderer);
@@ -585,10 +582,10 @@ public class LogViewerView implements LogViewer.View {
 
     final JPanel filterButtonsPane = new JPanel();
     filterButtonsPane.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-    addNewFilterBtn = new JButton();
-    addNewFilterBtn.setActionCommand("Add");
-    addNewFilterBtn.setText("+");
-    filterButtonsPane.add(addNewFilterBtn);
+    addNewFilterGroupBtn = new FlatButton();
+    addNewFilterGroupBtn.setActionCommand("Add");
+    addNewFilterGroupBtn.setText(StringUtils.PLUS + " Group");
+    filterButtonsPane.add(addNewFilterGroupBtn);
 
     filtersMainPane.add(filterButtonsPane,
         new GBConstraintsBuilder()

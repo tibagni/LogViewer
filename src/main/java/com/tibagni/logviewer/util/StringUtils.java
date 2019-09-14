@@ -13,8 +13,14 @@ public class StringUtils {
   public static final String LEFT_ARROW_WITH_HOOK = "\u21A9";
   public static final String RIGHT_ARROW_WITH_HOOK = "\u21AA";
 
-  public static final String RIGHT_ARROW_HEAD = "\u25B6";
-  public static final String DOWN_ARROW_HEAD = "\u25BC";
+  public static final String LEFT_BLACK_POINTER = "\u25c0";
+  public static final String RIGHT_BLACK_POINTER = "\u25ba";
+
+  public static final String RIGHT_ARROW_HEAD = "\u25B8";
+  public static final String DOWN_ARROW_HEAD = "\u25BE";
+
+  public static final String DELETE = "\u2718";
+  public static final String PLUS = "\u2795";
 
   public static boolean isEmpty(String str) {
     return str == null || str.trim().length() == 0;

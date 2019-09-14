@@ -142,12 +142,12 @@ public class FiltersList extends JPanel {
       cellRenderer = new FilterCellRenderer();
       hideGroupBtn = new FlatButton(HIDE);
 
-      prevBtn = new FlatButton("<");
-      nextBtn = new FlatButton(">");
-      addBtn = new FlatButton("+");
-      saveBtn = new FlatButton("Save");
+      prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);
+      nextBtn = new FlatButton(StringUtils.RIGHT_BLACK_POINTER);
+      addBtn = new FlatButton(StringUtils.PLUS);
+      saveBtn = new FlatButton("<html><b><i>save</i></b></html>");
       saveBtn.setVisible(false);
-      deleteBtn = new FlatButton("⨯");
+      deleteBtn = new FlatButton(StringUtils.DELETE);
 
       list = new ReorderableCheckBoxList<>();
       list.setCellRenderer(cellRenderer);
