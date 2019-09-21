@@ -14,7 +14,7 @@ public class StringUtils {
   public static final String RIGHT_ARROW_WITH_HOOK = "\u21AA";
 
   public static final String LEFT_BLACK_POINTER = "\u25c0";
-  public static final String RIGHT_BLACK_POINTER = "\u25ba";
+  public static final String RIGHT_BLACK_POINTER = "\u25b6";
 
   public static final String RIGHT_ARROW_HEAD = "\u25B8";
   public static final String DOWN_ARROW_HEAD = "\u25BE";
