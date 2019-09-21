@@ -7,10 +7,9 @@ It allows you to analyze multiple log files at once and create (and apply) diffe
 Check out more details on https://tibagni.github.io/LogViewer/
 
 ### Opening the project on IntelliJ
-Just open the project folder on IntelliJ or import it as a gradle project. We use Gradle to manage the dependencies but not for compile due to the dependencies on IntelliJ's form design.
-From a development standpoint, it is a gradle project. All the libraries should be declared in the project's gradle files. But the JAR file needs to be built using IntelliJ using the *LogViewer_main artifact* (Instructions on hot to make the JAR from IntelliJ below)
+Just open the project folder on IntelliJ or import it as a gradle project.
 
-### Creating a JAR artifact from IntelliJ
+### Creating the JAR
 To create a JAR for LogViewer:
 ./gradlew shadowJar\
 Output will be *build/libs/LogViewer-{version}-all.jar*
