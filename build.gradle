@@ -49,7 +49,7 @@ jacocoTestReport {
 }
 
 def props = new Properties()
-file("app.properties").withInputStream { props.load(it) }
+file("src/main/resources/properties/app.properties").withInputStream { props.load(it) }
 
 version props.getProperty("version")
 

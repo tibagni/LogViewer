@@ -185,7 +185,6 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
             .withGridx(0)
             .withGridy(1)
             .withWeightx(1.0)
-            .withWeighty(1.0)
             .withFill(GridBagConstraints.BOTH)
             .build());
 
