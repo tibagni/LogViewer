@@ -145,7 +145,7 @@ public class FiltersList extends JPanel {
       prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);
       nextBtn = new FlatButton(StringUtils.RIGHT_BLACK_POINTER);
       addBtn = new FlatButton(StringUtils.PLUS);
-      saveBtn = new FlatButton("<html><b><i>save</i></b></html>");
+      saveBtn = new FlatButton("save");
       saveBtn.setVisible(false);
       deleteBtn = new FlatButton(StringUtils.DELETE);
 
@@ -154,7 +154,7 @@ public class FiltersList extends JPanel {
 
       JPanel optionsPane = new JPanel(new BorderLayout());
       optionsPane.add(hideGroupBtn, BorderLayout.WEST);
-      JPanel prevNextPane = new JPanel(new FlowLayout());
+      JPanel prevNextPane = new JPanel(new FlowLayout(FlowLayout.TRAILING));
       prevNextPane.add(saveBtn);
       prevNextPane.add(addBtn);
       prevNextPane.add(prevBtn);

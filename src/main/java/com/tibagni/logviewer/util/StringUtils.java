@@ -2,6 +2,7 @@ package com.tibagni.logviewer.util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 
 public class StringUtils {
   public static final String LINE_SEPARATOR = System.lineSeparator();
@@ -19,8 +20,8 @@ public class StringUtils {
   public static final String RIGHT_ARROW_HEAD = "\u25B8";
   public static final String DOWN_ARROW_HEAD = "\u25BE";
 
-  public static final String DELETE = "\u2718";
-  public static final String PLUS = "\u2795";
+  public static final String DELETE = "x"; //TODO find a better symbol
+  public static final String PLUS = "+"; //TODO find a better symbol
 
   public static boolean isEmpty(String str) {
     return str == null || str.trim().length() == 0;
@@ -37,6 +38,6 @@ public class StringUtils {
   }
 
   public static boolean areEquals(String str1, String str2) {
-    return (str1 == null ? str2 == null : str1.equals(str2));
+    return (Objects.equals(str1, str2));
   }
 }

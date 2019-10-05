@@ -3,11 +3,14 @@ package com.tibagni.logviewer.view;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.MouseInputAdapter;
+import javax.swing.plaf.ColorUIResource;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 
 public class FlatButton extends JButton {
-  private static final Border NORMAL_BORDER = new EmptyBorder(5, 5, 5, 5);
-  private static final Border HOVER_BORDER = new EmptyBorder(6, 5, 4, 5);
+  private Color normalColor;
+  private Color rolloverColor;
 
   public FlatButton() {
     initialize();
@@ -37,18 +40,21 @@ public class FlatButton extends JButton {
     setFocusPainted(false);
     setBorderPainted(false);
     setContentAreaFilled(false);
-    setBorder(NORMAL_BORDER);
+    setOpaque(false);
+    setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+    normalColor = new Color(UIManager.getColor("Button.foreground").getRGB());
+    rolloverColor = new Color(UIManager.getColor("textHighlight").getRGB());
   }
 
   @Override
   protected void processMouseEvent(MouseEvent e) {
     if (isEnabled()) {
       if (e.getID() == MouseEvent.MOUSE_ENTERED) {
-        setBorder(HOVER_BORDER);
-        setForeground(UIManager.getColor("Button.shadow"));
+        setForeground(rolloverColor);
       } else if (e.getID() == MouseEvent.MOUSE_EXITED) {
-        setBorder(NORMAL_BORDER);
-        setForeground(UIManager.getColor("Button.foreground"));
+        setForeground(normalColor);
       }
     }
 

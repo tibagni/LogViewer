@@ -17,6 +17,7 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.*;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
@@ -160,6 +161,9 @@ public class LogViewerView implements LogViewer.View {
     menuBar.add(helpMenu);
 
     frame.setJMenuBar(menuBar);
+
+    menuBar.revalidate();
+    menuBar.repaint();
   }
 
   private void configureStreamsMenu(JMenuBar menuBar) {
@@ -234,7 +238,6 @@ public class LogViewerView implements LogViewer.View {
     // Reconfigure menu bar to show the streams if necessary
     logRenderer.showStreams(showStreams);
     configureMenuBar(parent, showStreams);
-    SwingUtilities.updateComponentTreeUI(parent);
   }
 
   @Override
@@ -521,6 +524,7 @@ public class LogViewerView implements LogViewer.View {
     currentLogsLbl = new JLabel();
     currentLogsLbl.setAutoscrolls(true);
     currentLogsLbl.setText("");
+    currentLogsLbl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
     mainPanel.add(currentLogsLbl,
         new GBConstraintsBuilder()
             .withGridx(1)
@@ -530,7 +534,7 @@ public class LogViewerView implements LogViewer.View {
 
     final JSplitPane mainSplitPane = new JSplitPane();
     mainSplitPane.setOneTouchExpandable(true);
-    mainSplitPane.setResizeWeight(0.3);
+    mainSplitPane.setResizeWeight(0.2);
     mainPanel.add(mainSplitPane,
         new GBConstraintsBuilder()
             .withGridx(0)
@@ -581,10 +585,10 @@ public class LogViewerView implements LogViewer.View {
 
 
     final JPanel filterButtonsPane = new JPanel();
-    filterButtonsPane.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+    filterButtonsPane.setLayout(new FlowLayout(FlowLayout.CENTER));
     addNewFilterGroupBtn = new FlatButton();
     addNewFilterGroupBtn.setActionCommand("Add");
-    addNewFilterGroupBtn.setText(StringUtils.PLUS + " Group");
+    addNewFilterGroupBtn.setText("New Group");
     filterButtonsPane.add(addNewFilterGroupBtn);
 
     filtersMainPane.add(filterButtonsPane,
