@@ -100,6 +100,13 @@ public class LogParser {
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
     for (String line : lines) {
+      // Sometimes a line can contain a lot of NULL chars at the end, making it fail when trying to open the log
+      // (as these NULL chars will make the line length too long). So check here if the line has NULL chars
+      // and remove them to avoid failing to open valid log files
+      if (!line.isEmpty() && line.charAt(line.length() - 1) == '\u0000') {
+        line = line.replaceAll("\\u0000", "");
+      }
+
       if (isLogLine(line)) {
         LogEntry entry = new LogEntry(line, findLogLevel(line), findTimestamp(line), logName);
         logLines.add(entry);
@@ -107,9 +114,11 @@ public class LogParser {
         // This is probably a continuation of a already started log line. Append to it
         LogEntry currentLine = logLines.get(logLines.size() - 1);
         if (currentLine.getLength() > MAX_LOG_LINE_ALLOWED) {
-          throw new LogParserException("Incorrect format. Found log line with "
-              + currentLine.getLength() + " bytes. Android limit is "
-              + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+          String incorrectLinePreview = currentLine.getLogText().substring(0, 100) + "...";
+          throw new LogParserException(
+                  "Incorrect format on following line (too long - " + currentLine.getLength() + " bytes):\n" +
+                  "\""+ incorrectLinePreview +"\"\n\n" +
+                  "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
         }
         currentLine.appendText(StringUtils.LINE_SEPARATOR + line);
       }
