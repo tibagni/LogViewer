@@ -156,7 +156,7 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
             .withGridy(0)
             .withGridWidth(3)
             .withWeightx(1.0)
-            .withFill(GridBagConstraints.WEST)
+            .withFill(GridBagConstraints.HORIZONTAL)
             .build());
 
 
@@ -168,7 +168,7 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
             .withGridy(1)
             .withGridWidth(2)
             .withWeightx(1.0)
-            .withFill(GridBagConstraints.WEST)
+            .withFill(GridBagConstraints.HORIZONTAL)
             .build());
 
     versionStatus = new JLabel();
@@ -179,7 +179,7 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
             .withGridy(2)
             .withGridWidth(2)
             .withWeightx(1.0)
-            .withFill(GridBagConstraints.WEST)
+            .withFill(GridBagConstraints.HORIZONTAL)
             .build());
 
     updateStatusProgress = new JProgressBar();
@@ -201,18 +201,19 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
             .withGridy(5)
             .withWeightx(1.0)
             .withWeighty(1.0)
-            .withFill(GridBagConstraints.WEST)
+            .withFill(GridBagConstraints.HORIZONTAL)
             .build());
 
     updateBtn = new JButton();
     updateBtn.setText("Update");
-    infoPane.add(updateBtn,
-        new GBConstraintsBuilder()
+    GridBagConstraints constraints = new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(3)
             .withWeightx(1.0)
             .withFill(GridBagConstraints.HORIZONTAL)
-            .build());
+            .build();
+    constraints.insets = new Insets(5,0,5,0);
+    infoPane.add(updateBtn, constraints);
 
     return infoPane;
   }
