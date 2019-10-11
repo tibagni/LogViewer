@@ -8,10 +8,13 @@ import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
+import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class LogViewerApplication implements UpdateManager.UpdateListener {
   private LogViewerApplication() { }
@@ -67,10 +70,20 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
       public void onLookAndFeelChanged() {
         String lookAndFeel = prefs.getLookAndFeel();
         if (!StringUtils.isEmpty(lookAndFeel)) {
-          LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
-          LookNFeel lnf = lookNFeelProvider.getByClass(lookAndFeel);
-          lookNFeelProvider.applyTheme(lnf);
-          SwingUtils.updateLookAndFeelAfterStart(lookAndFeel);
+          int userChoice = JOptionPane.showConfirmDialog(
+                  javax.swing.FocusManager.getCurrentManager().getActiveWindow(),
+                  "Do you want to restart LogViewer to apply the new Look and Feel?",
+                  "Changing theme",
+                  JOptionPane.YES_NO_OPTION,
+                  JOptionPane.WARNING_MESSAGE);
+
+          if (userChoice == JOptionPane.YES_NO_OPTION) {
+            try {
+              CommonUtils.restartApplication();
+            } catch (Exception e) {
+              Logger.error("Failed to restart", e);
+            }
+          }
         }
       }
     });
