@@ -13,6 +13,7 @@ import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.*;
 import java.util.*;
@@ -57,15 +58,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     if (userPrefs.getOpenLastFilter()) {
       File[] lastFilters = userPrefs.getLastFilterPaths();
       if (lastFilters != null && lastFilters.length > 0) {
-        loadFilters(lastFilters);
+        loadFilters(lastFilters, false);
       }
     }
-  }
-
-  private void setFilters(Map<String, List<Filter>> newFilters) {
-    filters.clear();
-    filters.putAll(newFilters);
-    view.configureFiltersList(filters);
   }
 
   @Override
@@ -151,6 +146,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog(group);
         if (userSelection == LogViewer.UserSelection.CONFIRMED) {
           saveFilters(group);
+        } else if (userSelection == LogViewer.UserSelection.CANCELLED) {
+          // User canceled. Abort!
+          return;
         }
       }
 
@@ -294,7 +292,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   @Override
-  public void loadFilters(File[] filtersFiles) {
+  public void loadFilters(File[] filtersFiles, boolean keepCurrentFilters) {
     List<File> successfulOpenedFiles = new ArrayList<>();
     Map<String, List<Filter>> filtersFromFiles = new HashMap<>();
 
@@ -304,8 +302,20 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       rememberAppliedFilters();
     }
 
-    currentlyOpenedFilters.clear();
-    filtersFilesMap.clear();
+    if (!keepCurrentFilters) {
+      // Do not keep current filters, clear everything before loading the new ones
+      if (!filters.isEmpty()) {
+        boolean shouldAbort = !requestSaveUnsavedGroups();
+        if (shouldAbort) {
+          return;
+        }
+      }
+
+      currentlyOpenedFilters.clear();
+      filtersFilesMap.clear();
+      filters.clear();
+    }
+
     for (File file : filtersFiles) {
       BufferedReader bufferedReader = null;
       String group = file.getName();
@@ -334,12 +344,22 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
         }
       }
     }
-    setFilters(filtersFromFiles);
+
+    filters.putAll(filtersFromFiles);
+    view.configureFiltersList(filters);
+
     // Call checkForUnsavedChanges to clear the 'unsaved changes' state
     checkForUnsavedChanges();
 
     // Set this as the last filter opened
-    userPrefs.setLastFilterPaths(successfulOpenedFiles.toArray(new File[0]));
+    File[] lastFilterPaths = successfulOpenedFiles.toArray(new File[0]);
+    if (keepCurrentFilters) {
+      File[] currentSavedPaths = userPrefs.getLastFilterPaths();
+      if (currentSavedPaths != null && currentSavedPaths.length > 0) {
+        lastFilterPaths = ArrayUtils.addAll(lastFilterPaths, currentSavedPaths);
+      }
+    }
+    userPrefs.setLastFilterPaths(lastFilterPaths);
     if (userPrefs.getRememberAppliedFilters()) {
       reapplyRememberedFilters();
     }
@@ -526,22 +546,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   @Override
   public void finishing() {
-    boolean shouldFinish = true;
-    // 'unsavedFilterGroups' can be changed while we are iterating over it
-    // create an array with its elements to be safe instead
-    String[] unsavedGroups = unsavedFilterGroups.toArray(new String[0]);
-
-    for (String unsavedGroup : unsavedGroups) {
-      LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog(unsavedGroup);
-      if (userSelection == LogViewer.UserSelection.CONFIRMED) {
-        saveFilters(unsavedGroup);
-      } else if (userSelection == LogViewer.UserSelection.CANCELLED) {
-        // Cancel all
-        shouldFinish = false;
-        break;
-      }
-    }
-
+    boolean shouldFinish = requestSaveUnsavedGroups();
     if (shouldFinish) {
       if (userPrefs.getRememberAppliedFilters()) {
         // Remember which filters are applied for the current files, so the next
@@ -552,6 +557,26 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
       view.finish();
       release();
     }
+  }
+
+  private boolean requestSaveUnsavedGroups() {
+    boolean confirmed = true;
+    // 'unsavedFilterGroups' can be changed while we are iterating over it
+    // create an array with its elements to be safe instead
+    String[] unsavedGroups = unsavedFilterGroups.toArray(new String[0]);
+
+    for (String unsavedGroup : unsavedGroups) {
+      LogViewer.UserSelection userSelection = view.showAskToSaveFilterDialog(unsavedGroup);
+      if (userSelection == LogViewer.UserSelection.CONFIRMED) {
+        saveFilters(unsavedGroup);
+      } else if (userSelection == LogViewer.UserSelection.CANCELLED) {
+        // Cancel all
+        confirmed = false;
+        break;
+      }
+    }
+
+    return confirmed;
   }
 
   private void cleanUpFilteredColors() {

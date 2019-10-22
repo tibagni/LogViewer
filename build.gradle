@@ -6,6 +6,7 @@ buildscript {
         jgoodies_version = '1.6.0'
         json_version = '20180813'
         commonsio_version = '2.6'
+        apache_commons_version = '3.0'
     }
 
     repositories {
@@ -83,6 +84,7 @@ dependencies {
     compile group: 'com.jgoodies', name: 'jgoodies-forms', version: "$jgoodies_version"
     compile group: 'org.json', name: 'json', version: "$json_version"
     compile group: 'commons-io', name: 'commons-io', version: "$commonsio_version"
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: "$apache_commons_version"
     compile name: 'JTattoo-1.6.11'
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }

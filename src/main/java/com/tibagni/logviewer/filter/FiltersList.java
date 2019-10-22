@@ -50,6 +50,10 @@ public class FiltersList extends JPanel {
     filters = new HashMap<>();
   }
 
+  public boolean isEmpty() {
+    return filters.isEmpty();
+  }
+
   public void setFilters(Map<String, List<Filter>> newFilters) {
     Set<String> toAdd = new HashSet<>();
     Set<String> toRemove = new HashSet<>();

@@ -56,7 +56,7 @@ public class LogViewer {
     int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
     int getPrevFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
     void saveFilters(String group);
-    void loadFilters(File[] filtersFile);
+    void loadFilters(File[] filtersFile, boolean keepCurrentFilters);
     void loadLogs(File[] logFiles);
     void refreshLogs();
     void saveFilteredLogs(File file);

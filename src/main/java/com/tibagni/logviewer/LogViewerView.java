@@ -476,7 +476,28 @@ public class LogViewerView implements LogViewer.View {
     filterOpenFileChooser.setDialogTitle("Open Filters...");
     int selectedOption = filterOpenFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.loadFilters(filterOpenFileChooser.getSelectedFiles());
+      boolean keepCurrentFilters = false;
+      if (!filtersPane.isEmpty()) {
+        // Ask the user if we should keep the the existing filters
+        int choice = JOptionPane.showOptionDialog(parent,
+                "There are currently opened filters. Do you want to keep them?",
+                "There are currently opened filters",
+                -1,
+                JOptionPane.QUESTION_MESSAGE,
+                null, new String[] {
+                        "Keep existing filters and add the new one(s)",
+                        "Open just the new filter(s)"},
+                null);
+
+        if (choice == -1) {
+          // Dialog was canceled. Abort...
+          return;
+        }
+
+        keepCurrentFilters = (choice == 0);
+      }
+
+      presenter.loadFilters(filterOpenFileChooser.getSelectedFiles(), keepCurrentFilters);
     }
   }
 
