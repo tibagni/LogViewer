@@ -8,19 +8,42 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Filters {
 
+  private static class Progress {
+    public final long totalLogs;
+    public final long publishThreshold;
+    public long logsRead;
+    public long logsReadOnProgressPublish;
+
+    public Progress(long totalLogs) {
+      this.totalLogs = totalLogs;
+      this.publishThreshold = totalLogs / 10;
+    }
+  }
+
   public static LogEntry[] applyMultipleFilters(LogEntry[] input, Filter[] filters, ProgressReporter pr) {
     initializeContextInfo(filters);
     // This algorithm is O(n*m), but we can assume the 'filters' array will only contain a few elements
     // So, in practice, this will be much closer to O(n) than O(nˆ2)
     List<LogEntry> filtered = new Vector<>();
-    AtomicInteger logsRead = new AtomicInteger();
+    final Progress progress = new Progress(input.length);
     Arrays.stream(input).parallel().forEach(entry -> {
       Filter appliedFilter = getAppliedFilter(entry, filters);
       if (appliedFilter != null) {
         entry.setFilterColor(appliedFilter.getColor());
         filtered.add(entry);
       }
-      pr.onProgress(logsRead.getAndIncrement() * 100 / input.length, "Applying filters...");
+
+      // This is called A LOT of times, so we try to publish progress update only after a given threshold
+      // to not impact on performance. We don't care about thread synchronization either as it is not
+      // that important that the progress is completely accurate (since there will be so many iterations
+      // here it will not actually make a difference and the progress will be accurate). We only care about
+      // impacting the least possible in performance here
+      progress.logsRead++;
+      if (progress.logsRead > (progress.logsReadOnProgressPublish + progress.publishThreshold)
+              || progress.logsRead >= progress.totalLogs ) {
+        progress.logsReadOnProgressPublish = progress.logsRead;
+        pr.onProgress((int)progress.logsRead * 100 / input.length, "Applying filters...");
+      }
     });
     Collections.sort(filtered);
 

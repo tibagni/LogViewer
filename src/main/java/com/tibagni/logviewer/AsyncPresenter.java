@@ -15,12 +15,18 @@ class AsyncPresenter {
   }
 
   void doAsync(Runnable runnable) {
-    asyncView.showStartLoading();
+    uiExecutor.execute(() -> asyncView.showStartLoading());
     bgExecutorService.execute(runnable);
   }
 
   void updateAsyncProgress(int progress, String note) {
-    uiExecutor.execute(() -> asyncView.showLoadingProgress(progress, note));
+    uiExecutor.execute(() -> {
+      if (progress >= 100) {
+        asyncView.finishLoading();
+      } else {
+        asyncView.showLoadingProgress(progress, note);
+      }
+    });
   }
 
   void doOnUiThread(Runnable runnable) {
@@ -34,6 +40,7 @@ class AsyncPresenter {
   public interface AsyncView {
     void showStartLoading();
     void showLoadingProgress(int progress, String note);
+    void finishLoading();
   }
 
 

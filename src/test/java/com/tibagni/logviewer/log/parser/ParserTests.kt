@@ -89,10 +89,10 @@ class ParserTests {
         val descriptions = descriptionCaptor.allValues
 
         assertTrue(progresses.contains(0))
-        assertTrue(progresses.contains(15))
-        assertTrue(progresses.contains(30))
+        assertTrue(progresses.contains(22))
         assertTrue(progresses.contains(45))
-        assertTrue(progresses.contains(80))
+        assertTrue(progresses.contains(67))
+        assertTrue(progresses.contains(91))
         assertTrue(progresses.contains(95))
         assertTrue(progresses.contains(100))
 

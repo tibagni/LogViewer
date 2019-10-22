@@ -43,13 +43,13 @@ public class LogParser {
     try {
       int logsRead = 0;
       for (String log : availableLogs) {
-        int progress = logsRead++ * 60 / availableLogs.size();
+        int progress = logsRead++ * 90 / availableLogs.size();
         progressReporter.onProgress(progress, "Reading " + log + "...");
         logEntries.addAll(getLogEntries(logReader.get(log), log));
       }
 
       if (availableLogs.size() > 1) {
-        progressReporter.onProgress(80, "Sorting...");
+        progressReporter.onProgress(91, "Sorting...");
         Collections.sort(logEntries);
       }
 

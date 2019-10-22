@@ -17,7 +17,6 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.*;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
@@ -48,7 +47,7 @@ public class LogViewerView implements LogViewer.View {
   private final JFileChooserExt logOpenFileChooser;
   private final JFileChooserExt filterSaveFileChooser;
   private final JFileChooserExt filterOpenFileChooser;
-  private ProgressMonitorExt progressMonitor;
+  private ProgressDialog progressDialog;
 
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
@@ -513,20 +512,21 @@ public class LogViewerView implements LogViewer.View {
 
   @Override
   public void showStartLoading() {
-    if (progressMonitor == null) {
-      progressMonitor = new ProgressMonitorExt(mainPanel, "Loading...", "", 0, 100);
-      progressMonitor.setMillisToDecideToPopup(100);
-      progressMonitor.setCancelable(false);
-      progressMonitor.setPreferredWidth(550);
+    if (progressDialog == null) {
+      progressDialog = ProgressDialog.showProgressDialog(parent);
     }
-
-    progressMonitor.setProgress(0);
   }
 
   @Override
   public void showLoadingProgress(int progress, String note) {
-    progressMonitor.setProgress(progress);
-    progressMonitor.setNote(note);
+    progressDialog.publishProgress(progress);
+    progressDialog.updateProgressText(note);
+  }
+
+  @Override
+  public void finishLoading() {
+    progressDialog.finishProgress();
+    progressDialog = null;
   }
 
   private void openNewWindow() {
