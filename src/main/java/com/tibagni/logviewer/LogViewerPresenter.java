@@ -162,6 +162,19 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
           applyFilters();
         }
       }
+
+      // Remove this group from the last filters path config
+      File groupFile = filtersFilesMap.get(group);
+      if (groupFile != null) {
+        File[] currentSavedPaths = userPrefs.getLastFilterPaths();
+        if (currentSavedPaths != null && currentSavedPaths.length > 0) {
+           int i = ArrayUtils.indexOf(currentSavedPaths, groupFile);
+           if (i >= 0) {
+             currentSavedPaths = ArrayUtils.remove(currentSavedPaths, i);
+             userPrefs.setLastFilterPaths(currentSavedPaths);
+           }
+        }
+      }
     }
   }
 

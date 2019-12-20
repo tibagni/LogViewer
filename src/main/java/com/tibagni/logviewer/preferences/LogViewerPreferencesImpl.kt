@@ -39,7 +39,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
             val pathStrings = preferences.get(LAST_FILTER_PATH, null)
             val paths = pathStrings?.split("\\$".toRegex())
 
-            return paths?.map { File(it) }?.toTypedArray() ?: arrayOf()
+            return paths?.filter { !it.isNullOrEmpty() }?.map { File(it) }?.toTypedArray() ?: arrayOf()
         }
         set(filterPaths) {
             val pathsString = filterPaths.joinToString(separator = "$") { it.absolutePath }
