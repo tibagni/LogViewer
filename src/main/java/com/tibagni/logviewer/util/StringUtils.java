@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.util;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
@@ -39,5 +41,31 @@ public class StringUtils {
 
   public static boolean areEquals(String str1, String str2) {
     return (Objects.equals(str1, str2));
+  }
+
+  public static String htmlHighlight(String text, int start, int end) {
+    String prefix = text.substring(0, start);
+    String highlightedPart = text.substring(start, end);
+    String suffix = text.substring(end);
+    return prefix + highlight(highlightedPart) + suffix;
+  }
+
+  public static String htmlHighlightAndEscape(String text, int start, int end) {
+    String prefix = escape(text.substring(0, start));
+    String highlightedPart = escape(text.substring(start, end));
+    String suffix = escape(text.substring(end));
+    return prefix + highlight(highlightedPart) + suffix;
+  }
+
+  private static String highlight(String text) {
+    return "<span style=\"background-color:yellow;color:black\">" + text + "</span>";
+  }
+
+  private static String escape(String text) {
+    return StringEscapeUtils.escapeHtml4(text);
+  }
+
+  public static String wrapHtml(String text) {
+    return "<html>" + text + "</html>";
   }
 }

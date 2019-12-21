@@ -2,6 +2,7 @@ package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -12,6 +13,7 @@ import java.io.Serializable;
 public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Object>, Serializable {
 
   private static final Border DEFAULT_NO_FOCUS_BORDER = new EmptyBorder(1, 1, 1, 1);
+  private String highlightedText;
 
   public FilterCellRenderer() {
     super();
@@ -25,6 +27,17 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
                                                 boolean cellHasFocus) {
     Filter filter = (Filter) value;
     String text = filter.getName();
+
+    boolean useHtml = false;
+    if (!StringUtils.isEmpty(highlightedText)) {
+      int hlStart = text.toUpperCase().indexOf(highlightedText.toUpperCase());
+      if (hlStart >= 0) {
+        int hlEnd = hlStart + highlightedText.length();
+        text = StringUtils.htmlHighlightAndEscape(text, hlStart, hlEnd);
+        useHtml = true;
+      }
+    }
+
     Filter.ContextInfo tempInfo = filter.getTemporaryInfo();
     if (tempInfo != null) {
       int totalLinesFound = tempInfo.getTotalLinesFound();
@@ -56,11 +69,19 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
       setBackground(list.getBackground());
     }
     setForeground(filter.getColor());
-    setText(text);
 
+    if (useHtml) {
+      text = StringUtils.wrapHtml(text);
+    }
+
+    setText(text);
     setEnabled(list.isEnabled());
     setFont(list.getFont());
 
     return this;
+  }
+
+  public void setHighlightedText(String hlText) {
+    highlightedText = hlText;
   }
 }
