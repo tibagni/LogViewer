@@ -1,7 +1,6 @@
 package com.tibagni.logviewer.log;
 
 import java.awt.*;
-import java.util.Objects;
 
 public class LogEntry implements Comparable<LogEntry> {
 
@@ -13,6 +12,7 @@ public class LogEntry implements Comparable<LogEntry> {
   private final LogStream logStream;
 
   private Color filterColor;
+  private String matchedText;
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp) {
     this(logText, logLevel, timestamp, "");
@@ -44,6 +44,14 @@ public class LogEntry implements Comparable<LogEntry> {
 
   public void setFilterColor(Color filterColor) {
     this.filterColor = filterColor;
+  }
+
+  public String getMatchedText() {
+    return matchedText;
+  }
+
+  public void setMatchedText(String matchedText) {
+    this.matchedText = matchedText;
   }
 
   public int getIndex() {

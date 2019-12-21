@@ -1,11 +1,16 @@
 package com.tibagni.logviewer.log;
 
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.util.StringUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Highlighter;
 import java.awt.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LogCellRenderer extends JPanel implements TableCellRenderer {
   protected final JTextArea textView;
@@ -63,6 +68,9 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     textView.setWrapStyleWord(true);
     textView.setLineWrap(true);
 
+    Highlighter highlighter = textView.getHighlighter();
+    highlighter.removeAllHighlights();
+
     colorIndicator.setBackground(getColorForLogLevel(logEntry.getLogLevel()));
     streamIndicator.setText(logEntry.getStream().getSymbol());
 
@@ -92,9 +100,36 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       textView.setForeground(filteredColor);
     }
 
+    // Apply highlighting if needed
+    highlightMatchedText(highlighter, logEntry, isSelected);
+
     return this;
   }
 
+  private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry, boolean isSelected) {
+    String hlText = logEntry.getMatchedText();
+    if (!StringUtils.isEmpty(hlText)) {
+      try {
+        Pattern pattern = Pattern.compile(hlText, 0);
+        Matcher matcher = pattern.matcher(logEntry.getLogText());
+        while (matcher.find()) {
+          int start = matcher.start();
+          int end = matcher.end();
+          highlighter.addHighlight(start, end, new DefaultHighlighter.DefaultHighlightPainter(
+              getColorForHighlightedText(isSelected)));
+        }
+      } catch (Exception e) {
+        // Should not happen
+        Logger.error("Failed to highlight log entry", e);
+        highlighter.removeAllHighlights();
+        logEntry.setMatchedText(null);
+      }
+    }
+  }
+
+  private Color getColorForHighlightedText(boolean isSelected) {
+    return isSelected ? new Color(234, 115, 0) : new Color(250, 255, 162);
+  }
 
   private Color getColorForLogLevel(LogLevel level) {
     Color logColor = Color.LIGHT_GRAY;

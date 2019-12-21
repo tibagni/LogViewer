@@ -468,7 +468,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
     // Before applying a new filter, make sure the last one is cleaned up
     // (if there is an existing one)
-    cleanUpFilteredColors();
+    cleanUpFilterInfoFromLogEntries();
     cleanUpFilterTempInfo();
 
     List<Filter> toApply = getFiltersThat(filter -> filter.isApplied());
@@ -592,10 +592,11 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
     return confirmed;
   }
 
-  private void cleanUpFilteredColors() {
+  private void cleanUpFilterInfoFromLogEntries() {
     if (filteredLogs != null) {
       for (LogEntry entry : filteredLogs) {
         entry.setFilterColor(null);
+        entry.setMatchedText(null);
       }
     }
   }

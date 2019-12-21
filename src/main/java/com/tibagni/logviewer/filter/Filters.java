@@ -4,7 +4,6 @@ import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.LogEntry;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Filters {
 
@@ -30,6 +29,7 @@ public class Filters {
       Filter appliedFilter = getAppliedFilter(entry, filters);
       if (appliedFilter != null) {
         entry.setFilterColor(appliedFilter.getColor());
+        entry.setMatchedText(appliedFilter.getPatternString());
         filtered.add(entry);
       }
 
