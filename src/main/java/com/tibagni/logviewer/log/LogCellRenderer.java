@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.log;
 
+import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 
@@ -95,11 +96,11 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       textView.setBackground(background);
     }
 
-    Color filteredColor = logEntry.getFilterColor();
+    Filter appliedFilter = logEntry.getAppliedFilter();
+    Color filteredColor = appliedFilter != null ? appliedFilter.getColor() : null;
     if (!isSelected && filteredColor != null) {
       textView.setForeground(filteredColor);
     }
-
     // Apply highlighting if needed
     highlightMatchedText(highlighter, logEntry, isSelected);
 
@@ -107,10 +108,12 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   }
 
   private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry, boolean isSelected) {
-    String hlText = logEntry.getMatchedText();
+    Filter appliedFilter = logEntry.getAppliedFilter();
+    String hlText = appliedFilter != null ? appliedFilter.getPatternString() : null;
     if (!StringUtils.isEmpty(hlText)) {
       try {
-        Pattern pattern = Pattern.compile(hlText, 0);
+        int flags = appliedFilter.isCaseSensitive() ? 0 : Pattern.CASE_INSENSITIVE;
+        Pattern pattern = Pattern.compile(hlText, flags);
         Matcher matcher = pattern.matcher(logEntry.getLogText());
         while (matcher.find()) {
           int start = matcher.start();
@@ -122,7 +125,6 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
         // Should not happen
         Logger.error("Failed to highlight log entry", e);
         highlighter.removeAllHighlights();
-        logEntry.setMatchedText(null);
       }
     }
   }

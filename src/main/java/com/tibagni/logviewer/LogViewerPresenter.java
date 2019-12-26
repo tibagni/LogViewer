@@ -595,8 +595,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private void cleanUpFilterInfoFromLogEntries() {
     if (filteredLogs != null) {
       for (LogEntry entry : filteredLogs) {
-        entry.setFilterColor(null);
-        entry.setMatchedText(null);
+        entry.setAppliedFilter(null);
       }
     }
   }

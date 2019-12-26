@@ -68,7 +68,7 @@ public class Filter {
     return color;
   }
 
-  String getPatternString() {
+  public String getPatternString() {
     return pattern.toString();
   }
 
@@ -84,7 +84,7 @@ public class Filter {
     temporaryInfo = new ContextInfo();
   }
 
-  boolean isCaseSensitive() {
+  public boolean isCaseSensitive() {
     // Check if the CASE_INSENSITIVE is OFF!!
     return (flags & Pattern.CASE_INSENSITIVE) == 0;
   }

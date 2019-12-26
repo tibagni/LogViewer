@@ -28,8 +28,7 @@ public class Filters {
     Arrays.stream(input).parallel().forEach(entry -> {
       Filter appliedFilter = getAppliedFilter(entry, filters);
       if (appliedFilter != null) {
-        entry.setFilterColor(appliedFilter.getColor());
-        entry.setMatchedText(appliedFilter.getPatternString());
+        entry.setAppliedFilter(appliedFilter);
         filtered.add(entry);
       }
 
