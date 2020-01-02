@@ -103,6 +103,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
       filter = editingFilter;
       nameTxt.setText(filter.getName());
       regexTxt.setText(filter.getPatternString());
+      regexTxt.selectAll();
       colorChooser.setColor(filter.getColor());
       caseSensitiveCbx.setSelected(filter.isCaseSensitive());
       nameIsPattern = StringUtils.areEquals(filter.getName(), filter.getPatternString());
