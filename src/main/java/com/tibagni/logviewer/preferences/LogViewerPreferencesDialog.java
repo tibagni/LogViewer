@@ -98,8 +98,8 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     LookNFeelProvider lnfProvider = LookNFeelProvider.getInstance();
     List<LookNFeel> lookAndFeels = lnfProvider.getAvailableLookNFeels();
 
-    String currLnf = UIManager.getLookAndFeel().getName();
-    LookNFeel selectedItem = lnfProvider.getBySystemName(currLnf);
+    String currLnf = UIManager.getLookAndFeel().getClass().getName();
+    LookNFeel selectedItem = lnfProvider.getByClass(currLnf);
     for (LookNFeel lnf : lookAndFeels) {
       lookAndFeelCbx.addItem(lnf);
     }
