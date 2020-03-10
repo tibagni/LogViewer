@@ -221,7 +221,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
     contentPane.setMinimumSize(new Dimension(400, 200));
-    contentPane.setPreferredSize(new Dimension(650, 350));
+    contentPane.setPreferredSize(new Dimension(750, 450));
     contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
@@ -282,8 +282,12 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     editPane.add(colorLbl, cc.xy(1, 7));
     colorChooser = new JColorChooser();
     AbstractColorChooserPanel swatchPanel = getSwatchPanel(colorChooser.getChooserPanels());
+
     // Keep only the swatch panel
-    colorChooser.setChooserPanels(new AbstractColorChooserPanel[]{swatchPanel});
+    if (swatchPanel != null) {
+      colorChooser.setChooserPanels(new AbstractColorChooserPanel[]{swatchPanel});
+    }
+
     // Show a simple text field for preview
     JTextField preview = new JTextField("Filtered text color preview");
     preview.setBorder(new EmptyBorder(5, 15, 5, 15));
