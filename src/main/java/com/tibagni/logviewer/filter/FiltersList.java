@@ -120,6 +120,15 @@ public class FiltersList extends JPanel {
     }
   }
 
+  private void onFilterUIGroupFocusChanged(String currentFocus) {
+    // Whenever the focus is changed to a different filter group, make sure to clean the search of all others
+    for (String group : filterUIGroups.keySet()) {
+      if (!StringUtils.areEquals(currentFocus, group)) {
+        filterUIGroups.get(group).listSearchHandler.handleKeyTyped((char) KeyEvent.VK_ESCAPE);
+      }
+    }
+  }
+
   private class FilterUIGroup extends JPanel {
     private final String SHOW;
     private final String HIDE;
@@ -324,9 +333,8 @@ public class FiltersList extends JPanel {
 
       list.addFocusListener(new FocusAdapter() {
         @Override
-        public void focusLost(FocusEvent e) {
-          // Send an "escape" key to search handler to cancel it when list loses focus
-          listSearchHandler.handleKeyTyped((char) KeyEvent.VK_ESCAPE);
+        public void focusGained(FocusEvent e) {
+          onFilterUIGroupFocusChanged(groupName);
         }
       });
 
