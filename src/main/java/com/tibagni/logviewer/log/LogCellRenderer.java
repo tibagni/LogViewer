@@ -81,8 +81,8 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     }
 
     if (isSelected) {
-      textView.setForeground(table.getSelectionForeground());
-      textView.setBackground(table.getSelectionBackground());
+      textView.setForeground(new Color(table.getSelectionForeground().getRGB()));
+      textView.setBackground(new Color(table.getSelectionBackground().getRGB()));
     } else {
       Color background = table.getBackground();
       if (background == null || background instanceof javax.swing.plaf.UIResource) {
