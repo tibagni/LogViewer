@@ -57,7 +57,7 @@ public class LogViewerView implements LogViewer.View {
 
   final private LogViewerPreferences userPrefs;
 
-  public LogViewerView(JFrame parent, LogViewerApplication application) {
+  public LogViewerView(JFrame parent, LogViewerApplication application, Set<File> initialLogFiles) {
     buildUi();
     configureMenuBar(parent, false);
 
@@ -104,6 +104,18 @@ public class LogViewerView implements LogViewer.View {
 
     // Configure file drop
     new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
+
+    // Load initial log files if any when component is shown
+    if (initialLogFiles != null && !initialLogFiles.isEmpty()) {
+      parent.addComponentListener(new ComponentAdapter() {
+        @Override
+        public void componentShown(ComponentEvent e) {
+          Logger.debug("Will load initial log files");
+          parent.removeComponentListener(this);
+          presenter.loadLogs(initialLogFiles.toArray(new File[0]));
+        }
+      });
+    }
   }
 
   private void configureMenuBar(JFrame frame, boolean showStreamsMenu) {
@@ -530,7 +542,7 @@ public class LogViewerView implements LogViewer.View {
   }
 
   private void openNewWindow() {
-    application.newLogViewerWindow();
+    application.newLogViewerWindow(null);
   }
 
   private void openUserPreferences() {

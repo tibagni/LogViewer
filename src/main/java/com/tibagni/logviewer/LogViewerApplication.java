@@ -13,22 +13,32 @@ import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 
 import javax.swing.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class LogViewerApplication implements UpdateManager.UpdateListener {
   private LogViewerApplication() { }
 
   public static void main(String[] args) {
+    Set<File> initialLogFiles = Arrays
+            .stream(args)
+            .map(fileName -> new File(fileName))
+            .filter(f -> f.exists() && f.isFile())
+            .collect(Collectors.toSet());
+
     LogViewerApplication application = new LogViewerApplication();
-    application.start();
+    application.start(initialLogFiles);
   }
 
-  private void start() {
+  private void start(Set<File> initialLogFiles) {
     startCheckingForUpdates();
     initLookAndFeel();
 
-    newLogViewerWindow();
+    newLogViewerWindow(initialLogFiles);
   }
 
   private void initLookAndFeel() {
@@ -50,9 +60,9 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     watchLookAndFeelUpdates();
   }
 
-  void newLogViewerWindow() {
+  void newLogViewerWindow(Set<File> initialLogFiles) {
     JFrame frame = new JFrame(getApplicationTitle());
-    LogViewerView logViewer = new LogViewerView(frame, this);
+    LogViewerView logViewer = new LogViewerView(frame, this, initialLogFiles);
 
     frame.setContentPane(logViewer.getContentPane());
     frame.pack();
