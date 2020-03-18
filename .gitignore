@@ -9,6 +9,7 @@
 .idea/modules
 .idea/kotlinc.xml
 .idea/misc.xml
+.idea/jarRepositories.xml
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/

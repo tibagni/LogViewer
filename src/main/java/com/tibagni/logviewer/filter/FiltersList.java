@@ -2,6 +2,7 @@ package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
 import com.tibagni.logviewer.view.FlatButton;
 import com.tibagni.logviewer.view.ReorderableCheckBoxList;
@@ -215,10 +216,10 @@ public class FiltersList extends JPanel {
           searchHint = new JLabel();
           searchHint.setOpaque(true);
           searchHint.setBackground(Color.LIGHT_GRAY);
-          searchHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 24));
+          searchHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(24)));
           Point targetListLocation = targetList.getLocationOnScreen();
-          int popupX = targetListLocation.x + 10;
-          int popupY = targetListLocation.y - 40;
+          int popupX = targetListLocation.x + UIScaleUtils.dip(10);
+          int popupY = targetListLocation.y - UIScaleUtils.dip(40);
           hintPopup = PopupFactory.getSharedInstance().getPopup(targetList, searchHint, popupX, popupY);
         }
       }
@@ -293,7 +294,7 @@ public class FiltersList extends JPanel {
     private void configureContextActions() {
       JPopupMenu popup = new JPopupMenu();
       final JLabel menuTitle = new JLabel();
-      menuTitle.setBorder(new EmptyBorder(0, 10, 0, 0));
+      menuTitle.setBorder(new EmptyBorder(0, UIScaleUtils.dip(10), 0, 0));
       popup.add(menuTitle);
       popup.add(new JPopupMenu.Separator());
       JMenuItem deleteMenuItem = popup.add("Delete");

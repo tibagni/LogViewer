@@ -14,6 +14,7 @@ import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog;
 import com.tibagni.logviewer.util.*;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.*;
 
 import javax.swing.*;
@@ -552,12 +553,15 @@ public class LogViewerView implements LogViewer.View {
   private void buildUi() {
     mainPanel = new JPanel();
     mainPanel.setLayout(new GridBagLayout());
-    mainPanel.setPreferredSize(new Dimension(1000, 500));
+    mainPanel.setPreferredSize(new Dimension(UIScaleUtils.dip(1000), UIScaleUtils.dip(500)));
 
     currentLogsLbl = new JLabel();
     currentLogsLbl.setAutoscrolls(true);
     currentLogsLbl.setText("");
-    currentLogsLbl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    currentLogsLbl.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(5),
+            UIScaleUtils.dip(5),
+            UIScaleUtils.dip(5),
+            UIScaleUtils.dip(5)));
     mainPanel.add(currentLogsLbl,
         new GBConstraintsBuilder()
             .withGridx(1)
@@ -579,7 +583,7 @@ public class LogViewerView implements LogViewer.View {
             .build());
 
     logsPane = new JSplitPane();
-    logsPane.setDividerSize(10);
+    logsPane.setDividerSize(UIScaleUtils.dip(10));
     logsPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
     logsPane.setResizeWeight(0.6);
 

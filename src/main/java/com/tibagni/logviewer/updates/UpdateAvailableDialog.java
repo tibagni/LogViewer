@@ -3,6 +3,7 @@ package com.tibagni.logviewer.updates;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.layout.FontBuilder;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
@@ -80,9 +81,12 @@ public class UpdateAvailableDialog extends JDialog implements ButtonsPane.Listen
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setMinimumSize(new Dimension(550, 250));
-    contentPane.setPreferredSize(new Dimension(550, 250));
-    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    contentPane.setMinimumSize(new Dimension(UIScaleUtils.dip(550), UIScaleUtils.dip(250)));
+    contentPane.setPreferredSize(new Dimension(UIScaleUtils.dip(550), UIScaleUtils.dip(250)));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,

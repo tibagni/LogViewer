@@ -4,6 +4,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.ButtonsPane;
 
@@ -220,9 +221,12 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setMinimumSize(new Dimension(400, 200));
-    contentPane.setPreferredSize(new Dimension(750, 450));
-    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    contentPane.setMinimumSize(new Dimension(UIScaleUtils.dip(400), UIScaleUtils.dip(200)));
+    contentPane.setPreferredSize(new Dimension(UIScaleUtils.dip(750), UIScaleUtils.dip(450)));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,
@@ -290,7 +294,10 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
     // Show a simple text field for preview
     JTextField preview = new JTextField("Filtered text color preview");
-    preview.setBorder(new EmptyBorder(5, 15, 5, 15));
+    preview.setBorder(new EmptyBorder(UIScaleUtils.dip(5),
+            UIScaleUtils.dip(15),
+            UIScaleUtils.dip(5),
+            UIScaleUtils.dip(15)));
     colorChooser.setPreviewPanel(preview);
     editPane.add(colorChooser, cc.xy(3, 7));
 

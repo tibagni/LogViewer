@@ -1,8 +1,10 @@
 package com.tibagni.logviewer.view;
 
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 
 public class JFileChooserExt extends JFileChooser {
@@ -11,6 +13,7 @@ public class JFileChooserExt extends JFileChooser {
 
   public JFileChooserExt(File currentDirectory) {
     super(currentDirectory);
+    setPreferredSize(UIScaleUtils.scaleDimension(getPreferredSize()));
   }
 
   /**

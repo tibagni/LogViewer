@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.view;
 
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
@@ -41,7 +43,10 @@ public class FlatButton extends JButton {
     setBorderPainted(false);
     setContentAreaFilled(false);
     setOpaque(false);
-    setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+    setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(2),
+            UIScaleUtils.dip(2),
+            UIScaleUtils.dip(2),
+            UIScaleUtils.dip(2)));
     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     normalColor = new Color(UIManager.getColor("Button.foreground").getRGB());

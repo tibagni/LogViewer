@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.view;
 
 import com.tibagni.logviewer.util.CommonUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 public class CheckBoxList<E> extends JList<E> {
   private ItemsCheckListener listener;
 
-  private static final int CHECK_BOX_WIDTH = 15;
+  private static final int CHECK_BOX_WIDTH = UIScaleUtils.dip(15);
 
   public CheckBoxList() {
     super();

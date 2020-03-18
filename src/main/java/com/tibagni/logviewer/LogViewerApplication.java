@@ -5,17 +5,18 @@ import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
+import com.tibagni.logviewer.rc.RuntimeConfiguration;
+import com.tibagni.logviewer.rc.UIScaleConfig;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,6 +25,9 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   private LogViewerApplication() { }
 
   public static void main(String[] args) {
+    RuntimeConfiguration.initialize();
+    UIScaleUtils.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig.class));
+
     Set<File> initialLogFiles = Arrays
             .stream(args)
             .map(fileName -> new File(fileName))
@@ -57,6 +61,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
       SwingUtils.setLookAndFeel(lookAndFeel);
     }
+    UIScaleUtils.updateDefaultSizes();
     watchLookAndFeelUpdates();
   }
 

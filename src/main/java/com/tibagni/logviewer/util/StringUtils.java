@@ -3,6 +3,7 @@ package com.tibagni.logviewer.util;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 
@@ -27,6 +28,10 @@ public class StringUtils {
 
   public static boolean isEmpty(String str) {
     return str == null || str.trim().length() == 0;
+  }
+
+  public static boolean isNotEmpty(String str) {
+    return !isEmpty(str);
   }
 
   public static String encodeBase64(String str) {
@@ -59,6 +64,10 @@ public class StringUtils {
 
   private static String highlight(String text) {
     return "<span style=\"background-color:yellow;color:black\">" + text + "</span>";
+  }
+
+  public static boolean endsWithOneOf(String text, String[] suffixes) {
+    return Arrays.stream(suffixes).anyMatch(suffix -> text.endsWith(suffix));
   }
 
   private static String escape(String text) {

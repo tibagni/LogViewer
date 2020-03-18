@@ -4,6 +4,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
@@ -141,7 +142,10 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,

@@ -2,6 +2,7 @@ package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import javax.swing.*;
@@ -12,7 +13,10 @@ import java.io.Serializable;
 
 public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Object>, Serializable {
 
-  private static final Border DEFAULT_NO_FOCUS_BORDER = new EmptyBorder(1, 1, 1, 1);
+  private static final Border DEFAULT_NO_FOCUS_BORDER = new EmptyBorder(UIScaleUtils.dip(1),
+          UIScaleUtils.dip(1),
+          UIScaleUtils.dip(1),
+          UIScaleUtils.dip(1));
   private String highlightedText;
 
   public FilterCellRenderer() {

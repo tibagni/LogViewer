@@ -54,8 +54,6 @@ file("src/main/resources/properties/app.properties").withInputStream { props.loa
 
 version props.getProperty("version")
 
-sourceCompatibility = 1.8
-
 repositories {
     mavenCentral()
     jcenter()

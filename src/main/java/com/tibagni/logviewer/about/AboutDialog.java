@@ -7,6 +7,7 @@ import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
 import com.tibagni.logviewer.util.layout.FontBuilder;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.ButtonsPane;
 
 import javax.swing.*;
@@ -119,7 +120,9 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10), UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_ONLY, this);
     contentPane.add(buttonsPane,
@@ -147,7 +150,7 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
     applicationName = new JLabel();
     applicationName.setFont(new FontBuilder(applicationName)
         .withStyle(Font.BOLD)
-        .withSize(20)
+        .withSize(UIScaleUtils.scaleFont(20))
         .build());
     applicationName.setText("");
     infoPane.add(applicationName,
@@ -212,7 +215,7 @@ public class AboutDialog extends JDialog implements ButtonsPane.Listener {
             .withWeightx(1.0)
             .withFill(GridBagConstraints.HORIZONTAL)
             .build();
-    constraints.insets = new Insets(5,0,5,0);
+    constraints.insets = new Insets(UIScaleUtils.dip(5),0, UIScaleUtils.dip(5),0);
     infoPane.add(updateBtn, constraints);
 
     return infoPane;

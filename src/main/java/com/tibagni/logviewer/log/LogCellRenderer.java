@@ -3,6 +3,7 @@ package com.tibagni.logviewer.log;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -27,15 +28,21 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     textView = new JTextArea();
     textView.setLineWrap(true);
     textView.setWrapStyleWord(true);
-    textView.setMargin(new Insets(5, 10,5 ,10));
-    textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+    textView.setMargin(new Insets(UIScaleUtils.dip(5),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(5),
+            UIScaleUtils.dip(10)));
+    textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(12)));
     add(textView);
 
     // Create the stream indicator component but do not show initially
     // Wait until we know it is necessary to show (see showStreams(boolean))
     streamIndicator = new JLabel();
-    streamIndicator.setBorder(new EmptyBorder(5, 5, 5, 5));
-    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, 12));
+    streamIndicator.setBorder(new EmptyBorder(UIScaleUtils.dip(5),
+            UIScaleUtils.dip(5),
+            UIScaleUtils.dip(5),
+            UIScaleUtils.dip(5)));
+    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, UIScaleUtils.scaleFont(12)));
   }
 
   public void showStreams(boolean showStreams) {

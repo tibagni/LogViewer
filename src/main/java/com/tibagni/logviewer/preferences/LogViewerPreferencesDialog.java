@@ -4,6 +4,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.ButtonsPane;
 import com.tibagni.logviewer.view.JFileChooserExt;
@@ -174,10 +175,13 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setMinimumSize(new Dimension(400, 250));
-    contentPane.setPreferredSize(new Dimension(600, 350));
+    contentPane.setMinimumSize(new Dimension(UIScaleUtils.dip(400), UIScaleUtils.dip(250)));
+    contentPane.setPreferredSize(new Dimension(UIScaleUtils.dip(600), UIScaleUtils.dip(350)));
     contentPane.setRequestFocusEnabled(true);
-    contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(10)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,

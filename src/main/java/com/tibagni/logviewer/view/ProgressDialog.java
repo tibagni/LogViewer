@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.view;
 
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -48,8 +50,10 @@ public class ProgressDialog extends JDialog {
 
     private void buildUi() {
         contentPane = new JPanel();
-        contentPane.setMinimumSize(new Dimension(400, 100));
-        contentPane.setPreferredSize(new Dimension(400, 100));
+        int width = UIScaleUtils.dip(400);
+        int height = UIScaleUtils.dip(100);
+        contentPane.setMinimumSize(new Dimension(width, height));
+        contentPane.setPreferredSize(new Dimension(width, height));
 
         progressbar = new JProgressBar(0, 100);
         progressbar.setStringPainted(true);

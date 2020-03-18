@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.view;
 
 import com.tibagni.logviewer.util.CommonUtils;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -11,8 +12,8 @@ import java.awt.*;
 public class Toast extends JFrame {
   private static Toast currentToast;
 
-  private static final int INNER_MARGIN = 10;
-  private static final int BOTTOM_MARGIN = 50;
+  private static final int INNER_MARGIN = UIScaleUtils.dip(10);
+  private static final int BOTTOM_MARGIN = UIScaleUtils.dip(50);
 
   public static final int LENGTH_LONG = 3500;
   public static final int LENGTH_SHORT = 2000;
