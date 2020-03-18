@@ -38,6 +38,11 @@ public class RuntimeConfiguration {
     }
 
     private RuntimeConfiguration() {
+        if (!Files.isRegularFile(RC_FILE_PATH)) {
+            Logger.debug("Config file not found");
+            return;
+        }
+
         try {
             Files.lines(RC_FILE_PATH)
                     .filter(StringUtils::isNotEmpty)

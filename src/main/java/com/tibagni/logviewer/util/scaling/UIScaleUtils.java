@@ -15,7 +15,7 @@ public class UIScaleUtils {
 
     public static void initialize(UIScaleConfig config) {
         int configValue = config == null ? 1 : config.getConfigValue();
-        SCALE_FACTOR = configValue == UIScaleConfig.SCALE_OFF ? 1 : config.getConfigValue();
+        SCALE_FACTOR = configValue == UIScaleConfig.SCALE_OFF ? 1 : configValue;
         Logger.debug("Initializing UIScaleUtils. Scale Factor is " + SCALE_FACTOR);
 
         // Always update the checkbox icon so it does not have any scaling issues and look consistent across
@@ -35,6 +35,7 @@ public class UIScaleUtils {
 
             String key = (String) obj;
             Object value = UIManager.get(key);
+            System.out.println(key + " : " + value);
 
             Object modified = null;
             if (value instanceof Integer) modified = updateInteger(key, (Integer) value);
