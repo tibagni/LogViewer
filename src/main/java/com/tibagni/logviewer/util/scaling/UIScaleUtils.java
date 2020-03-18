@@ -3,15 +3,23 @@ package com.tibagni.logviewer.util.scaling;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.rc.UIScaleConfig;
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.view.CustomCheckBoxPainter;
 import com.tibagni.logviewer.view.CustomCheckboxIcon;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Collections;
 
 public class UIScaleUtils {
     private static int SCALE_FACTOR;
+
+    // Nimbus theme re-uses some font objects for different properties. Keep track of all the already scaled font
+    // objects here to avoid scaling it twice (or more)
+    private static ArrayList<FontUIResource> alreadyScaledFonts = new ArrayList<>();
 
     public static void initialize(UIScaleConfig config) {
         int configValue = config == null ? 1 : config.getConfigValue();
@@ -29,19 +37,21 @@ public class UIScaleUtils {
             return;
         }
 
-        UIDefaults defaults = UIManager.getDefaults();
-        for (Object obj: Collections.list(defaults.keys())) {
+        UIDefaults defaults = UIManager.getLookAndFeelDefaults();
+        for (Object obj : Collections.list(defaults.keys())) {
             if (!(obj instanceof String)) continue;
 
             String key = (String) obj;
             Object value = UIManager.get(key);
-            System.out.println(key + " : " + value);
 
             Object modified = null;
             if (value instanceof Integer) modified = updateInteger(key, (Integer) value);
             if (value instanceof Icon) modified = updateIcon((Icon) value);
             if (value instanceof FontUIResource) modified = updateFont((FontUIResource) value);
             if (value instanceof Dimension) modified = updateDimension((Dimension) value);
+            if (value instanceof Insets) modified = updateInsets((Insets) value);
+            if (value instanceof Border) modified = updateBorder((Border) value);
+            if (value instanceof Painter) modified = updatePainter((Painter) value);
 
             if (modified != null && modified != value) {
                 Logger.verbose("Updating " + key + " from " + value + " to " + modified);
@@ -61,7 +71,14 @@ public class UIScaleUtils {
     }
 
     private static FontUIResource updateFont(FontUIResource value) {
-        return new FontUIResource(value.getFamily(), value.getStyle(), scaleFont(value.getSize()));
+        if (alreadyScaledFonts.stream().anyMatch(font -> font == value)) {
+            Logger.debug("Already scaled font object " + value + ". Skipping...");
+            return value;
+        }
+
+        FontUIResource ret = new FontUIResource(value.getFamily(), value.getStyle(), scaleFont(value.getSize()));
+        alreadyScaledFonts.add(ret);
+        return ret;
     }
 
     private static Icon updateIcon(Icon value) {
@@ -77,7 +94,7 @@ public class UIScaleUtils {
     }
 
     private static Integer updateInteger(String key, Integer value) {
-        final String[] scalableSuffixes = new String[] { "width", "height", "indent", "size", "gap" };
+        final String[] scalableSuffixes = new String[]{"width", "height", "indent", "size", "gap"};
         if (!StringUtils.endsWithOneOf(key.toLowerCase(), scalableSuffixes)) {
             return value;
         }
@@ -87,6 +104,26 @@ public class UIScaleUtils {
 
     private static Dimension updateDimension(Dimension value) {
         return scaleDimension(value);
+    }
+
+    private static Insets updateInsets(Insets value) {
+        return scaleInsets(value);
+    }
+
+    private static Border updateBorder(Border value) {
+        if (value instanceof EmptyBorder) {
+            return new EmptyBorder(scaleInsets(((EmptyBorder) value).getBorderInsets()));
+        }
+
+        return value;
+    }
+
+    private static Painter updatePainter(Painter value) {
+        if (value.getClass().getName().equals("javax.swing.plaf.nimbus.CheckBoxPainter")) {
+            return new CustomCheckBoxPainter();
+        }
+
+        return value;
     }
 
     public static int dip(int value) {
@@ -103,5 +140,9 @@ public class UIScaleUtils {
 
     public static Dimension scaleDimension(Dimension d) {
         return new Dimension(dip(d.width), dip(d.height));
+    }
+
+    public static Insets scaleInsets(Insets i) {
+        return new Insets(dip(i.top), dip(i.left), dip(i.bottom), dip(i.right));
     }
 }
