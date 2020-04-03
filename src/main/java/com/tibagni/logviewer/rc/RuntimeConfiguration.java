@@ -16,6 +16,7 @@ public class RuntimeConfiguration {
     private HashMap<String, Config> runtimeConfigs = new HashMap<>();
 
     public static final String UI_SCALE = "uiscale";
+    public static final String LOG_LEVEL = "loglevel";
 
     public static void initialize() {
         if (instance != null) {
@@ -66,6 +67,9 @@ public class RuntimeConfiguration {
         switch (configName) {
             case UI_SCALE:
                 config = new UIScaleConfig(configValue);
+                break;
+            case LOG_LEVEL:
+                config = new LogLevelConfig(configValue);
                 break;
             default:
                 Logger.error("Invalid config: " + configName);

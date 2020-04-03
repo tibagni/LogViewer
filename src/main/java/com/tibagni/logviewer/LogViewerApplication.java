@@ -5,6 +5,7 @@ import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
+import com.tibagni.logviewer.rc.LogLevelConfig;
 import com.tibagni.logviewer.rc.RuntimeConfiguration;
 import com.tibagni.logviewer.rc.UIScaleConfig;
 import com.tibagni.logviewer.updates.ReleaseInfo;
@@ -27,6 +28,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   public static void main(String[] args) {
     RuntimeConfiguration.initialize();
     UIScaleUtils.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig.class));
+    Logger.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig.class));
 
     Set<File> initialLogFiles = Arrays
             .stream(args)
