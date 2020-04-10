@@ -21,6 +21,8 @@ public class UIScaleUtils {
     // objects here to avoid scaling it twice (or more)
     private static ArrayList<FontUIResource> alreadyScaledFonts = new ArrayList<>();
 
+    private static SystemScalingCalculator testScalingCalculator;
+
     public static void initialize(UIScaleConfig config) {
         int configValue = config == null ? 1 : config.getConfigValue();
         SCALE_FACTOR = configValue == UIScaleConfig.SCALE_OFF ? 1 : configValue;
@@ -144,5 +146,23 @@ public class UIScaleUtils {
 
     public static Insets scaleInsets(Insets i) {
         return new Insets(dip(i.top), dip(i.left), dip(i.bottom), dip(i.right));
+    }
+
+    public static SystemScalingCalculator getSystemScalingCalculator() {
+        if (testScalingCalculator != null) {
+            return testScalingCalculator;
+        }
+
+        return () -> {
+            // Calculate the scale based on the screen resolution
+            return (int) (Toolkit.getDefaultToolkit().getScreenResolution() / 96f);
+        };
+    }
+
+
+
+    // Test helpers
+    public static void setTestScalingCalculator(SystemScalingCalculator testCalculator) {
+        testScalingCalculator = testCalculator;
     }
 }

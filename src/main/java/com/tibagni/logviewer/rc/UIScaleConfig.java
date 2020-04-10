@@ -1,6 +1,6 @@
 package com.tibagni.logviewer.rc;
 
-import java.awt.*;
+import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 public class UIScaleConfig implements Config<Integer> {
     public static final int SCALE_OFF = -1;
@@ -12,8 +12,7 @@ public class UIScaleConfig implements Config<Integer> {
 
     private int parseValue(String value) {
         if ("auto".equalsIgnoreCase(value)) {
-            // Calculate the scale based on the screen resolution
-            return (int) (Toolkit.getDefaultToolkit().getScreenResolution() / 96f);
+            return UIScaleUtils.getSystemScalingCalculator().calculateScaling();
         } else {
             try {
                 int parsedValue = Integer.parseInt(value);

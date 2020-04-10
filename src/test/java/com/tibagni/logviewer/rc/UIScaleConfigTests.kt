@@ -1,18 +1,21 @@
 package com.tibagni.logviewer.rc
 
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import org.junit.Test
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 
 class UIScaleConfigTests {
 
     @Test
     fun testAutoScale() {
+        val autoValue = -5
+        UIScaleUtils.setTestScalingCalculator { autoValue }
+
         val config1 = UIScaleConfig("auto")
         val config2 = UIScaleConfig("AUTO")
 
-        assertNotEquals("lower case", UIScaleConfig.SCALE_OFF, config1.configValue)
-        assertNotEquals("upper case", UIScaleConfig.SCALE_OFF, config1.configValue)
+        assertEquals("lower case", autoValue, config1.configValue)
+        assertEquals("upper case", autoValue, config2.configValue)
     }
 
     @Test

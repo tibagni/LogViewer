@@ -32,7 +32,7 @@ class RuntimeConfigurationTests {
     @Test
     fun testAllConfig() {
         testRcConfig.parseConfig("loglevel=verbose")
-        testRcConfig.parseConfig("uiscale=auto")
+        testRcConfig.parseConfig("uiscale=5")
 
         assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
         assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
@@ -56,7 +56,7 @@ class RuntimeConfigurationTests {
     @Test
     fun testInvalidConfigFormat() {
         testRcConfig.parseConfig("invalidkey")
-        testRcConfig.parseConfig("=auto")
+        testRcConfig.parseConfig("=4")
         testRcConfig.parseConfig("")
         testRcConfig.parseConfig(" ")
 
