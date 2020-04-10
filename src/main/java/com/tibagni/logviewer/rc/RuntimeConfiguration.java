@@ -2,6 +2,7 @@ package com.tibagni.logviewer.rc;
 
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -18,12 +19,18 @@ public class RuntimeConfiguration {
     public static final String UI_SCALE = "uiscale";
     public static final String LOG_LEVEL = "loglevel";
 
+    @NotNull
+    static RuntimeConfiguration initializeForTest() {
+        instance = new RuntimeConfiguration();
+        return instance;
+    }
+
     public static void initialize() {
         if (instance != null) {
             throw new IllegalStateException("RuntimeConfiguration was already initialized!");
         }
 
-        instance = new RuntimeConfiguration();
+        instance = new RuntimeConfiguration(RC_FILE_PATH);
     }
 
     public static <T> T getConfig(String configName, Class<T> type) {
@@ -38,14 +45,17 @@ public class RuntimeConfiguration {
         return getConfig(configName, Config.class);
     }
 
-    private RuntimeConfiguration() {
-        if (!Files.isRegularFile(RC_FILE_PATH)) {
+    // For test only
+    private RuntimeConfiguration() { }
+
+    private RuntimeConfiguration(Path rcFilePath) {
+        if (!Files.isRegularFile(rcFilePath)) {
             Logger.debug("Config file not found");
             return;
         }
 
         try {
-            Files.lines(RC_FILE_PATH)
+            Files.lines(rcFilePath)
                     .filter(StringUtils::isNotEmpty)
                     .forEach(this::parseConfig);
         } catch (IOException e) {
@@ -53,7 +63,8 @@ public class RuntimeConfiguration {
         }
     }
 
-    private void parseConfig(String configLine) {
+    // Visible for testing
+    void parseConfig(@NotNull String configLine) {
         String[] configParts = configLine.trim().split("=");
 
         if (configParts.length != 2) {
