@@ -401,7 +401,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
           view.showAvailableLogStreams(availableStreams.keySet());
 
           if (allLogs.length > 0) {
-            String logsPath = FilenameUtils.getFullPath(logFiles[0].getPath());
+            String logsPath = FilenameUtils.getFullPath(logFiles[0].getAbsolutePath());
             view.showCurrentLogsLocation(logsPath);
 
             long appliedFiltersCount = getFiltersThat(filter -> filter.isApplied()).size();

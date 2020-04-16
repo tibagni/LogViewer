@@ -219,6 +219,7 @@ public class LogViewerView implements LogViewer.View {
 
   @Override
   public void showCurrentLogsLocation(String logsPath) {
+    Logger.debug("showCurrentLogsLocation: " + logsPath);
     String text = logsPath == null ?
         null :
         SwingUtils.truncateTextFor(
