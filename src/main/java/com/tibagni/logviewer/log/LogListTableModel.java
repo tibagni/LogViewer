@@ -1,9 +1,10 @@
 package com.tibagni.logviewer.log;
 
 import javax.swing.table.AbstractTableModel;
+import java.util.List;
 
 public class LogListTableModel extends AbstractTableModel {
-  private LogEntry[] entries;
+  private List<LogEntry> entries;
   private final String title;
 
   public LogListTableModel(String title) {
@@ -26,7 +27,7 @@ public class LogListTableModel extends AbstractTableModel {
     if (entries == null) {
       return 0;
     }
-    return entries.length;
+    return entries.size();
   }
 
   @Override
@@ -36,15 +37,11 @@ public class LogListTableModel extends AbstractTableModel {
 
   @Override
   public Object getValueAt(int rowIndex, int columnIndex) {
-    return entries[rowIndex];
+    return entries.get(rowIndex);
   }
 
-  public void setLogs(LogEntry[] entries) {
+  public void setLogs(List<LogEntry> entries) {
     this.entries = entries;
-    fireTableRowsInserted(0, entries.length - 1);
-  }
-
-  public LogEntry[] getLogs() {
-    return entries;
+    fireTableRowsInserted(0, entries.size() - 1);
   }
 }

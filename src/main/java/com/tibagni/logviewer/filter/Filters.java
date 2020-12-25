@@ -19,13 +19,13 @@ public class Filters {
     }
   }
 
-  public static LogEntry[] applyMultipleFilters(LogEntry[] input, Filter[] filters, ProgressReporter pr) {
+  public static List<LogEntry> applyMultipleFilters(List<LogEntry> input, Filter[] filters, ProgressReporter pr) {
     initializeContextInfo(filters);
     // This algorithm is O(n*m), but we can assume the 'filters' array will only contain a few elements
     // So, in practice, this will be much closer to O(n) than O(nˆ2)
     List<LogEntry> filtered = new Vector<>();
-    final Progress progress = new Progress(input.length);
-    Arrays.stream(input).parallel().forEach(entry -> {
+    final Progress progress = new Progress(input.size());
+    input.stream().parallel().forEach(entry -> {
       Filter appliedFilter = getAppliedFilter(entry, filters);
       if (appliedFilter != null) {
         entry.setAppliedFilter(appliedFilter);
@@ -41,13 +41,13 @@ public class Filters {
       if (progress.logsRead > (progress.logsReadOnProgressPublish + progress.publishThreshold)
               || progress.logsRead >= progress.totalLogs ) {
         progress.logsReadOnProgressPublish = progress.logsRead;
-        pr.onProgress((int)progress.logsRead * 100 / input.length, "Applying filters...");
+        pr.onProgress((int)progress.logsRead * 100 / input.size(), "Applying filters...");
       }
     });
     Collections.sort(filtered);
 
     pr.onProgress(100, "Done!");
-    return filtered.toArray(new LogEntry[0]);
+    return filtered;
   }
 
   private static void initializeContextInfo(Filter[] filters) {

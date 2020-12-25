@@ -15,7 +15,7 @@ class AsyncPresenter {
   }
 
   void doAsync(Runnable runnable) {
-    uiExecutor.execute(() -> asyncView.showStartLoading());
+    uiExecutor.execute(asyncView::showStartLoading);
     bgExecutorService.execute(runnable);
   }
 

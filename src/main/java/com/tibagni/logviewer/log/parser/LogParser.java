@@ -151,10 +151,10 @@ public class LogParser {
             matcher.group(5),
             matcher.group(6));
       }
-    } catch (Exception ignore) {
+    } catch (Exception e) {
       // Don't add a timestamp if we couldn't parse it
       // This should never happen anyway
-      Logger.error("Failed to parse timestamp for: " + logLine, ignore);
+      Logger.error("Failed to parse timestamp for: " + logLine, e);
     }
 
     return timestamp;

@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.List;
 
 public class LogViewerView implements LogViewer.View {
-  private LogViewerApplication application;
+  private final LogViewerApplication application;
 
   private JTable logList;
   private JPanel mainPanel;
@@ -52,7 +52,7 @@ public class LogViewerView implements LogViewer.View {
 
   private LogListTableModel logListTableModel;
   private LogListTableModel filteredLogListTableModel;
-  private JFrame parent;
+  private final JFrame parent;
 
   private Set<LogStream> logStreams;
 
@@ -104,7 +104,7 @@ public class LogViewerView implements LogViewer.View {
     setupFilteredLogsContextActions();
 
     // Configure file drop
-    new FileDrop(Logger.getDebugStream(), logsPane, files -> presenter.loadLogs(files));
+    new FileDrop(Logger.getDebugStream(), logsPane, presenter::loadLogs);
 
     // Load initial log files if any when component is shown
     if (initialLogFiles != null && !initialLogFiles.isEmpty()) {
@@ -213,7 +213,7 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public void showLogs(LogEntry[] logEntries) {
+  public void showLogs(List<LogEntry> logEntries) {
     logListTableModel.setLogs(logEntries);
   }
 
@@ -232,13 +232,13 @@ public class LogViewerView implements LogViewer.View {
   }
 
   @Override
-  public void showFilteredLogs(LogEntry[] logEntries) {
+  public void showFilteredLogs(List<LogEntry> logEntries) {
     filteredLogListTableModel.setLogs(logEntries);
     logList.updateUI();
     filtersPane.updateUI();
 
     // Update the save menu option availability
-    saveFilteredLogs.setEnabled(logEntries != null && logEntries.length > 0);
+    saveFilteredLogs.setEnabled(!logEntries.isEmpty());
   }
 
   @Override
@@ -453,7 +453,7 @@ public class LogViewerView implements LogViewer.View {
         int choice = JOptionPane.showOptionDialog(parent,
             "Which group do you want to add this filter to?",
             "Select Filter group",
-            -1,
+            JOptionPane.DEFAULT_OPTION,
             JOptionPane.QUESTION_MESSAGE,
             null, options, null);
 
@@ -495,7 +495,7 @@ public class LogViewerView implements LogViewer.View {
         int choice = JOptionPane.showOptionDialog(parent,
                 "There are currently opened filters. Do you want to keep them?",
                 "There are currently opened filters",
-                -1,
+                JOptionPane.DEFAULT_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null, new String[] {
                         "Keep existing filters and add the new one(s)",

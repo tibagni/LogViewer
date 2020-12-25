@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class FileLogReader implements LogReader {
-  private File logFiles[];
+  private File[] logFiles;
   private Map<String, String> logStrings;
 
   private boolean isClosed;

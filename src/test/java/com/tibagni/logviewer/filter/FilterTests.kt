@@ -12,7 +12,7 @@ class FilterTests {
     @Test
     fun singleSimpleFilterTest() {
         val filter = Filter("name", "filterText", Color.WHITE)
-        val input = arrayOf(
+        val input = listOf(
                 LogEntry("Log line 1", LogLevel.DEBUG, null),
                 LogEntry("Log line 2", LogLevel.DEBUG, null),
                 LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
@@ -36,7 +36,7 @@ class FilterTests {
     @Test
     fun singleSimpleFilterTestCaseInsensitive() {
         val filter = Filter("name", "filterText", Color.WHITE)
-        val input = arrayOf(
+        val input = listOf(
                 LogEntry("Log line 1", LogLevel.DEBUG, null),
                 LogEntry("Log line 2", LogLevel.DEBUG, null),
                 LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
@@ -60,7 +60,7 @@ class FilterTests {
     @Test
     fun singleSimpleFilterTestCaseSensitive() {
         val filter = Filter("name", "filterText", Color.WHITE, true)
-        val input = arrayOf(
+        val input = listOf(
                 LogEntry("Log line 1", LogLevel.DEBUG, null),
                 LogEntry("Log line 2", LogLevel.DEBUG, null),
                 LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
@@ -84,7 +84,7 @@ class FilterTests {
     @Test
     fun singleRegexFilterTest() {
         val filter = Filter("name", "[\\w\\d]+@[\\w\\d]+\\.\\w+", Color.WHITE)
-        val input = arrayOf(
+        val input = listOf(
                 LogEntry("Log line 1", LogLevel.DEBUG, null),
                 LogEntry("Log line 2", LogLevel.DEBUG, null),
                 LogEntry("Log line containing eMail@bla.com", LogLevel.DEBUG, null),
@@ -113,7 +113,7 @@ class FilterTests {
                 Filter("name", "CaSeInSeNsitiveTeXT", Color.WHITE)
         )
 
-        val input = arrayOf(
+        val input = listOf(
                 LogEntry("Log line containing caseinsensitivetext", LogLevel.DEBUG, null),
                 LogEntry("Log line containing caseInsensitiveText", LogLevel.DEBUG, null),
                 LogEntry("Log line containing CASEINSENSITIVETEXT", LogLevel.DEBUG, null),

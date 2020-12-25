@@ -19,7 +19,7 @@ public class UIScaleUtils {
 
     // Nimbus theme re-uses some font objects for different properties. Keep track of all the already scaled font
     // objects here to avoid scaling it twice (or more)
-    private static ArrayList<FontUIResource> alreadyScaledFonts = new ArrayList<>();
+    private static final ArrayList<FontUIResource> alreadyScaledFonts = new ArrayList<>();
 
     private static SystemScalingCalculator testScalingCalculator;
 

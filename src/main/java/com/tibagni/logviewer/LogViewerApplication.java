@@ -32,7 +32,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
     Set<File> initialLogFiles = Arrays
             .stream(args)
-            .map(fileName -> new File(fileName))
+            .map(File::new)
             .filter(f -> f.exists() && f.isFile())
             .collect(Collectors.toSet());
 

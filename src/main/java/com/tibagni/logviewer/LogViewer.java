@@ -32,9 +32,9 @@ public class LogViewer {
   public interface View extends AsyncPresenter.AsyncView {
     void configureFiltersList(Map<String, List<Filter>> filters);
     void showErrorMessage(String message);
-    void showLogs(LogEntry[] logEntries);
+    void showLogs(List<LogEntry> logEntries);
     void showCurrentLogsLocation(String logsPath);
-    void showFilteredLogs(LogEntry[] logEntries);
+    void showFilteredLogs(List<LogEntry> logEntries);
     void showAvailableLogStreams(Set<LogStream> logStreams);
     void showUnsavedFilterIndication(String group);
     void hideUnsavedFilterIndication(String group);
