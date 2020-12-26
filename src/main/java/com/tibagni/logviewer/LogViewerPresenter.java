@@ -5,7 +5,6 @@ import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
-import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -30,9 +29,9 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
 
   public LogViewerPresenter(LogViewer.View view) {
     this(view,
-        LogViewerPreferencesImpl.INSTANCE,
-        new LogsRepositoryImpl(),
-        new FiltersRepositoryImpl());
+        ServiceLocator.INSTANCE.getLogViewerPrefs(),
+        ServiceLocator.INSTANCE.getLogsRepository(),
+        ServiceLocator.INSTANCE.getFiltersRepository());
   }
 
   // Visible for testing

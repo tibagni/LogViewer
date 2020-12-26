@@ -28,10 +28,12 @@ public class UIScaleUtils {
         SCALE_FACTOR = configValue == UIScaleConfig.SCALE_OFF ? 1 : configValue;
         Logger.debug("Initializing UIScaleUtils. Scale Factor is " + SCALE_FACTOR);
 
-        // Always update the checkbox icon so it does not have any scaling issues and look consistent across
-        // all themes and resolutions
-        UIManager.put("CheckBox.icon", new CustomCheckboxIcon());
-        UIManager.put("CheckBoxMenuItem.checkIcon", new CustomCheckboxIcon());
+        if (SCALE_FACTOR != 1) {
+            // Always update the checkbox icon so it does not have any scaling issues and look consistent across
+            // all themes and resolutions
+            UIManager.put("CheckBox.icon", new CustomCheckboxIcon());
+            UIManager.put("CheckBoxMenuItem.checkIcon", new CustomCheckboxIcon());
+        }
     }
 
     public static void updateDefaultSizes() {

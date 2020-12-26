@@ -11,8 +11,8 @@ public class Logger {
 
   private Logger() {}
 
-  private static PrintStream debugStream = System.out;
-  private static PrintStream errorStream = System.err;
+  private static final PrintStream debugStream = System.out;
+  private static final PrintStream errorStream = System.err;
 
   public static PrintStream getDebugStream() {
     return debugStream;

@@ -33,6 +33,8 @@ jacocoTestReport {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
                     'com/tibagni/logviewer/LogViewerView*',
+                    'com/tibagni/logviewer/ServiceLocator*',
+                    'com/tibagni/logviewer/AppInfo*',
                     'com/tibagni/logviewer/about/AboutDialog*',
                     'com/tibagni/logviewer/filter/EditFilterDialog*',
                     'com/tibagni/logviewer/filter/FiltersList*',
@@ -40,6 +42,7 @@ jacocoTestReport {
                     'com/tibagni/logviewer/filter/regex/RegexEditorDialog*',
                     'com/tibagni/logviewer/log/LogCellRenderer*',
                     'com/tibagni/logviewer/logger/*',
+                    'com/tibagni/logviewer/lookandfeel/*',
                     'com/tibagni/logviewer/preferences/LogViewerPreferencesDialog*',
                     'com/tibagni/logviewer/updates/UpdateAvailableDialog*',
                     'com/tibagni/logviewer/util/SwingUtils*',

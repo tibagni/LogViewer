@@ -4,7 +4,6 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
-import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl;
 import com.tibagni.logviewer.rc.LogLevelConfig;
 import com.tibagni.logviewer.rc.RuntimeConfiguration;
 import com.tibagni.logviewer.rc.UIScaleConfig;
@@ -49,7 +48,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
   private void initLookAndFeel() {
     LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
-    LogViewerPreferences prefs = LogViewerPreferencesImpl.INSTANCE;
+    LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
     String lookAndFeel = prefs.getLookAndFeel();
     if (!StringUtils.isEmpty(lookAndFeel) &&
         lookNFeelProvider.getByClass(lookAndFeel) == null) {
@@ -81,8 +80,8 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private void watchLookAndFeelUpdates() {
-    LogViewerPreferences prefs = LogViewerPreferencesImpl.INSTANCE;
-    prefs.addPreferenceListener(new LogViewerPreferencesImpl.Adapter() {
+    LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+    prefs.addPreferenceListener(new LogViewerPreferences.Adapter() {
       @Override
       public void onLookAndFeelChanged() {
         String lookAndFeel = prefs.getLookAndFeel();

@@ -2,6 +2,7 @@ package com.tibagni.logviewer.preferences;
 
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
+import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.lookandfeel.LookNFeel;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -50,7 +51,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     setContentPane(contentPane);
     setModal(true);
     buttonsPane.setDefaultButtonOk();
-    userPrefs = LogViewerPreferencesImpl.INSTANCE;
+    userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
 
     initFiltersPathPreference();
     initLogsPathPreference();
