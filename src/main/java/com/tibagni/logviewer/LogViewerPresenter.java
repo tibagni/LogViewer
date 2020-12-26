@@ -545,6 +545,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   private void rememberAppliedFilters() {
+    testStats.rememberAppliedFiltersCallCount++;
     for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
       List<Filter> filtersFromGroup = entry.getValue();
       List<Integer> appliedIndices = new ArrayList<>();
@@ -558,6 +559,7 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   }
 
   private void reapplyRememberedFilters() {
+    testStats.reapplyRememberedFiltersCallCount++;
     for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
       List<Integer> appliedIndices = userPrefs.getAppliedFiltersIndices(entry.getKey());
 
@@ -577,6 +579,8 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   // Test helpers
   static class Stats {
     int applyFiltersCallCount;
+    int rememberAppliedFiltersCallCount;
+    int reapplyRememberedFiltersCallCount;
   }
   private final Stats testStats = new Stats();
   Stats getTestStats() {

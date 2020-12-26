@@ -290,6 +290,25 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testFinishingRememberAppliedFilters() {
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(true)
+
+    presenter.finishing()
+
+    assertEquals(1, presenter.testStats.rememberAppliedFiltersCallCount)
+    verify<LogViewerView>(view, never()).showAskToSaveFilterDialog(any())
+    verify<LogViewerView>(view, never()).showSaveFilters(any())
+    verify<LogViewerView>(view).finish()
+  }
+
+  @Test
+  fun testNavigateNextNoLogs() {
+    val i = presenter.getNextFilteredLogForFilter(Filter.createFromString(TEST_SERIALIZED_FILTER), 0)
+
+    assertEquals(-1, i)
+  }
+
+  @Test
   fun testNavigateNextSingleFilter() {
     val timestamp = LogTimestamp(
       10,
@@ -441,6 +460,13 @@ class LogViewerPresenterTests {
     actual = presenter.getNextFilteredLogForFilter(filter, 5)
     assertEquals(2, actual)
     verify<LogViewerView>(view, times(1)).showNavigationNextOver()
+  }
+
+  @Test
+  fun testNavigatePrevNoLogs() {
+    val i = presenter.getPrevFilteredLogForFilter(Filter.createFromString(TEST_SERIALIZED_FILTER), 0)
+
+    assertEquals(-1, i)
   }
 
   @Test
@@ -964,8 +990,9 @@ class LogViewerPresenterTests {
   }
 
   @Test
-  fun testRemoveGroupNoFiltersApplied() { // TODO validate more conditions
+  fun testRemoveGroupNoFiltersApplied() {
     val groupToRemove = "removeGroup"
+    val fileToRemove = File("fileToRemove")
     val testGroup = "testGroup"
 
     `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
@@ -981,6 +1008,10 @@ class LogViewerPresenterTests {
       )
     )
 
+    // Use this test to validate lastFilterPaths user pref is updated as well
+    `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf(groupToRemove to fileToRemove))
+    `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf(fileToRemove))
+
     presenter.removeGroup(groupToRemove)
 
     verify(view, never()).showAskToSaveFilterDialog(anyOrNull())
@@ -991,6 +1022,9 @@ class LogViewerPresenterTests {
     // Verify filter was re-applied after group is removed
     assertEquals(0, presenter.testStats.applyFiltersCallCount)
     verify(view, never()).showFilteredLogs(any())
+
+    // Verify the filter file is removed from last filters paths config
+    verify(mockPrefs).lastFilterPaths = arrayOf()
   }
 
   @Test
@@ -1023,10 +1057,15 @@ class LogViewerPresenterTests {
     // Verify filter was re-applied after group is removed
     assertEquals(1, presenter.testStats.applyFiltersCallCount)
     verify(view).showFilteredLogs(any())
+
+    // Use this test to validate that when there is no open file for the group,
+    // lastFilterPaths is not updated
+    verify(mockPrefs, never()).lastFilterPaths
+    verify(mockPrefs, never()).lastFilterPaths = anyOrNull()
   }
 
   @Test
-  fun testRemoveGroupUnsaved() { // TODO validate more conditions
+  fun testRemoveGroupUnsaved() {
     val groupToRemove = "removeGroup"
     val testGroup = "testGroup"
 
@@ -1050,7 +1089,7 @@ class LogViewerPresenterTests {
   }
 
   @Test
-  fun testRemoveGroupUnsavedCancelled() { // TODO validate more conditions
+  fun testRemoveGroupUnsavedCancelled() {
     val groupToRemove = "removeGroup"
     val testGroup = "testGroup"
 
@@ -1190,6 +1229,82 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testLoadLogsNotApplyFilters() {
+    val inputLogFiles = arrayOf(File("test"))
+    val currentFilters = mapOf("testGroup" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)))
+
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(currentFilters)
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(view).showFilteredLogs(any())
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    assertEquals(0, presenter.testStats.applyFiltersCallCount)
+  }
+
+  @Test
+  fun testLoadLogsApplyFilters() {
+    val inputLogFiles = arrayOf(File("test"))
+    val appliedFilter = Filter.createFromString(TEST_SERIALIZED_FILTER)
+    appliedFilter.isApplied = true
+    val currentFilters = mapOf("testGroup" to listOf(appliedFilter))
+
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(currentFilters)
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+
+    // It should be called twice: first when the logs are loaded and then when filters are applied
+    verify(view, times(2)).showFilteredLogs(any())
+
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+  }
+
+  @Test
+  fun testLoadLogsApplyFilters2() {
+    val inputLogFiles = arrayOf(File("test"))
+    val appliedFilter = Filter.createFromString(TEST_SERIALIZED_FILTER)
+    appliedFilter.isApplied = true
+    val currentFilters = mapOf("testGroup" to listOf(appliedFilter, Filter.createFromString(TEST_SERIALIZED_FILTER2)))
+
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(currentFilters)
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+
+    // It should be called twice: first when the logs are loaded and then when filters are applied
+    verify(view, times(2)).showFilteredLogs(any())
+
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+  }
+
+  @Test
   fun testLoadLogsNoFile() {
     presenter.loadLogs(emptyArray())
 
@@ -1239,6 +1354,69 @@ class LogViewerPresenterTests {
 
     verify(view, never()).showLogs(any())
     verify(view).showErrorMessage("No logs to be refreshed")
+  }
+
+  @Test
+  fun testLoadFiltersNotRememberNotKeepSingleFilterFile() {
+    val filterFiles = arrayOf(File("filter"))
+
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(false)
+
+    presenter.loadFilters(filterFiles, false)
+
+    verify(mockPrefs, never()).setAppliedFiltersIndices(anyString(), anyOrNull())
+    verify(mockFiltersRepository).closeAllFilters()
+    verify(mockFiltersRepository).openFilterFiles(filterFiles)
+    verify(view).configureFiltersList(anyOrNull())
+    verify(mockPrefs).lastFilterPaths = anyOrNull()
+  }
+
+  @Test
+  fun testLoadFiltersNotRememberKeepSingleFilterFile() {
+    val filterFiles = arrayOf(File("filter"))
+
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(false)
+
+    presenter.loadFilters(filterFiles, true)
+
+    verify(mockPrefs, never()).setAppliedFiltersIndices(anyString(), anyOrNull())
+    verify(mockFiltersRepository, never()).closeAllFilters()
+    verify(mockFiltersRepository).openFilterFiles(filterFiles)
+    verify(view).configureFiltersList(anyOrNull())
+    verify(mockPrefs).lastFilterPaths = anyOrNull()
+  }
+
+  @Test
+  fun testLoadFiltersRememberNotKeepSingleFilterFile() {
+    val filterFiles = arrayOf(File("filter"))
+
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(true)
+
+    presenter.loadFilters(filterFiles, false)
+
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    assertEquals(1, presenter.testStats.reapplyRememberedFiltersCallCount)
+    assertEquals(1, presenter.testStats.rememberAppliedFiltersCallCount)
+    verify(mockFiltersRepository).closeAllFilters()
+    verify(mockFiltersRepository).openFilterFiles(filterFiles)
+    verify(view).configureFiltersList(anyOrNull())
+    verify(mockPrefs).lastFilterPaths = anyOrNull()
+  }
+
+  @Test
+  fun testLoadFiltersFailToOpenFiles() {
+    val filterFiles = arrayOf(File("filter"))
+
+    `when`(mockFiltersRepository.openFilterFiles(filterFiles)).thenThrow(
+      OpenFiltersException(
+        "test message",
+        Exception()
+      )
+    )
+
+    presenter.loadFilters(filterFiles, false)
+
+    verify(view).showErrorMessage("test message")
   }
 
   @Test
@@ -1348,6 +1526,38 @@ class LogViewerPresenterTests {
     assertEquals("existingGroup2", addedGroup)
     verify(view).configureFiltersList(any())
     verify(mockFiltersRepository).addGroup("existingGroup")
+  }
+
+  @Test
+  fun testGetGroupsEmpty() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf())
+
+    val groups = presenter.groups
+
+    assertTrue(groups.isEmpty())
+  }
+
+  @Test
+  fun testGetGroupsSingleGroup() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("groupOne" to listOf()))
+
+    val groups = presenter.groups
+
+    assertEquals(1, groups.size)
+  }
+
+  @Test
+  fun testGetGroupsMultipleGroups() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf(
+        "groupOne" to listOf(),
+        "groupTwo" to listOf()
+      )
+    )
+
+    val groups = presenter.groups
+
+    assertEquals(2, groups.size)
   }
 
   @Test

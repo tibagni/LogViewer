@@ -45,6 +45,15 @@ class LogsRepositoryTests {
     return temporaryFiles!!
   }
 
+  private fun createTempLogEmptyFiles(vararg names: String): Array<File> {
+    val files = names.map {
+      File.createTempFile(it, "txt")
+    }
+
+    temporaryFiles = files.toTypedArray()
+    return temporaryFiles!!
+  }
+
   @Test
   fun testOpenSingleLogFile() {
     val temporaryLogFile = createTempLogFiles("log")
@@ -81,6 +90,18 @@ class LogsRepositoryTests {
     assertEquals(2, logsRepository.availableStreams.size)
     assertEquals(2, logsRepository.currentlyOpenedLogFiles.size)
     assertEquals(10, logsRepository.currentlyOpenedLogs.size)
+  }
+
+  @Test
+  fun testOpenEmptyLogFiles() {
+    val temporaryLogFiles = createTempLogEmptyFiles("main")
+
+    logsRepository.openLogFiles(temporaryLogFiles, mockProgressReporter)
+
+    verify(mockProgressReporter, atLeastOnce()).onProgress(anyInt(), anyString())
+    verify(mockProgressReporter, never()).failProgress()
+    assertEquals(0, logsRepository.currentlyOpenedLogFiles.size)
+    assertEquals(0, logsRepository.currentlyOpenedLogs.size)
   }
 
   @Test(expected = OpenLogsException::class)
