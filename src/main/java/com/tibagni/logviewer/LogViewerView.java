@@ -64,7 +64,11 @@ public class LogViewerView implements LogViewer.View {
     this.application = application;
     this.parent = parent;
     userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
-    presenter = new LogViewerPresenter(this);
+    presenter = new LogViewerPresenter(
+        this,
+        ServiceLocator.INSTANCE.getLogViewerPrefs(),
+        ServiceLocator.INSTANCE.getLogsRepository(),
+        ServiceLocator.INSTANCE.getFiltersRepository());
     presenter.init();
 
     logRenderer = new LogCellRenderer();

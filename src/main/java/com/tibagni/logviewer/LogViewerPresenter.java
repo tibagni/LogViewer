@@ -27,14 +27,6 @@ public class LogViewerPresenter extends AsyncPresenter implements LogViewer.Pres
   private final LogsRepository logsRepository;
   private final FiltersRepository filtersRepository;
 
-  public LogViewerPresenter(LogViewer.View view) {
-    this(view,
-        ServiceLocator.INSTANCE.getLogViewerPrefs(),
-        ServiceLocator.INSTANCE.getLogsRepository(),
-        ServiceLocator.INSTANCE.getFiltersRepository());
-  }
-
-  // Visible for testing
   LogViewerPresenter(LogViewer.View view,
                      LogViewerPreferences userPrefs,
                      LogsRepository logsRepository,
