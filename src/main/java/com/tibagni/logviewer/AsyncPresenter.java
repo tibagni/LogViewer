@@ -5,7 +5,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-class AsyncPresenter {
+public class AsyncPresenter {
   private final AsyncView asyncView;
   private ExecutorService bgExecutorService = Executors.newSingleThreadExecutor();
   private Executor uiExecutor = SwingUtilities::invokeLater;

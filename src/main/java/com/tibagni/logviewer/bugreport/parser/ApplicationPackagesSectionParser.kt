@@ -1,6 +1,8 @@
 package com.tibagni.logviewer.bugreport.parser
 
+import com.tibagni.logviewer.bugreport.section.SectionNames
+
 class ApplicationPackagesSectionParser : PackagesSectionParser(
-  "Application Packages",
+  SectionNames.APPLICATION_PKG,
   "Packages:"
 )

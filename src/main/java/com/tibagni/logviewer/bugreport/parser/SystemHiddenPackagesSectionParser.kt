@@ -1,6 +1,8 @@
 package com.tibagni.logviewer.bugreport.parser
 
+import com.tibagni.logviewer.bugreport.section.SectionNames
+
 class SystemHiddenPackagesSectionParser : PackagesSectionParser(
-  "Hidden system packages",
+  SectionNames.SYSTEM_HIDDEN_PKG,
   "Hidden system packages:"
 )

@@ -6,3 +6,5 @@ package com.tibagni.logviewer.bugreport
  * e.g: A PackagesSection will contain information related to the devices packages that is extracted from the BugReport
  */
 abstract class BugReportSection(val sectionName: String)
+
+object EmptyBugReportSection: BugReportSection("empty")

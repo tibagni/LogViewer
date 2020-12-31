@@ -10,4 +10,8 @@ data class AppPackage(
   val versionName: CharSequence,
   val dataDir: CharSequence,
   val rawText: CharSequence
-)
+) {
+  fun toSummary(): String {
+    return "$packageName | v$versionName ($versionCode)"
+  }
+}

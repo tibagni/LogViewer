@@ -1,6 +1,8 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.about.AboutDialog;
+import com.tibagni.logviewer.bugreport.BugReportView;
+import com.tibagni.logviewer.bugreport.BugReportViewImpl;
 import com.tibagni.logviewer.filter.EditFilterDialog;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.FiltersList;
@@ -57,7 +59,13 @@ public class LogViewerView implements LogViewer.View {
 
   final private LogViewerPreferences userPrefs;
 
+  // TODO extract this and create a MainWindow that will include both logViewer and BugReportView
+  private final BugReportView bugReportView;
+
   public LogViewerView(JFrame parent, LogViewerApplication application, Set<File> initialLogFiles) {
+    // TODO this should belong to a main window that will include both bug report and log viewer views
+    bugReportView = new BugReportViewImpl();
+
     buildUi();
     configureMenuBar(parent, false);
 
@@ -559,6 +567,11 @@ public class LogViewerView implements LogViewer.View {
     mainPanel.setLayout(new GridBagLayout());
     mainPanel.setPreferredSize(new Dimension(UIScaleUtils.dip(1000), UIScaleUtils.dip(500)));
 
+    JTabbedPane tabbedPane = new JTabbedPane();
+    JPanel logViewerPanel = new JPanel();
+    logViewerPanel.setLayout(new GridBagLayout());
+    logViewerPanel.setPreferredSize(new Dimension(UIScaleUtils.dip(1000), UIScaleUtils.dip(500)));
+
     currentLogsLbl = new JLabel();
     currentLogsLbl.setAutoscrolls(true);
     currentLogsLbl.setText("");
@@ -566,7 +579,7 @@ public class LogViewerView implements LogViewer.View {
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5)));
-    mainPanel.add(currentLogsLbl,
+    logViewerPanel.add(currentLogsLbl,
         new GBConstraintsBuilder()
             .withGridx(1)
             .withGridy(0)
@@ -576,7 +589,7 @@ public class LogViewerView implements LogViewer.View {
     final JSplitPane mainSplitPane = new JSplitPane();
     mainSplitPane.setOneTouchExpandable(true);
     mainSplitPane.setResizeWeight(0.2);
-    mainPanel.add(mainSplitPane,
+    logViewerPanel.add(mainSplitPane,
         new GBConstraintsBuilder()
             .withGridx(0)
             .withGridy(1)
@@ -641,5 +654,15 @@ public class LogViewerView implements LogViewer.View {
             .build());
 
     mainSplitPane.setLeftComponent(filtersMainPane);
+
+    tabbedPane.addTab("Logs", logViewerPanel);
+    tabbedPane.addTab("Bug Report", bugReportView.getContentPane());
+    mainPanel.add(tabbedPane, new GBConstraintsBuilder()
+        .withGridx(1)
+        .withGridy(1)
+        .withWeightx(1.0)
+        .withWeighty(1.0)
+        .withFill(GridBagConstraints.BOTH)
+        .build());
   }
 }
