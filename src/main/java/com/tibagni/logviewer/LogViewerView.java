@@ -29,7 +29,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.List;
 
-public class LogViewerView implements LogViewer.View {
+public class LogViewerView implements LogViewer.View, MainUi {
   private final LogViewerApplication application;
 
   private JTable logList;
@@ -64,7 +64,7 @@ public class LogViewerView implements LogViewer.View {
 
   public LogViewerView(JFrame parent, LogViewerApplication application, Set<File> initialLogFiles) {
     // TODO this should belong to a main window that will include both bug report and log viewer views
-    bugReportView = new BugReportViewImpl();
+    bugReportView = new BugReportViewImpl(this);
 
     buildUi();
     configureMenuBar(parent, false);
@@ -479,13 +479,34 @@ public class LogViewerView implements LogViewer.View {
     }
   }
 
-  private void openLogs() {
+  @Override
+  public File[] showOpenMultipleLogsFileChooser() {
     logOpenFileChooser.resetChoosableFileFilters();
     logOpenFileChooser.setMultiSelectionEnabled(true);
     logOpenFileChooser.setDialogTitle("Open Logs...");
     int selectedOption = logOpenFileChooser.showOpenDialog(mainPanel);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
-      presenter.loadLogs(logOpenFileChooser.getSelectedFiles());
+      return logOpenFileChooser.getSelectedFiles();
+    }
+    return null;
+  }
+
+  @Override
+  public File showOpenSingleLogFileChooser() {
+    logOpenFileChooser.resetChoosableFileFilters();
+    logOpenFileChooser.setMultiSelectionEnabled(false);
+    logOpenFileChooser.setDialogTitle("Open Log...");
+    int selectedOption = logOpenFileChooser.showOpenDialog(mainPanel);
+    if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      return logOpenFileChooser.getSelectedFile();
+    }
+    return null;
+  }
+
+  private void openLogs() {
+    File[] openFiles = showOpenMultipleLogsFileChooser();
+    if (openFiles != null && openFiles.length > 0) {
+      presenter.loadLogs(openFiles);
     }
   }
 

@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.bugreport
 
+import com.tibagni.logviewer.MainUi
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.bugreport.section.SectionPanel
 import com.tibagni.logviewer.bugreport.section.SectionPanelFactory
@@ -17,7 +18,7 @@ interface BugReportView {
   fun showBugReport(bugReport: BugReport)
 }
 
-class BugReportViewImpl : BugReportView {
+class BugReportViewImpl(private val mainUi: MainUi) : BugReportView {
   override val contentPane: JPanel = JPanel()
 
   private lateinit var sectionsList: JList<String>
@@ -36,8 +37,8 @@ class BugReportViewImpl : BugReportView {
     presenter = BugReportPresenterImpl(this, ServiceLocator.bugReportRepository)
 
     openBrButton.addActionListener {
-      // TODO implement file chooser
-      presenter.loadBugReport(File("/home/tbagni/Projects/Personal/br/bugreport.txt"))
+      val file = mainUi.showOpenSingleLogFileChooser()
+      file?.let { presenter.loadBugReport(file) }
     }
     sectionsList.addListSelectionListener { onSectionSelected() }
   }
