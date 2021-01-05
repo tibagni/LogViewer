@@ -136,11 +136,13 @@ public class LogViewerView implements LogViewer.View, MainUi {
     JMenu fileMenu = new JMenu("File");
     fileMenu.setMnemonic('F');
 
-    JMenuItem newWindowItem = new JMenuItem("New Window");
-    newWindowItem.setAccelerator(KeyStroke.getKeyStroke(
-        KeyEvent.VK_N, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
-    newWindowItem.addActionListener(e -> openNewWindow());
-    fileMenu.add(newWindowItem);
+    //TODO Check if it is really necessary to have this item. If so,
+    // some refactoring is needed to have two instances of the repositories
+//    JMenuItem newWindowItem = new JMenuItem("New Window");
+//    newWindowItem.setAccelerator(KeyStroke.getKeyStroke(
+//        KeyEvent.VK_N, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+//    newWindowItem.addActionListener(e -> openNewWindow());
+//    fileMenu.add(newWindowItem);
     JMenuItem settingsItem = new JMenuItem("Settings");
     settingsItem.setAccelerator(KeyStroke.getKeyStroke(
         KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));

@@ -4,27 +4,19 @@ import com.tibagni.logviewer.bugreport.PackagesSection
 import com.tibagni.logviewer.bugreport.content.AppPackage
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
-import com.tibagni.logviewer.view.HintTextField
 import com.tibagni.logviewer.view.PaddingListCellRenderer
-import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.util.*
-import java.util.Timer
 import javax.swing.*
-import kotlin.concurrent.schedule
 
-class PackageSectionPanel(section: PackagesSection) : SectionPanel(section.sectionName) {
+class PackageSectionPanel(section: PackagesSection) : SectionPanel(section.sectionName, isSearchable = true) {
   private lateinit var packagesListModel: DefaultListModel<String>
   private lateinit var packagesList: JList<String>
-  private lateinit var searchField: HintTextField
   private lateinit var splitPane: JSplitPane
   private lateinit var detailsText: JTextArea
 
   private val packagesMap: Map<String, AppPackage>
   private val sortedPackagesSummaries: List<String>
-  private var textChangedTimer: Timer? = null
-  private var filterPackagesTask: TimerTask? = null
 
   init {
     buildUi()
@@ -34,18 +26,12 @@ class PackageSectionPanel(section: PackagesSection) : SectionPanel(section.secti
 
     // Initialize data and setup listeners
     packagesListModel.addAll(sortedPackagesSummaries)
-    searchField.whenTextChanges {
-      if (textChangedTimer == null) {
-        textChangedTimer = Timer("packages-sort-task", false)
-      }
-
-      filterPackagesTask?.cancel()
-      filterPackagesTask = textChangedTimer?.schedule(500) {
-        val filtered = sortedPackagesSummaries.filter { it.contains(searchField.text) }
-        SwingUtilities.invokeLater { updatePackagesList(filtered) }
-      }
-    }
     packagesList.addListSelectionListener { onPackageSelected() }
+  }
+
+  override fun onSearch(searchText: String) {
+    val filtered = sortedPackagesSummaries.filter { it.contains(searchText) }
+    SwingUtilities.invokeLater { updatePackagesList(filtered) }
   }
 
   private fun onPackageSelected() {
@@ -74,17 +60,6 @@ class PackageSectionPanel(section: PackagesSection) : SectionPanel(section.secti
     splitPane = JSplitPane()
     splitPane.orientation = JSplitPane.VERTICAL_SPLIT
     splitPane.resizeWeight = 0.5
-
-    searchField = HintTextField("Search")
-    add(
-      searchField,
-      GBConstraintsBuilder()
-        .withGridx(1)
-        .withGridy(1)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
     add(
       splitPane,
       GBConstraintsBuilder()
@@ -114,13 +89,5 @@ class PackageSectionPanel(section: PackagesSection) : SectionPanel(section.secti
 
     splitPane.leftComponent = JScrollPane(packagesList) // Left or above (above in this case)
     splitPane.rightComponent = detailsPane
-  }
-
-  override fun removeNotify() {
-    super.removeNotify()
-    // This method is called by the Container when this component is being removed from it
-    // Use this opportunity to clean up the text changer thread so we do not leak anything
-    textChangedTimer?.cancel()
-    textChangedTimer = null
   }
 }
