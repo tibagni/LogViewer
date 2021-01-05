@@ -51,7 +51,6 @@ abstract class SectionPanel(private val title: String, private val isSearchable:
         .build()
     )
 
-    println(" is searchable? $isSearchable")
     if (isSearchable) {
       val searchText = HintTextField("Search")
       add(
