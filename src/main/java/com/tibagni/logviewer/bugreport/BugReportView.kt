@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.bugreport
 
+import com.tibagni.logviewer.AsyncPresenter
 import com.tibagni.logviewer.MainView
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
@@ -14,10 +15,14 @@ import javax.swing.*
 
 interface BugReportView: View {
   val contentPane: JPanel
-  fun showBugReport(bugReport: BugReport)
 }
 
-class BugReportViewImpl(private val mainView: MainView) : BugReportView {
+interface BugReportPresenterView: AsyncPresenter.AsyncPresenterView {
+  fun showBugReport(bugReport: BugReport)
+  fun showErrorMessage(message: String?)
+}
+
+class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugReportPresenterView {
   override val contentPane: JPanel = JPanel()
 
   private lateinit var sectionsList: JList<String>
@@ -51,8 +56,14 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView {
     sectionsList.selectedIndex = 0
   }
 
+  override fun showStartLoading() = mainView.showStartLoading()
+
+  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress(progress, note)
+
+  override fun finishLoading() = mainView.finishLoading()
+
   override fun requestFinish(doFinish: () -> Unit) {
-    // We don't need to do anything special, just tell we can finish
+    presenter.finishing()
     doFinish()
   }
 
@@ -78,6 +89,10 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView {
       }
       mainSplitPane.rightComponent = sectionPanels[sectionName]
     }
+  }
+
+  override fun showErrorMessage(message: String?) {
+    JOptionPane.showMessageDialog(contentPane, message, "Error...", JOptionPane.ERROR_MESSAGE)
   }
 
   private fun buildUi() {

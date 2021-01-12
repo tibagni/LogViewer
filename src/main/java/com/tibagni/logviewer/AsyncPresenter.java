@@ -5,21 +5,21 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class AsyncPresenter {
+public abstract class AsyncPresenter {
   private final AsyncPresenterView asyncView;
   private ExecutorService bgExecutorService = Executors.newSingleThreadExecutor();
   private Executor uiExecutor = SwingUtilities::invokeLater;
 
-  AsyncPresenter(AsyncPresenterView asyncView) {
+  protected AsyncPresenter(AsyncPresenterView asyncView) {
     this.asyncView = asyncView;
   }
 
-  void doAsync(Runnable runnable) {
+  protected void doAsync(Runnable runnable) {
     uiExecutor.execute(asyncView::showStartLoading);
     bgExecutorService.execute(runnable);
   }
 
-  void updateAsyncProgress(int progress, String note) {
+  protected void updateAsyncProgress(int progress, String note) {
     uiExecutor.execute(() -> {
       if (progress >= 100) {
         asyncView.finishLoading();
@@ -29,11 +29,11 @@ public class AsyncPresenter {
     });
   }
 
-  void doOnUiThread(Runnable runnable) {
+  protected void doOnUiThread(Runnable runnable) {
     uiExecutor.execute(runnable);
   }
 
-  void release() {
+  protected void release() {
     bgExecutorService.shutdownNow();
   }
 

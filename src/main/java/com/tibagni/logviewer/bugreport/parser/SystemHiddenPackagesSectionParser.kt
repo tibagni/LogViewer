@@ -5,4 +5,7 @@ import com.tibagni.logviewer.bugreport.section.SectionNames
 class SystemHiddenPackagesSectionParser : PackagesSectionParser(
   SectionNames.SYSTEM_HIDDEN_PKG,
   "Hidden system packages:"
-)
+) {
+  override val name: String
+    get() = "Hidden system packages"
+}
