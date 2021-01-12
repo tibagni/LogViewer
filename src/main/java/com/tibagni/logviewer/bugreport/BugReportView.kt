@@ -1,24 +1,23 @@
 package com.tibagni.logviewer.bugreport
 
-import com.tibagni.logviewer.MainUi
+import com.tibagni.logviewer.MainView
 import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.View
 import com.tibagni.logviewer.bugreport.section.SectionPanel
 import com.tibagni.logviewer.bugreport.section.SectionPanelFactory
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
-import java.awt.Component
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.io.File
 import javax.swing.*
 
-interface BugReportView {
+interface BugReportView: View {
   val contentPane: JPanel
   fun showBugReport(bugReport: BugReport)
 }
 
-class BugReportViewImpl(private val mainUi: MainUi) : BugReportView {
+class BugReportViewImpl(private val mainView: MainView) : BugReportView {
   override val contentPane: JPanel = JPanel()
 
   private lateinit var sectionsList: JList<String>
@@ -37,7 +36,7 @@ class BugReportViewImpl(private val mainUi: MainUi) : BugReportView {
     presenter = BugReportPresenterImpl(this, ServiceLocator.bugReportRepository)
 
     openBrButton.addActionListener {
-      val file = mainUi.showOpenSingleLogFileChooser()
+      val file = mainView.showOpenSingleLogFileChooser()
       file?.let { presenter.loadBugReport(file) }
     }
     sectionsList.addListSelectionListener { onSectionSelected() }
@@ -50,6 +49,11 @@ class BugReportViewImpl(private val mainUi: MainUi) : BugReportView {
     )
     this.bugReport = bugReport
     sectionsList.selectedIndex = 0
+  }
+
+  override fun requestFinish(doFinish: () -> Unit) {
+    // We don't need to do anything special, just tell we can finish
+    doFinish()
   }
 
   private fun onSectionSelected() {

@@ -6,11 +6,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AsyncPresenter {
-  private final AsyncView asyncView;
+  private final AsyncPresenterView asyncView;
   private ExecutorService bgExecutorService = Executors.newSingleThreadExecutor();
   private Executor uiExecutor = SwingUtilities::invokeLater;
 
-  AsyncPresenter(AsyncView asyncView) {
+  AsyncPresenter(AsyncPresenterView asyncView) {
     this.asyncView = asyncView;
   }
 
@@ -37,7 +37,7 @@ public class AsyncPresenter {
     bgExecutorService.shutdownNow();
   }
 
-  public interface AsyncView {
+  public interface AsyncPresenterView {
     void showStartLoading();
     void showLoadingProgress(int progress, String note);
     void finishLoading();

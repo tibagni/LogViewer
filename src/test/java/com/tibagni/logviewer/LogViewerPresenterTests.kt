@@ -23,7 +23,7 @@ class LogViewerPresenterTests {
   private lateinit var mockPrefs: LogViewerPreferences
 
   @Mock
-  private lateinit var view: LogViewerView
+  private lateinit var view: LogViewerPresenterView
 
   @Mock
   private lateinit var mockLogsRepository: LogsRepository
@@ -31,7 +31,7 @@ class LogViewerPresenterTests {
   @Mock
   private lateinit var mockFiltersRepository: FiltersRepository
 
-  private lateinit var presenter: LogViewerPresenter
+  private lateinit var presenter: LogViewerPresenterImpl
   private var tempFilterFile: File? = null
   private var tempLogFile: File? = null
 
@@ -45,7 +45,12 @@ class LogViewerPresenterTests {
   @Before
   fun setUp() {
     MockitoAnnotations.initMocks(this)
-    presenter = LogViewerPresenter(view, mockPrefs, mockLogsRepository, mockFiltersRepository)
+    presenter = LogViewerPresenterImpl(
+      view,
+      mockPrefs,
+      mockLogsRepository,
+      mockFiltersRepository
+    )
     presenter.setBgExecutorService(MockExecutorService())
     presenter.setUiExecutor { it.run() }
   }
@@ -62,7 +67,7 @@ class LogViewerPresenterTests {
     presenter.init()
 
     verify(mockPrefs, never()).lastFilterPaths
-    verify<LogViewerView>(view, never()).configureFiltersList(any())
+    verify(view, never()).configureFiltersList(any())
   }
 
   @Test
@@ -71,7 +76,7 @@ class LogViewerPresenterTests {
     `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf())
     presenter.init()
 
-    verify<LogViewerView>(view, never()).configureFiltersList(any())
+    verify(view, never()).configureFiltersList(any())
   }
 
   @Test
@@ -213,7 +218,7 @@ class LogViewerPresenterTests {
     val testGroup = "testGroup"
     val testFile = File("testFile")
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf(testGroup to testFile))
 
     presenter.finishing()
@@ -228,7 +233,7 @@ class LogViewerPresenterTests {
     val testGroup = "testGroup"
     val testFile = File("testFile")
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
     `when`(view.showSaveFilters(testGroup)).thenReturn(testFile)
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf())
 
@@ -243,7 +248,7 @@ class LogViewerPresenterTests {
   fun testFinishingSaveChangesGroupHasNoFileNoSave() {
     val testGroup = "testGroup"
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
     `when`(view.showSaveFilters(testGroup)).thenReturn(null)
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf())
 
@@ -258,7 +263,7 @@ class LogViewerPresenterTests {
   fun testFinishingDontSaveChanges() {
     val testGroup = "testGroup"
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.REJECTED)
+    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.REJECTED)
 
     presenter.finishing()
 
@@ -271,7 +276,7 @@ class LogViewerPresenterTests {
   fun testFinishingCancelChanges() {
     val testGroup = "testGroup"
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewer.UserSelection.CANCELLED)
+    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CANCELLED)
 
     presenter.finishing()
 
@@ -284,9 +289,9 @@ class LogViewerPresenterTests {
   fun testFinishingNoChanges() {
     presenter.finishing()
 
-    verify<LogViewerView>(view, never()).showAskToSaveFilterDialog(any())
-    verify<LogViewerView>(view, never()).showSaveFilters(any())
-    verify<LogViewerView>(view).finish()
+    verify(view, never()).showAskToSaveFilterDialog(any())
+    verify(view, never()).showSaveFilters(any())
+    verify(view).finish()
   }
 
   @Test
@@ -296,9 +301,9 @@ class LogViewerPresenterTests {
     presenter.finishing()
 
     assertEquals(1, presenter.testStats.rememberAppliedFiltersCallCount)
-    verify<LogViewerView>(view, never()).showAskToSaveFilterDialog(any())
-    verify<LogViewerView>(view, never()).showSaveFilters(any())
-    verify<LogViewerView>(view).finish()
+    verify(view, never()).showAskToSaveFilterDialog(any())
+    verify(view, never()).showSaveFilters(any())
+    verify(view).finish()
   }
 
   @Test
@@ -341,19 +346,19 @@ class LogViewerPresenterTests {
 
     var actual = presenter.getNextFilteredLogForFilter(filter, -1)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 0)
     assertEquals(1, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 1)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 2)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, times(1)).showNavigationNextOver()
+    verify(view, times(1)).showNavigationNextOver()
   }
 
   @Test
@@ -392,23 +397,23 @@ class LogViewerPresenterTests {
 
     var actual = presenter.getNextFilteredLogForFilter(filter, -1)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 0)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 2)
     assertEquals(3, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 3)
     assertEquals(5, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 5)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, times(1)).showNavigationNextOver()
+    verify(view, times(1)).showNavigationNextOver()
   }
 
   @Test
@@ -447,19 +452,19 @@ class LogViewerPresenterTests {
 
     var actual = presenter.getNextFilteredLogForFilter(filter, -1)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 2)
     assertEquals(3, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 3)
     assertEquals(5, actual)
-    verify<LogViewerView>(view, never()).showNavigationNextOver()
+    verify(view, never()).showNavigationNextOver()
 
     actual = presenter.getNextFilteredLogForFilter(filter, 5)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, times(1)).showNavigationNextOver()
+    verify(view, times(1)).showNavigationNextOver()
   }
 
   @Test
@@ -502,19 +507,19 @@ class LogViewerPresenterTests {
 
     var actual = presenter.getPrevFilteredLogForFilter(filter, -1)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 2)
     assertEquals(1, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 1)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 0)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, times(1)).showNavigationPrevOver()
+    verify(view, times(1)).showNavigationPrevOver()
   }
 
   @Test
@@ -553,23 +558,23 @@ class LogViewerPresenterTests {
 
     var actual = presenter.getPrevFilteredLogForFilter(filter, -1)
     assertEquals(5, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 5)
     assertEquals(3, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 3)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 2)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 0)
     assertEquals(5, actual)
-    verify<LogViewerView>(view, times(1)).showNavigationPrevOver()
+    verify(view, times(1)).showNavigationPrevOver()
   }
 
   @Test
@@ -608,19 +613,19 @@ class LogViewerPresenterTests {
 
     var actual = presenter.getPrevFilteredLogForFilter(filter, -1)
     assertEquals(3, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 3)
     assertEquals(2, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 2)
     assertEquals(0, actual)
-    verify<LogViewerView>(view, never()).showNavigationPrevOver()
+    verify(view, never()).showNavigationPrevOver()
 
     actual = presenter.getPrevFilteredLogForFilter(filter, 0)
     assertEquals(3, actual)
-    verify<LogViewerView>(view, times(1)).showNavigationPrevOver()
+    verify(view, times(1)).showNavigationPrevOver()
   }
 
   @Test
@@ -738,7 +743,7 @@ class LogViewerPresenterTests {
 
     // 'showFilteredLogs' should be called 2 times (one for each time we called 'setStreamAllowed')
     // So we need to validate the output of all executions
-    verify<LogViewerView>(view, times(2)).showFilteredLogs(anyOrNull())
+    verify(view, times(2)).showFilteredLogs(anyOrNull())
 
     assertEquals(1, filteredLogsArguments[0].size)
     assertEquals(3, filteredLogsArguments[1].size)
@@ -1069,7 +1074,7 @@ class LogViewerPresenterTests {
     val groupToRemove = "removeGroup"
     val testGroup = "testGroup"
 
-    `when`(view.showAskToSaveFilterDialog(groupToRemove)).thenReturn(LogViewer.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveFilterDialog(groupToRemove)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
       mapOf(
         testGroup to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)),
@@ -1093,7 +1098,7 @@ class LogViewerPresenterTests {
     val groupToRemove = "removeGroup"
     val testGroup = "testGroup"
 
-    `when`(view.showAskToSaveFilterDialog(groupToRemove)).thenReturn(LogViewer.UserSelection.CANCELLED)
+    `when`(view.showAskToSaveFilterDialog(groupToRemove)).thenReturn(LogViewerPresenter.UserSelection.CANCELLED)
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
       mapOf(
         testGroup to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER)),
