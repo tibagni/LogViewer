@@ -124,6 +124,10 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
           }
         }
       });
+
+      // Adjust the size according to the content after everything is populated
+      contentPane.setPreferredSize(contentPane.getPreferredSize());
+      contentPane.validate();
     }
 
     SwingUtilities.invokeLater(() -> regexTxt.requestFocus());
@@ -221,8 +225,6 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setMinimumSize(new Dimension(UIScaleUtils.dip(400), UIScaleUtils.dip(200)));
-    contentPane.setPreferredSize(new Dimension(UIScaleUtils.dip(750), UIScaleUtils.dip(450)));
     contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
             UIScaleUtils.dip(10),
             UIScaleUtils.dip(10),

@@ -32,7 +32,8 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(10),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(10)));
-    textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(12)));
+    int fontSize = textView.getFont().getSize();
+    textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
     add(textView);
 
     // Create the stream indicator component but do not show initially
@@ -42,7 +43,8 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5)));
-    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, UIScaleUtils.scaleFont(12)));
+    fontSize = textView.getFont().getSize();
+    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, fontSize));
   }
 
   public void showStreams(boolean showStreams) {
@@ -137,7 +139,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   }
 
   private Color getColorForHighlightedText(boolean isSelected) {
-    return isSelected ? new Color(234, 115, 0) : new Color(250, 255, 162);
+    return isSelected ? new Color(234, 115, 0, 128) : new Color(250, 255, 162, 128);
   }
 
   private Color getColorForLogLevel(LogLevel level) {

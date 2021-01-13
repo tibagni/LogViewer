@@ -48,13 +48,15 @@ public class ProgressDialog extends JDialog {
         return dialog;
     }
 
+    @Override
+    public void pack() {
+        contentPane.setPreferredSize(contentPane.getPreferredSize());
+        contentPane.validate();
+        super.pack();
+    }
+
     private void buildUi() {
         contentPane = new JPanel();
-        int width = UIScaleUtils.dip(400);
-        int height = UIScaleUtils.dip(100);
-        contentPane.setMinimumSize(new Dimension(width, height));
-        contentPane.setPreferredSize(new Dimension(width, height));
-
         progressbar = new JProgressBar(0, 100);
         progressbar.setStringPainted(true);
         contentPane.add(progressbar);

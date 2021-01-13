@@ -3,8 +3,7 @@ package com.tibagni.logviewer.preferences;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
-import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
-import com.tibagni.logviewer.lookandfeel.LookNFeel;
+import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.ButtonsPane;
@@ -17,7 +16,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.Listener {
@@ -30,7 +28,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
 
   private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  private JComboBox lookAndFeelCbx;
+  private JComboBox<String> lookAndFeelCbx;
   private JTextField filtersPathTxt;
   private JButton filtersPathBtn;
   private JCheckBox openLastFilterChbx;
@@ -42,8 +40,9 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
   private final LogViewerPreferences userPrefs;
+  private final LogViewerThemeManager themeManager;
 
-  private Map<String, Runnable> saveActions = new HashMap<>();
+  private final Map<String, Runnable> saveActions = new HashMap<>();
 
   public LogViewerPreferencesDialog(JFrame owner) {
     super(owner);
@@ -52,10 +51,15 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     setModal(true);
     buttonsPane.setDefaultButtonOk();
     userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+    themeManager = ServiceLocator.INSTANCE.getThemeManager();
 
     initFiltersPathPreference();
     initLogsPathPreference();
     initLookAndFeelPreference();
+
+    // Adjust the size according to the content after everything is populated
+    contentPane.setPreferredSize(contentPane.getPreferredSize());
+    contentPane.validate();
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -97,25 +101,16 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void initLookAndFeelPreference() {
-    LookNFeelProvider lnfProvider = LookNFeelProvider.getInstance();
-    List<LookNFeel> lookAndFeels = lnfProvider.getAvailableLookNFeels();
-
-    String currLnf = UIManager.getLookAndFeel().getClass().getName();
-    LookNFeel selectedItem = lnfProvider.getByClass(currLnf);
-    for (LookNFeel lnf : lookAndFeels) {
-      lookAndFeelCbx.addItem(lnf);
+    for (String theme : themeManager.getAvailableThemes()) {
+      lookAndFeelCbx.addItem(theme);
     }
-
-    if (selectedItem != null) {
-      lookAndFeelCbx.setSelectedItem(selectedItem);
-    }
+    lookAndFeelCbx.setSelectedItem(themeManager.getCurrentTheme());
 
     lookAndFeelCbx.addActionListener(l -> {
-      LookNFeel lookNFeel = (LookNFeel) lookAndFeelCbx.getSelectedItem();
-      saveActions.put(LOOK_FEEL_PREF_ID, () -> {
-        String lnfClass = lookNFeel.getCls();
-        userPrefs.setLookAndFeel(lnfClass);
-      });
+      String theme = (String) lookAndFeelCbx.getSelectedItem();
+      if (theme != null) {
+        saveActions.put(LOOK_FEEL_PREF_ID, () -> userPrefs.setLookAndFeel(theme));
+      }
     });
   }
 
@@ -176,8 +171,6 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setMinimumSize(new Dimension(UIScaleUtils.dip(400), UIScaleUtils.dip(250)));
-    contentPane.setPreferredSize(new Dimension(UIScaleUtils.dip(600), UIScaleUtils.dip(350)));
     contentPane.setRequestFocusEnabled(true);
     contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
             UIScaleUtils.dip(10),
@@ -215,7 +208,8 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     lookNFeelLbl.setText("Look And Feel");
     CellConstraints cc = new CellConstraints();
     formPane.add(lookNFeelLbl, cc.xy(1, 1));
-    lookAndFeelCbx = new JComboBox();
+    lookAndFeelCbx = new JComboBox<>();
+    lookAndFeelCbx.setMinimumSize(new Dimension());
     formPane.add(lookAndFeelCbx, cc.xy(3, 1));
 
     final JSeparator sep1 = new JSeparator();

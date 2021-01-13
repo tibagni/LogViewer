@@ -188,11 +188,13 @@ class MainViewImpl(
     if (progressDialog == null) {
       progressDialog = ProgressDialog.showProgressDialog(parent)
     }
+    progressDialog?.pack()
   }
 
   override fun showLoadingProgress(progress: Int, note: String?) {
     progressDialog?.publishProgress(progress)
     progressDialog?.updateProgressText(note)
+    progressDialog?.pack()
   }
 
   override fun finishLoading() {

@@ -1,18 +1,18 @@
 package com.tibagni.logviewer;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import com.tibagni.logviewer.logger.Logger;
-import com.tibagni.logviewer.lookandfeel.LookNFeel;
-import com.tibagni.logviewer.lookandfeel.LookNFeelProvider;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.rc.LogLevelConfig;
 import com.tibagni.logviewer.rc.RuntimeConfiguration;
 import com.tibagni.logviewer.rc.UIScaleConfig;
+import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
-import com.tibagni.logviewer.util.SwingUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
@@ -47,22 +47,13 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private void initLookAndFeel() {
-    LookNFeelProvider lookNFeelProvider = LookNFeelProvider.getInstance();
     LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+    LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
     String lookAndFeel = prefs.getLookAndFeel();
-    if (!StringUtils.isEmpty(lookAndFeel) &&
-        lookNFeelProvider.getByClass(lookAndFeel) == null) {
-      Logger.debug(lookAndFeel + " not found. Fallback to default...");
-      lookAndFeel = lookNFeelProvider.getDefaultLookNFeel().getCls();
-    }
+    Logger.debug("Installing theme: " + lookAndFeel);
+    themeManager.setCurrentTheme(lookAndFeel);
 
-    if (!StringUtils.isEmpty(lookAndFeel)) {
-      LookNFeel lnf = lookNFeelProvider.getByClass(lookAndFeel);
-      lookNFeelProvider.applyTheme(lnf);
-
-      SwingUtils.setLookAndFeel(lookAndFeel);
-    }
-    UIScaleUtils.updateDefaultSizes();
+//    UIScaleUtils.updateDefaultSizes();
     watchLookAndFeelUpdates();
   }
 
@@ -86,20 +77,8 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
       public void onLookAndFeelChanged() {
         String lookAndFeel = prefs.getLookAndFeel();
         if (!StringUtils.isEmpty(lookAndFeel)) {
-          int userChoice = JOptionPane.showConfirmDialog(
-                  javax.swing.FocusManager.getCurrentManager().getActiveWindow(),
-                  "Do you want to restart LogViewer to apply the new Look and Feel?",
-                  "Changing theme",
-                  JOptionPane.YES_NO_OPTION,
-                  JOptionPane.WARNING_MESSAGE);
-
-          if (userChoice == JOptionPane.YES_NO_OPTION) {
-            try {
-              CommonUtils.restartApplication();
-            } catch (Exception e) {
-              Logger.error("Failed to restart", e);
-            }
-          }
+          Logger.debug("Installing theme: " + lookAndFeel);
+          ServiceLocator.INSTANCE.getThemeManager().setCurrentTheme(lookAndFeel);
         }
       }
     });

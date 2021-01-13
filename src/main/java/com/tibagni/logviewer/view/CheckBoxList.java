@@ -13,13 +13,13 @@ import java.util.ArrayList;
 // (checked/unchecked) and redraw the item
 public class CheckBoxList<E> extends JList<E> {
   private ItemsCheckListener listener;
-
-  private static final int CHECK_BOX_WIDTH = UIScaleUtils.dip(15);
+  private final JCheckBox dummyCheckBox;
 
   public CheckBoxList() {
     super();
     addMouseListener(new MyMouseListener());
     addKeyListener(new MyKeyListener());
+    dummyCheckBox = new JCheckBox();
   }
 
   public void setItemsCheckListener(ItemsCheckListener listener) {
@@ -27,7 +27,9 @@ public class CheckBoxList<E> extends JList<E> {
   }
 
   private boolean isOnCheckBox(Point point) {
-    return point.x <= CHECK_BOX_WIDTH;
+    // Check the width of dummy check box to determine if the click matches a checkbox size
+    Dimension d = dummyCheckBox.getPreferredSize();
+    return point.x <= d.getWidth();
   }
 
   private void notifyItemCheckChanged(int index) {
