@@ -1,7 +1,5 @@
 package com.tibagni.logviewer;
 
-import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLightLaf;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.rc.LogLevelConfig;
@@ -11,7 +9,6 @@ import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
-import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
@@ -22,6 +19,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class LogViewerApplication implements UpdateManager.UpdateListener {
+  private MainViewImpl mainView;
+
   private LogViewerApplication() { }
 
   public static void main(String[] args) {
@@ -60,7 +59,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   void newLogViewerWindow(Set<File> initialLogFiles) {
     JFrame frame = new JFrame(getApplicationTitle());
 
-    MainViewImpl mainView = new MainViewImpl(frame, ServiceLocator.INSTANCE.getLogViewerPrefs(), initialLogFiles);
+    mainView = new MainViewImpl(frame, ServiceLocator.INSTANCE.getLogViewerPrefs(), initialLogFiles);
     frame.setContentPane(mainView.getContentPane());
     frame.pack();
     frame.setVisible(true);
@@ -79,6 +78,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
         if (!StringUtils.isEmpty(lookAndFeel)) {
           Logger.debug("Installing theme: " + lookAndFeel);
           ServiceLocator.INSTANCE.getThemeManager().setCurrentTheme(lookAndFeel);
+          mainView.recreateFileChoosers();
         }
       }
     });

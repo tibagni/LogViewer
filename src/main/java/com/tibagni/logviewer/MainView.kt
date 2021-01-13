@@ -59,10 +59,10 @@ class MainViewImpl(
 ) : MainView {
   private lateinit var mainPanel: JPanel
 
-  private val logSaveFileChooser: JFileChooserExt
-  private val logOpenFileChooser: JFileChooserExt
-  private val filterSaveFileChooser: JFileChooserExt
-  private val filterOpenFileChooser: JFileChooserExt
+  private var logSaveFileChooser: JFileChooserExt
+  private var logOpenFileChooser: JFileChooserExt
+  private var filterSaveFileChooser: JFileChooserExt
+  private var filterOpenFileChooser: JFileChooserExt
   private var progressDialog: ProgressDialog? = null
 
   private val logViewerView: LogViewerView
@@ -108,6 +108,13 @@ class MainViewImpl(
         handleClose()
       }
     })
+  }
+
+  fun recreateFileChoosers() {
+    logSaveFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
+    logOpenFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
+    filterSaveFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)
+    filterOpenFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)
   }
 
   private fun handleClose() {
