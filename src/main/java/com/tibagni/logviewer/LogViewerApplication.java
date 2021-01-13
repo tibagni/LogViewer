@@ -1,5 +1,6 @@
 package com.tibagni.logviewer;
 
+import com.formdev.flatlaf.util.UIScale;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.rc.LogLevelConfig;
@@ -42,6 +43,8 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     startCheckingForUpdates();
     initLookAndFeel();
 
+    // Update ScaleFactor based on theme
+    UIScaleUtils.updateScaleFactor((int) UIScale.getUserScaleFactor());
     newLogViewerWindow(initialLogFiles);
   }
 

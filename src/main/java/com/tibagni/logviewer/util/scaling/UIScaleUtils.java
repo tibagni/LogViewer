@@ -36,6 +36,15 @@ public class UIScaleUtils {
         }
     }
 
+    public static void updateScaleFactor(int scaleFactor) {
+        if (SCALE_FACTOR != 1) {
+            Logger.debug("Scale factor is " + SCALE_FACTOR + ". Will not update!");
+            return;
+        }
+        SCALE_FACTOR = scaleFactor;
+        Logger.debug("Scale factor updated. Now is " + SCALE_FACTOR);
+    }
+
     public static void updateDefaultSizes() {
         if (!shouldUpdateDefaultSizes()) {
             return;

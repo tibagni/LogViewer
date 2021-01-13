@@ -6,6 +6,7 @@ import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.bugreport.section.SectionPanel
 import com.tibagni.logviewer.bugreport.section.SectionPanelFactory
+import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
@@ -35,6 +36,8 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
   private var currentlySelectedSection = -1
 
   private val presenter: BugReportPresenter
+
+  private val emptyPane = JPanel()
 
   init {
     buildUi()
@@ -87,7 +90,19 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
         val section = it.sectionsMap[sectionName] ?: EmptyBugReportSection
         sectionPanels[sectionName] = SectionPanelFactory.createPanelFor(sectionName, section)
       }
+
+      // Here we remember the divider position before we set the right panel, and set it again once the panel is added
+      // This is a hack so that the left pane does not keep resizing everytime the right panel changes
+      // Also, we don't want to set the divider size on first swap as it is not the right value yet
+      val dividerLocation = mainSplitPane.dividerLocation
+      val isFirstSwap = (mainSplitPane.rightComponent == emptyPane)
+
       mainSplitPane.rightComponent = sectionPanels[sectionName]
+
+      if (!isFirstSwap) {
+        mainSplitPane.dividerLocation = dividerLocation
+      }
+
     }
   }
 
@@ -103,7 +118,9 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
     contentPane.layout = GridBagLayout()
     mainSplitPane = JSplitPane()
+    mainSplitPane.dividerSize = UIScaleUtils.dip(5)
     mainSplitPane.isOneTouchExpandable = true
+    mainSplitPane.resizeWeight = 0.05
     contentPane.add(
       mainSplitPane,
       GBConstraintsBuilder()
@@ -115,10 +132,9 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
         .build()
     )
 
-    val emptyPanel = JPanel()
     openBrButton = JButton("Open bug report...")
-    emptyPanel.layout = GridBagLayout()
-    emptyPanel.add(
+    emptyPane.layout = GridBagLayout()
+    emptyPane.add(
       openBrButton, GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
@@ -128,6 +144,6 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     )
 
     mainSplitPane.leftComponent = sectionsList
-    mainSplitPane.rightComponent = emptyPanel
+    mainSplitPane.rightComponent = emptyPane
   }
 }

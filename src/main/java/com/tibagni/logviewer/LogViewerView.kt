@@ -442,8 +442,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     )
 
     val mainSplitPane = JSplitPane()
+    mainSplitPane.dividerSize = UIScaleUtils.dip(5)
     mainSplitPane.isOneTouchExpandable = true
-    mainSplitPane.resizeWeight = 0.2
+    mainSplitPane.resizeWeight = 0.05
     _contentPane.add(
       mainSplitPane,
       GBConstraintsBuilder()
@@ -457,7 +458,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     )
 
     logsPane = JSplitPane()
-    logsPane.dividerSize = UIScaleUtils.dip(10)
+    logsPane.dividerSize = UIScaleUtils.dip(5)
     logsPane.orientation = JSplitPane.VERTICAL_SPLIT
     logsPane.resizeWeight = 0.6
 
