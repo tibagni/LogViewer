@@ -6,9 +6,9 @@ import com.formdev.flatlaf.FlatLightLaf
 import java.lang.IllegalArgumentException
 
 object LogViewerThemeManager {
-  private val LIGHT = LogViewerTheme("Light") { FlatLightLaf.install() }
-  private val DARK = LogViewerTheme("Dark") { FlatDarkLaf.install() }
-  private val NONE = LogViewerTheme("None") { throw IllegalArgumentException("Tried to install theme NONE") }
+  private val LIGHT = LogViewerTheme("Light", false) { FlatLightLaf.install() }
+  private val DARK = LogViewerTheme("Dark", true) { FlatDarkLaf.install() }
+  private val NONE = LogViewerTheme("None", false) { throw IllegalArgumentException("Tried to install theme NONE") }
   private val DEFAULT = LIGHT
 
   private val allThemes = mapOf(
@@ -27,6 +27,9 @@ object LogViewerThemeManager {
         t?.let { install(it) }
       }
     }
+
+  val isDark: Boolean
+    get() = installedTheme.isDark
 
   private fun install(theme: LogViewerTheme) {
     installedTheme = theme

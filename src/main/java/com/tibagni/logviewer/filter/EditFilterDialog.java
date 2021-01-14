@@ -2,7 +2,9 @@ package com.tibagni.logviewer.filter;
 
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
+import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
+import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
@@ -18,24 +20,31 @@ import java.awt.event.*;
 import java.util.Random;
 
 public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
-  private static final Color[] INITIAL_COLORS = new Color[]{
-      Color.black,
-      Color.blue,
+  private static final Color[] INITIAL_COLORS_LIGHT = new Color[]{
       Color.darkGray,
-      Color.red,
-      Color.yellow,
-      Color.cyan,
-      Color.green,
-      Color.magenta,
-      Color.orange,
-      Color.pink,
       new Color(102, 102, 0),
       new Color(0, 102, 153),
       new Color(0, 102, 102),
       new Color(102, 0, 0),
-      new Color(51, 204, 255),
+      new Color(26, 69, 73),
+      new Color(88, 24, 88),
+      new Color(97, 49, 2)
+  };
+
+  private static final Color[] INITIAL_COLORS_DARK = new Color[]{
+      Color.blue,
+      Color.red,
+      Color.yellow,
+      Color.cyan,
+      Color.green,
+      Color.pink,
+      new Color(208, 208, 119),
+      new Color(83, 199, 246),
+      new Color(8, 248, 248),
+      new Color(222, 143, 143),
+      new Color(111, 210, 255),
       new Color(255, 6, 250),
-      new Color(255, 113, 41)
+      new Color(252, 156, 106)
   };
 
   private ButtonsPane buttonsPane;
@@ -52,6 +61,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
   private Filter filter;
   private String previewText;
+  private final LogViewerThemeManager themeManager;
 
   private final DocumentListener regexDocumentListener = new DocumentListener() {
     @Override
@@ -77,6 +87,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
     super(owner);
     previewText = preDefinedText;
+    themeManager = ServiceLocator.INSTANCE.getThemeManager();
     buildUi();
 
     setContentPane(contentPane);
@@ -195,7 +206,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private Color getInitialColor() {
     // Set a random color for the filter initially
     final Random r = new Random();
-    return INITIAL_COLORS[r.nextInt(INITIAL_COLORS.length)];
+    Color[] colors = themeManager.isDark() ? INITIAL_COLORS_DARK : INITIAL_COLORS_LIGHT;
+    return colors[r.nextInt(colors.length)];
   }
 
   public static Filter showEditFilterDialog(Frame parent, Filter editingFilter) {

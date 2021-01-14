@@ -1,6 +1,6 @@
 package com.tibagni.logviewer.theme
 
-class LogViewerTheme(val name: String, private val installer: () -> Unit) {
+class LogViewerTheme(val name: String, val isDark: Boolean, private val installer: () -> Unit) {
   fun install() {
     installer()
   }

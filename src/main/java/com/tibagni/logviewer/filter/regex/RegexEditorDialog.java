@@ -2,6 +2,8 @@ package com.tibagni.logviewer.filter.regex;
 
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
+import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -25,14 +27,18 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
   private JCheckBox caseSensitive;
 
   private final Color defaultRegexEditBg;
-  private final Color errorRegexEditBg = new Color(235, 77, 103);
-  private final Color highlightColor = new Color(255, 233, 152);
+  private final Color errorRegexEditBg;
+  private final Color highlightColor;
 
   boolean isRegexValid;
   Result result;
 
   private RegexEditorDialog(Dialog owner) {
     super(owner);
+    LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
+    highlightColor = themeManager.isDark() ? new Color(101, 70, 0) : new Color(255, 233, 152);
+    errorRegexEditBg = themeManager.isDark() ? new Color(88, 12, 25) : new Color(235, 77, 103);
+
     buildUi();
 
     setContentPane(contentPane);
