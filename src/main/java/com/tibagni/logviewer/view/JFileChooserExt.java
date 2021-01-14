@@ -1,6 +1,5 @@
 package com.tibagni.logviewer.view;
 
-import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 
 import javax.swing.*;

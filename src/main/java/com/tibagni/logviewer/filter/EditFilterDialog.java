@@ -284,15 +284,9 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
     colorLbl = new JLabel();
     colorLbl.setText("Color:");
-    colorLbl.setToolTipText("Choose a color to diferentiate your filter");
+    colorLbl.setToolTipText("Choose a color to differentiate your filter");
     editPane.add(colorLbl, cc.xy(1, 7));
     colorChooser = new JColorChooser();
-    AbstractColorChooserPanel swatchPanel = getSwatchPanel(colorChooser.getChooserPanels());
-
-    // Keep only the swatch panel
-    if (swatchPanel != null) {
-      colorChooser.setChooserPanels(new AbstractColorChooserPanel[]{swatchPanel});
-    }
 
     // Show a simple text field for preview
     JTextField preview = new JTextField("Filtered text color preview");
