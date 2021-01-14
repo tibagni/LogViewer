@@ -1,8 +1,10 @@
 package com.tibagni.logviewer.view;
 
+import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 
 public class JFileChooserExt extends JFileChooser {
@@ -20,6 +22,16 @@ public class JFileChooserExt extends JFileChooser {
    */
   public void setSaveExtension(String saveExtension) {
     this.saveExtension = saveExtension;
+  }
+
+  @Override
+  protected JDialog createDialog(Component parent) throws HeadlessException {
+    JDialog dialog = super.createDialog(parent);
+
+    // Make sure to make the file chooser dialog as small as possible
+    dialog.setPreferredSize(dialog.getMinimumSize());
+    dialog.pack();
+    return dialog;
   }
 
   @Override

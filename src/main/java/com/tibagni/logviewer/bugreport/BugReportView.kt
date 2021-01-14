@@ -6,7 +6,6 @@ import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.bugreport.section.SectionPanel
 import com.tibagni.logviewer.bugreport.section.SectionPanelFactory
-import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
