@@ -1,7 +1,9 @@
 package com.tibagni.logviewer.log;
 
+import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
@@ -18,8 +20,10 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   protected final JTextArea textView;
   private final JPanel colorIndicator;
   private final JLabel streamIndicator;
+  private final LogViewerThemeManager themeManager;
 
   public LogCellRenderer() {
+    themeManager = ServiceLocator.INSTANCE.getThemeManager();
     setLayout(new BorderLayout());
 
     colorIndicator = new JPanel();
@@ -139,7 +143,11 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   }
 
   private Color getColorForHighlightedText(boolean isSelected) {
-    return isSelected ? new Color(234, 115, 0, 128) : new Color(250, 255, 162, 128);
+    if (themeManager.isDark()) {
+      return isSelected ? new Color(111, 43, 0) : new Color(83, 87, 10);
+    } else {
+      return isSelected ? new Color(234, 115, 0) : new Color(250, 255, 162);
+    }
   }
 
   private Color getColorForLogLevel(LogLevel level) {
