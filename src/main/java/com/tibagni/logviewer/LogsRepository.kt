@@ -14,6 +14,7 @@ interface LogsRepository {
     val currentlyOpenedLogFiles: List<File>
     val currentlyOpenedLogs: List<LogEntry>
     val availableStreams: Set<LogStream>
+    val lastSkippedLogFiles: List<String>
 
     @Throws(OpenLogsException::class)
     fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter)
@@ -32,6 +33,11 @@ class LogsRepositoryImpl: LogsRepository {
     override val availableStreams: Set<LogStream>
         get() = _availableStreams
 
+    private val _lastSkippedLogFiles = mutableListOf<String>()
+    override val lastSkippedLogFiles: List<String>
+        get() = _lastSkippedLogFiles
+
+
     @Throws(OpenLogsException::class)
     override fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter) {
         try {
@@ -40,6 +46,7 @@ class LogsRepositoryImpl: LogsRepository {
 
             _currentlyOpenedLogs.reset(parsedLogs)
             _availableStreams.reset(logParser.availableStreams)
+            _lastSkippedLogFiles.reset(logParser.logsSkipped)
 
             if (parsedLogs.isNotEmpty()) {
                 _currentlyOpenedLogFiles.reset(files)
@@ -50,8 +57,7 @@ class LogsRepositoryImpl: LogsRepository {
             logParser.release()
         } catch (e: Exception) {
             when (e) {
-                is LogReaderException,
-                is LogParserException -> {
+                is LogReaderException -> {
                     throw OpenLogsException(e.message, e)
                 }
                 else -> throw e

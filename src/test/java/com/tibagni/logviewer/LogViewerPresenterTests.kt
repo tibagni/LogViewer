@@ -1230,6 +1230,7 @@ class LogViewerPresenterTests {
     verify(view).showAvailableLogStreams(any())
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
     assertEquals(0, presenter.testStats.applyFiltersCallCount)
   }
 
@@ -1252,6 +1253,7 @@ class LogViewerPresenterTests {
     verify(view).showAvailableLogStreams(any())
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
     assertEquals(0, presenter.testStats.applyFiltersCallCount)
   }
 
@@ -1279,6 +1281,7 @@ class LogViewerPresenterTests {
     verify(view).showAvailableLogStreams(any())
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
     assertEquals(1, presenter.testStats.applyFiltersCallCount)
   }
 
@@ -1306,6 +1309,7 @@ class LogViewerPresenterTests {
     verify(view).showAvailableLogStreams(any())
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
     assertEquals(1, presenter.testStats.applyFiltersCallCount)
   }
 
@@ -1318,6 +1322,7 @@ class LogViewerPresenterTests {
     verify(view).showAvailableLogStreams(emptySet())
     verify(view).showCurrentLogsLocation(isNull())
     verify(view).showErrorMessage("No logs found")
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
 
     assertEquals(0, presenter.testStats.applyFiltersCallCount)
   }
@@ -1339,6 +1344,55 @@ class LogViewerPresenterTests {
     verify(view).showErrorMessage("test invalid file message")
 
     assertEquals(0, presenter.testStats.applyFiltersCallCount)
+  }
+
+  @Test
+  fun testLoadLogsValidAndInvalid() {
+    /*
+     * This test ensures that the "Skipped" files dialog is displayed to the user
+     * when one of the log files being loaded is invalid
+     */
+    val inputLogFiles = arrayOf(File("test"), File("invalid"))
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(listOf(inputLogFiles[0]))
+    `when`(mockLogsRepository.lastSkippedLogFiles).thenReturn(listOf(inputLogFiles[1].name))
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(view).showFilteredLogs(any())
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    verify(view).showSkippedLogsMessage(anyOrNull())
+  }
+
+  @Test
+  fun testLoadLogsOnlyInvalid() {
+    /*
+     * This test ensures that the "Skipped" files dialog is NOT displayed to the user
+     * when the single loaded file is invalid, and ensures that the "No logs found" dialog is displayed
+     * There is no need to display the skipped logs file name when nothing else was loaded
+     */
+    val inputLogFiles = arrayOf(File("invalid"))
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(listOf())
+    `when`(mockLogsRepository.lastSkippedLogFiles).thenReturn(listOf(inputLogFiles[0].name))
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(listOf())
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(view).showFilteredLogs(any())
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view, never()).showCurrentLogsLocation(notNull())
+    verify(view).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
   }
 
   @Test

@@ -23,10 +23,11 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.event.*
 import java.io.File
+import java.lang.StringBuilder
 import javax.swing.*
 
 // This is the interface known by other views (MainView)
-interface LogViewerView: View {
+interface LogViewerView : View {
   val contentPane: JPanel
   fun buildStreamsMenu(): JMenu?
   fun handleOpenLogsMenu()
@@ -39,6 +40,7 @@ interface LogViewerView: View {
 interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun configureFiltersList(filters: Map<String, List<Filter>>?)
   fun showErrorMessage(message: String?)
+  fun showSkippedLogsMessage(skippedLogs: List<String>)
   fun showLogs(logEntries: List<LogEntry>?)
   fun showCurrentLogsLocation(logsPath: String?)
   fun showFilteredLogs(logEntries: List<LogEntry>?)
@@ -331,6 +333,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun showErrorMessage(message: String?) {
     JOptionPane.showMessageDialog(contentPane, message, "Error...", JOptionPane.ERROR_MESSAGE)
+  }
+
+  override fun showSkippedLogsMessage(skippedLogs: List<String>) {
+    val message = StringBuilder("There was a problem parsing below files and they were not loaded")
+    message.append("\n\n")
+    message.append(skippedLogs.joinToString("\n") { "> $it" })
+    JOptionPane.showMessageDialog(
+      contentPane,
+      message.toString(),
+      "Some files were not opened",
+      JOptionPane.WARNING_MESSAGE
+    )
   }
 
   override fun showLogs(logEntries: List<LogEntry>?) {

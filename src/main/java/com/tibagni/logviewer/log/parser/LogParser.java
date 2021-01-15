@@ -4,6 +4,7 @@ import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.*;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -27,46 +28,61 @@ public class LogParser {
   private LogReader logReader;
   private List<LogEntry> logEntries;
   private ProgressReporter progressReporter;
+  private List<String> logsSkipped;
 
   public LogParser(LogReader logReader, ProgressReporter progressReporter) {
     this.logReader = logReader;
     this.progressReporter = progressReporter;
     this.logEntries = new ArrayList<>();
+    this.logsSkipped = new ArrayList<>();
   }
 
-  public LogEntry[] parseLogs() throws LogReaderException, LogParserException {
+  public LogEntry[] parseLogs() throws LogReaderException {
     ensureState();
 
     logReader.readLogs();
     Set<String> availableLogs = logReader.getAvailableLogsNames();
 
-    try {
-      int logsRead = 0;
-      for (String log : availableLogs) {
+    int logsRead = 0;
+    for (String log : availableLogs) {
+      try {
         int progress = logsRead++ * 90 / availableLogs.size();
         progressReporter.onProgress(progress, "Reading " + log + "...");
-        logEntries.addAll(getLogEntries(logReader.get(log), log));
-      }
+        List<LogEntry> logEntriesFromFile = getLogEntries(logReader.get(log), log);
 
-      if (availableLogs.size() > 1) {
-        progressReporter.onProgress(91, "Sorting...");
-        Collections.sort(logEntries);
+        if (!logEntriesFromFile.isEmpty()) {
+          logEntries.addAll(logEntriesFromFile);
+        } else {
+          Logger.warning("Skipping " + log + " because it was empty");
+          logsSkipped.add(log);
+        }
+      } catch(LogParserException lpe) {
+        Logger.warning("Skipping " + log + " because it failed to parse", lpe);
+        logsSkipped.add(log);
       }
-
-      progressReporter.onProgress(95, "Setting index...");
-      int index = 0;
-      for (LogEntry entry : logEntries) {
-        entry.setIndex(index++);
-      }
-
-      progressReporter.onProgress(100, "Completed");
-      return logEntries.toArray(new LogEntry[0]);
-    } catch (LogParserException e) {
-      progressReporter.failProgress();
-      throw e;
     }
+
+    if (availableLogs.size() > 1) {
+      progressReporter.onProgress(91, "Sorting...");
+      Collections.sort(logEntries);
+    }
+
+    progressReporter.onProgress(95, "Setting index...");
+    int index = 0;
+    for (LogEntry entry : logEntries) {
+      entry.setIndex(index++);
+    }
+
+    progressReporter.onProgress(100, "Completed");
+    return logEntries.toArray(new LogEntry[0]);
   }
 
+  @NotNull
+  public List<String> getLogsSkipped() {
+    return logsSkipped;
+  }
+
+  @NotNull
   public Set<LogStream> getAvailableStreams() {
     ensureState();
 

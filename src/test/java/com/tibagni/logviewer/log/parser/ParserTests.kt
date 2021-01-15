@@ -108,7 +108,7 @@ class ParserTests {
         assertArrayEquals(expectedLogs, actualLogs)
     }
 
-    @Test(expected = LogParserException::class)
+    @Test
     fun testParseInvalidLogs() {
         val testLogLine = buildHugeLogPayload()
         val logNames = setOf("bugreport")
@@ -117,6 +117,9 @@ class ParserTests {
         `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
 
         logParser.parseLogs()
+
+        assertEquals(1, logParser.logsSkipped.size)
+        assertEquals("bugreport", logParser.logsSkipped[0])
     }
 
     private fun buildHugeLogPayload(): String {

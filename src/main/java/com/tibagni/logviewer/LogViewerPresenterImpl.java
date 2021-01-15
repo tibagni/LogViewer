@@ -292,6 +292,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
         cachedAllowedFilteredLogs.clear();
         cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
 
+        List<String> skippedLogs = logsRepository.getLastSkippedLogFiles();
         doOnUiThread(() -> {
           view.showFilteredLogs(cachedAllowedFilteredLogs);
           view.showLogs(logsRepository.getCurrentlyOpenedLogs());
@@ -303,6 +304,13 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
             long appliedFiltersCount = getFiltersThat(Filter::isApplied).size();
             if (appliedFiltersCount > 0) {
               applyFilters();
+            }
+
+            // Only show this skipped logs if there are other logs loaded
+            // otherwise the "No logs found" is enough
+            if (!skippedLogs.isEmpty()) {
+              // Some logs were not parsed, let the UI know which
+              view.showSkippedLogsMessage(skippedLogs);
             }
           } else {
             view.showCurrentLogsLocation(null);
