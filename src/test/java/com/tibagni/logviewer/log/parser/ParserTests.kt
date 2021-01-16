@@ -116,10 +116,12 @@ class ParserTests {
         `when`(reader.availableLogsNames).thenReturn(logNames)
         `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
 
-        logParser.parseLogs()
+        val parsedLogs = logParser.parseLogs()
 
-        assertEquals(1, logParser.logsSkipped.size)
-        assertEquals("bugreport", logParser.logsSkipped[0])
+        // The log should still have been parsed. But it should be truncated to the maximum allowed size
+        assertEquals(0, logParser.logsSkipped.size)
+        assertEquals(1, parsedLogs.size)
+        assertEquals(LogParser.MAX_LOG_LINE_ALLOWED, parsedLogs[0].logText.length)
     }
 
     private fun buildHugeLogPayload(): String {

@@ -1396,6 +1396,54 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testLoadLogsWithBugreport() {
+    val inputLogFiles = arrayOf(File("log"), File("bugreport"))
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.lastSkippedLogFiles).thenReturn(listOf())
+    `when`(mockLogsRepository.potentialBugReports).thenReturn(mapOf("bugreport" to "test text"))
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(view).showFilteredLogs(any())
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
+    verify(view).showOpenPotentialBugReport("test text")
+    verify(view, never()).closeCurrentlyOpenedBugReports()
+  }
+
+  @Test
+  fun testLoadLogsWithoutBugreport() {
+    val inputLogFiles = arrayOf(File("log"))
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.lastSkippedLogFiles).thenReturn(listOf())
+    `when`(mockLogsRepository.potentialBugReports).thenReturn(mapOf())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(view).showFilteredLogs(any())
+    verify(view).showLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
+    verify(view, never()).showOpenPotentialBugReport(anyString())
+    verify(view).closeCurrentlyOpenedBugReports()
+  }
+
+  @Test
   fun testRefreshLogs() {
     `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(listOf(File("test")))
     `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(

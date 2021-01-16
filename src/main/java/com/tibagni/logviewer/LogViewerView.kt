@@ -52,6 +52,8 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun finish()
   fun showNavigationNextOver()
   fun showNavigationPrevOver()
+  fun showOpenPotentialBugReport(bugreportText: String)
+  fun closeCurrentlyOpenedBugReports()
 }
 
 class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<File>) : LogViewerView,
@@ -417,6 +419,14 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun showNavigationPrevOver() =
     Toast.showToast(contentPane.parent, StringUtils.RIGHT_ARROW_WITH_HOOK, Toast.LENGTH_SHORT)
 
+  override fun showOpenPotentialBugReport(bugreportText: String) {
+    mainView.onBugReportLoaded(bugreportText)
+  }
+
+  override fun closeCurrentlyOpenedBugReports() {
+    mainView.onBugReportClosed()
+  }
+
   override fun showStartLoading() = mainView.showStartLoading()
 
   override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress(progress, note)
@@ -514,7 +524,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .withFill(GridBagConstraints.BOTH)
         .build()
     )
-
 
     val filterButtonsPane = JPanel()
     filterButtonsPane.layout = FlowLayout(FlowLayout.CENTER)

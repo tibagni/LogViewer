@@ -17,7 +17,7 @@ public class LogParser {
   // There are other parts of the log, like TAG, timestamp, pid, tid...
   // So, to be absolute sure we will not discard a valid log file because
   // of size restriction, set our maximum to twice the Android's payload size.
-  private static final int MAX_LOG_LINE_ALLOWED = LOGGER_ENTRY_MAX_PAYLOAD * 2;
+  public static final int MAX_LOG_LINE_ALLOWED = LOGGER_ENTRY_MAX_PAYLOAD * 2;
 
   private static final Pattern LOG_LEVEL_PATTERN =
       Pattern.compile("^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}.*?([VDIWE])");
@@ -28,13 +28,15 @@ public class LogParser {
   private LogReader logReader;
   private List<LogEntry> logEntries;
   private ProgressReporter progressReporter;
-  private List<String> logsSkipped;
+  private final List<String> logsSkipped;
+  private final Map<String, String> potentialBugReports;
 
   public LogParser(LogReader logReader, ProgressReporter progressReporter) {
     this.logReader = logReader;
     this.progressReporter = progressReporter;
     this.logEntries = new ArrayList<>();
     this.logsSkipped = new ArrayList<>();
+    this.potentialBugReports = new HashMap<>();
   }
 
   public LogEntry[] parseLogs() throws LogReaderException {
@@ -48,7 +50,8 @@ public class LogParser {
       try {
         int progress = logsRead++ * 90 / availableLogs.size();
         progressReporter.onProgress(progress, "Reading " + log + "...");
-        List<LogEntry> logEntriesFromFile = getLogEntries(logReader.get(log), log);
+        String logText = logReader.get(log);
+        List<LogEntry> logEntriesFromFile = getLogEntries(logText, log);
 
         if (!logEntriesFromFile.isEmpty()) {
           logEntries.addAll(logEntriesFromFile);
@@ -56,8 +59,8 @@ public class LogParser {
           Logger.warning("Skipping " + log + " because it was empty");
           logsSkipped.add(log);
         }
-      } catch(LogParserException lpe) {
-        Logger.warning("Skipping " + log + " because it failed to parse", lpe);
+      } catch(Exception e) {
+        Logger.warning("Skipping " + log + " because it failed to parse", e);
         logsSkipped.add(log);
       }
     }
@@ -80,6 +83,11 @@ public class LogParser {
   @NotNull
   public List<String> getLogsSkipped() {
     return logsSkipped;
+  }
+
+  @NotNull
+  public Map<String, String> getPotentialBugReports() {
+    return potentialBugReports;
   }
 
   @NotNull
@@ -111,7 +119,7 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText, String logName) throws LogParserException {
+  private List<LogEntry> getLogEntries(String logText, String logName) {
     String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
@@ -129,12 +137,26 @@ public class LogParser {
       } else if (!shouldIgnoreLine(line) && logLines.size() > 0) {
         // This is probably a continuation of a already started log line. Append to it
         LogEntry currentLine = logLines.get(logLines.size() - 1);
-        if (currentLine.getLength() > MAX_LOG_LINE_ALLOWED) {
-          String incorrectLinePreview = currentLine.getLogText().substring(0, 100) + "...";
-          throw new LogParserException(
-                  "Incorrect format on following line (too long - " + currentLine.getLength() + " bytes):\n" +
-                  "\""+ incorrectLinePreview +"\"\n\n" +
-                  "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+        if (currentLine.getLength() >= MAX_LOG_LINE_ALLOWED) {
+          currentLine.truncate(MAX_LOG_LINE_ALLOWED);
+
+          // First check if we have already considered this as a potential bugreport. If so,
+          // don't waste any more time here
+          if (!potentialBugReports.containsKey(logName)) {
+            String incorrectLinePreview = currentLine.getLogText().substring(0, 100) + "...";
+            Logger.warning(
+                "Incorrect format on following line (too long - " + currentLine.getLength() + " bytes):\n" +
+                    "\"" + incorrectLinePreview + "\"\n\n" +
+                    "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+
+            // This could be a bugreport. If this is the case, keep track of it
+            if (isPotentialBugReport(logText)) {
+              Logger.info("Found a potential bugreport: " + logName);
+              potentialBugReports.put(logName, logText);
+            }
+          }
+          // This could simply be a malformed line, just continue parsing other lines
+          continue;
         }
         currentLine.appendText(StringUtils.LINE_SEPARATOR + line);
       }
@@ -182,5 +204,9 @@ public class LogParser {
 
   private boolean shouldIgnoreLine(String line) {
     return line.startsWith("--------- beginning of");
+  }
+
+  private boolean isPotentialBugReport(String logText) {
+    return logText.contains("Bugreport format version:");
   }
 }

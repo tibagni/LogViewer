@@ -39,6 +39,12 @@ public class LogEntry implements Comparable<LogEntry> {
     logText.append(text);
   }
 
+  public void truncate(int size) {
+    if (size > 0 && size < logText.length()) {
+      logText.delete(size, logText.length());
+    }
+  }
+
   public Filter getAppliedFilter() {
     return appliedFilter;
   }

@@ -2,10 +2,10 @@ package com.tibagni.logviewer.bugreport
 
 import com.tibagni.logviewer.AsyncPresenter
 import com.tibagni.logviewer.ProgressReporter
-import java.io.File
 
 interface BugReportPresenter {
-  fun loadBugReport(file: File)
+  fun loadBugReport(bugreportText: String)
+  fun closeBugReport()
   fun finishing()
 }
 
@@ -14,10 +14,10 @@ class BugReportPresenterImpl(
   private val bugReportRepository: BugReportRepository
 ) : AsyncPresenter(view),
   BugReportPresenter {
-  override fun loadBugReport(file: File) {
+  override fun loadBugReport(bugreportText: String) {
     doAsync {
       try {
-        bugReportRepository.openBugReport(file, ProgressReporter { progress, note ->
+        bugReportRepository.loadBugReport(bugreportText, ProgressReporter { progress, note ->
           updateAsyncProgress(progress, note)
         })
         doOnUiThread {
@@ -27,6 +27,10 @@ class BugReportPresenterImpl(
         doOnUiThread{view.showErrorMessage(e.message)}
       }
     }
+  }
+
+  override fun closeBugReport() {
+    bugReportRepository.closeBugReport()
   }
 
   override fun finishing() {

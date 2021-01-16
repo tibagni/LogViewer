@@ -293,6 +293,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
         cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
 
         List<String> skippedLogs = logsRepository.getLastSkippedLogFiles();
+        Map<String, String> bugReports = logsRepository.getPotentialBugReports();
         doOnUiThread(() -> {
           view.showFilteredLogs(cachedAllowedFilteredLogs);
           view.showLogs(logsRepository.getCurrentlyOpenedLogs());
@@ -311,6 +312,14 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
             if (!skippedLogs.isEmpty()) {
               // Some logs were not parsed, let the UI know which
               view.showSkippedLogsMessage(skippedLogs);
+            }
+
+            if (bugReports.isEmpty()) {
+              view.closeCurrentlyOpenedBugReports();
+            } else {
+              // We only support opening one bugreport for now
+              Map.Entry<String,String> entry = bugReports.entrySet().iterator().next();
+              view.showOpenPotentialBugReport(entry.getValue());
             }
           } else {
             view.showCurrentLogsLocation(null);

@@ -13,11 +13,14 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 
-interface BugReportView: View {
+interface BugReportView : View {
   val contentPane: JPanel
+
+  fun onBugReportLoaded(bugreportText: String)
+  fun onBugReportClosed()
 }
 
-interface BugReportPresenterView: AsyncPresenter.AsyncPresenterView {
+interface BugReportPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showBugReport(bugReport: BugReport)
   fun showErrorMessage(message: String?)
 }
@@ -27,7 +30,6 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
   private lateinit var sectionsList: JList<String>
   private lateinit var sectionsListModel: DefaultListModel<String>
-  private lateinit var openBrButton: JButton
   private lateinit var mainSplitPane: JSplitPane
 
   private val sectionPanels = mutableMapOf<String, SectionPanel>()
@@ -41,12 +43,17 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
   init {
     buildUi()
     presenter = BugReportPresenterImpl(this, ServiceLocator.bugReportRepository)
-
-    openBrButton.addActionListener {
-      val file = mainView.showOpenSingleLogFileChooser()
-      file?.let { presenter.loadBugReport(file) }
-    }
     sectionsList.addListSelectionListener { onSectionSelected() }
+  }
+
+  override fun onBugReportLoaded(bugreportText: String) {
+    presenter.loadBugReport(bugreportText)
+  }
+
+  override fun onBugReportClosed() {
+    presenter.closeBugReport()
+    sectionsListModel.clear()
+    this.bugReport = null
   }
 
   override fun showBugReport(bugReport: BugReport) {
@@ -71,6 +78,12 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
   private fun onSectionSelected() {
     val selected = sectionsList.selectedIndex
+
+    if (selected < 0) {
+      // If there is nothing selected on sections list, show empty pane
+      mainSplitPane.rightComponent = emptyPane
+      return
+    }
 
     // This callback will be called twice when the selection is changed:
     // once for the newly selected item
@@ -131,10 +144,10 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
         .build()
     )
 
-    openBrButton = JButton("Open bug report...")
     emptyPane.layout = GridBagLayout()
     emptyPane.add(
-      openBrButton, GBConstraintsBuilder()
+      JLabel("<html>To open a bugreport go to '<i><u><b>Logs > Open logs...</b></u></i>'</html>"),
+      GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
         .withIpadx(UIScaleUtils.dip(10))

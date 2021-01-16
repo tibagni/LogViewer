@@ -5,7 +5,6 @@ import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogReaderException
 import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.parser.LogParser
-import com.tibagni.logviewer.log.parser.LogParserException
 import java.io.File
 
 class OpenLogsException(message: String?, cause: Throwable): java.lang.Exception(message, cause)
@@ -15,6 +14,7 @@ interface LogsRepository {
     val currentlyOpenedLogs: List<LogEntry>
     val availableStreams: Set<LogStream>
     val lastSkippedLogFiles: List<String>
+    val potentialBugReports: Map<String, String>
 
     @Throws(OpenLogsException::class)
     fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter)
@@ -37,6 +37,10 @@ class LogsRepositoryImpl: LogsRepository {
     override val lastSkippedLogFiles: List<String>
         get() = _lastSkippedLogFiles
 
+    private val _potentialBugReports = mutableMapOf<String, String>()
+    override val potentialBugReports: Map<String, String>
+        get() = _potentialBugReports
+
 
     @Throws(OpenLogsException::class)
     override fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter) {
@@ -47,6 +51,7 @@ class LogsRepositoryImpl: LogsRepository {
             _currentlyOpenedLogs.reset(parsedLogs)
             _availableStreams.reset(logParser.availableStreams)
             _lastSkippedLogFiles.reset(logParser.logsSkipped)
+            _potentialBugReports.reset(logParser.potentialBugReports)
 
             if (parsedLogs.isNotEmpty()) {
                 _currentlyOpenedLogFiles.reset(files)

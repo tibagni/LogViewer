@@ -26,6 +26,11 @@ fun <T> HashSet<T>.reset(elementsArray: Array<T>?) {
   }
 }
 
+fun <K, V> MutableMap<K, V>.reset(otherMap: Map<K, V>) {
+  this.clear()
+  this.putAll(otherMap)
+}
+
 fun String.stringView(start: Int, end: Int) = StringView(this, start, end)
 
 fun <T> List<T>.getOrNull(index: Int): T? {
