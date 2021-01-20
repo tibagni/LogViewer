@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.bugreport
 
+import com.tibagni.logviewer.bugreport.section.BugReportSection
+
 /**
  * A representation of a BugReport after parsed
  */

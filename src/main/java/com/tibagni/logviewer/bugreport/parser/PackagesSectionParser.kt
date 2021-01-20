@@ -1,8 +1,8 @@
 package com.tibagni.logviewer.bugreport.parser
 
 import com.tibagni.logviewer.bugreport.content.AppPackage
-import com.tibagni.logviewer.bugreport.BugReportSection
-import com.tibagni.logviewer.bugreport.PackagesSection
+import com.tibagni.logviewer.bugreport.section.BugReportSection
+import com.tibagni.logviewer.bugreport.section.PackagesSection
 import com.tibagni.logviewer.stringView
 import com.tibagni.logviewer.util.StringView
 

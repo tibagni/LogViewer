@@ -1,6 +1,6 @@
 package com.tibagni.logviewer.bugreport.parser
 
-import com.tibagni.logviewer.bugreport.BugReportSection
+import com.tibagni.logviewer.bugreport.section.BugReportSection
 
 interface BugReportSectionParser {
   val name: String

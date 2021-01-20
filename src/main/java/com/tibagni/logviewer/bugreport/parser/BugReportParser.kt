@@ -2,7 +2,6 @@ package com.tibagni.logviewer.bugreport.parser
 
 import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.bugreport.BugReport
-import java.io.File
 
 interface BugReportParser {
   fun parseBugReport(bugReportText: String, progressReporter: ProgressReporter): BugReport

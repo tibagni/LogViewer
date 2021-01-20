@@ -1,7 +1,7 @@
-package com.tibagni.logviewer.bugreport.section
+package com.tibagni.logviewer.bugreport.section.ui
 
-import com.tibagni.logviewer.bugreport.PackagesSection
 import com.tibagni.logviewer.bugreport.content.AppPackage
+import com.tibagni.logviewer.bugreport.section.PackagesSection
 import javax.swing.*
 
 class PackageSectionPanel(section: PackagesSection) : ListSectionPanel(section.sectionName) {

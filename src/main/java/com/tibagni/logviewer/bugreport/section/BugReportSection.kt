@@ -1,4 +1,4 @@
-package com.tibagni.logviewer.bugreport
+package com.tibagni.logviewer.bugreport.section
 
 /**
  * An abstract representation of a section in the bug report.

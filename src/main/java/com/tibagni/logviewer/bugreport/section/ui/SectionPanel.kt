@@ -1,4 +1,4 @@
-package com.tibagni.logviewer.bugreport.section
+package com.tibagni.logviewer.bugreport.section.ui
 
 import com.tibagni.logviewer.util.layout.FontBuilder
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder

@@ -4,8 +4,9 @@ import com.tibagni.logviewer.AsyncPresenter
 import com.tibagni.logviewer.MainView
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
-import com.tibagni.logviewer.bugreport.section.SectionPanel
-import com.tibagni.logviewer.bugreport.section.SectionPanelFactory
+import com.tibagni.logviewer.bugreport.section.EmptyBugReportSection
+import com.tibagni.logviewer.bugreport.section.ui.SectionPanel
+import com.tibagni.logviewer.bugreport.section.ui.SectionPanelFactory
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
