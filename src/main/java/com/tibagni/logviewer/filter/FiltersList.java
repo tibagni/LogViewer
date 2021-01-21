@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -23,6 +25,7 @@ public class FiltersList extends JPanel {
   private FiltersListener listener;
   private Map<String, Filter[]> filters;
   private Map<String, FilterUIGroup> filterUIGroups;
+  private final LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
 
   public FiltersList(LayoutManager layout, boolean isDoubleBuffered) {
     super(layout, isDoubleBuffered);
@@ -214,12 +217,13 @@ public class FiltersList extends JPanel {
       private void initHintPopup() {
         if (hintPopup == null) {
           searchHint = new JLabel();
+          searchHint.setBorder(BorderFactory.createLineBorder(Color.GRAY));
           searchHint.setOpaque(true);
-          searchHint.setBackground(Color.LIGHT_GRAY);
+          searchHint.setBackground(themeManager.isDark() ? Color.BLACK : Color.LIGHT_GRAY);
           searchHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(24)));
-          Point targetListLocation = targetList.getLocationOnScreen();
-          int popupX = targetListLocation.x + UIScaleUtils.dip(10);
-          int popupY = targetListLocation.y - UIScaleUtils.dip(40);
+          Point targetListLocation = targetList.getRootPane().getLocationOnScreen();
+          int popupX = targetListLocation.x + UIScaleUtils.dip(50);
+          int popupY = targetListLocation.y + UIScaleUtils.dip(50);
           hintPopup = PopupFactory.getSharedInstance().getPopup(targetList, searchHint, popupX, popupY);
         }
       }
