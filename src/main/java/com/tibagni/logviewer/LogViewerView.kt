@@ -515,7 +515,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     filtersPane = FiltersList()
     filtersMainPane.add(
-      JScrollPane(filtersPane).also { it.verticalScrollBar.unitIncrement = 10 },
+      JScrollPane(filtersPane).also { it.verticalScrollBar.unitIncrement = 16 },
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(1)
