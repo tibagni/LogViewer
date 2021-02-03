@@ -1,16 +1,14 @@
 package com.tibagni.logviewer.log;
 
 import com.tibagni.logviewer.filter.Filter;
-
-import java.awt.*;
+import org.jetbrains.annotations.NotNull;
 
 public class LogEntry implements Comparable<LogEntry> {
 
   private int index;
-  private LogTimestamp timestamp;
-  private final StringBuilder logText;
+  private final LogTimestamp timestamp;
+  private final String logText;
   private final LogLevel logLevel;
-  private final String logName;
   private final LogStream logStream;
 
   private Filter appliedFilter;
@@ -20,29 +18,18 @@ public class LogEntry implements Comparable<LogEntry> {
   }
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, String logName) {
-    this.logText = new StringBuilder(logText);
+    this.logText = logText;
     this.logLevel = logLevel;
     this.timestamp = timestamp;
-    this.logName = logName;
     this.logStream = LogStream.inferLogStreamFromName(logName);
   }
 
   public String getLogText() {
-    return logText.toString();
+    return logText;
   }
 
   public LogLevel getLogLevel() {
     return logLevel;
-  }
-
-  public void appendText(String text) {
-    logText.append(text);
-  }
-
-  public void truncate(int size) {
-    if (size > 0 && size < logText.length()) {
-      logText.delete(size, logText.length());
-    }
   }
 
   public Filter getAppliedFilter() {
@@ -61,14 +48,6 @@ public class LogEntry implements Comparable<LogEntry> {
     this.index = index;
   }
 
-  public LogTimestamp getTimestamp() {
-    return timestamp;
-  }
-
-  public void setTimestamp(LogTimestamp timestamp) {
-    this.timestamp = timestamp;
-  }
-
   public LogStream getStream() {
     return logStream;
   }
@@ -83,7 +62,7 @@ public class LogEntry implements Comparable<LogEntry> {
   }
 
   @Override
-  public int compareTo(LogEntry o) {
+  public int compareTo(@NotNull LogEntry o) {
     if (timestamp == null && o.timestamp == null) return 0;
     if (timestamp == null) return -1;
     if (o.timestamp == null) return 1;

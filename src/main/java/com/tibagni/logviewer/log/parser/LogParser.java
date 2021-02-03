@@ -123,6 +123,7 @@ public class LogParser {
     String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
+    StringBuilder currentLogLine = null;
     for (String line : lines) {
       // Sometimes a line can contain a lot of NULL chars at the end, making it fail when trying to open the log
       // (as these NULL chars will make the line length too long). So check here if the line has NULL chars
@@ -132,20 +133,22 @@ public class LogParser {
       }
 
       if (isLogLine(line)) {
-        LogEntry entry = new LogEntry(line, findLogLevel(line), findTimestamp(line), logName);
-        logLines.add(entry);
-      } else if (!shouldIgnoreLine(line) && logLines.size() > 0) {
+        if (currentLogLine != null) {
+          logLines.add(createLogEntry(currentLogLine.toString(), logName));
+        }
+
+        currentLogLine = new StringBuilder(line);
+      } else if (!shouldIgnoreLine(line) && currentLogLine != null) {
         // This is probably a continuation of a already started log line. Append to it
-        LogEntry currentLine = logLines.get(logLines.size() - 1);
-        if (currentLine.getLength() >= MAX_LOG_LINE_ALLOWED) {
-          currentLine.truncate(MAX_LOG_LINE_ALLOWED);
+        if (currentLogLine.length() >= MAX_LOG_LINE_ALLOWED) {
+          currentLogLine.delete(MAX_LOG_LINE_ALLOWED, currentLogLine.length());
 
           // First check if we have already considered this as a potential bugreport. If so,
           // don't waste any more time here
           if (!potentialBugReports.containsKey(logName)) {
-            String incorrectLinePreview = currentLine.getLogText().substring(0, 100) + "...";
+            String incorrectLinePreview = currentLogLine.substring(0, 100) + "...";
             Logger.warning(
-                "Incorrect format on following line (too long - " + currentLine.getLength() + " bytes):\n" +
+                "Incorrect format on following line (too long - " + currentLogLine.length() + " bytes):\n" +
                     "\"" + incorrectLinePreview + "\"\n\n" +
                     "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
 
@@ -155,14 +158,29 @@ public class LogParser {
               potentialBugReports.put(logName, logText);
             }
           }
+
+          // We are done with this line, add it to the list and clear currentLogLine to avoid
+          // executing this same code over and over for invalid lines
+          logLines.add(createLogEntry(currentLogLine.toString(), logName));
+          currentLogLine = null;
+
           // This could simply be a malformed line, just continue parsing other lines
           continue;
         }
-        currentLine.appendText(StringUtils.LINE_SEPARATOR + line);
+        currentLogLine.append(StringUtils.LINE_SEPARATOR).append(line);
       }
     }
 
+    // Make sure to add the last log line as well
+    if (currentLogLine != null) {
+      logLines.add(createLogEntry(currentLogLine.toString(), logName));
+    }
+
     return logLines;
+  }
+
+  private LogEntry createLogEntry(String logLine, String logName) {
+    return new LogEntry(logLine, findLogLevel(logLine), findTimestamp(logLine), logName);
   }
 
   LogLevel findLogLevel(String logLine) {
