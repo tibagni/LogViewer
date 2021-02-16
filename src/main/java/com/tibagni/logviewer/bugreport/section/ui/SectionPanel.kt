@@ -27,7 +27,7 @@ abstract class SectionPanel(private val title: String, private val isSearchable:
       }
 
       searchTimerTask?.cancel()
-      searchTimerTask = searchTimer?.schedule(500) {
+      searchTimerTask = searchTimer?.schedule(1000) {
         onSearch(it)
       }
     }
