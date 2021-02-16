@@ -81,7 +81,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
         if (!StringUtils.isEmpty(lookAndFeel)) {
           Logger.debug("Installing theme: " + lookAndFeel);
           ServiceLocator.INSTANCE.getThemeManager().setCurrentTheme(lookAndFeel);
-          mainView.recreateFileChoosers();
+          mainView.themeChanged();
         }
       }
     });

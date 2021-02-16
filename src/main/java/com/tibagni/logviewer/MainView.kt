@@ -113,7 +113,13 @@ class MainViewImpl(
     })
   }
 
-  fun recreateFileChoosers() {
+  fun themeChanged() {
+    recreateFileChoosers()
+    bugReportView.onThemeChanged()
+    bugReportView.onThemeChanged()
+  }
+
+  private fun recreateFileChoosers() {
     logSaveFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
     logOpenFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
     filterSaveFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)

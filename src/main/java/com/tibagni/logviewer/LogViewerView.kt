@@ -34,6 +34,7 @@ interface LogViewerView : View {
   fun handleRefreshLogsMenu()
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
+  fun onThemeChanged()
 }
 
 // This is the interface known by the presenter
@@ -322,6 +323,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
       presenter.loadFilters(filterFiles, keepCurrentFilters)
     }
+  }
+
+  override fun onThemeChanged() {
+    // Do nothing
   }
 
   override fun requestFinish(doFinish: () -> Unit) {

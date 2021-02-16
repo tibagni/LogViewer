@@ -19,6 +19,7 @@ interface BugReportView : View {
 
   fun onBugReportLoaded(bugreportText: String)
   fun onBugReportClosed()
+  fun onThemeChanged()
 }
 
 interface BugReportPresenterView : AsyncPresenter.AsyncPresenterView {
@@ -55,6 +56,11 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     presenter.closeBugReport()
     sectionsListModel.clear()
     this.bugReport = null
+  }
+
+  override fun onThemeChanged() {
+    // Force panels to be recreated since theme changed
+    sectionPanels.clear()
   }
 
   override fun showBugReport(bugReport: BugReport) {
