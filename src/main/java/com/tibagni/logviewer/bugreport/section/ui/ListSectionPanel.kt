@@ -3,6 +3,7 @@ package com.tibagni.logviewer.bugreport.section.ui
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
+import com.tibagni.logviewer.view.SearchableTextArea
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
@@ -11,7 +12,7 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
   private lateinit var listModel: DefaultListModel<String>
   private lateinit var list: JList<String>
   private lateinit var splitPane: JSplitPane
-  private lateinit var detailsText: JTextArea
+  private lateinit var detailsText: SearchableTextArea
 
   init {
     buildUi();
@@ -60,11 +61,11 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
 
     val detailsPane = JPanel()
     detailsPane.layout = GridBagLayout()
-    detailsText = JTextArea()
+    detailsText = SearchableTextArea()
     detailsText.isEditable = false
     detailsText.wrapStyleWord = true
     detailsPane.add(
-      JScrollPane(detailsText),
+      detailsText,
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
