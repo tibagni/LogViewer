@@ -90,7 +90,7 @@ public class Logger {
     }
   }
 
-  private static boolean isLoggable(LogLevelConfig.Level level) {
+  static boolean isLoggable(LogLevelConfig.Level level) {
     return level.compareTo(logLevel) >= 0;
   }
 }

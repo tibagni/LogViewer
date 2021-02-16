@@ -2,6 +2,7 @@ package com.tibagni.logviewer.bugreport.parser
 
 import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.bugreport.BugReport
+import com.tibagni.logviewer.logger.wrapProfiler
 
 interface BugReportParser {
   fun parseBugReport(bugReportText: String, progressReporter: ProgressReporter): BugReport
@@ -18,7 +19,7 @@ class BugReportParserImpl(private val sectionParsers: List<BugReportSectionParse
 
     val sections = sectionParsers.mapNotNull {
       progressReporter.onProgress((sectionsParsed++ / totalSections) * 100, "Parsing ${it.name}")
-      it.parse(bugReportText)
+      wrapProfiler(it.name) { it.parse(bugReportText) }
     }
     progressReporter.onProgress(100, "Done!")
 
