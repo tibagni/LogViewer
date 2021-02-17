@@ -2,7 +2,7 @@ buildscript {
     ext {
         kotlin_version = '1.4.30-RC'
         junit_version = '4.12'
-        mockito_version = '3.0.0'
+        mockito_version = '3.3.3'
         jgoodies_version = '1.6.0'
         json_version = '20180813'
         commonsio_version = '2.6'
