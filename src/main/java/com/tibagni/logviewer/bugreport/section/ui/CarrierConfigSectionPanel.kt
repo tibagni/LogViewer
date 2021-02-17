@@ -3,6 +3,7 @@ package com.tibagni.logviewer.bugreport.section.ui
 import com.tibagni.logviewer.bugreport.section.CarrierConfigSection
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
+import com.tibagni.logviewer.view.SearchableTextArea
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -43,7 +44,10 @@ class CarrierConfigSectionPanel(private val section: CarrierConfigSection) : Sec
       it.add(logsTitle)
     })
     container.add(JSeparator())
-    container.add(JTextArea(section.loadingLogs).also { it.isEditable = false })
+    container.add(SearchableTextArea(false).also {
+      it.isEditable = false
+      it.text = section.loadingLogs
+    })
 
     add(
       JScrollPane(container).also { it.verticalScrollBar.unitIncrement = 16 },

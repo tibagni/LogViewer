@@ -2,6 +2,7 @@ package com.tibagni.logviewer.view
 
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
+import java.awt.Component
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.event.KeyAdapter
@@ -12,7 +13,7 @@ import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.text.DefaultHighlighter
 
-class SearchableTextArea : JPanel() {
+class SearchableTextArea(hasScroll: Boolean = true) : JPanel() {
   private val textArea = JTextArea()
   private val searchText = HintTextField("Search")
 
@@ -38,7 +39,7 @@ class SearchableTextArea : JPanel() {
     }
 
   init {
-    buildUi()
+    buildUi(hasScroll)
 
     searchText.isVisible = false
     textArea.addKeyListener(object : KeyAdapter() {
@@ -93,7 +94,7 @@ class SearchableTextArea : JPanel() {
     revalidate()
   }
 
-  private fun buildUi() {
+  private fun buildUi(hasScroll: Boolean) {
     layout = GridBagLayout()
     add(
       searchText,
@@ -104,8 +105,10 @@ class SearchableTextArea : JPanel() {
         .withFill(GridBagConstraints.HORIZONTAL)
         .build()
     )
+
+    val comp: Component = if (hasScroll) JScrollPane(textArea) else textArea
     add(
-      JScrollPane(textArea),
+      comp,
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(2)
