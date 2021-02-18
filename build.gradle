@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        kotlin_version = '1.4.30-RC'
+        kotlin_version = '1.4.30'
         junit_version = '4.12'
         mockito_version = '3.0.0'
         jgoodies_version = '1.6.0'
