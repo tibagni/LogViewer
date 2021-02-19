@@ -36,16 +36,20 @@ jacocoTestReport {
                     'com/tibagni/logviewer/ServiceLocator*',
                     'com/tibagni/logviewer/AppInfo*',
                     'com/tibagni/logviewer/about/AboutDialog*',
+                    'com/tibagni/logviewer/bugreport/BugReportView*',
+                    'com/tibagni/logviewer/bugreport/section/ui*',
                     'com/tibagni/logviewer/filter/EditFilterDialog*',
                     'com/tibagni/logviewer/filter/FiltersList*',
                     'com/tibagni/logviewer/filter/FilterCellRenderer*',
                     'com/tibagni/logviewer/filter/regex/RegexEditorDialog*',
                     'com/tibagni/logviewer/log/LogCellRenderer*',
                     'com/tibagni/logviewer/logger/*',
-                    'com/tibagni/logviewer/lookandfeel/*',
                     'com/tibagni/logviewer/preferences/LogViewerPreferencesDialog*',
+                    'com/tibagni/logviewer/theme/*',
                     'com/tibagni/logviewer/updates/UpdateAvailableDialog*',
                     'com/tibagni/logviewer/util/SwingUtils*',
+                    'com/tibagni/logviewer/util/layout/*',
+                    'com/tibagni/logviewer/util/scaling/*',
                     'com/tibagni/logviewer/view/*'
             ])
         }))
