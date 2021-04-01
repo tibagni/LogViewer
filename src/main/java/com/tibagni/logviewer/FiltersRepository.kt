@@ -48,7 +48,7 @@ class FiltersRepositoryImpl: FiltersRepository {
       val group = file.name
       try {
         val fileText = file.inputStream().bufferedReader().use(BufferedReader::readText)
-        val serializedFilters = fileText.split("\n")
+        val serializedFilters = fileText.lines()
         val filters = serializedFilters.map { Filter.createFromString(it) }
 
         lastOpenedSerializedFilters[group] = serializedFilters

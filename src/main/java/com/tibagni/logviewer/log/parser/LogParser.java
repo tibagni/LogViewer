@@ -155,7 +155,10 @@ public class LogParser {
             // This could be a bugreport. If this is the case, keep track of it
             if (isPotentialBugReport(logText)) {
               Logger.info("Found a potential bugreport: " + logName);
-              potentialBugReports.put(logName, logText);
+
+              // Make sure to remove all '\r' so it does not get in the way of the parsers
+              String bugReportText = logText.replaceAll("\r", "");
+              potentialBugReports.put(logName, bugReportText);
             }
           }
 

@@ -126,7 +126,7 @@ public class Filter {
   public static Filter createFromString(String filterString) throws FilterException {
     // See format in 'serializeFilter'
     try {
-      String params[] = filterString.split(",");
+      String[] params = filterString.split(",");
       if (params.length != 4) {
         throw new IllegalArgumentException();
       }
@@ -136,7 +136,7 @@ public class Filter {
       filter.flags = Integer.parseInt(params[2]);
       filter.pattern = filter.getPattern(StringUtils.decodeBase64(params[1]));
 
-      String rgb[] = params[3].split(":");
+      String[] rgb = params[3].split(":");
       if (rgb.length != 3) {
         throw new IllegalArgumentException("Wrong color format");
       }
