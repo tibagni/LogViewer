@@ -402,7 +402,7 @@ class FiltersRepositoryTests {
 
     // Check contents of the saved file
     val savedText = temporaryFilterFile[0].inputStream().bufferedReader().readText()
-    val savedFilters = savedText.split("\n")
+    val savedFilters = savedText.split(System.getProperty("line.separator"))
 
     assertNotNull(savedFilters)
     assertEquals(3, savedFilters.size)
