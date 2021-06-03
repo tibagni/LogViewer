@@ -237,21 +237,27 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       val groups = presenter.groups
       var group = if (groups.size == 1) groups[0] else null
       if (StringUtils.isEmpty(group)) {
-        val options = groups.toTypedArray()
+        val options = groups.toTypedArray() + arrayOf("Create new")
+        val createNewOptionIdx = options.size - 1
 
         val dialog =
           SingleChoiceDialog(
             "Select Filter group",
             "Which group do you want to add this filter to?",
             options,
-            0
+            createNewOptionIdx
           )
 
         val choice = dialog.show(mainView.parent)
-        group = if (choice != SingleChoiceDialog.DIALOG_CANCELLED) {
-          options[choice]
-        } else {
-          null
+        group = when (choice) {
+          SingleChoiceDialog.DIALOG_CANCELLED -> null
+          createNewOptionIdx -> JOptionPane.showInputDialog(
+            mainView.parent,
+            "What is the name of your new Filters Group?",
+            "New Filters Group",
+            JOptionPane.PLAIN_MESSAGE
+          )
+          else -> options[choice]
         }
       }
       if (!StringUtils.isEmpty(group)) {
