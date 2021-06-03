@@ -246,9 +246,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
             options,
             0
           )
-        val panel = JPanel()
-        panel.add(JLabel("Which group do you want to add this filter to?"))
-        options.forEach { panel.add(JRadioButton(it)) }
 
         val choice = dialog.show(mainView.parent)
         group = if (choice != SingleChoiceDialog.DIALOG_CANCELLED) {
