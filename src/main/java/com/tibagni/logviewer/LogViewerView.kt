@@ -16,6 +16,7 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FileDrop
 import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.Toast
 import java.awt.Dimension
 import java.awt.FlowLayout
@@ -237,16 +238,23 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       var group = if (groups.size == 1) groups[0] else null
       if (StringUtils.isEmpty(group)) {
         val options = groups.toTypedArray()
-        val choice = JOptionPane.showOptionDialog(
-          mainView.parent,
-          "Which group do you want to add this filter to?",
-          "Select Filter group",
-          JOptionPane.DEFAULT_OPTION,
-          JOptionPane.QUESTION_MESSAGE,
-          null, options, null
-        )
-        if (choice >= 0) {
-          group = options[choice]
+
+        val dialog =
+          SingleChoiceDialog(
+            "Select Filter group",
+            "Which group do you want to add this filter to?",
+            options,
+            0
+          )
+        val panel = JPanel()
+        panel.add(JLabel("Which group do you want to add this filter to?"))
+        options.forEach { panel.add(JRadioButton(it)) }
+
+        val choice = dialog.show(mainView.parent)
+        group = if (choice != SingleChoiceDialog.DIALOG_CANCELLED) {
+          options[choice]
+        } else {
+          null
         }
       }
       if (!StringUtils.isEmpty(group)) {
@@ -300,28 +308,23 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun handleOpenFiltersMenu() {
     val filterFiles = mainView.showOpenMultipleFiltersFileChooser()
     if (filterFiles.isNotEmpty()) {
-      var keepCurrentFilters = false
       if (!filtersPane.isEmpty) {
         // Ask the user if we should keep the the existing filters
-        val choice = JOptionPane.showOptionDialog(
-          mainView.parent,
-          "There are currently opened filters. Do you want to keep them?",
-          "There are currently opened filters",
-          JOptionPane.DEFAULT_OPTION,
-          JOptionPane.QUESTION_MESSAGE,
-          null, arrayOf(
+        val dialog = SingleChoiceDialog(
+          "There are currently opened filters already.",
+          "What do you want to do?",
+          arrayOf(
             "Keep existing filters and add the new one(s)",
-            "Open just the new filter(s)"
+            "Open just the new filter(s) and close others"
           ),
-          null
+          0
         )
-        if (choice == -1) {
-          // Dialog was canceled. Abort...
-          return
+
+        val choice = dialog.show(mainView.parent)
+        if (choice != SingleChoiceDialog.DIALOG_CANCELLED) {
+          presenter.loadFilters(filterFiles, choice == 0)
         }
-        keepCurrentFilters = choice == 0
       }
-      presenter.loadFilters(filterFiles, keepCurrentFilters)
     }
   }
 
