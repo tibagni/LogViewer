@@ -12,7 +12,6 @@ public class StringUtils {
   public static final String RIGHT_ARROW = "\u2192";
   public static final String LEFT_ARROW = "\u2190";
   public static final String VERTICAL_SEPARATOR = "\u2759";
-  public static final String CHECK_SYMBOL = "\u2714";
 
   public static final String LEFT_ARROW_WITH_HOOK = "\u21A9";
   public static final String RIGHT_ARROW_WITH_HOOK = "\u21AA";
@@ -48,13 +47,6 @@ public class StringUtils {
     return (Objects.equals(str1, str2));
   }
 
-  public static String htmlHighlight(String text, int start, int end) {
-    String prefix = text.substring(0, start);
-    String highlightedPart = text.substring(start, end);
-    String suffix = text.substring(end);
-    return prefix + highlight(highlightedPart) + suffix;
-  }
-
   public static String htmlHighlightAndEscape(String text, int start, int end) {
     String prefix = escape(text.substring(0, start));
     String highlightedPart = escape(text.substring(start, end));
@@ -67,7 +59,7 @@ public class StringUtils {
   }
 
   public static boolean endsWithOneOf(String text, String[] suffixes) {
-    return Arrays.stream(suffixes).anyMatch(suffix -> text.endsWith(suffix));
+    return Arrays.stream(suffixes).anyMatch(text::endsWith);
   }
 
   private static String escape(String text) {

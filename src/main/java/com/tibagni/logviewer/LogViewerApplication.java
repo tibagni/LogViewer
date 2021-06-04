@@ -69,7 +69,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   private String getApplicationTitle() {
-    return AppInfo.APPLICATION_NAME + " v" + AppInfo.getCurrentVersion();
+    return AppInfo.APPLICATION_NAME + " v" + AppInfo.INSTANCE.getCurrentVersion();
   }
 
   private void watchLookAndFeelUpdates() {
@@ -94,7 +94,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
   @Override
   public void onUpdateFound(ReleaseInfo newRelease) {
-    UpdateAvailableDialog.showUpdateAvailableDialog(newRelease);
+    UpdateAvailableDialog.Companion.showUpdateAvailableDialog(null, newRelease);
   }
 
   @Override

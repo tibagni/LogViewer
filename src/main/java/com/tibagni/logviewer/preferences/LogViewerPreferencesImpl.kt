@@ -39,7 +39,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
             val pathStrings = preferences.get(LAST_FILTER_PATH, null)
             val paths = pathStrings?.split("\\$".toRegex())
 
-            return paths?.filter { !it.isNullOrEmpty() }?.map { File(it) }?.toTypedArray() ?: arrayOf()
+            return paths?.filter { it.isNotEmpty() }?.map { File(it) }?.toTypedArray() ?: arrayOf()
         }
         set(filterPaths) {
             val pathsString = filterPaths.joinToString(separator = "$") { it.absolutePath }
@@ -95,7 +95,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
 
     override fun getAppliedFiltersIndices(group: String): List<Int> {
         val savedData = preferences.get(REMEMBER_APPLIED_FILTERS_PREFIX + group, "")
-        return savedData.split(",".toRegex()).map { it.toIntOrNull() }.filterNotNull()
+        return savedData.split(",".toRegex()).mapNotNull { it.toIntOrNull() }
     }
 
     override fun addPreferenceListener(listener: LogViewerPreferences.Listener) {

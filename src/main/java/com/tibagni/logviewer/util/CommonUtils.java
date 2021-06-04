@@ -10,26 +10,6 @@ import java.util.*;
 
 public class CommonUtils {
 
-  public static void restartApplication() throws IOException, URISyntaxException {
-    final String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
-    final File currentJar = new File(LogViewerApplication.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-
-    /* is it a jar file? */
-    if (!currentJar.getName().endsWith(".jar")) {
-      throw new IllegalStateException("Current JAR not found");
-    }
-
-    /* Build command: java -jar application.jar */
-    final ArrayList<String> command = new ArrayList<String>();
-    command.add(javaBin);
-    command.add("-jar");
-    command.add(currentJar.getPath());
-
-    final ProcessBuilder builder = new ProcessBuilder(command);
-    builder.start();
-    System.exit(0);
-  }
-
   public static void sleepSilently(long duration) {
     try {
       Thread.sleep(duration);
@@ -45,16 +25,6 @@ public class CommonUtils {
     }
 
     return l;
-  }
-
-  public static int[] toIntArray(Collection<Integer> collection) {
-    int[] returnArray = new int[collection.size()];
-    int i = 0;
-    for (Integer element : collection) {
-      returnArray[i++] = element;
-    }
-
-    return returnArray;
   }
 
   public static
