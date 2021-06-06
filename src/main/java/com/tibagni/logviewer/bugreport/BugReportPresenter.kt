@@ -1,7 +1,6 @@
 package com.tibagni.logviewer.bugreport
 
 import com.tibagni.logviewer.AsyncPresenter
-import com.tibagni.logviewer.ProgressReporter
 
 interface BugReportPresenter {
   fun loadBugReport(bugreportText: String)
@@ -17,9 +16,9 @@ class BugReportPresenterImpl(
   override fun loadBugReport(bugreportText: String) {
     doAsync {
       try {
-        bugReportRepository.loadBugReport(bugreportText, ProgressReporter { progress, note ->
+        bugReportRepository.loadBugReport(bugreportText) { progress, note ->
           updateAsyncProgress(progress, note)
-        })
+        }
         doOnUiThread {
           bugReportRepository.bugReport?.let { view.showBugReport(it) }
         }

@@ -16,7 +16,7 @@ object ServiceLocator {
     BugReportRepositoryImpl(
       BugReportParserImpl(
         listOf(
-          //PlainTextContentParser(),
+          PlainTextContentParser(),
           PropertiesSectionParser(),
           ApplicationPackagesSectionParser(),
           SystemHiddenPackagesSectionParser(),

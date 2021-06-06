@@ -8,6 +8,7 @@ class PlainTextContentParser : BugReportSectionParser {
     get() = "Raw"
 
   override fun parse(bugReportText: String): BugReportSection {
-    return PlainTextSection(bugReportText)
+    // TODO improve performance
+    return PlainTextSection(bugReportText.lines())
   }
 }
