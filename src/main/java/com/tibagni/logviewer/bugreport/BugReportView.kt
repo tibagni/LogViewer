@@ -72,11 +72,11 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     sectionsList.selectedIndex = 0
   }
 
-  override fun showStartLoading() = mainView.showStartLoading()
+  override fun showStartLoading() = mainView.showStartLoading("BR")
 
-  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress(progress, note)
+  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress("BR", progress, note)
 
-  override fun finishLoading() = mainView.finishLoading()
+  override fun finishLoading() = mainView.finishLoading("BR")
 
   override fun requestFinish(doFinish: () -> Unit) {
     presenter.finishing()

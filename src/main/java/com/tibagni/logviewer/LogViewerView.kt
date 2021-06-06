@@ -438,11 +438,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     mainView.onBugReportClosed()
   }
 
-  override fun showStartLoading() = mainView.showStartLoading()
+  override fun showStartLoading() = mainView.showStartLoading("Logs")
 
-  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress(progress, note)
+  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress("Logs", progress, note)
 
-  override fun finishLoading() = mainView.finishLoading()
+  override fun finishLoading() = mainView.finishLoading("Logs")
 
   private fun convertFromSwing(swingOption: Int): UserSelection {
     when (swingOption) {

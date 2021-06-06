@@ -44,9 +44,9 @@ interface MainView {
   fun showSaveFilterFileChooser(): File?
   fun showOpenMultipleFiltersFileChooser(): Array<File>
 
-  fun showStartLoading()
-  fun showLoadingProgress(progress: Int, note: String?)
-  fun finishLoading()
+  fun showStartLoading(tag: String)
+  fun showLoadingProgress(tag:String, progress: Int, note: String?)
+  fun finishLoading(tag: String)
 
   fun enableSaveFilteredLogsMenu(enabled: Boolean)
   fun refreshMenuBar()
@@ -66,7 +66,7 @@ class MainViewImpl(
   private var logOpenFileChooser: JFileChooserExt
   private var filterSaveFileChooser: JFileChooserExt
   private var filterOpenFileChooser: JFileChooserExt
-  private var progressDialog: ProgressDialog? = null
+  private val progressDialogs = mutableMapOf<String, ProgressDialog>()
 
   private val logViewerView: LogViewerView
   private val bugReportView: BugReportView
@@ -200,22 +200,25 @@ class MainViewImpl(
     } else arrayOf()
   }
 
-  override fun showStartLoading() {
+  override fun showStartLoading(tag: String) {
+    var progressDialog = progressDialogs[tag]
     if (progressDialog == null) {
       progressDialog = ProgressDialog.showProgressDialog(parent)
+      progressDialogs[tag] = progressDialog
     }
     progressDialog?.pack()
   }
 
-  override fun showLoadingProgress(progress: Int, note: String?) {
+  override fun showLoadingProgress(tag: String, progress: Int, note: String?) {
+    val progressDialog = progressDialogs[tag]
     progressDialog?.publishProgress(progress)
     progressDialog?.updateProgressText(note)
     progressDialog?.pack()
   }
 
-  override fun finishLoading() {
-    progressDialog?.finishProgress()
-    progressDialog = null
+  override fun finishLoading(tag: String) {
+    progressDialogs[tag]?.finishProgress()
+    progressDialogs.remove(tag)
   }
 
   override fun enableSaveFilteredLogsMenu(enabled: Boolean) {
