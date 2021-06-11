@@ -311,6 +311,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun handleOpenFiltersMenu() {
     val filterFiles = mainView.showOpenMultipleFiltersFileChooser()
     if (filterFiles.isNotEmpty()) {
+      var keepCurrentFilters = false
       if (!filtersPane.isEmpty) {
         // Ask the user if we should keep the the existing filters
         val dialog = SingleChoiceDialog(
@@ -324,10 +325,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         )
 
         val choice = dialog.show(mainView.parent)
-        if (choice != SingleChoiceDialog.DIALOG_CANCELLED) {
-          presenter.loadFilters(filterFiles, choice == 0)
+        if (choice == SingleChoiceDialog.DIALOG_CANCELLED) {
+          return
         }
+        keepCurrentFilters = choice == 0
       }
+
+      presenter.loadFilters(filterFiles, keepCurrentFilters)
     }
   }
 

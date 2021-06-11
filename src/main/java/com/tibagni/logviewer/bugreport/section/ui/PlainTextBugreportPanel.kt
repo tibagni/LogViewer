@@ -16,7 +16,7 @@ class PlainTextBugreportPanel(private val plainTextSection: PlainTextSection) :
   SectionPanel(plainTextSection.sectionName) {
 
   init {
-    // TODO implement search, load in background
+    // TODO implement search
     buildUi()
   }
 
