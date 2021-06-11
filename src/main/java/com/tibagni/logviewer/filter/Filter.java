@@ -4,10 +4,7 @@ import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.util.StringUtils;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -24,6 +21,17 @@ public class Filter {
   private ContextInfo temporaryInfo;
 
   private Filter() { }
+
+  public Filter(Filter from) throws FilterException {
+    name = from.name;
+    color = new Color(from.color.getRGB());
+    flags = from.flags;
+    applied = from.isApplied();
+    pattern = getPattern(from.pattern.pattern());
+    if (temporaryInfo != null) {
+      temporaryInfo = new ContextInfo(from.temporaryInfo);
+    }
+  }
 
   public Filter(String name, String pattern, Color color) throws FilterException {
     this(name, pattern, color, false);
@@ -152,6 +160,14 @@ public class Filter {
   public static class ContextInfo {
     private final Map<LogStream, Integer> linesFound;
     private Set<LogStream> allowedStreams;
+
+
+    private ContextInfo(ContextInfo from) {
+      linesFound = new HashMap<>(from.linesFound);
+      if (from.allowedStreams != null) {
+        allowedStreams = new HashSet<>(from.allowedStreams);
+      }
+    }
 
     private ContextInfo() {
       linesFound = new HashMap<>();

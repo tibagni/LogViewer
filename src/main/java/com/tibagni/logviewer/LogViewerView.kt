@@ -161,6 +161,19 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         }
       }
 
+      override fun onDuplicateFilter(group: String, filter: Filter) {
+        val duplicatedFilter = Filter(filter)
+
+        // It does not make much sense to apply a duplicated filter
+        // 1 - If the original filter is already applied, applying the duplicate filter will bring no value
+        // 2 - If the original filter is not applied, why user would want to apply the duplicate
+        // 3 - Duplicating a filter is useful to create another filter from the original one,
+        //     so it only makes sense to apply it after editing
+        // 4 - Apply a filter is an expensive operation. If it does not bring any value, better not to do it
+        duplicatedFilter.isApplied = false
+        presenter.addFilter(group, duplicatedFilter, true)
+      }
+
       override fun onDeleteFilters(group: String, indices: IntArray) {
         val userChoice = JOptionPane.showConfirmDialog(
           mainView.parent,

@@ -20,6 +20,7 @@ public interface LogViewerPresenter {
 
   void init();
   void addFilter(String group, Filter newFilter);
+  void addFilter(String group, Filter newFilter, boolean ignoreReapply);
   String addGroup(String group);
   List<String> getGroups();
   void removeFilters(String group, int[] indices);

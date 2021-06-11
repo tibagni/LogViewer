@@ -56,12 +56,17 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
   @Override
   public void addFilter(String group, Filter newFilter) {
+    addFilter(group, newFilter, false);
+  }
+
+  @Override
+  public void addFilter(String group, Filter newFilter, boolean ignoreReapply) {
     if (!StringUtils.isEmpty(group) && newFilter != null) {
       filtersRepository.addFilter(group, newFilter);
       view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
       checkForUnsavedChanges();
 
-      if (userPrefs.getReapplyFiltersAfterEdit()) {
+      if (!ignoreReapply && userPrefs.getReapplyFiltersAfterEdit()) {
         // Make sure to add the new filter to the 'applied' list
         // so it gets applied now (We always add to the end, so
         // just add the last index as well)
