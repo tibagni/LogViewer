@@ -19,6 +19,7 @@ interface FiltersRepository {
   fun openFilterFiles(files: Array<File>)
 
   fun addFilter(group: String, filter: Filter)
+  fun addFilters(group: String, filters: List<Filter>)
   fun deleteFilters(group: String, indices: IntArray): List<Filter>
   fun reorderFilters(group: String, indOrig: Int, indDest: Int)
   fun addGroup(group: String): String
@@ -71,6 +72,14 @@ class FiltersRepositoryImpl: FiltersRepository {
       _currentlyOpenedFilters[group]?.add(filter)
     } else {
       _currentlyOpenedFilters[group] = mutableListOf(filter)
+    }
+  }
+
+  override fun addFilters(group: String, filters: List<Filter>) {
+    if (_currentlyOpenedFilters.containsKey(group)) {
+      _currentlyOpenedFilters[group]?.addAll(filters)
+    } else {
+      _currentlyOpenedFilters[group] = filters.toMutableList()
     }
   }
 

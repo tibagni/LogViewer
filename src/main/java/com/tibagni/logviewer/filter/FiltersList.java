@@ -304,10 +304,12 @@ public class FiltersList extends JPanel {
       JMenuItem deleteMenuItem = popup.add("Delete");
       JMenuItem editMenuItem = popup.add("Edit");
       JMenuItem duplicateMenuItem = popup.add("Duplicate");
+      JMenuItem moveMenuItem = popup.add("Move");
 
       deleteMenuItem.addActionListener(e -> deleteSelectedFilters());
       editMenuItem.addActionListener(e -> editSelectedFilter());
       duplicateMenuItem.addActionListener(e -> duplicateSelectedFilter());
+      moveMenuItem.addActionListener(e -> moveSelectedFilters());
 
       list.addMouseListener(new MouseAdapter() {
         public void mouseClicked(MouseEvent me) {
@@ -443,6 +445,12 @@ public class FiltersList extends JPanel {
       }
     }
 
+    private void moveSelectedFilters() {
+      if (listener != null) {
+        listener.onMoveFilters(groupName, list.getSelectedIndices());
+      }
+    }
+
     private void reorderFilters(int orig, int dest) {
       if (listener != null) {
         listener.onReordered(groupName, orig, dest);
@@ -468,6 +476,7 @@ public class FiltersList extends JPanel {
     void onEditFilter(Filter filter);
     void onDuplicateFilter(String group, Filter filter);
     void onDeleteFilters(String group, int[] indices);
+    void onMoveFilters(String group, int[] indices);
     void onDeleteGroup(String group);
     void onNavigateNextFilteredLog(Filter filter);
     void onNavigatePrevFilteredLog(Filter filter);

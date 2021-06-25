@@ -198,6 +198,122 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testMoveOneFilterToSameGroup() {
+    presenter.moveFilters("group1","group1", intArrayOf(0))
+
+    verify(view, never()).configureFiltersList(any())
+    verify(view, never()).showFilteredLogs(any())
+    verify(mockFiltersRepository, never()).deleteFilters("group1", intArrayOf(0))
+    verify(mockFiltersRepository, never()).addFilters(anyString(), anyList())
+  }
+
+  @Test
+  fun testMoveOneNotAppliedFilter() {
+    val filtersMapAfterMove = mapOf(
+      "group1" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2)),
+      "group2" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER))
+    )
+    val movedFilter = Filter.createFromString(TEST_SERIALIZED_FILTER)
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.deleteFilters("group1", intArrayOf(0))).thenReturn(listOf(movedFilter))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
+    `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
+
+    presenter.moveFilters("group1","group2", intArrayOf(0))
+
+    verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
+    verify(view, never()).showFilteredLogs(any())
+    verify(mockFiltersRepository, times(1)).deleteFilters("group1", intArrayOf(0))
+    verify(mockFiltersRepository, times(1)).addFilters("group2", listOf(movedFilter))
+  }
+
+  @Test
+  fun testMoveOneAppliedFilter() {
+    val filtersMapAfterMove = mapOf(
+      "group1" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2)),
+      "group2" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER))
+    )
+    val movedFilter = Filter.createFromString(TEST_SERIALIZED_FILTER)
+    movedFilter.isApplied = true
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.deleteFilters("group1", intArrayOf(0))).thenReturn(listOf(movedFilter))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
+    `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
+
+    presenter.moveFilters("group1","group2", intArrayOf(0))
+
+    verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
+    verify(view, times(1)).showFilteredLogs(any())
+    verify(mockFiltersRepository, times(1)).deleteFilters("group1", intArrayOf(0))
+    verify(mockFiltersRepository, times(1)).addFilters("group2", listOf(movedFilter))
+  }
+
+  @Test
+  fun testMoveMultipleNotAppliedFilters() {
+    val filtersMapAfterMove = mapOf(
+      "group1" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2)),
+      "group2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER),
+        Filter.createFromString(TEST_SERIALIZED_FILTER3)
+      )
+    )
+    val movedFilters = listOf(
+      Filter.createFromString(TEST_SERIALIZED_FILTER),
+      Filter.createFromString(TEST_SERIALIZED_FILTER3)
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.deleteFilters("group1", intArrayOf(0, 1))).thenReturn(movedFilters)
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
+    `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
+
+    presenter.moveFilters("group1","group2", intArrayOf(0, 1))
+
+    verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
+    verify(view, never()).showFilteredLogs(any())
+    verify(mockFiltersRepository, times(1)).deleteFilters("group1", intArrayOf(0, 1))
+    verify(mockFiltersRepository, times(1)).addFilters("group2", movedFilters)
+  }
+
+  @Test
+  fun testMoveMultipleFiltersOneApplied() {
+    val filtersMapAfterMove = mapOf(
+      "group1" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER2)),
+      "group2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER),
+        Filter.createFromString(TEST_SERIALIZED_FILTER3)
+      )
+    )
+    val movedFilters = listOf(
+      Filter.createFromString(TEST_SERIALIZED_FILTER),
+      Filter.createFromString(TEST_SERIALIZED_FILTER3)
+    )
+    movedFilters[0].isApplied = true
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.deleteFilters("group1", intArrayOf(0, 1))).thenReturn(movedFilters)
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
+    `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
+
+    presenter.moveFilters("group1","group2", intArrayOf(0, 1))
+
+    verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
+    verify(view, times(1)).showFilteredLogs(any())
+    verify(mockFiltersRepository, times(1)).deleteFilters("group1", intArrayOf(0, 1))
+    verify(mockFiltersRepository, times(1)).addFilters("group2", movedFilters)
+  }
+
+  @Test
   fun testReorderFilters() {
     presenter.reorderFilters("testGroup", 2, 1)
 

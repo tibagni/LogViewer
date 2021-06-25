@@ -118,18 +118,23 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
   }
 
-  private fun addGroup() {
-    val newGroupName = JOptionPane.showInputDialog(
+  private fun addGroup(initializeFilter: Boolean = true): String? {
+    var newGroupName = JOptionPane.showInputDialog(
       mainView.parent,
       "What is the name of your new Filters Group?",
       "New Filters Group",
       JOptionPane.PLAIN_MESSAGE
     )
+
     if (!StringUtils.isEmpty(newGroupName)) {
       // If this name is already taken, a number will be appended to the end of the name
-      val addedGroupName = presenter.addGroup(newGroupName)
-      addFilter(addedGroupName)
+      newGroupName = presenter.addGroup(newGroupName)
+      if (initializeFilter) {
+        addFilter(newGroupName)
+      }
     }
+
+    return newGroupName
   }
 
   private fun addFilter(group: String) {
@@ -184,6 +189,37 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         )
         if (userChoice != JOptionPane.YES_OPTION) return
         presenter.removeFilters(group, indices)
+      }
+
+      override fun onMoveFilters(group: String, indices: IntArray) {
+        val groups = presenter.groups
+
+        // Do not show the current group to the user. It does not make sense to move a filter to the same group
+        val options = groups.filter { !StringUtils.areEquals(it, group) }.toTypedArray() + arrayOf("Create new")
+        val dialog = SingleChoiceDialog(
+          "Move ${indices.size} filter(s)",
+          "Select the group to move the filters to",
+          options,
+          0
+        )
+
+        val choice = dialog.show(mainView.parent)
+        if (choice == SingleChoiceDialog.DIALOG_CANCELLED) {
+          return
+        }
+
+        val destGroup = if (choice == options.lastIndex) {
+          addGroup(false)
+        } else {
+          options[choice]
+        }
+
+        if (StringUtils.isEmpty(destGroup)) {
+          Logger.info("Do not move filter. Selected group is empty")
+          return
+        }
+
+        presenter.moveFilters(group, destGroup, indices)
       }
 
       override fun onDeleteGroup(group: String) {

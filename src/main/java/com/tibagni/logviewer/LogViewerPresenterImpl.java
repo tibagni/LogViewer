@@ -104,8 +104,26 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       checkForUnsavedChanges();
     }
 
-    // Only re-apply the filters if the at least one of the removed filters
-    // were applied
+    // Only re-apply the filters if the at least one of the removed filters was applied
+    if (shouldReapply) {
+      applyFilters();
+    }
+  }
+
+  @Override
+  public void moveFilters(String origGroup, String destGroup, int[] indices) {
+    if (StringUtils.areEquals(origGroup, destGroup)) {
+      return;
+    }
+
+    List<Filter> movingFilters = filtersRepository.deleteFilters(origGroup, indices);
+    filtersRepository.addFilters(destGroup, movingFilters);
+
+    boolean shouldReapply = movingFilters.stream().anyMatch(Filter::isApplied);
+    view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
+    checkForUnsavedChanges();
+
+    // Only re-apply the filters if the at least one of the moved filters was applied
     if (shouldReapply) {
       applyFilters();
     }
