@@ -299,7 +299,7 @@ class LogViewerPresenterTests {
     movedFilters[0].isApplied = true
 
     `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
-      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+      listOf(LogEntry("Log line 1.", LogLevel.DEBUG, null))
     )
     `when`(mockFiltersRepository.deleteFilters("group1", intArrayOf(0, 1))).thenReturn(movedFilters)
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
