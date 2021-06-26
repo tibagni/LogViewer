@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/tibagni/LogViewer.svg?branch=master)](https://travis-ci.org/tibagni/LogViewer)
+[![Build Status](https://www.travis-ci.com/tibagni/LogViewer.svg?branch=master)](https://www.travis-ci.com/tibagni/LogViewer)
 [![Coverage Status](https://coveralls.io/repos/github/tibagni/LogViewer/badge.svg?branch=master)](https://coveralls.io/github/tibagni/LogViewer?branch=master)
 # LogViewer
 LogViewer is a simple tool to help you analyze Android logs.
