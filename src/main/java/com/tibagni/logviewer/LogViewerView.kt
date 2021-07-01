@@ -470,7 +470,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     return convertFromSwing(userChoice)
   }
 
-  override fun showSaveFilters(group: String?) = mainView.showSaveFilterFileChooser()
+  override fun showSaveFilters(group: String?) = mainView.showSaveFilterFileChooser(group)
 
   override fun finish() {
     // We can now tell the application we can close

@@ -41,7 +41,7 @@ interface MainView {
   fun showOpenMultipleLogsFileChooser(): Array<File>?
   fun showOpenSingleLogFileChooser(): File?
   fun showSaveLogFileChooser(): File?
-  fun showSaveFilterFileChooser(): File?
+  fun showSaveFilterFileChooser(suggestedFileName: String? = null): File?
   fun showOpenMultipleFiltersFileChooser(): Array<File>
 
   fun showStartLoading(tag: String)
@@ -176,11 +176,16 @@ class MainViewImpl(
     } else null
   }
 
-  override fun showSaveFilterFileChooser(): File? {
+  override fun showSaveFilterFileChooser(suggestedFileName: String?): File? {
     filterSaveFileChooser.resetChoosableFileFilters()
     filterSaveFileChooser.isMultiSelectionEnabled = false
     filterSaveFileChooser.dialogTitle = "Save Filter..."
     filterSaveFileChooser.setSaveExtension(Filter.FILE_EXTENSION)
+    if (!suggestedFileName.isNullOrEmpty()) {
+      filterSaveFileChooser.selectedFile = File(suggestedFileName)
+    } else {
+      filterSaveFileChooser.selectedFile = null
+    }
 
     val selectedOption = filterSaveFileChooser.showSaveDialog(mainPanel)
     return if (selectedOption == JFileChooser.APPROVE_OPTION) {
