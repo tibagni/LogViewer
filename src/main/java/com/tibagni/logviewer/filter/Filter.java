@@ -42,6 +42,10 @@ public class Filter {
     updateFilter(name, pattern, color, caseSensitive);
   }
 
+  boolean nameIsPattern() {
+    return StringUtils.areEquals(getName(), getPatternString());
+  }
+
   public void updateFilter(String name, String pattern, Color color, boolean caseSensitive)
       throws FilterException {
 

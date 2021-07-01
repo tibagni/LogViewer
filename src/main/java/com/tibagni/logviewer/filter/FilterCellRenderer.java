@@ -3,13 +3,15 @@ package com.tibagni.logviewer.filter;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.font.TextAttribute;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Object>, Serializable {
 
@@ -78,9 +80,18 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
       text = StringUtils.wrapHtml(text);
     }
 
+    // Underline filters that have a different name so it is obvious just by looking at the list
+    Font font = list.getFont();
+    if (!filter.nameIsPattern()) {
+      Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
+      attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
+      font = font.deriveFont(attributes);
+    }
+
     setText(text);
     setEnabled(list.isEnabled());
-    setFont(list.getFont());
+    setFont(font);
+    setToolTipText("search {" + filter.getPatternString() + "}");
 
     return this;
   }
