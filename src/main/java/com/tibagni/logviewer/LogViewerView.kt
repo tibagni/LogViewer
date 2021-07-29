@@ -18,13 +18,12 @@ import com.tibagni.logviewer.view.FileDrop
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.Toast
-import java.awt.Dimension
-import java.awt.FlowLayout
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
-import java.awt.event.*
+import java.awt.*
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.io.File
-import java.lang.StringBuilder
 import javax.swing.*
 
 // This is the interface known by other views (MainView)
@@ -65,6 +64,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var logList: JTable
   private lateinit var filteredLogList: JTable
   private lateinit var addNewFilterGroupBtn: JButton
+  private lateinit var collapseExpandAllGroupsBtn: JButton
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
   private lateinit var filtersPane: FiltersList
@@ -94,6 +94,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logRenderer = LogCellRenderer()
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
+    collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
     setupFiltersContextActions()
 
     logList.setDefaultRenderer(LogEntry::class.java, logRenderer)
@@ -116,6 +117,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         }
       })
     }
+
+    updateCollapseExpandButtonState()
   }
 
   private fun addGroup(initializeFilter: Boolean = true): String? {
@@ -259,7 +262,19 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       override fun onSaveFilters(group: String) {
         saveFilter(group)
       }
+
+      override fun onGroupVisibilityChanged(group: String?) {
+        updateCollapseExpandButtonState()
+      }
     })
+  }
+
+  private fun updateCollapseExpandButtonState() {
+    collapseExpandAllGroupsBtn.text = if (filtersPane.hasAtLeastOneGroupVisible()) {
+      "${StringUtils.DOWN_ARROW_HEAD} All"
+    } else {
+      "${StringUtils.RIGHT_ARROW_HEAD} All"
+    }
   }
 
   private fun saveFilter(filtersGroup: String) = presenter.saveFilters(filtersGroup)
@@ -589,20 +604,28 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .build()
     )
 
-    val filterButtonsPane = JPanel()
-    filterButtonsPane.layout = FlowLayout(FlowLayout.CENTER)
-    addNewFilterGroupBtn = FlatButton()
+    val filterButtonsPane = JPanel(BorderLayout())
+    addNewFilterGroupBtn = JButton()
     addNewFilterGroupBtn.actionCommand = "Add"
     addNewFilterGroupBtn.text = "New Group"
-    filterButtonsPane.add(addNewFilterGroupBtn)
+    collapseExpandAllGroupsBtn = FlatButton()
+    filterButtonsPane.add(collapseExpandAllGroupsBtn, BorderLayout.WEST)
+    filterButtonsPane.add(addNewFilterGroupBtn, BorderLayout.EAST)
 
     filtersMainPane.add(
       filterButtonsPane,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(0)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.VERTICAL)
+        .withInsets(
+          Insets(
+            UIScaleUtils.dip(0),
+            UIScaleUtils.dip(0),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(5)
+          )
+        )
+        .withFill(GridBagConstraints.BOTH)
         .build()
     )
 

@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class FiltersList extends JPanel {
@@ -50,6 +49,27 @@ public class FiltersList extends JPanel {
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
     filterUIGroups = new HashMap<>();
     filters = new HashMap<>();
+  }
+
+  public void toggleGroupsVisibility() {
+    boolean visible = !hasAtLeastOneGroupVisible();
+    for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
+      groupEntry.getValue().forceGroupVisibilitySilently(visible);
+    }
+
+    if (listener != null) {
+      listener.onGroupVisibilityChanged(null);
+    }
+  }
+
+  public boolean hasAtLeastOneGroupVisible() {
+    for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
+      if (groupEntry.getValue().isGroupVisible()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public boolean isEmpty() {
@@ -167,7 +187,7 @@ public class FiltersList extends JPanel {
         if (!isSearching) {
           // We only start searching if user pressed '/'
           if (charTyped == '/') {
-              initSearch();
+            initSearch();
           }
           return;
         }
@@ -287,6 +307,22 @@ public class FiltersList extends JPanel {
       list.setVisible(newVisibility);
 
       updatePreferredSize();
+
+      if (listener != null) {
+        listener.onGroupVisibilityChanged(groupName);
+      }
+    }
+
+    void forceGroupVisibilitySilently(boolean visible) {
+      if (visible == list.isVisible()) return;
+      hideGroupBtn.setText(visible ? HIDE : SHOW);
+      list.setVisible(visible);
+
+      updatePreferredSize();
+    }
+
+    boolean isGroupVisible() {
+      return list.isVisible();
     }
 
     private void updatePreferredSize() {
@@ -337,7 +373,7 @@ public class FiltersList extends JPanel {
       list.addKeyListener(new KeyAdapter() {
         @Override
         public void keyTyped(KeyEvent e) {
-            listSearchHandler.handleKeyTyped(e.getKeyChar());
+          listSearchHandler.handleKeyTyped(e.getKeyChar());
         }
       });
 
@@ -385,7 +421,7 @@ public class FiltersList extends JPanel {
         }
       });
       deleteBtn.addActionListener(l -> {
-        if(listener != null){
+        if (listener != null) {
           listener.onDeleteGroup(groupName);
         }
       });
@@ -472,15 +508,27 @@ public class FiltersList extends JPanel {
 
   public interface FiltersListener {
     void onReordered(String group, int orig, int dest);
+
     void onFiltersApplied();
+
     void onEditFilter(Filter filter);
+
     void onDuplicateFilter(String group, Filter filter);
+
     void onDeleteFilters(String group, int[] indices);
+
     void onMoveFilters(String group, int[] indices);
+
     void onDeleteGroup(String group);
+
     void onNavigateNextFilteredLog(Filter filter);
+
     void onNavigatePrevFilteredLog(Filter filter);
+
     void onAddFilter(String group);
+
     void onSaveFilters(String group);
+
+    void onGroupVisibilityChanged(String group);
   }
 }
