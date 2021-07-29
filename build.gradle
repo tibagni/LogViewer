@@ -78,7 +78,7 @@ jar {
                 'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
                 'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
                 'Main-Class'     : "com.tibagni.logviewer.LogViewerApplication",
-                'SplashScreen-Image' : "Images/splash.gif"
+                'SplashScreen-Image' : "Images/splash.png"
         )
     }
 }
