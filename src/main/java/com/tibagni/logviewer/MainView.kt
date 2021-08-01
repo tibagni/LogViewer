@@ -51,7 +51,7 @@ interface MainView {
   fun enableSaveFilteredLogsMenu(enabled: Boolean)
   fun refreshMenuBar()
 
-  fun onBugReportLoaded(bugreportText: String)
+  fun onBugReportLoaded(bugreportPath: String, bugreportText: String)
   fun onBugReportClosed()
 }
 
@@ -234,8 +234,8 @@ class MainViewImpl(
     configureMenuBar()
   }
 
-  override fun onBugReportLoaded(bugreportText: String) {
-    bugReportView.onBugReportLoaded(bugreportText)
+  override fun onBugReportLoaded(bugreportPath: String, bugreportText: String) {
+    bugReportView.onBugReportLoaded(bugreportPath, bugreportText)
   }
 
   override fun onBugReportClosed() {

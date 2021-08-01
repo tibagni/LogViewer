@@ -10,6 +10,7 @@ interface LogViewerPreferences {
     var openLastFilter: Boolean
     var reapplyFiltersAfterEdit: Boolean
     var rememberAppliedFilters: Boolean
+    var preferredTextEditor: File?
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
@@ -24,6 +25,7 @@ interface LogViewerPreferences {
         fun onDefaultLogsPathChanged()
         fun onReapplyFiltersConfigChanged()
         fun onRememberAppliedFiltersConfigChanged()
+        fun onPreferredTextEditorChanged()
     }
 
     abstract class Adapter : Listener {
@@ -34,5 +36,6 @@ interface LogViewerPreferences {
         override fun onDefaultLogsPathChanged() {}
         override fun onReapplyFiltersConfigChanged() {}
         override fun onRememberAppliedFiltersConfigChanged() {}
+        override fun onPreferredTextEditorChanged() {}
     }
 }

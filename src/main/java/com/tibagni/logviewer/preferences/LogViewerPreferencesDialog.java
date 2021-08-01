@@ -25,6 +25,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private static final String LOOK_FEEL_PREF_ID = "look_and_feel";
   private static final String APPLY_FILTER_EDIT_ID = "apply_filter_edit";
   private static final String REMEMBER_APPLIED_FILTERS_ID = "remember_applied_filters";
+  private static final String PREFERRED_TEXT_EDITOR_ID = "preferred_text_editor";
 
   private ButtonsPane buttonsPane;
   private JPanel contentPane;
@@ -36,9 +37,12 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JButton logsPathBtn;
   private JCheckBox applyFiltersAfterEditChbx;
   private JCheckBox rememberAppliedFiltersChbx;
+  private JTextField preferredEditorPathTxt;
+  private JButton preferredEditorPathBtn;
 
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
+  private JFileChooser preferredEditorFileChooser;
   private final LogViewerPreferences userPrefs;
   private final LogViewerThemeManager themeManager;
 
@@ -56,6 +60,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     initFiltersPathPreference();
     initLogsPathPreference();
     initLookAndFeelPreference();
+    initPreferredEditorPathPreference();
 
     // Adjust the size according to the content after everything is populated
     contentPane.setPreferredSize(contentPane.getPreferredSize());
@@ -114,6 +119,15 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     });
   }
 
+  private void initPreferredEditorPathPreference() {
+    preferredEditorFileChooser = new JFileChooserExt(userPrefs.getPreferredTextEditor());
+
+    preferredEditorPathBtn.addActionListener(e -> onSelectPreferredEditorPath());
+    File editorFile = userPrefs.getPreferredTextEditor();
+    String path = editorFile != null ? editorFile.getAbsolutePath() : null;
+    preferredEditorPathTxt.setText(path);
+  }
+
   @Override
   public void onOk() {
     saveActions.forEach((s, runnable) -> runnable.run());
@@ -160,6 +174,16 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     saveActions.put(REMEMBER_APPLIED_FILTERS_ID, () -> userPrefs.setRememberAppliedFilters(isChecked));
   }
 
+  private void onSelectPreferredEditorPath() {
+    int selectedOption = preferredEditorFileChooser.showOpenDialog(this);
+    if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      File selectedFolder = preferredEditorFileChooser.getSelectedFile();
+      preferredEditorPathTxt.setText(selectedFolder.getAbsolutePath());
+      saveActions.put(PREFERRED_TEXT_EDITOR_ID,
+          () -> userPrefs.setPreferredTextEditor(selectedFolder));
+    }
+  }
+
   public static void showPreferencesDialog(JFrame parent) {
     LogViewerPreferencesDialog dialog = new LogViewerPreferencesDialog(parent);
 
@@ -201,7 +225,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -261,6 +285,19 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     rememberAppliedFiltersChbx = new JCheckBox();
     rememberAppliedFiltersChbx.setText("");
     formPane.add(rememberAppliedFiltersChbx, cc.xy(3, 17));
+
+    final JSeparator sep4 = new JSeparator();
+    formPane.add(sep4, cc.xyw(1, 18, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    final JLabel preferredEditorLbl = new JLabel();
+    preferredEditorLbl.setText("Preferred text Editor");
+    formPane.add(preferredEditorLbl, cc.xy(1, 19));
+    preferredEditorPathTxt = new JTextField();
+    preferredEditorPathTxt.setEditable(false);
+    formPane.add(preferredEditorPathTxt, cc.xy(3, 19, CellConstraints.FILL, CellConstraints.DEFAULT));
+    preferredEditorPathBtn = new JButton();
+    preferredEditorPathBtn.setText("...");
+    formPane.add(preferredEditorPathBtn, cc.xy(5, 19));
 
     return formPane;
   }

@@ -9,7 +9,7 @@ class PropertiesSectionParser : BugReportSectionParser {
     private const val NOT_FOUND = "Not Found"
   }
 
-  override fun parse(bugReportText: String): BugReportSection {
+  override fun parse(bugreportPath: String, bugReportText: String): BugReportSection {
     val build = parseBRProperty(bugReportText, "Build: ")
     val buildFingerprint = parseBRProperty(bugReportText, "Build fingerprint: ")
     val bootloader = parseBRProperty(bugReportText, "Bootloader: ")

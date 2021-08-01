@@ -12,7 +12,7 @@ abstract class PackagesSectionParser(private val sectionName: String, private va
     private const val NOT_FOUND = "Not Found"
   }
 
-  override fun parse(bugReportText: String): BugReportSection? {
+  override fun parse(bugreportPath: String, bugReportText: String): BugReportSection? {
     val packagesMatch = "\\n$matchString\\n".toRegex().find(bugReportText) ?: return null
     val nextBlankLineMatch = "\\n\\n".toRegex().find(bugReportText, packagesMatch.range.last) ?: return null
 

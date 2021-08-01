@@ -1,31 +1,110 @@
 package com.tibagni.logviewer.bugreport.section.ui
 
+import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.bugreport.section.PlainTextSection
+import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
-import java.awt.Component
-import java.awt.Font
+import java.awt.BorderLayout
 import java.awt.GridBagConstraints
-import javax.swing.JScrollPane
-import javax.swing.JTable
-import javax.swing.JTextArea
-import javax.swing.table.AbstractTableModel
-import javax.swing.table.TableCellRenderer
+import java.io.File
+import javax.swing.*
 
 
 class PlainTextBugreportPanel(private val plainTextSection: PlainTextSection) :
   SectionPanel(plainTextSection.sectionName) {
 
+  private var textEditorPath: File? = null
+  private lateinit var openBugreportBtn: JButton
+  private lateinit var disclaimerTxt: JTextArea
+
   init {
-    // TODO implement search
     buildUi()
+
+    openBugreportBtn.addActionListener { openBugReport() }
+    ServiceLocator.logViewerPrefs.addPreferenceListener(object: LogViewerPreferences.Adapter() {
+      override fun onPreferredTextEditorChanged() {
+        updateTextEditorPath()
+      }
+    })
+
+    updateTextEditorPath()
+  }
+
+  private fun updateTextEditorPath() {
+    textEditorPath = findTextEditor()
+    updateUiText()
+  }
+
+  private fun openBugReport() {
+    val bugreportFile = File(plainTextSection.bugReportPath)
+    val editorFile = textEditorPath
+
+    if (editorFile != null) {
+      try {
+        val process = Runtime.getRuntime().exec(editorFile.absolutePath + " " + bugreportFile.absoluteFile)
+        Logger.debug("Opened $bugreportFile using $editorFile: $process")
+      } catch (ex: Exception) {
+        JOptionPane.showMessageDialog(
+          this,
+          "It was not possible to open the bugreport using ${editorFile.absolutePath}",
+          "Error",
+          JOptionPane.ERROR_MESSAGE
+        )
+      }
+    } else {
+      val input = JOptionPane.showConfirmDialog(
+        this,
+        "You don't have a preferred text editor, do you want to configure one now",
+        "Preferred text editor",
+        JOptionPane.YES_NO_OPTION
+      )
+
+      if (input == JOptionPane.YES_OPTION) {
+        val fileChooser = JFileChooser()
+        val result = fileChooser.showOpenDialog(this)
+        if (result == JFileChooser.APPROVE_OPTION) {
+          val newPreferredEditor = fileChooser.selectedFile
+          Logger.debug("New preferred editor selected: $newPreferredEditor")
+
+          ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
+        }
+      }
+    }
+  }
+
+  private fun findTextEditor(): File? {
+    val preferredTextEditor = ServiceLocator.logViewerPrefs.preferredTextEditor
+    Logger.debug("Preferred text editor: $preferredTextEditor")
+
+    return preferredTextEditor
+  }
+
+  private fun updateUiText() {
+    val textEditorName = textEditorPath?.name ?: "a text editor of your preference"
+    openBugreportBtn.text = "Open using $textEditorName"
+    disclaimerTxt.text = "LogViewer can parse bugreports and present it here in a more user-friendly manner. " +
+        "However, there are only a few sections presented this way at this time, and sometimes reading the full " +
+        "bugreport is the best choice.\n\n" +
+
+        "If what you are looking for is not in any of the sections available, you can open " +
+        "the bugreport file located in \"${plainTextSection.bugReportPath}\" with $textEditorName " +
+        "by clicking the button below"
   }
 
   private fun buildUi() {
-    val bugreportContent = JTable(BugReportTableModel(plainTextSection.bugreportLines))
-    bugreportContent.setDefaultRenderer(String::class.java, BugReportTableRenderer())
-    bugreportContent.autoscrolls = true
+    openBugreportBtn = JButton()
+    // Use text area here because we want line wrap
+    disclaimerTxt = JTextArea()
+    disclaimerTxt.lineWrap = true
+    disclaimerTxt.wrapStyleWord = true
+    disclaimerTxt.isEditable = false
+
+    val panel = JPanel(BorderLayout())
+    panel.add(disclaimerTxt, BorderLayout.PAGE_START)
+    panel.add(JPanel().also { it.add(openBugreportBtn) }, BorderLayout.CENTER)
     add(
-      JScrollPane(bugreportContent),
+      panel,
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
@@ -34,38 +113,5 @@ class PlainTextBugreportPanel(private val plainTextSection: PlainTextSection) :
         .withFill(GridBagConstraints.BOTH)
         .build()
     )
-  }
-}
-
-private class BugReportTableModel(private val lines: List<String>) : AbstractTableModel() {
-  override fun getColumnClass(columnIndex: Int) = String::class.java
-  override fun getColumnName(column: Int) = "Bug Report"
-  override fun getRowCount() = lines.size
-  override fun getColumnCount() = 1
-  override fun getValueAt(rowIndex: Int, columnIndex: Int) = lines[rowIndex]
-}
-
-private class BugReportTableRenderer : JTextArea(), TableCellRenderer {
-  override fun getTableCellRendererComponent(
-    table: JTable,
-    value: Any,
-    isSelected: Boolean,
-    hasFocus: Boolean,
-    row: Int,
-    column: Int
-  ): Component {
-    font = Font("monospaced", Font.PLAIN, font.size)
-    text = value as String
-    wrapStyleWord = true
-    lineWrap = true
-    foreground = if (isSelected) table.selectionForeground else table.foreground
-    background = if (isSelected) table.selectionBackground else table.background
-
-    setSize(table.columnModel.getColumn(column).width, preferredSize.height)
-    if (table.getRowHeight(row) != preferredSize.height) {
-      table.setRowHeight(row, preferredSize.height)
-    }
-
-    return this
   }
 }

@@ -1531,7 +1531,7 @@ class LogViewerPresenterTests {
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
     verify(view, never()).showSkippedLogsMessage(anyOrNull())
-    verify(view).showOpenPotentialBugReport("test text")
+    verify(view).showOpenPotentialBugReport("bugreport","test text")
     verify(view, never()).closeCurrentlyOpenedBugReports()
   }
 
@@ -1555,7 +1555,7 @@ class LogViewerPresenterTests {
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
     verify(view, never()).showSkippedLogsMessage(anyOrNull())
-    verify(view, never()).showOpenPotentialBugReport(anyString())
+    verify(view, never()).showOpenPotentialBugReport(anyString(), anyString())
     verify(view).closeCurrentlyOpenedBugReports()
   }
 

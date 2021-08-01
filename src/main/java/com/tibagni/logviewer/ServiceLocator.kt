@@ -16,11 +16,11 @@ object ServiceLocator {
     BugReportRepositoryImpl(
       BugReportParserImpl(
         listOf(
-          PlainTextContentParser(),
           PropertiesSectionParser(),
           ApplicationPackagesSectionParser(),
           SystemHiddenPackagesSectionParser(),
-          CarrierConfigSectionParser()
+          CarrierConfigSectionParser(),
+          PlainTextContentParser()
         )
       )
     )

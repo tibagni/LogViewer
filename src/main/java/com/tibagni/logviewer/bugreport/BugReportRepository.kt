@@ -9,7 +9,7 @@ interface BugReportRepository {
   val bugReport: BugReport?
 
   @Throws(OpenBugReportException::class)
-  fun loadBugReport(bugReportText: String, progressReporter: ProgressReporter)
+  fun loadBugReport(bugreportPath: String, bugReportText: String, progressReporter: ProgressReporter)
 
   fun closeBugReport()
 }
@@ -19,9 +19,9 @@ class BugReportRepositoryImpl(private val bugReportParser: BugReportParser): Bug
   override val bugReport: BugReport?
     get() = _bugReport
 
-  override fun loadBugReport(bugReportText: String, progressReporter: ProgressReporter) {
+  override fun loadBugReport(bugreportPath: String, bugReportText: String, progressReporter: ProgressReporter) {
     try {
-      _bugReport = bugReportParser.parseBugReport(bugReportText, progressReporter)
+      _bugReport = bugReportParser.parseBugReport(bugreportPath, bugReportText, progressReporter)
     } catch (e: Exception) {
       throw OpenBugReportException(e.message, e)
     }

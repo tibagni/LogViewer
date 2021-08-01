@@ -53,7 +53,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun finish()
   fun showNavigationNextOver()
   fun showNavigationPrevOver()
-  fun showOpenPotentialBugReport(bugreportText: String)
+  fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String)
   fun closeCurrentlyOpenedBugReports()
 }
 
@@ -498,8 +498,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun showNavigationPrevOver() =
     Toast.showToast(contentPane.parent, StringUtils.RIGHT_ARROW_WITH_HOOK, Toast.LENGTH_SHORT)
 
-  override fun showOpenPotentialBugReport(bugreportText: String) {
-    mainView.onBugReportLoaded(bugreportText)
+  override fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String) {
+    mainView.onBugReportLoaded(bugreportPath, bugreportText)
   }
 
   override fun closeCurrentlyOpenedBugReports() {

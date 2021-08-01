@@ -6,7 +6,7 @@ import com.tibagni.logviewer.bugreport.section.CarrierConfigSection
 class CarrierConfigSectionParser : BugReportSectionParser {
   override val name = "Carrier Config"
 
-  override fun parse(bugReportText: String): BugReportSection? {
+  override fun parse(bugreportPath: String, bugReportText: String): BugReportSection? {
     val ccSectionStart = "\\nDUMP OF SERVICE carrier_config:\\n"
     val ccSectionEnd = "\\n--------- .*carrier_config.*\\n"
 

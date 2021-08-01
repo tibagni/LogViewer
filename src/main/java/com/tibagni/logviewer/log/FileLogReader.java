@@ -35,7 +35,7 @@ public class FileLogReader implements LogReader {
     try {
       for (File logFile : logFiles) {
         currentFile = logFile;
-        logStrings.put(currentFile.getName(), readFile(currentFile));
+        logStrings.put(currentFile.getPath(), readFile(currentFile));
       }
 
     } catch (IOException e) {
@@ -68,7 +68,7 @@ public class FileLogReader implements LogReader {
   }
 
   @Override
-  public Set<String> getAvailableLogsNames() {
+  public Set<String> getAvailableLogPaths() {
     return logStrings.keySet();
   }
 

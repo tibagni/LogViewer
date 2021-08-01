@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.preferences
 
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -66,7 +67,8 @@ class LogViewerPreferencesImplTests {
         LogViewerPreferencesImpl.lastFilterPaths = testFilters
 
         verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.LAST_FILTER_PATH,
-                "${testFilters[0].absolutePath}")
+            testFilters[0].absolutePath
+        )
         verify(mockListener, only()).onLastFilterPathChanged()
     }
 
@@ -295,5 +297,60 @@ class LogViewerPreferencesImplTests {
         assertEquals(4, returnedVal[0])
         assertEquals(11, returnedVal[1])
         assertEquals(6, returnedVal[2])
+    }
+
+    @Test
+    fun testSettingPreferredEditorPath() {
+        val testFile = File("test")
+        LogViewerPreferencesImpl.preferredTextEditor = testFile
+
+        verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.PREFERRED_TEXT_EDITOR, testFile.absolutePath)
+        verify(mockListener, only()).onPreferredTextEditorChanged()
+    }
+
+    @Test
+    fun testGettingPreferredEditorPath() {
+        val testFile = File("test")
+
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.PREFERRED_TEXT_EDITOR), any())).thenReturn(testFile.absolutePath)
+
+        val returnedFile = LogViewerPreferencesImpl.preferredTextEditor
+
+        verify(mockPrefs, never()).put(any(), any())
+        verify(mockListener, never()).onPreferredTextEditorChanged()
+
+        assertEquals(testFile.absolutePath, returnedFile?.absolutePath)
+    }
+
+    @Test
+    fun testGettingPreferredEditorUnset() {
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.PREFERRED_TEXT_EDITOR), any())).thenReturn(null)
+
+        val returnedFile = LogViewerPreferencesImpl.preferredTextEditor
+
+        verify(mockPrefs, never()).put(any(), any())
+        verify(mockListener, never()).onPreferredTextEditorChanged()
+
+        assertNull(returnedFile)
+    }
+
+    @Test
+    fun testGettingPreferredEditorEmpty() {
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.PREFERRED_TEXT_EDITOR), any())).thenReturn("")
+
+        val returnedFile = LogViewerPreferencesImpl.preferredTextEditor
+
+        verify(mockPrefs, never()).put(any(), any())
+        verify(mockListener, never()).onPreferredTextEditorChanged()
+
+        assertNull(returnedFile)
+    }
+
+    @Test
+    fun testUnSettingPreferredEditorPath() {
+        LogViewerPreferencesImpl.preferredTextEditor = null
+
+        verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.PREFERRED_TEXT_EDITOR, "")
+        verify(mockListener, only()).onPreferredTextEditorChanged()
     }
 }

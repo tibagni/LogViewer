@@ -75,7 +75,7 @@ class ParserTests {
 
         val expectedLogs = Array(4) { testLogLine }
 
-        `when`(reader.availableLogsNames).thenReturn(logNames)
+        `when`(reader.availableLogPaths).thenReturn(logNames)
         `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
 
         val entries = logParser.parseLogs()
@@ -113,7 +113,7 @@ class ParserTests {
         val testLogLine = buildHugeLogPayload()
         val logNames = setOf("bugreport")
 
-        `when`(reader.availableLogsNames).thenReturn(logNames)
+        `when`(reader.availableLogPaths).thenReturn(logNames)
         `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
 
         val parsedLogs = logParser.parseLogs()
@@ -138,7 +138,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsUNKOWN() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "bla",
                 "nothing",
                 "bugreport.txt",
@@ -151,7 +151,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsMAIN() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "main.txt",
                 "aplogd-m.txt")
         )
@@ -161,7 +161,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsSYSTEM() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "system.txt",
                 "aplogd-s.txt")
         )
@@ -171,7 +171,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsRADIO() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "radio.txt",
                 "aplogd-r.txt")
         )
@@ -181,7 +181,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsEVENTS() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "events.txt",
                 "aplogd-e.txt")
         )
@@ -191,7 +191,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsALL() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "aplogd-e.txt",
                 "main.txt",
                 "radio.txt",
@@ -212,7 +212,7 @@ class ParserTests {
 
     @Test
     fun testAvailableLogStreamsALLwithUNKNOWN() {
-        `when`(reader.availableLogsNames).thenReturn(setOf(
+        `when`(reader.availableLogPaths).thenReturn(setOf(
                 "bla.txt",
                 "aplogd-e.txt",
                 "main.txt",

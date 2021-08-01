@@ -342,7 +342,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
             } else {
               // We only support opening one bugreport for now
               Map.Entry<String,String> entry = bugReports.entrySet().iterator().next();
-              view.showOpenPotentialBugReport(entry.getValue());
+              view.showOpenPotentialBugReport(entry.getKey(), entry.getValue());
             }
           } else {
             view.showCurrentLogsLocation(null);

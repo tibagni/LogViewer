@@ -15,6 +15,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val REAPPLY_FILTERS_AFTER_EDIT = "reapply_filters_after_edit"
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS = "remember_applied_filters"
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS_PREFIX = "applied_for_group_"
+    /*Visible for Testing*/ const val PREFERRED_TEXT_EDITOR = "preferred_text_editor"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -87,6 +88,15 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(remember) {
             preferences.putBoolean(REMEMBER_APPLIED_FILTERS, remember)
             listeners.forEach { l -> l.onRememberAppliedFiltersConfigChanged() }
+        }
+    override var preferredTextEditor: File?
+        get() {
+            val path = preferences.get(PREFERRED_TEXT_EDITOR, null)
+            return if (!path.isNullOrEmpty()) File(path) else null
+        }
+        set(textEditorFile) {
+            preferences.put(PREFERRED_TEXT_EDITOR, textEditorFile?.absolutePath ?: "")
+            listeners.forEach { l -> l.onPreferredTextEditorChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

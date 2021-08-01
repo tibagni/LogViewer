@@ -9,7 +9,7 @@ public interface LogReader {
 
   String get(String logName);
 
-  Set<String> getAvailableLogsNames();
+  Set<String> getAvailableLogPaths();
 
   void close();
 }

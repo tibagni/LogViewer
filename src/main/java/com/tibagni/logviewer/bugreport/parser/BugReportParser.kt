@@ -5,11 +5,15 @@ import com.tibagni.logviewer.bugreport.BugReport
 import com.tibagni.logviewer.logger.wrapProfiler
 
 interface BugReportParser {
-  fun parseBugReport(bugReportText: String, progressReporter: ProgressReporter): BugReport
+  fun parseBugReport(bugreportPath: String, bugReportText: String, progressReporter: ProgressReporter): BugReport
 }
 
 class BugReportParserImpl(private val sectionParsers: List<BugReportSectionParser>) : BugReportParser {
-  override fun parseBugReport(bugReportText: String, progressReporter: ProgressReporter): BugReport {
+  override fun parseBugReport(
+    bugreportPath: String,
+    bugReportText: String,
+    progressReporter: ProgressReporter
+  ): BugReport {
     // BugReport String is usually massive (several tens of MB). For this reason, we save the original bugreport
     // String and be careful to use StringViews to manipulate each section and only create a substring when absolutely
     // necessary
@@ -19,7 +23,7 @@ class BugReportParserImpl(private val sectionParsers: List<BugReportSectionParse
 
     val sections = sectionParsers.mapNotNull {
       progressReporter.onProgress((sectionsParsed++ / totalSections) * 100, "Parsing ${it.name}")
-      wrapProfiler(it.name) { it.parse(bugReportText) }
+      wrapProfiler(it.name) { it.parse(bugreportPath, bugReportText) }
     }
     progressReporter.onProgress(100, "Done!")
 

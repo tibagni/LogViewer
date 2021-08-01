@@ -43,7 +43,7 @@ public class LogParser {
     ensureState();
 
     logReader.readLogs();
-    Set<String> availableLogs = logReader.getAvailableLogsNames();
+    Set<String> availableLogs = logReader.getAvailableLogPaths();
 
     int logsRead = 0;
     for (String log : availableLogs) {
@@ -95,7 +95,7 @@ public class LogParser {
     ensureState();
 
     Set<LogStream> availableStreams = new HashSet<>();
-    Set<String> availableLogsNames = logReader.getAvailableLogsNames();
+    Set<String> availableLogsNames = logReader.getAvailableLogPaths();
     for (String logName : availableLogsNames) {
       availableStreams.add(LogStream.inferLogStreamFromName(logName));
     }
@@ -119,7 +119,7 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText, String logName) {
+  private List<LogEntry> getLogEntries(String logText, String logPath) {
     String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
@@ -134,7 +134,7 @@ public class LogParser {
 
       if (isLogLine(line)) {
         if (currentLogLine != null) {
-          logLines.add(createLogEntry(currentLogLine.toString(), logName));
+          logLines.add(createLogEntry(currentLogLine.toString(), logPath));
         }
 
         currentLogLine = new StringBuilder(line);
@@ -145,7 +145,7 @@ public class LogParser {
 
           // First check if we have already considered this as a potential bugreport. If so,
           // don't waste any more time here
-          if (!potentialBugReports.containsKey(logName)) {
+          if (!potentialBugReports.containsKey(logPath)) {
             String incorrectLinePreview = currentLogLine.substring(0, 100) + "...";
             Logger.warning(
                 "Incorrect format on following line (too long - " + currentLogLine.length() + " bytes):\n" +
@@ -154,17 +154,17 @@ public class LogParser {
 
             // This could be a bugreport. If this is the case, keep track of it
             if (isPotentialBugReport(logText)) {
-              Logger.info("Found a potential bugreport: " + logName);
+              Logger.info("Found a potential bugreport: " + logPath);
 
               // Make sure to remove all '\r' so it does not get in the way of the parsers
               String bugReportText = logText.replaceAll("\r", "");
-              potentialBugReports.put(logName, bugReportText);
+              potentialBugReports.put(logPath, bugReportText);
             }
           }
 
           // We are done with this line, add it to the list and clear currentLogLine to avoid
           // executing this same code over and over for invalid lines
-          logLines.add(createLogEntry(currentLogLine.toString(), logName));
+          logLines.add(createLogEntry(currentLogLine.toString(), logPath));
           currentLogLine = null;
 
           // This could simply be a malformed line, just continue parsing other lines
@@ -176,7 +176,7 @@ public class LogParser {
 
     // Make sure to add the last log line as well
     if (currentLogLine != null) {
-      logLines.add(createLogEntry(currentLogLine.toString(), logName));
+      logLines.add(createLogEntry(currentLogLine.toString(), logPath));
     }
 
     return logLines;

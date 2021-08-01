@@ -17,7 +17,7 @@ import javax.swing.*
 interface BugReportView : View {
   val contentPane: JPanel
 
-  fun onBugReportLoaded(bugreportText: String)
+  fun onBugReportLoaded(bugreportPath: String, bugreportText: String)
   fun onBugReportClosed()
   fun onThemeChanged()
 }
@@ -48,8 +48,8 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     sectionsList.addListSelectionListener { onSectionSelected() }
   }
 
-  override fun onBugReportLoaded(bugreportText: String) {
-    presenter.loadBugReport(bugreportText)
+  override fun onBugReportLoaded(bugreportPath: String, bugreportText: String) {
+    presenter.loadBugReport(bugreportPath, bugreportText)
   }
 
   override fun onBugReportClosed() {
