@@ -137,6 +137,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
     }
 
+    updateCollapseExpandButtonState()
     return newGroupName
   }
 
