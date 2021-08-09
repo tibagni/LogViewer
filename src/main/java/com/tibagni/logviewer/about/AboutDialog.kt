@@ -59,7 +59,7 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
     )
     applicationName.text = AppInfo.APPLICATION_NAME + " - Version: " + currentVersion
     openSourceInfo.text = "<html>Open Source Software available on " +
-        "<font color=\"#000099\"><u>github</u></font></html>"
+        "<font color=\"#16a1d9\"><u>github</u></font></html>"
     versionStatus.text = "Checking for updates..."
     updateStatusProgress.isVisible = true
     updateBtn.isVisible = false
