@@ -191,7 +191,7 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
         .build()
     )
     val aboutImage = JLabel()
-    aboutImage.icon = ImageIcon(javaClass.getResource("/Images/about.png"))
+    aboutImage.icon = ImageIcon(javaClass.getResource("/Images/splash.png"))
     aboutImage.text = ""
     infoPane.add(
       aboutImage,
