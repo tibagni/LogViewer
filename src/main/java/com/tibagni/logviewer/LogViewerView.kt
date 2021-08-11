@@ -19,10 +19,7 @@ import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.Toast
 import java.awt.*
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
+import java.awt.event.*
 import java.io.File
 import javax.swing.*
 
@@ -64,6 +61,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var logList: JTable
   private lateinit var filteredLogList: JTable
   private lateinit var addNewFilterGroupBtn: JButton
+  private lateinit var moreFilterOptionsBtn: JButton
   private lateinit var collapseExpandAllGroupsBtn: JButton
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
@@ -94,6 +92,12 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logRenderer = LogCellRenderer()
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
+    // Use Mouse event here to get the position on screen
+    moreFilterOptionsBtn.addMouseListener(object : MouseAdapter() {
+      override fun mouseClicked(e: MouseEvent) {
+        showFilterOptionsMenu(e)
+      }
+    })
     collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
     setupFiltersContextActions()
 
@@ -119,6 +123,31 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
 
     updateCollapseExpandButtonState()
+  }
+
+  private fun showFilterOptionsMenu(e: MouseEvent) {
+    val popup = JPopupMenu()
+    val closeAllGroupsItem = popup.add("Close all groups")
+    closeAllGroupsItem.addActionListener { closeAllGroups() }
+    // If there are no groups, there is no point in closing anything
+    closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
+
+    popup.add(closeAllGroupsItem)
+    popup.show(e.component, e.x, e.y)
+  }
+
+  private fun closeAllGroups() {
+    val userChoice = JOptionPane.showConfirmDialog(
+      mainView.parent,
+      "Are you sure you want to close all groups?",
+      "Are you sure?",
+      JOptionPane.YES_NO_OPTION,
+      JOptionPane.WARNING_MESSAGE
+    )
+    if (userChoice == JOptionPane.YES_NO_OPTION) {
+      val openGroups = presenter.groups
+      openGroups.forEach { presenter.removeGroup(it) }
+    }
   }
 
   private fun addGroup(initializeFilter: Boolean = true): String? {
@@ -226,10 +255,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         presenter.moveFilters(group, destGroup, indices)
       }
 
-      override fun onDeleteGroup(group: String) {
+      override fun onCloseGroup(group: String) {
         val userChoice = JOptionPane.showConfirmDialog(
           mainView.parent,
-          "Are you sure you want to delete this whole group?",
+          "Are you sure you want to close this group?",
           "Are you sure?",
           JOptionPane.YES_NO_OPTION,
           JOptionPane.WARNING_MESSAGE
@@ -606,12 +635,20 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     )
 
     val filterButtonsPane = JPanel(BorderLayout())
+    val filterActionButtonsPane = JPanel()
+    collapseExpandAllGroupsBtn = FlatButton()
     addNewFilterGroupBtn = JButton()
     addNewFilterGroupBtn.actionCommand = "Add"
     addNewFilterGroupBtn.text = "New Group"
-    collapseExpandAllGroupsBtn = FlatButton()
+    moreFilterOptionsBtn = JButton()
+    moreFilterOptionsBtn.toolTipText = "More options"
+    moreFilterOptionsBtn.text = StringUtils.THREE_LINES
+
+    filterActionButtonsPane.add(addNewFilterGroupBtn)
+    filterActionButtonsPane.add(moreFilterOptionsBtn)
+
     filterButtonsPane.add(collapseExpandAllGroupsBtn, BorderLayout.WEST)
-    filterButtonsPane.add(addNewFilterGroupBtn, BorderLayout.EAST)
+    filterButtonsPane.add(filterActionButtonsPane, BorderLayout.EAST)
 
     filtersMainPane.add(
       filterButtonsPane,

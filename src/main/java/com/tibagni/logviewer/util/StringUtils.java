@@ -21,6 +21,12 @@ public class StringUtils {
 
   public static final String RIGHT_ARROW_HEAD = "\u25B8";
   public static final String DOWN_ARROW_HEAD = "\u25BE";
+  public static final String UP_ARROW_HEAD = "\u25B4";
+
+  public static final String DOWN_ARROW_HEAD_BIG = "\u25BC";
+  public static final String UP_ARROW_HEAD_BIG = "\u25B2";
+
+  public static final String THREE_LINES = "\u2630";
 
   public static final String DELETE = "x"; //TODO find a better symbol
   public static final String PLUS = "+"; //TODO find a better symbol
