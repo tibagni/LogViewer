@@ -37,6 +37,9 @@ public interface LogViewerPresenter {
   void applyFilters();
   void filterEdited(Filter filter);
 
+  void setAllFiltersApplied(String group, boolean isApplied);
+  void setAllFiltersApplied(boolean isApplied);
+
   void setStreamAllowed(LogStream stream, boolean allowed);
   boolean isStreamAllowed(LogStream stream);
 

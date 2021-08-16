@@ -128,11 +128,21 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun showFilterOptionsMenu(e: MouseEvent) {
     val popup = JPopupMenu()
     val closeAllGroupsItem = popup.add("Close all groups")
+    closeAllGroupsItem.toolTipText = "Close all currently open groups"
+
+    val unapplyAllFilters = popup.add("\"Un-apply\" all filters")
+    unapplyAllFilters.toolTipText = "\"Un-apply\" all filters from all groups"
+
     closeAllGroupsItem.addActionListener { closeAllGroups() }
+    unapplyAllFilters.addActionListener { clearAllFiltersSelection() }
+
     // If there are no groups, there is no point in closing anything
     closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
+    // If there are no logs open, don't let user un-apply
+    unapplyAllFilters.isEnabled = (logList.model?.rowCount ?: 0) > 0
 
     popup.add(closeAllGroupsItem)
+    popup.add(unapplyAllFilters)
     popup.show(e.component, e.x, e.y)
   }
 
@@ -148,6 +158,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       val openGroups = presenter.groups
       openGroups.forEach { presenter.removeGroup(it) }
     }
+  }
+
+  private fun clearAllFiltersSelection() {
+    presenter.setAllFiltersApplied(false)
   }
 
   private fun addGroup(initializeFilter: Boolean = true): String? {

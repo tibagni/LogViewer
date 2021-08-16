@@ -199,7 +199,7 @@ class LogViewerPresenterTests {
 
   @Test
   fun testMoveOneFilterToSameGroup() {
-    presenter.moveFilters("group1","group1", intArrayOf(0))
+    presenter.moveFilters("group1", "group1", intArrayOf(0))
 
     verify(view, never()).configureFiltersList(any())
     verify(view, never()).showFilteredLogs(any())
@@ -222,7 +222,7 @@ class LogViewerPresenterTests {
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
     `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
 
-    presenter.moveFilters("group1","group2", intArrayOf(0))
+    presenter.moveFilters("group1", "group2", intArrayOf(0))
 
     verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
     verify(view, never()).showFilteredLogs(any())
@@ -246,7 +246,7 @@ class LogViewerPresenterTests {
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
     `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
 
-    presenter.moveFilters("group1","group2", intArrayOf(0))
+    presenter.moveFilters("group1", "group2", intArrayOf(0))
 
     verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
     verify(view, times(1)).showFilteredLogs(any())
@@ -275,7 +275,7 @@ class LogViewerPresenterTests {
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
     `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
 
-    presenter.moveFilters("group1","group2", intArrayOf(0, 1))
+    presenter.moveFilters("group1", "group2", intArrayOf(0, 1))
 
     verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
     verify(view, never()).showFilteredLogs(any())
@@ -305,7 +305,7 @@ class LogViewerPresenterTests {
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMapAfterMove)
     `when`(mockFiltersRepository.getChangedGroupsSinceLastOpened()).thenReturn(listOf("group1", "group1"))
 
-    presenter.moveFilters("group1","group2", intArrayOf(0, 1))
+    presenter.moveFilters("group1", "group2", intArrayOf(0, 1))
 
     verify(view, times(1)).configureFiltersList(filtersMapAfterMove)
     verify(view, times(1)).showFilteredLogs(any())
@@ -1330,6 +1330,222 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testSetAllFiltersAppliedUnApplyAll() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = true }),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied(false)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all filters were really un-applied
+    val appliedFilters = filtersMap.filter {
+      it.value.any { filter -> filter.isApplied }
+    }.size
+    assertEquals(0, appliedFilters)
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedUnApplyAllAllPreviouslyApplied() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = true }),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = true }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied(false)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all filters were really un-applied
+    val appliedFilters = filtersMap.filter {
+      it.value.any { filter -> filter.isApplied }
+    }.size
+    assertEquals(0, appliedFilters)
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedApplyAll() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = false }),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = false },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = true }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied(true)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all filters were really applied
+    val appliedFilters = filtersMap.filter {
+      it.value.any { filter -> !filter.isApplied }
+    }.size
+    assertEquals(0, appliedFilters)
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedApplyAllAllPreviouslyUnApplied() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = false }),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = false },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied(true)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all filters were really applied
+    val appliedFilters = filtersMap.filter {
+      it.value.any { filter -> !filter.isApplied }
+    }.size
+    assertEquals(0, appliedFilters)
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedNoFilters() {
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf())
+
+    presenter.setAllFiltersApplied(true)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedInGroupUnApplyAll() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      ),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied("testGroup", false)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all testGroup2 is untouched
+    assertTrue(filtersMap["testGroup2"]!![0].isApplied)
+    assertFalse(filtersMap["testGroup2"]!![1].isApplied)
+
+    // Check all testGroup is un-applied
+    val appliedFilters = filtersMap["testGroup"]!!.any { filter -> filter.isApplied }
+    assertFalse(appliedFilters)
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedInGroupApplyAll() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      ),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied("testGroup", true)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all testGroup2 is untouched
+    assertTrue(filtersMap["testGroup2"]!![0].isApplied)
+    assertFalse(filtersMap["testGroup2"]!![1].isApplied)
+
+    // Check all testGroup is un-applied
+    val appliedFilters = filtersMap["testGroup"]!!.any { filter -> !filter.isApplied }
+    assertFalse(appliedFilters)
+  }
+
+  @Test
+  fun testSetAllFiltersAppliedInGroupInvalidGroup() {
+    val filtersMap = mapOf(
+      "testGroup" to listOf(Filter.createFromString(TEST_SERIALIZED_FILTER).also { it.isApplied = true }),
+      "testGroup2" to listOf(
+        Filter.createFromString(TEST_SERIALIZED_FILTER2).also { it.isApplied = true },
+        Filter.createFromString(TEST_SERIALIZED_FILTER3).also { it.isApplied = false }
+      )
+    )
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(filtersMap)
+
+    presenter.setAllFiltersApplied("testGroup3", true)
+
+    verify(view, never()).configureFiltersList(any())
+    assertEquals(1, presenter.testStats.applyFiltersCallCount)
+    verify(view).showFilteredLogs(any())
+
+    // Check all testGroup2 is untouched
+    assertTrue(filtersMap["testGroup2"]!![0].isApplied)
+    assertFalse(filtersMap["testGroup2"]!![1].isApplied)
+
+    // Check all testGroup is untouched
+    assertTrue(filtersMap["testGroup"]!![0].isApplied)
+  }
+
+  @Test
   fun testLoadLogs() {
     val inputLogFiles = arrayOf(File("test"))
 
@@ -1531,7 +1747,7 @@ class LogViewerPresenterTests {
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
     verify(view, never()).showSkippedLogsMessage(anyOrNull())
-    verify(view).showOpenPotentialBugReport("bugreport","test text")
+    verify(view).showOpenPotentialBugReport("bugreport", "test text")
     verify(view, never()).closeCurrentlyOpenedBugReports()
   }
 

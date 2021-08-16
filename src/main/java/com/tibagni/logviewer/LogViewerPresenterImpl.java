@@ -161,11 +161,11 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       if (groupFile != null) {
         File[] currentSavedPaths = userPrefs.getLastFilterPaths();
         if (currentSavedPaths.length > 0) {
-           int i = ArrayUtils.indexOf(currentSavedPaths, groupFile);
-           if (i >= 0) {
-             currentSavedPaths = ArrayUtils.remove(currentSavedPaths, i);
-             userPrefs.setLastFilterPaths(currentSavedPaths);
-           }
+          int i = ArrayUtils.indexOf(currentSavedPaths, groupFile);
+          if (i >= 0) {
+            currentSavedPaths = ArrayUtils.remove(currentSavedPaths, i);
+            userPrefs.setLastFilterPaths(currentSavedPaths);
+          }
         }
       }
     }
@@ -287,7 +287,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
     try {
       filtersRepository.openFilterFiles(filtersFiles);
-    } catch(OpenFiltersException e) {
+    } catch (OpenFiltersException e) {
       view.showErrorMessage(e.getMessage());
     }
 
@@ -341,7 +341,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
               view.closeCurrentlyOpenedBugReports();
             } else {
               // We only support opening one bugreport for now
-              Map.Entry<String,String> entry = bugReports.entrySet().iterator().next();
+              Map.Entry<String, String> entry = bugReports.entrySet().iterator().next();
               view.showOpenPotentialBugReport(entry.getKey(), entry.getValue());
             }
           } else {
@@ -349,7 +349,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
             view.showErrorMessage("No logs found");
           }
         });
-      } catch(OpenLogsException e) {
+      } catch (OpenLogsException e) {
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
       }
     });
@@ -405,7 +405,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     doAsync(() -> {
       filteredLogs.clear();
       filteredLogs.addAll(Filters.applyMultipleFilters(
-              logsRepository.getCurrentlyOpenedLogs(), toApply.toArray(new Filter[0]), this::updateAsyncProgress));
+          logsRepository.getCurrentlyOpenedLogs(), toApply.toArray(new Filter[0]), this::updateAsyncProgress));
       cachedAllowedFilteredLogs.clear();
       cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
       updateFiltersContextInfo();
@@ -423,6 +423,18 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       filter.setApplied(true);
       applyFilters();
     }
+  }
+
+  @Override
+  public void setAllFiltersApplied(String group, boolean isApplied) {
+    forEachFilterInGroup(group, filter -> filter.setApplied(isApplied));
+    applyFilters();
+  }
+
+  @Override
+  public void setAllFiltersApplied(boolean isApplied) {
+    forEachFilter(filter -> filter.setApplied(isApplied));
+    applyFilters();
   }
 
   @Override
@@ -552,6 +564,15 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
   }
 
+  private void forEachFilterInGroup(String group, Consumer<Filter> consumer) {
+    List<Filter> filtersFromGroup = filtersRepository.getCurrentlyOpenedFilters().get(group);
+    if (filtersFromGroup != null) {
+      for (Filter f : filtersFromGroup) {
+        consumer.accept(f);
+      }
+    }
+  }
+
   private void forEachFilter(Consumer<Filter> consumer) {
     for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
       List<Filter> filtersFromGroup = entry.getValue();
@@ -613,7 +634,9 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     int rememberAppliedFiltersCallCount;
     int reapplyRememberedFiltersCallCount;
   }
+
   private final Stats testStats = new Stats();
+
   Stats getTestStats() {
     return testStats;
   }
@@ -628,9 +651,11 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       allowedStreamsMap.put(stream, initiallyAllowed);
     }
   }
+
   void setAvailableStreamsForTesting(Set<LogStream> streams) {
     setAvailableStreamsForTesting(streams, false);
   }
+
   void setUnsavedGroupForTesting(String group) {
     unsavedFilterGroups.add(group);
   }
