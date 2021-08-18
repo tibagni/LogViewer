@@ -68,6 +68,7 @@ class LogViewerPresenterTests {
 
     verify(mockPrefs, never()).lastFilterPaths
     verify(view, never()).configureFiltersList(any())
+    verify(view, never()).showFiltersLoadedAtStartup()
   }
 
   @Test
@@ -77,6 +78,7 @@ class LogViewerPresenterTests {
     presenter.init()
 
     verify(view, never()).configureFiltersList(any())
+    verify(view, never()).showFiltersLoadedAtStartup()
   }
 
   @Test
@@ -88,6 +90,7 @@ class LogViewerPresenterTests {
 
     verify(mockFiltersRepository).openFilterFiles(arrayOf(inputFile))
     verify(view).configureFiltersList(any())
+    verify(view).showFiltersLoadedAtStartup()
   }
 
   @Test
