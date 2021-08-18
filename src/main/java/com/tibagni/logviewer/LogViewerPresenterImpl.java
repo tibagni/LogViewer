@@ -50,6 +50,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       File[] lastFilters = userPrefs.getLastFilterPaths();
       if (lastFilters.length > 0) {
         loadFilters(lastFilters, false);
+        view.showFiltersLoadedAtStartup();
       }
     }
   }

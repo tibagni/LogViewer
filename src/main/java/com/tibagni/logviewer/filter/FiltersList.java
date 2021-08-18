@@ -4,10 +4,12 @@ import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
+import com.tibagni.logviewer.util.SwingUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
 import com.tibagni.logviewer.view.FlatButton;
 import com.tibagni.logviewer.view.ReorderableCheckBoxList;
+import com.tibagni.logviewer.view.TriStateCheckbox;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -45,6 +47,16 @@ public class FiltersList extends JPanel {
     initialize();
   }
 
+  @Override
+  public void updateUI() {
+    super.updateUI();
+    if (filterUIGroups != null) {
+      for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
+        groupEntry.getValue().updateActionPaneButtons();
+      }
+    }
+  }
+
   private void initialize() {
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
     filterUIGroups = new HashMap<>();
@@ -68,7 +80,6 @@ public class FiltersList extends JPanel {
         return true;
       }
     }
-
     return false;
   }
 
@@ -164,6 +175,7 @@ public class FiltersList extends JPanel {
     private JButton addBtn;
     private JButton saveBtn;
     private JButton closeBtn;
+    private TriStateCheckbox selectAllCb;
     private ReorderableCheckBoxList<Filter> list;
     private FilterCellRenderer cellRenderer;
     private ListSearchHandler listSearchHandler;
@@ -268,32 +280,44 @@ public class FiltersList extends JPanel {
       hideGroupBtn = new FlatButton(HIDE);
 
       prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);
+      prevBtn.setToolTipText("Navigate to previous filtered log");
+
       nextBtn = new FlatButton(StringUtils.RIGHT_BLACK_POINTER);
+      nextBtn.setToolTipText("Navigate to next filtered log");
+
       addBtn = new FlatButton(StringUtils.PLUS);
+      addBtn.setToolTipText("Add a new filter to this group");
+
       saveBtn = new FlatButton("save");
       saveBtn.setVisible(false);
+
       closeBtn = new FlatButton(StringUtils.DELETE);
+      closeBtn.setToolTipText("Close group");
+
+      selectAllCb = new TriStateCheckbox();
+      selectAllCb.setToolTipText("Apply/Un-Apply all filters from this group");
 
       list = new ReorderableCheckBoxList<>();
       list.setCellRenderer(cellRenderer);
 
       JPanel optionsPane = new JPanel(new BorderLayout());
       optionsPane.add(hideGroupBtn, BorderLayout.WEST);
-      JPanel prevNextPane = new JPanel(new FlowLayout(FlowLayout.TRAILING));
-      prevNextPane.add(saveBtn);
-      prevNextPane.add(addBtn);
-      prevNextPane.add(prevBtn);
-      prevNextPane.add(nextBtn);
-      prevNextPane.add(closeBtn);
-      optionsPane.add(prevNextPane, BorderLayout.EAST);
+      JPanel groupActionsPane = new JPanel(new FlowLayout(FlowLayout.TRAILING));
+      groupActionsPane.add(selectAllCb);
+      groupActionsPane.add(saveBtn);
+      groupActionsPane.add(addBtn);
+      groupActionsPane.add(prevBtn);
+      groupActionsPane.add(nextBtn);
+      groupActionsPane.add(closeBtn);
+      optionsPane.add(groupActionsPane, BorderLayout.EAST);
       add(optionsPane, BorderLayout.NORTH);
       add(list);
 
       hideGroupBtn.addActionListener(l -> toggleGroupVisibility());
 
-      updateNavigationButtons();
       setListData(filters);
       configureContextActions();
+      SwingUtilities.invokeLater(this::updateActionPaneButtons);
     }
 
     public void setListData(Filter[] filters) {
@@ -425,15 +449,36 @@ public class FiltersList extends JPanel {
           listener.onCloseGroup(groupName);
         }
       });
+      selectAllCb.addSelectionChangedListener(newSelectionState -> {
+        if (listener != null) {
+          Boolean applied = null;
+          if (newSelectionState == TriStateCheckbox.SelectionState.SELECTED) {
+            applied = true;
+          } else if (newSelectionState == TriStateCheckbox.SelectionState.NOT_SELECTED) {
+            applied = false;
+          }
 
-      list.addListSelectionListener(e -> updateNavigationButtons());
+          if (applied != null) {
+            ListModel<Filter> listModel = list.getModel();
+            for (int i = 0; i < listModel.getSize(); i++) {
+              listModel.getElementAt(i).setApplied(applied);
+            }
+            // Update list UI to render the correct state for the checkboxes even if the filters are not really applied
+            // (If there are no logs open, the filters will not actually get applied)
+            list.updateUI();
+            listener.onFiltersApplied();
+          }
+        }
+      });
+
+      list.addListSelectionListener(e -> updateActionPaneButtons());
       list.setReorderedListener(this::reorderFilters);
       list.setItemsCheckListener((CheckBoxList.ItemsCheckListener<Filter>) elements -> {
         elements.forEach(f -> f.setApplied(!f.isApplied()));
         if (listener != null) {
           listener.onFiltersApplied();
         }
-        updateNavigationButtons();
+        updateActionPaneButtons();
       });
     }
 
@@ -455,10 +500,29 @@ public class FiltersList extends JPanel {
       }
     }
 
-    private void updateNavigationButtons() {
-      boolean enable = list.getSelectedIndices().length == 1 && list.getSelectedValue().isApplied();
-      prevBtn.setEnabled(enable);
-      nextBtn.setEnabled(enable);
+    private void updateActionPaneButtons() {
+      if (list == null) return;
+
+      boolean enableNavigation = list.getSelectedIndices().length == 1 && list.getSelectedValue().isApplied();
+      prevBtn.setEnabled(enableNavigation);
+      nextBtn.setEnabled(enableNavigation);
+
+      boolean hasAtLeastOneFilterApplied = false;
+      boolean allFiltersApplied = true;
+      ListModel<Filter> listModel = list.getModel();
+      for (int i = 0; i < listModel.getSize(); i++) {
+        Filter filter = listModel.getElementAt(i);
+        hasAtLeastOneFilterApplied |= filter.isApplied();
+        allFiltersApplied &= filter.isApplied();
+      }
+
+      TriStateCheckbox.SelectionState selectionState = TriStateCheckbox.SelectionState.NOT_SELECTED;
+      if (allFiltersApplied) {
+        selectionState = TriStateCheckbox.SelectionState.SELECTED;
+      } else if (hasAtLeastOneFilterApplied) {
+        selectionState = TriStateCheckbox.SelectionState.PARTIALLY_SELECTED;
+      }
+      selectAllCb.setSelectionState(selectionState);
     }
 
     private void deleteSelectedFilters() {
@@ -508,27 +572,16 @@ public class FiltersList extends JPanel {
 
   public interface FiltersListener {
     void onReordered(String group, int orig, int dest);
-
     void onFiltersApplied();
-
     void onEditFilter(Filter filter);
-
     void onDuplicateFilter(String group, Filter filter);
-
     void onDeleteFilters(String group, int[] indices);
-
     void onMoveFilters(String group, int[] indices);
-
     void onCloseGroup(String group);
-
     void onNavigateNextFilteredLog(Filter filter);
-
     void onNavigatePrevFilteredLog(Filter filter);
-
     void onAddFilter(String group);
-
     void onSaveFilters(String group);
-
     void onGroupVisibilityChanged(String group);
   }
 }

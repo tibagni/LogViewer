@@ -42,6 +42,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showLogs(logEntries: List<LogEntry>?)
   fun showCurrentLogsLocation(logsPath: String?)
   fun showFilteredLogs(logEntries: List<LogEntry>?)
+  fun showFiltersLoadedAtStartup();
   fun showAvailableLogStreams(logStreams: Set<LogStream>?)
   fun showUnsavedFilterIndication(group: String?)
   fun hideUnsavedFilterIndication(group: String?)
@@ -130,19 +131,19 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val closeAllGroupsItem = popup.add("Close all groups")
     closeAllGroupsItem.toolTipText = "Close all currently open groups"
 
-    val unapplyAllFilters = popup.add("\"Un-apply\" all filters")
-    unapplyAllFilters.toolTipText = "\"Un-apply\" all filters from all groups"
+    val unApplyAllFilters = popup.add("\"Un-apply\" all filters")
+    unApplyAllFilters.toolTipText = "\"Un-apply\" all filters from all groups"
 
     closeAllGroupsItem.addActionListener { closeAllGroups() }
-    unapplyAllFilters.addActionListener { clearAllFiltersSelection() }
+    unApplyAllFilters.addActionListener { clearAllFiltersSelection() }
 
     // If there are no groups, there is no point in closing anything
     closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
     // If there are no logs open, don't let user un-apply
-    unapplyAllFilters.isEnabled = (logList.model?.rowCount ?: 0) > 0
+    unApplyAllFilters.isEnabled = (logList.model?.rowCount ?: 0) > 0
 
     popup.add(closeAllGroupsItem)
-    popup.add(unapplyAllFilters)
+    popup.add(unApplyAllFilters)
     popup.show(e.component, e.x, e.y)
   }
 
@@ -495,6 +496,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     // Update the save menu option availability
     mainView.enableSaveFilteredLogsMenu(logEntries?.isNotEmpty() ?: false)
+  }
+
+  override fun showFiltersLoadedAtStartup() {
+    // Just make sure to keep the filters pane updated after initial filters are loaded at startup
+    filtersPane.updateUI()
   }
 
   override fun showAvailableLogStreams(logStreams: Set<LogStream>?) {
