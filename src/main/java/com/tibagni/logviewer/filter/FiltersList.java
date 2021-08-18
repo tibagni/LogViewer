@@ -317,7 +317,7 @@ public class FiltersList extends JPanel {
 
       setListData(filters);
       configureContextActions();
-      SwingUtilities.invokeLater(this::updateActionPaneButtons);
+      updateActionPaneButtons();
     }
 
     public void setListData(Filter[] filters) {
@@ -523,6 +523,7 @@ public class FiltersList extends JPanel {
         selectionState = TriStateCheckbox.SelectionState.PARTIALLY_SELECTED;
       }
       selectAllCb.setSelectionState(selectionState);
+      selectAllCb.updateUI();
     }
 
     private void deleteSelectedFilters() {

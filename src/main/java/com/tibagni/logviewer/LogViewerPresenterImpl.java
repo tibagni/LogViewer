@@ -50,7 +50,6 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       File[] lastFilters = userPrefs.getLastFilterPaths();
       if (lastFilters.length > 0) {
         loadFilters(lastFilters, false);
-        view.showFiltersLoadedAtStartup();
       }
     }
   }
@@ -301,6 +300,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     userPrefs.setLastFilterPaths(lastFilterPaths);
     if (userPrefs.getRememberAppliedFilters()) {
       reapplyRememberedFilters();
+      view.onAppliedFiltersRemembered();
     }
   }
 

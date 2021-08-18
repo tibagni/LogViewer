@@ -68,29 +68,44 @@ class LogViewerPresenterTests {
 
     verify(mockPrefs, never()).lastFilterPaths
     verify(view, never()).configureFiltersList(any())
-    verify(view, never()).showFiltersLoadedAtStartup()
+    verify(view, never()).onAppliedFiltersRemembered()
   }
 
   @Test
   fun testInitLoadingLastFilterNoFilterAvailable() {
     `when`(mockPrefs.openLastFilter).thenReturn(true)
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(false)
     `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf())
     presenter.init()
 
     verify(view, never()).configureFiltersList(any())
-    verify(view, never()).showFiltersLoadedAtStartup()
+    verify(view, never()).onAppliedFiltersRemembered()
   }
 
   @Test
   fun testInitLoadingLastFilter() {
     val inputFile = File("mock")
     `when`(mockPrefs.openLastFilter).thenReturn(true)
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(false)
     `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf(inputFile))
     presenter.init()
 
     verify(mockFiltersRepository).openFilterFiles(arrayOf(inputFile))
     verify(view).configureFiltersList(any())
-    verify(view).showFiltersLoadedAtStartup()
+    verify(view, never()).onAppliedFiltersRemembered()
+  }
+
+  @Test
+  fun testInitLoadingLastFilterRememberApplied() {
+    val inputFile = File("mock")
+    `when`(mockPrefs.openLastFilter).thenReturn(true)
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(true)
+    `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf(inputFile))
+    presenter.init()
+
+    verify(mockFiltersRepository).openFilterFiles(arrayOf(inputFile))
+    verify(view).configureFiltersList(any())
+    verify(view).onAppliedFiltersRemembered()
   }
 
   @Test
@@ -1810,6 +1825,7 @@ class LogViewerPresenterTests {
     verify(mockFiltersRepository).closeAllFilters()
     verify(mockFiltersRepository).openFilterFiles(filterFiles)
     verify(view).configureFiltersList(anyOrNull())
+    verify(view, never()).onAppliedFiltersRemembered()
     verify(mockPrefs).lastFilterPaths = anyOrNull()
   }
 
@@ -1825,6 +1841,7 @@ class LogViewerPresenterTests {
     verify(mockFiltersRepository, never()).closeAllFilters()
     verify(mockFiltersRepository).openFilterFiles(filterFiles)
     verify(view).configureFiltersList(anyOrNull())
+    verify(view, never()).onAppliedFiltersRemembered()
     verify(mockPrefs).lastFilterPaths = anyOrNull()
   }
 
@@ -1842,6 +1859,7 @@ class LogViewerPresenterTests {
     verify(mockFiltersRepository).closeAllFilters()
     verify(mockFiltersRepository).openFilterFiles(filterFiles)
     verify(view).configureFiltersList(anyOrNull())
+    verify(view).onAppliedFiltersRemembered()
     verify(mockPrefs).lastFilterPaths = anyOrNull()
   }
 

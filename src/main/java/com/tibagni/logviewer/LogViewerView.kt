@@ -42,7 +42,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showLogs(logEntries: List<LogEntry>?)
   fun showCurrentLogsLocation(logsPath: String?)
   fun showFilteredLogs(logEntries: List<LogEntry>?)
-  fun showFiltersLoadedAtStartup();
+  fun onAppliedFiltersRemembered();
   fun showAvailableLogStreams(logStreams: Set<LogStream>?)
   fun showUnsavedFilterIndication(group: String?)
   fun hideUnsavedFilterIndication(group: String?)
@@ -498,8 +498,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     mainView.enableSaveFilteredLogsMenu(logEntries?.isNotEmpty() ?: false)
   }
 
-  override fun showFiltersLoadedAtStartup() {
-    // Just make sure to keep the filters pane updated after initial filters are loaded at startup
+  override fun onAppliedFiltersRemembered() {
+    // Just make sure to keep the filters pane updated when they are loaded (if applied)
     filtersPane.updateUI()
   }
 
