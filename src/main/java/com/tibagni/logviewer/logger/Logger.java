@@ -93,4 +93,8 @@ public class Logger {
   static boolean isLoggable(LogLevelConfig.Level level) {
     return level.compareTo(logLevel) >= 0;
   }
+
+  static boolean isDebugLevel() {
+    return isLoggable(LogLevelConfig.Level.DEBUG);
+  }
 }

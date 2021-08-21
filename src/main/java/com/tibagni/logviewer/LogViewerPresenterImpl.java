@@ -6,6 +6,7 @@ import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.LogTimestamp;
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.logger.Profiler;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -16,6 +17,8 @@ import java.io.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import static com.tibagni.logviewer.logger.ProfilerKt.wrapProfiler;
 
 public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerPresenter {
   private final LogViewerPresenterView view;
@@ -272,8 +275,15 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       LogTimestamp searchTimestamp = new LogTimestamp(month, day, hour, min, sec, hund);
       Logger.info("Going to timestamp: " + searchTimestamp);
 
-      int unfilteredLogIndex = findClosestLogIndexByTimestamp(searchTimestamp, logsRepository.getCurrentlyOpenedLogs());
-      int filteredLogIndex = findClosestLogIndexByTimestamp(searchTimestamp, cachedAllowedFilteredLogs);
+      int unfilteredLogIndex = wrapProfiler(
+          "findClosestLogIndexByTimestamp-AllLogs",
+          () -> findClosestLogIndexByTimestamp(searchTimestamp, logsRepository.getCurrentlyOpenedLogs())
+      );
+      int filteredLogIndex = wrapProfiler(
+          "findClosestLogIndexByTimestamp-FilteredLogs",
+          () -> findClosestLogIndexByTimestamp(searchTimestamp, cachedAllowedFilteredLogs)
+      );
+
       view.showLogLocationAtSearchedTimestamp(unfilteredLogIndex, filteredLogIndex);
     } catch (Exception e) {
       Logger.error("Failed to parse timestamp: " + timestamp, e);
