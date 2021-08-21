@@ -3,10 +3,6 @@ package com.tibagni.logviewer.view;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.MouseInputAdapter;
-import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 

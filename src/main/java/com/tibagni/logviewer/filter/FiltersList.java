@@ -4,7 +4,6 @@ import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
-import com.tibagni.logviewer.util.SwingUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
 import com.tibagni.logviewer.view.FlatButton;
@@ -169,26 +168,26 @@ public class FiltersList extends JPanel {
     private final String HIDE;
 
     String groupName;
-    private JButton hideGroupBtn;
-    private JButton prevBtn;
-    private JButton nextBtn;
-    private JButton addBtn;
-    private JButton saveBtn;
-    private JButton closeBtn;
-    private TriStateCheckbox selectAllCb;
-    private ReorderableCheckBoxList<Filter> list;
-    private FilterCellRenderer cellRenderer;
+    private final JButton hideGroupBtn;
+    private final JButton prevBtn;
+    private final JButton nextBtn;
+    private final JButton addBtn;
+    private final JButton saveBtn;
+    private final JButton closeBtn;
+    private final TriStateCheckbox selectAllCb;
+    private final ReorderableCheckBoxList<Filter> list;
+    private final FilterCellRenderer cellRenderer;
     private ListSearchHandler listSearchHandler;
 
     private class ListSearchHandler {
-      private JList targetList;
-      private FilterCellRenderer filterCellRenderer;
+      private final JList targetList;
+      private final FilterCellRenderer filterCellRenderer;
 
       private JLabel searchHint;
       private Popup hintPopup;
 
       private boolean isSearching;
-      private StringBuilder searchString = new StringBuilder();
+      private final StringBuilder searchString = new StringBuilder();
 
       public ListSearchHandler(JList targetList, FilterCellRenderer filterCellRenderer) {
         this.targetList = targetList;

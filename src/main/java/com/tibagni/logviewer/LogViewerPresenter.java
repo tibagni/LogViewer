@@ -1,14 +1,10 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.filter.Filter;
-import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 
-import javax.swing.*;
 import java.io.File;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public interface LogViewerPresenter {
 

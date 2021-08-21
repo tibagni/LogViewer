@@ -15,7 +15,7 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
   private lateinit var detailsText: SearchableTextArea
 
   init {
-    buildUi();
+    buildUi()
 
     list.addListSelectionListener {
       if (list.selectedIndex > listModel.size() || list.selectedIndex < 0) {

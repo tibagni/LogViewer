@@ -5,11 +5,10 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class PropertiesWrapper {
-  private final ClassLoader objClassLoader;
-  private Properties appProperties = new Properties();
+  private final Properties appProperties = new Properties();
 
   public PropertiesWrapper(String propertiesFilename) throws IOException {
-    objClassLoader = getClass().getClassLoader();
+    ClassLoader objClassLoader = getClass().getClassLoader();
 
     if (StringUtils.isEmpty(propertiesFilename)) {
       throw new IOException("Invalid properties file provided");

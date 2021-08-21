@@ -11,7 +11,7 @@ public enum LogStream {
   KERNEL,
   UNKNOWN;
 
-  private static Map<LogStream, String[]> logNamesMap = new HashMap<>();
+  private static final Map<LogStream, String[]> logNamesMap = new HashMap<>();
   static {
     String[] mainLogNames = {"main", "-m."};
     String[] systemLogNames = {"system", "-s."};

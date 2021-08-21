@@ -6,7 +6,6 @@ import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersList
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.log.*
-import com.tibagni.logviewer.log.parser.LogParser
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
@@ -43,7 +42,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showFilteredLogs(logEntries: List<LogEntry>?)
   fun showLogLocationAtSearchedTimestamp(allLogsPosition: Int, filteredLogsPosition: Int)
   fun showInvalidTimestampSearchError(failedInput: String?)
-  fun onAppliedFiltersRemembered();
+  fun onAppliedFiltersRemembered()
   fun showAvailableLogStreams(logStreams: Set<LogStream>?)
   fun showUnsavedFilterIndication(group: String?)
   fun hideUnsavedFilterIndication(group: String?)

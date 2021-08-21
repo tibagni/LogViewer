@@ -1,16 +1,13 @@
 package com.tibagni.logviewer.view;
 
-import com.tibagni.logviewer.util.scaling.UIScaleUtils;
-
 import javax.swing.*;
-import java.awt.*;
 
 public class ProgressDialog extends JDialog {
     private JPanel contentPane;
     private JProgressBar progressbar;
     private JLabel progressText;
 
-    private JFrame owner;
+    private final JFrame owner;
 
     public ProgressDialog(JFrame owner) {
         super(owner);

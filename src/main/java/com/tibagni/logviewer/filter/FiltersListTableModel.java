@@ -4,7 +4,7 @@ import javax.swing.table.AbstractTableModel;
 
 public class FiltersListTableModel extends AbstractTableModel {
   private Filter[] filters;
-  private String groupName;
+  private final String groupName;
 
   public FiltersListTableModel(String group) {
     groupName = group;

@@ -22,8 +22,8 @@ public class Toast extends JFrame {
   private final JLabel label;
   private Popup popup;
 
-  private Color foreground = Color.white;
-  private Color background = Color.darkGray;
+  private final Color foreground = Color.white;
+  private final Color background = Color.darkGray;
 
   private Toast(Component parent, String message) {
     this.parent = parent;

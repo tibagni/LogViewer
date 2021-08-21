@@ -19,7 +19,7 @@ public class UIScaleConfig implements Config<Integer> {
                 if (parsedValue > 0) {
                     return parsedValue;
                 }
-            } catch (NumberFormatException nfe) { }
+            } catch (NumberFormatException ignored) { }
         }
 
         return SCALE_OFF;

@@ -12,6 +12,7 @@ import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.io.File;
@@ -93,7 +94,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   @Override
-  public void onUpdateFound(ReleaseInfo newRelease) {
+  public void onUpdateFound(@NotNull ReleaseInfo newRelease) {
     UpdateAvailableDialog.Companion.showUpdateAvailableDialog(null, newRelease);
   }
 
@@ -103,7 +104,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   }
 
   @Override
-  public void onFailedToCheckForUpdate(Throwable tr) {
+  public void onFailedToCheckForUpdate(@NotNull Throwable tr) {
     // Do nothing
   }
 }

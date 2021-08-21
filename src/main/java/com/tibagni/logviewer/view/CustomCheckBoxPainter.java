@@ -17,7 +17,7 @@ public class CustomCheckBoxPainter implements Painter<JComponent> {
 
     public void paintIcon(Component c, Graphics g, int x, int y) {
         ButtonModel model = (c instanceof JCheckBoxMenuItem) ?
-                ((JCheckBoxMenuItem) c).getModel() : ((JCheckBox) c).getModel();;
+                ((JCheckBoxMenuItem) c).getModel() : ((JCheckBox) c).getModel();
         int controlSize = getControlSize();
 
         if (model.isEnabled()) {

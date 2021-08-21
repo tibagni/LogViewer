@@ -1,12 +1,11 @@
 package com.tibagni.logviewer.util;
 
-import com.tibagni.logviewer.LogViewerApplication;
 import com.tibagni.logviewer.logger.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 public class CommonUtils {
 
@@ -18,11 +17,10 @@ public class CommonUtils {
     }
   }
 
+  @SafeVarargs
   public static <E> List<E> listOf(E... elements) {
     List<E> l = new ArrayList<>();
-    for (E e : elements) {
-      l.add(e);
-    }
+    Collections.addAll(l, elements);
 
     return l;
   }
