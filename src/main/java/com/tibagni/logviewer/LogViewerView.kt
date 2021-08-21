@@ -5,10 +5,8 @@ import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersList
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
-import com.tibagni.logviewer.log.LogCellRenderer
-import com.tibagni.logviewer.log.LogEntry
-import com.tibagni.logviewer.log.LogListTableModel
-import com.tibagni.logviewer.log.LogStream
+import com.tibagni.logviewer.log.*
+import com.tibagni.logviewer.log.parser.LogParser
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
@@ -31,6 +29,7 @@ interface LogViewerView : View {
   fun handleRefreshLogsMenu()
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
+  fun handleGoToTimestampMenu()
   fun onThemeChanged()
 }
 
@@ -42,6 +41,8 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showLogs(logEntries: List<LogEntry>?)
   fun showCurrentLogsLocation(logsPath: String?)
   fun showFilteredLogs(logEntries: List<LogEntry>?)
+  fun showLogLocationAtSearchedTimestamp(allLogsPosition: Int, filteredLogsPosition: Int)
+  fun showInvalidTimestampSearchError(failedInput: String?)
   fun onAppliedFiltersRemembered();
   fun showAvailableLogStreams(logStreams: Set<LogStream>?)
   fun showUnsavedFilterIndication(group: String?)
@@ -444,6 +445,40 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
   }
 
+  override fun handleGoToTimestampMenu() {
+    var hintText = "{month}-{day} {hour}:{min}:{sec}:{hund}"
+    var ts: LogTimestamp? = null
+    if (filteredLogList.hasFocus() && filteredLogList.selectedRow >= 0) {
+      val selectedEntry =
+        filteredLogList.model.getValueAt(filteredLogList.selectedRow, filteredLogList.selectedColumn) as LogEntry
+      ts = selectedEntry.timestamp
+    } else if (logList.hasFocus() && logList.selectedRow >= 0) {
+      val selectedEntry =
+        logList.model.getValueAt(logList.selectedRow, logList.selectedColumn) as LogEntry
+      ts = selectedEntry.timestamp
+    }
+
+    ts?.let { hintText = "${it.month}-${it.day} ${it.hour}:${it.minutes}:${it.seconds}.${it.hundredth}" }
+
+    val input =
+      JOptionPane.showInputDialog(
+        contentPane,
+        "If the exact timestamp is not found, it will go to the closest around it...",
+        "Go to timestamp...",
+        JOptionPane.PLAIN_MESSAGE,
+        null,
+        null,
+        hintText
+      ) as String?
+
+    if (input.isNullOrEmpty()) {
+      Logger.debug("timestamp is empty. Dialog was canceled or no timestamp provided. Aborting...")
+      return
+    }
+
+    presenter.goToTimestamp(input)
+  }
+
   override fun onThemeChanged() {
     // Do nothing
   }
@@ -496,6 +531,29 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     // Update the save menu option availability
     mainView.enableSaveFilteredLogsMenu(logEntries?.isNotEmpty() ?: false)
+  }
+
+  override fun showLogLocationAtSearchedTimestamp(allLogsPosition: Int, filteredLogsPosition: Int) {
+    Logger.debug("showLogLocationAtSearchedTimestamp: ($allLogsPosition, $filteredLogsPosition)")
+    if (allLogsPosition >= 0) {
+      SwingUtils.scrollToVisible(logList, allLogsPosition)
+      logList.setRowSelectionInterval(allLogsPosition, allLogsPosition)
+    }
+
+    if (filteredLogsPosition >= 0) {
+      SwingUtils.scrollToVisible(filteredLogList, filteredLogsPosition)
+      filteredLogList.setRowSelectionInterval(filteredLogsPosition, filteredLogsPosition)
+    }
+  }
+
+  override fun showInvalidTimestampSearchError(failedInput: String?) {
+    JOptionPane.showMessageDialog(
+      contentPane,
+      "it was not possible to parse \"$failedInput\".\n" +
+          "Please make sure your input is in the correct format\n",
+      "Could not parse input",
+      JOptionPane.ERROR_MESSAGE
+    )
   }
 
   override fun onAppliedFiltersRemembered() {

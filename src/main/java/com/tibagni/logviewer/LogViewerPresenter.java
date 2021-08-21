@@ -29,6 +29,7 @@ public interface LogViewerPresenter {
   void reorderFilters(String group, int orig, int dest);
   int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
   int getPrevFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
+  void goToTimestamp(String timestamp);
   void saveFilters(String group);
   void loadFilters(File[] filtersFile, boolean keepCurrentFilters);
   void loadLogs(File[] logFiles);

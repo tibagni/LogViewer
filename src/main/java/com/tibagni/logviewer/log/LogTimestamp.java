@@ -1,13 +1,13 @@
 package com.tibagni.logviewer.log;
 
 public class LogTimestamp implements Comparable<LogTimestamp> {
-  private final int month;
-  private final int day;
+  public final int month;
+  public final int day;
 
-  private final int hour;
-  private final int minutes;
-  private final int seconds;
-  private final int hundredth;
+  public final int hour;
+  public final int minutes;
+  public final int seconds;
+  public final int hundredth;
 
   public LogTimestamp(int month, int day, int hour, int minutes, int seconds, int hundredth) {
     this.month = month;
@@ -48,6 +48,18 @@ public class LogTimestamp implements Comparable<LogTimestamp> {
     if (hundredth < o.hundredth) return -1;
 
     return 0;
+  }
+
+  @Override
+  public String toString() {
+    return "LogTimestamp{" +
+        "month=" + month +
+        ", day=" + day +
+        ", hour=" + hour +
+        ", minutes=" + minutes +
+        ", seconds=" + seconds +
+        ", hundredth=" + hundredth +
+        '}';
   }
 
   @Override

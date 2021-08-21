@@ -12,6 +12,7 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.JFileChooserExt
 import com.tibagni.logviewer.view.ProgressDialog
 import java.awt.*
+import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
@@ -266,6 +267,12 @@ class MainViewImpl(
     saveFilteredLogs = JMenuItem("Save Filtered Logs")
     saveFilteredLogs?.addActionListener { logViewerView.handleSaveFilteredLogsMenu() }
     logsMenu.add(saveFilteredLogs)
+    logsMenu.addSeparator()
+    val goToTimestampItem = JMenuItem("Go to timestamp")
+    goToTimestampItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK)
+    goToTimestampItem.addActionListener { logViewerView.handleGoToTimestampMenu() }
+    logsMenu.add(goToTimestampItem)
+
 
     val filtersMenu = JMenu("Filters")
     val openFilterItem = JMenuItem("Open Filters...")

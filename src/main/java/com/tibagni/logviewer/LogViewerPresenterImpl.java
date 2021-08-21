@@ -4,10 +4,13 @@ import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
+import com.tibagni.logviewer.log.LogTimestamp;
+import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.*;
@@ -242,6 +245,60 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     return -1;
+  }
+
+  @Override
+  public void goToTimestamp(String timestamp) {
+    try {
+      String[] timestampParts = timestamp.split(" ");
+      String[] date = timestampParts[0].split("-");
+      String[] time = timestampParts.length > 1 ?
+          // Allow the user to use ':' or '.' for time portion. In case it is a copy of what is in the logcat
+          timestampParts[1].replaceAll("\\.", ":").split(":") :
+          new String[]{};
+
+      if (date.length != 2) throw new IllegalArgumentException("Invalid date!");
+
+      int month = Integer.parseInt(date[0]);
+      int day = Integer.parseInt(date[1]);
+
+      // It does not matter if the timestamp is not complete as it should work with
+      // approximate values. So, don't enforce it.
+      int hour = (time.length > 0) ? Integer.parseInt(time[0]) : 0;
+      int min = (time.length > 1) ? Integer.parseInt(time[1]) : 0;
+      int sec = (time.length > 2) ? Integer.parseInt(time[2]) : 0;
+      int hund = (time.length > 3) ? Integer.parseInt(time[3]) : 0;
+
+      LogTimestamp searchTimestamp = new LogTimestamp(month, day, hour, min, sec, hund);
+      Logger.info("Going to timestamp: " + searchTimestamp);
+
+      int unfilteredLogIndex = findClosestLogIndexByTimestamp(searchTimestamp, logsRepository.getCurrentlyOpenedLogs());
+      int filteredLogIndex = findClosestLogIndexByTimestamp(searchTimestamp, cachedAllowedFilteredLogs);
+      view.showLogLocationAtSearchedTimestamp(unfilteredLogIndex, filteredLogIndex);
+    } catch (Exception e) {
+      Logger.error("Failed to parse timestamp: " + timestamp, e);
+      view.showInvalidTimestampSearchError(timestamp);
+    }
+  }
+
+  private int findClosestLogIndexByTimestamp(@NotNull LogTimestamp timestamp, List<LogEntry> logList) {
+    if (logList == null || logList.isEmpty()) {
+      return -1;
+    }
+
+    int index = -1;
+    for (LogEntry entry : logList) {
+      index++;
+      if (timestamp.compareTo(entry.timestamp) == 0) {
+        break;
+      } else if (timestamp.compareTo(entry.timestamp) < 0) {
+        // We want the log line before
+        if (index > 0) index--;
+        break;
+      }
+    }
+
+    return index;
   }
 
   @Override
@@ -643,8 +700,16 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   void setFilteredLogsForTesting(LogEntry[] filteredLogs) {
+    setFilteredLogsForTesting(filteredLogs, false);
+  }
+
+  void setFilteredLogsForTesting(LogEntry[] filteredLogs, boolean setCached) {
     this.filteredLogs.clear();
     this.filteredLogs.addAll(Arrays.asList(filteredLogs));
+    if (setCached) {
+      this.cachedAllowedFilteredLogs.clear();
+      this.cachedAllowedFilteredLogs.addAll(Arrays.asList(filteredLogs));
+    }
   }
 
   void setAvailableStreamsForTesting(Set<LogStream> streams, boolean initiallyAllowed) {

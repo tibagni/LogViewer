@@ -6,10 +6,10 @@ import org.jetbrains.annotations.NotNull;
 public class LogEntry implements Comparable<LogEntry> {
 
   private int index;
-  private final LogTimestamp timestamp;
-  private final String logText;
-  private final LogLevel logLevel;
-  private final LogStream logStream;
+  public final LogTimestamp timestamp;
+  public final String logText;
+  public final LogLevel logLevel;
+  public final LogStream logStream;
 
   private Filter appliedFilter;
 

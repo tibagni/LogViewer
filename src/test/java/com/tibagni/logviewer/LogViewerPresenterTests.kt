@@ -763,6 +763,260 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testGotoTimestampInvalidTimestamp() {
+    presenter.goToTimestamp("invalid")
+
+    verify(view).showInvalidTimestampSearchError("invalid")
+    verify(view, never()).showLogLocationAtSearchedTimestamp(anyInt(), anyInt())
+  }
+
+  @Test
+  fun testGotoTimestampInvalidTimestamp2() {
+    presenter.goToTimestamp("12-3-3")
+
+    verify(view).showInvalidTimestampSearchError("12-3-3")
+    verify(view, never()).showLogLocationAtSearchedTimestamp(anyInt(), anyInt())
+  }
+
+  @Test
+  fun testGotoTimestampInvalidTimestamp3() {
+    presenter.goToTimestamp("12-")
+
+    verify(view).showInvalidTimestampSearchError("12-")
+    verify(view, never()).showLogLocationAtSearchedTimestamp(anyInt(), anyInt())
+  }
+
+  @Test
+  fun testGotoTimestampInvalidTimestamp4() {
+    presenter.goToTimestamp("12")
+
+    verify(view).showInvalidTimestampSearchError("12")
+    verify(view, never()).showLogLocationAtSearchedTimestamp(anyInt(), anyInt())
+  }
+
+  @Test
+  fun testGotoTimestampExactTimestamp() {
+    val timestamps = listOf(
+      LogTimestamp(10, 12, 22, 32, 50, 264),
+      LogTimestamp(10, 12, 22, 32, 50, 321),
+      LogTimestamp(10, 12, 22, 32, 50, 472),
+      LogTimestamp(10, 12, 22, 32, 50, 801),
+      LogTimestamp(10, 12, 22, 32, 51, 32),
+      LogTimestamp(10, 12, 22, 32, 52, 1),
+      LogTimestamp(10, 12, 22, 32, 52, 120),
+      LogTimestamp(10, 12, 22, 32, 52, 200),
+      LogTimestamp(10, 12, 22, 32, 53, 0)
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:50.801  2646  2664 I test  : Log4", LogLevel.INFO, timestamps[3]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:52.001  2646  2664 I test  : Log6", LogLevel.INFO, timestamps[5]),
+        LogEntry("10-12 22:32:52.120  2646  2664 I test  : Log7", LogLevel.INFO, timestamps[6]),
+        LogEntry("10-12 22:32:52.200  2646  2664 I test  : Log8", LogLevel.INFO, timestamps[7]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      )
+    )
+
+    presenter.setFilteredLogsForTesting(
+      arrayOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      ),
+      true // set cached filtered logs as well
+    )
+
+    presenter.goToTimestamp("10-12 22:32:51.032")
+
+    verify(view, never()).showInvalidTimestampSearchError(anyString())
+    verify(view).showLogLocationAtSearchedTimestamp(4, 3)
+  }
+
+  @Test
+  fun testGotoTimestampInexactTimestamp() {
+    val timestamps = listOf(
+      LogTimestamp(10, 12, 22, 32, 50, 264),
+      LogTimestamp(10, 12, 22, 32, 50, 321),
+      LogTimestamp(10, 12, 22, 32, 50, 472),
+      LogTimestamp(10, 12, 22, 32, 50, 801),
+      LogTimestamp(10, 12, 22, 32, 51, 32),
+      LogTimestamp(10, 12, 22, 32, 52, 1),
+      LogTimestamp(10, 12, 22, 32, 52, 120),
+      LogTimestamp(10, 12, 22, 32, 52, 200),
+      LogTimestamp(10, 12, 22, 32, 53, 0)
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:50.801  2646  2664 I test  : Log4", LogLevel.INFO, timestamps[3]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:52.001  2646  2664 I test  : Log6", LogLevel.INFO, timestamps[5]),
+        LogEntry("10-12 22:32:52.120  2646  2664 I test  : Log7", LogLevel.INFO, timestamps[6]),
+        LogEntry("10-12 22:32:52.200  2646  2664 I test  : Log8", LogLevel.INFO, timestamps[7]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      )
+    )
+
+    presenter.setFilteredLogsForTesting(
+      arrayOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      ),
+      true // set cached filtered logs as well
+    )
+
+    presenter.goToTimestamp("10-12 22:32:51.132")
+
+    verify(view, never()).showInvalidTimestampSearchError(anyString())
+    verify(view).showLogLocationAtSearchedTimestamp(4, 3)
+  }
+
+  @Test
+  fun testGotoTimestampInexactTimestampBeforeAll() {
+    val timestamps = listOf(
+      LogTimestamp(10, 12, 22, 32, 50, 264),
+      LogTimestamp(10, 12, 22, 32, 50, 321),
+      LogTimestamp(10, 12, 22, 32, 50, 472),
+      LogTimestamp(10, 12, 22, 32, 50, 801),
+      LogTimestamp(10, 12, 22, 32, 51, 32),
+      LogTimestamp(10, 12, 22, 32, 52, 1),
+      LogTimestamp(10, 12, 22, 32, 52, 120),
+      LogTimestamp(10, 12, 22, 32, 52, 200),
+      LogTimestamp(10, 12, 22, 32, 53, 0)
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:50.801  2646  2664 I test  : Log4", LogLevel.INFO, timestamps[3]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:52.001  2646  2664 I test  : Log6", LogLevel.INFO, timestamps[5]),
+        LogEntry("10-12 22:32:52.120  2646  2664 I test  : Log7", LogLevel.INFO, timestamps[6]),
+        LogEntry("10-12 22:32:52.200  2646  2664 I test  : Log8", LogLevel.INFO, timestamps[7]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      )
+    )
+
+    presenter.setFilteredLogsForTesting(
+      arrayOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      ),
+      true // set cached filtered logs as well
+    )
+
+    presenter.goToTimestamp("10-12 22:32:49.132")
+
+    verify(view, never()).showInvalidTimestampSearchError(anyString())
+    verify(view).showLogLocationAtSearchedTimestamp(0, 0)
+  }
+
+  @Test
+  fun testGotoTimestampInexactTimestampAfterAll() {
+    val timestamps = listOf(
+      LogTimestamp(10, 12, 22, 32, 50, 264),
+      LogTimestamp(10, 12, 22, 32, 50, 321),
+      LogTimestamp(10, 12, 22, 32, 50, 472),
+      LogTimestamp(10, 12, 22, 32, 50, 801),
+      LogTimestamp(10, 12, 22, 32, 51, 32),
+      LogTimestamp(10, 12, 22, 32, 52, 1),
+      LogTimestamp(10, 12, 22, 32, 52, 120),
+      LogTimestamp(10, 12, 22, 32, 52, 200),
+      LogTimestamp(10, 12, 22, 32, 53, 0)
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:50.801  2646  2664 I test  : Log4", LogLevel.INFO, timestamps[3]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:52.001  2646  2664 I test  : Log6", LogLevel.INFO, timestamps[5]),
+        LogEntry("10-12 22:32:52.120  2646  2664 I test  : Log7", LogLevel.INFO, timestamps[6]),
+        LogEntry("10-12 22:32:52.200  2646  2664 I test  : Log8", LogLevel.INFO, timestamps[7]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      )
+    )
+
+    presenter.setFilteredLogsForTesting(
+      arrayOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      ),
+      true // set cached filtered logs as well
+    )
+
+    presenter.goToTimestamp("10-12 22:32:59.132")
+
+    verify(view, never()).showInvalidTimestampSearchError(anyString())
+    verify(view).showLogLocationAtSearchedTimestamp(8, 4)
+  }
+
+  @Test
+  fun testGotoTimestampNoFiltered() {
+    val timestamps = listOf(
+      LogTimestamp(10, 12, 22, 32, 50, 264),
+      LogTimestamp(10, 12, 22, 32, 50, 321),
+      LogTimestamp(10, 12, 22, 32, 50, 472),
+      LogTimestamp(10, 12, 22, 32, 50, 801),
+      LogTimestamp(10, 12, 22, 32, 51, 32),
+      LogTimestamp(10, 12, 22, 32, 52, 1),
+      LogTimestamp(10, 12, 22, 32, 52, 120),
+      LogTimestamp(10, 12, 22, 32, 52, 200),
+      LogTimestamp(10, 12, 22, 32, 53, 0)
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(
+        LogEntry("10-12 22:32:50.264  2646  2664 I test  : Log1", LogLevel.INFO, timestamps[0]),
+        LogEntry("10-12 22:32:50.321  2646  2664 I test  : Log2", LogLevel.INFO, timestamps[1]),
+        LogEntry("10-12 22:32:50.472  2646  2664 I test  : Log3", LogLevel.INFO, timestamps[2]),
+        LogEntry("10-12 22:32:50.801  2646  2664 I test  : Log4", LogLevel.INFO, timestamps[3]),
+        LogEntry("10-12 22:32:51.032  2646  2664 I test  : Log5", LogLevel.INFO, timestamps[4]),
+        LogEntry("10-12 22:32:52.001  2646  2664 I test  : Log6", LogLevel.INFO, timestamps[5]),
+        LogEntry("10-12 22:32:52.120  2646  2664 I test  : Log7", LogLevel.INFO, timestamps[6]),
+        LogEntry("10-12 22:32:52.200  2646  2664 I test  : Log8", LogLevel.INFO, timestamps[7]),
+        LogEntry("10-12 22:32:53.000  2646  2664 I test  : Log9", LogLevel.INFO, timestamps[8])
+      )
+    )
+
+    presenter.goToTimestamp("10-12 22:32:51.032")
+
+    verify(view, never()).showInvalidTimestampSearchError(anyString())
+    verify(view).showLogLocationAtSearchedTimestamp(4, -1)
+  }
+
+  @Test
+  fun testGotoTimestampNoLogs() {
+    presenter.goToTimestamp("10-12 22:32:51.032")
+
+    verify(view, never()).showInvalidTimestampSearchError(anyString())
+    verify(view).showLogLocationAtSearchedTimestamp(-1, -1)
+  }
+
+  @Test
   fun testAllowedStreamsSetNotAllowed() {
     val timestamp = LogTimestamp(
       10,
