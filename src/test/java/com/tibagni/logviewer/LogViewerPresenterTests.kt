@@ -2305,6 +2305,122 @@ class LogViewerPresenterTests {
     verify(view).showErrorMessage(any())
   }
 
+  @Test
+  fun testIgnoreLogsBefore() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(0)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsBefore(50)
+
+    verify(mockLogsRepository).firstVisibleLogIndex = 50
+    verify(view, never()).showErrorMessage(anyString())
+    verify(view).showLogs(any())
+  }
+
+  @Test
+  fun testIgnoreLogsBeforeInvalidIndex() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(0)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsBefore(101)
+
+    verify(mockLogsRepository, never()).firstVisibleLogIndex = anyInt()
+    verify(view).showErrorMessage(anyString())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testIgnoreLogsBeforeSameIndex() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(10)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsBefore(10)
+
+    verify(mockLogsRepository, never()).firstVisibleLogIndex = anyInt()
+    verify(view, never()).showErrorMessage(anyString())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testIgnoreLogsAfter() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(0)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsAfter(50)
+
+    verify(mockLogsRepository).lastVisibleLogIndex = 50
+    verify(view, never()).showErrorMessage(anyString())
+    verify(view).showLogs(any())
+  }
+
+  @Test
+  fun testIgnoreLogsAfterInvalidIndex() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(10)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsAfter(9)
+
+    verify(mockLogsRepository, never()).lastVisibleLogIndex = anyInt()
+    verify(view).showErrorMessage(anyString())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testIgnoreLogsAfterSameIndex() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(10)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsAfter(100)
+
+    verify(mockLogsRepository, never()).lastVisibleLogIndex = anyInt()
+    verify(view, never()).showErrorMessage(anyString())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testIgnoreLogsAfterApplyFilters() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(10)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(100)
+
+    presenter.ignoreLogsAfter(100)
+
+    verify(mockLogsRepository, never()).lastVisibleLogIndex = anyInt()
+    verify(view, never()).showErrorMessage(anyString())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testResetIgnoredLogsBoth() {
+    presenter.resetIgnoredLogs(true, true)
+
+    verify(mockLogsRepository).firstVisibleLogIndex = -1
+    verify(mockLogsRepository).lastVisibleLogIndex = -1
+  }
+
+  @Test
+  fun testResetIgnoredLogsOnlyBefore() {
+    presenter.resetIgnoredLogs(true, false)
+
+    verify(mockLogsRepository).firstVisibleLogIndex = -1
+    verify(mockLogsRepository, never()).lastVisibleLogIndex = anyInt()
+  }
+
+  @Test
+  fun testResetIgnoredLogsOnlyAfter() {
+    presenter.resetIgnoredLogs(false, true)
+
+    verify(mockLogsRepository, never()).firstVisibleLogIndex = anyInt()
+    verify(mockLogsRepository).lastVisibleLogIndex = -1
+  }
+
+  @Test
+  fun testResetIgnoredLogsNeither() {
+    presenter.resetIgnoredLogs(false, false)
+
+    verify(mockLogsRepository, never()).firstVisibleLogIndex = anyInt()
+    verify(mockLogsRepository, never()).lastVisibleLogIndex = anyInt()
+  }
+
   companion object {
     private const val TEST_SERIALIZED_FILTER = "Test,VGVzdA==,2,255:0:0"
     private const val TEST_SERIALIZED_FILTER2 = "Test2,VGVzdA==,2,255:0:0"

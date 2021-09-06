@@ -547,6 +547,87 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     return allowedStreamsMap.get(stream);
   }
 
+  @Override
+  public void ignoreLogsBefore(int index) {
+    if (index == logsRepository.getFirstVisibleLogIndex()) {
+      // Nothing to do, return early
+      return;
+    }
+
+    if (index >= logsRepository.getLastVisibleLogIndex()) {
+      // This would ignore all logs
+      view.showErrorMessage("Cannot set first visible log after last visible log");
+      return;
+    }
+
+    logsRepository.setFirstVisibleLogIndex(index);
+    view.showLogs(logsRepository.getCurrentlyOpenedLogs());
+    applyFilters();
+  }
+
+  @Override
+  public void ignoreLogsAfter(int index) {
+    if (index == logsRepository.getLastVisibleLogIndex()) {
+      // Nothing to do, return early
+      return;
+    }
+
+    if (index <= logsRepository.getFirstVisibleLogIndex()) {
+      // This would ignore all logs
+      view.showErrorMessage("Cannot set last visible log before first visible log");
+      return;
+    }
+
+    logsRepository.setLastVisibleLogIndex(index);
+    view.showLogs(logsRepository.getCurrentlyOpenedLogs());
+    applyFilters();
+  }
+
+  @Override
+  public void resetIgnoredLogs(boolean resetStarting, boolean resetEnding) {
+    if (resetStarting) {
+      logsRepository.setFirstVisibleLogIndex(-1);
+    }
+    if (resetEnding) {
+      logsRepository.setLastVisibleLogIndex(-1);
+    }
+
+    view.showLogs(logsRepository.getCurrentlyOpenedLogs());
+    applyFilters();
+  }
+
+  @Override
+  public int getVisibleLogsOffset() {
+    return logsRepository.getFirstVisibleLogIndex();
+  }
+
+  @Override
+  public LogEntry getFirstVisibleLog() {
+    int index = logsRepository.getFirstVisibleLogIndex();
+    if (index <= 0) {
+      // If the first visible log index is the first index, then there are no ignored logs,
+      // so, just return null
+      return null;
+    }
+
+    // "currently opened logs" already represents the visible logs, so just return the first one
+    return logsRepository.getCurrentlyOpenedLogs().get(0);
+  }
+
+  @Override
+  public LogEntry getLastVisibleLog() {
+    int index = logsRepository.getLastVisibleLogIndex();
+    int lastVisibleIndex = logsRepository.getCurrentlyOpenedLogs().size() - 1;
+    if (index == (logsRepository.getAllLogsSize() - 1)) {
+      // If the last visible log index is the last index, then there are no ignored logs,
+      // so, just return null
+      return null;
+    }
+
+    // "currently opened logs" already represents the visible logs, so just return the last one
+    return logsRepository.getCurrentlyOpenedLogs().get(lastVisibleIndex);
+  }
+
   private List<LogEntry> excludeNonAllowedStreams(List<LogEntry> entries) {
     if (allowedStreamsMap.isEmpty()) {
       // If there is no stream restriction just work with all entries

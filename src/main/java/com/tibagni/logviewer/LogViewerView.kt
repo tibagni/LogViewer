@@ -29,6 +29,7 @@ interface LogViewerView : View {
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
   fun handleGoToTimestampMenu()
+  fun handleConfigureIgnoredLogs()
   fun onThemeChanged()
 }
 
@@ -57,7 +58,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
 
 class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<File>) : LogViewerView,
   LogViewerPresenterView {
-  private val presenter: LogViewerPresenterImpl
+  private val presenter: LogViewerPresenter
 
   private lateinit var logList: JTable
   private lateinit var filteredLogList: JTable
@@ -330,9 +331,21 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         if (SwingUtilities.isRightMouseButton(e) && logList.selectedRowCount == 1) {
           val popup = JPopupMenu()
           val createFilterItem = popup.add("Create Filter from this line...")
+          popup.add(JSeparator())
+          val ignorePrevLines = popup.add("Ignore all logs before this point")
+          val ignoreNextLines = popup.add("Ignore all logs after this point")
+
           createFilterItem.addActionListener {
             val entry = logListTableModel.getValueAt(logList.selectedRow, 0) as LogEntry
             addFilterFromLogLine(entry.logText)
+          }
+          ignorePrevLines.addActionListener {
+            val entry = logListTableModel.getValueAt(logList.selectedRow, 0) as LogEntry
+            presenter.ignoreLogsBefore(entry.index)
+          }
+          ignoreNextLines.addActionListener {
+            val entry = logListTableModel.getValueAt(logList.selectedRow, 0) as LogEntry
+            presenter.ignoreLogsAfter(entry.index)
           }
           popup.show(logList, e.x, e.y)
         }
@@ -381,7 +394,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         if (e.clickCount == 2) {
           val selectedIndex = filteredLogList.selectedRow
           val clickedEntry = filteredLogListTableModel.getValueAt(selectedIndex, 0) as LogEntry
-          val logIndex = clickedEntry.index
+          val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
           SwingUtils.scrollToVisible(logList, logIndex)
           logList.setRowSelectionInterval(logIndex, logIndex)
         }
@@ -476,6 +489,29 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
 
     presenter.goToTimestamp(input)
+  }
+
+  override fun handleConfigureIgnoredLogs() {
+    val config = VisibleLogConfiguration(presenter.firstVisibleLog, presenter.lastVisibleLog)
+    val userConfig = VisibleLogsConfigurationDialog.showIgnoredLogsConfigurationDialog(mainView.parent, config)
+      ?: return // userConfig null mean dialog was cancelled. Don't do anything in this case
+
+    if (config.startingLog == null && config.endingLog == null) {
+      // If there was no starting or ending points configured before the dialog
+      // then don't do anything as the dialog is only to clear previously set ignore points
+      return
+    }
+
+    if (config == userConfig) {
+      // No changes. No need to do anything
+      return
+    }
+
+    // Reset only what changed
+    presenter.resetIgnoredLogs(
+      config.startingLog != userConfig.startingLog,
+      config.endingLog != userConfig.endingLog
+    )
   }
 
   override fun onThemeChanged() {

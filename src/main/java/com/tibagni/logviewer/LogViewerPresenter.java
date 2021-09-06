@@ -1,6 +1,7 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.filter.Filter;
+import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 
 import java.io.File;
@@ -39,6 +40,14 @@ public interface LogViewerPresenter {
 
   void setStreamAllowed(LogStream stream, boolean allowed);
   boolean isStreamAllowed(LogStream stream);
+
+  void ignoreLogsBefore(int index);
+  void ignoreLogsAfter(int index);
+  void resetIgnoredLogs(boolean resetStarting, boolean resetEnding);
+  int getVisibleLogsOffset();
+
+  LogEntry getFirstVisibleLog();
+  LogEntry getLastVisibleLog();
 
   void finishing();
 }

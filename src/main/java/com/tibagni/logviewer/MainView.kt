@@ -263,7 +263,6 @@ class MainViewImpl(
     refreshLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)
     refreshLogsItem.addActionListener { logViewerView.handleRefreshLogsMenu() }
     logsMenu.add(refreshLogsItem)
-    logsMenu.addSeparator()
     saveFilteredLogs = JMenuItem("Save Filtered Logs")
     saveFilteredLogs?.addActionListener { logViewerView.handleSaveFilteredLogsMenu() }
     logsMenu.add(saveFilteredLogs)
@@ -272,6 +271,10 @@ class MainViewImpl(
     goToTimestampItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK)
     goToTimestampItem.addActionListener { logViewerView.handleGoToTimestampMenu() }
     logsMenu.add(goToTimestampItem)
+    logsMenu.addSeparator()
+    val configureVisibleLogs = JMenuItem("Visible logs")
+    configureVisibleLogs.addActionListener { logViewerView.handleConfigureIgnoredLogs() }
+    logsMenu.add(configureVisibleLogs)
 
 
     val filtersMenu = JMenu("Filters")

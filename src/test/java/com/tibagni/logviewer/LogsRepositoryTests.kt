@@ -110,4 +110,36 @@ class LogsRepositoryTests {
 
     logsRepository.openLogFiles(arrayOf(temporaryInvalidLogFile), mockProgressReporter)
   }
+
+  @Test
+  fun testVisibleLogsSublist() {
+    testOpenSingleLogFile()
+    logsRepository.firstVisibleLogIndex = 2
+    assertEquals(3, logsRepository.currentlyOpenedLogs.size)
+
+    logsRepository.lastVisibleLogIndex = 3
+    assertEquals(2, logsRepository.currentlyOpenedLogs.size)
+  }
+
+  @Test
+  fun testResetVisibleLogs() {
+    testVisibleLogsSublist()
+    logsRepository.firstVisibleLogIndex = -1
+    assertEquals(0, logsRepository.firstVisibleLogIndex)
+    assertEquals(4, logsRepository.currentlyOpenedLogs.size)
+
+    logsRepository.lastVisibleLogIndex = -1
+    assertEquals(4, logsRepository.lastVisibleLogIndex)
+    assertEquals(5, logsRepository.currentlyOpenedLogs.size)
+  }
+
+  @Test
+  fun testResetVisibleLogsOnLoad() {
+    testVisibleLogsSublist()
+    testOpenSingleLogFile()
+
+    assertEquals(0, logsRepository.firstVisibleLogIndex)
+    assertEquals(4, logsRepository.lastVisibleLogIndex)
+    assertEquals(5, logsRepository.currentlyOpenedLogs.size)
+  }
 }
