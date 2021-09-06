@@ -41,9 +41,11 @@ jacocoTestReport {
         // Exclude files that cannot be tested by jUnit (UI, Swing, ...)
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                    'com/tibagni/logviewer/LogViewerView*',
-                    'com/tibagni/logviewer/ServiceLocator*',
                     'com/tibagni/logviewer/AppInfo*',
+                    'com/tibagni/logviewer/LogViewerView*',
+                    'com/tibagni/logviewer/MainView*',
+                    'com/tibagni/logviewer/ServiceLocator*',
+                    'com/tibagni/logviewer/VisibleLogsConfigurationDialog*',
                     'com/tibagni/logviewer/about/AboutDialog*',
                     'com/tibagni/logviewer/bugreport/BugReportView*',
                     'com/tibagni/logviewer/bugreport/section/ui*',

@@ -2421,6 +2421,78 @@ class LogViewerPresenterTests {
     verify(mockLogsRepository, never()).lastVisibleLogIndex = anyInt()
   }
 
+  @Test
+  fun testVisibleLogsOffset() {
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(30)
+    val offset = presenter.visibleLogsOffset
+
+    assertEquals(30, offset)
+  }
+
+  @Test
+  fun testLastVisibleLog() {
+    // This is always the visible logs sublist already, so the return must always be the last log of this list
+    val logs = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null)
+    )
+
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(2)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+    val lastLog = presenter.lastVisibleLog
+
+    assertEquals(logs[2], lastLog)
+  }
+
+  @Test
+  fun testLastVisibleLogNotSet() {
+    val logs = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null)
+    )
+
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(2)
+    `when`(mockLogsRepository.allLogsSize).thenReturn(3)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+    val lastLog = presenter.lastVisibleLog
+
+    assertNull(lastLog)
+  }
+
+  @Test
+  fun testFirstVisibleLog() {
+    // This is always the visible logs sublist already, so the return must always be the first log of this list
+    val logs = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null)
+    )
+
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(1)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+    val firstLog = presenter.firstVisibleLog
+
+    assertEquals(logs[0], firstLog)
+  }
+
+  @Test
+  fun testFirstVisibleLogNotSet() {
+    val logs = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null)
+    )
+
+    `when`(mockLogsRepository.firstVisibleLogIndex).thenReturn(0)
+    `when`(mockLogsRepository.allLogsSize).thenReturn(3)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+    val firstLog = presenter.firstVisibleLog
+
+    assertNull(firstLog)
+  }
+
   companion object {
     private const val TEST_SERIALIZED_FILTER = "Test,VGVzdA==,2,255:0:0"
     private const val TEST_SERIALIZED_FILTER2 = "Test2,VGVzdA==,2,255:0:0"
