@@ -1,12 +1,17 @@
 buildscript {
     ext {
-        kotlin_version = '1.4.30'
+        kotlin_version = '1.5.21'
         junit_version = '4.12'
-        mockito_version = '3.0.0'
+        mockito_version = '3.12.4'
         jgoodies_version = '1.6.0'
         json_version = '20180813'
         commonsio_version = '2.6'
         apache_commons_version = '3.0'
+        flatlaf_version = '1.5'
+        jacoco_tool_version = '0.8.7'
+        shadowjar_version = '6.1.0'
+        testlogger_version = '1.7.0'
+        coberalls_version = '2.8.4'
     }
 
     repositories {
@@ -15,12 +20,16 @@ buildscript {
 }
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'com.github.johnrengelman.shadow' version "$shadowjar_version"
     id 'java'
     id "org.jetbrains.kotlin.jvm" version "$kotlin_version"
-    id 'com.adarshr.test-logger' version '1.7.0'
+    id 'com.adarshr.test-logger' version "$testlogger_version"
     id 'jacoco'
-    id 'com.github.kt3k.coveralls' version '2.8.4'
+    id 'com.github.kt3k.coveralls' version "$coberalls_version"
+}
+
+jacoco {
+    toolVersion = "$jacoco_tool_version"
 }
 
 jacocoTestReport {
@@ -63,7 +72,6 @@ version props.getProperty("version")
 
 repositories {
     mavenCentral()
-    jcenter()
     flatDir {
         dirs 'libs'
     }
@@ -84,12 +92,12 @@ jar {
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: "$junit_version"
-    testCompile "org.mockito:mockito-core:$mockito_version"
-    compile group: 'com.jgoodies', name: 'jgoodies-forms', version: "$jgoodies_version"
-    compile group: 'org.json', name: 'json', version: "$json_version"
-    compile group: 'commons-io', name: 'commons-io', version: "$commonsio_version"
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: "$apache_commons_version"
-    implementation 'com.formdev:flatlaf:0.46'
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    testImplementation group: 'junit', name: 'junit', version: "$junit_version"
+    testImplementation "org.mockito:mockito-core:$mockito_version"
+    implementation group: 'com.jgoodies', name: 'jgoodies-forms', version: "$jgoodies_version"
+    implementation group: 'org.json', name: 'json', version: "$json_version"
+    implementation group: 'commons-io', name: 'commons-io', version: "$commonsio_version"
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: "$apache_commons_version"
+    implementation group: 'com.formdev', name: 'flatlaf', version: "$flatlaf_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
