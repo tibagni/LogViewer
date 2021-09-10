@@ -23,7 +23,7 @@ class PropertiesSectionParser : BugReportSectionParser {
     val match = "\\n$prefix.*\\n".toRegex().find(text)
     return if (match != null) {
       val offset = prefix.length
-      text.substring(match.range.first + offset, match.range.last)
+      text.substring(match.range.first + offset, match.range.last).trim()
     } else NOT_FOUND
   }
 }

@@ -38,7 +38,7 @@ abstract class PackagesSectionParser(private val sectionName: String, private va
     val contentPackages = rawPackages.map {
       val packageName = "Package \\[(.+)]".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
       val versionCode = "versionCode=(\\d+) ".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
-      val versionName = "versionName=([\\d\\\\.\\w]+)".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
+      val versionName = "versionName=([\\d\\\\.\\w-]+)".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
       val dataDir = "dataDir=([\\d\\w/\\\\.]+)".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
       AppPackage(
         packageName,
