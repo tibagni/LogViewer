@@ -42,6 +42,7 @@ jacocoTestReport {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
                     'com/tibagni/logviewer/AppInfo*',
+                    'com/tibagni/logviewer/LogViewerApplication*',
                     'com/tibagni/logviewer/LogViewerView*',
                     'com/tibagni/logviewer/MainView*',
                     'com/tibagni/logviewer/ServiceLocator*',

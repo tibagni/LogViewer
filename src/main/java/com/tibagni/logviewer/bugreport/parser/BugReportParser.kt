@@ -22,7 +22,9 @@ class BugReportParserImpl(private val sectionParsers: List<BugReportSectionParse
     val totalSections = sectionParsers.size
 
     val sections = sectionParsers.mapNotNull {
-      progressReporter.onProgress((sectionsParsed++ / totalSections) * 100, "Parsing ${it.name}")
+      val progress = (sectionsParsed.toDouble() / totalSections) * 100
+      sectionsParsed++
+      progressReporter.onProgress(progress.toInt(), "Parsing ${it.name}")
       wrapProfiler(it.name) { it.parse(bugreportPath, bugReportText) }
     }
     progressReporter.onProgress(100, "Done!")
