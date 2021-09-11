@@ -2,6 +2,7 @@ package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.util.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.util.*;
@@ -200,6 +201,19 @@ public class Filter {
 
       linesFound.put(stream, currentCount + 1);
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ContextInfo that = (ContextInfo) o;
+      return Objects.equals(linesFound, that.linesFound) && Objects.equals(allowedStreams, that.allowedStreams);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(linesFound, allowedStreams);
+    }
   }
 
   @Override
@@ -210,7 +224,7 @@ public class Filter {
     return flags == filter.flags &&
         Objects.equals(name, filter.name) &&
         Objects.equals(color, filter.color) &&
-        Objects.equals(pattern, filter.pattern) &&
+        Objects.equals(getPatternString(), filter.getPatternString()) &&
         Objects.equals(temporaryInfo, filter.temporaryInfo);
   }
 

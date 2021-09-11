@@ -229,4 +229,17 @@ class FilterTests {
         assertTrue(filter2.isCaseSensitive)
         assertEquals(Color(255, 255, 255), filter2.color)
     }
+
+  @Test
+  fun testFilterEquals() {
+    val serialized1 = "Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0"
+    val serialized2 = "Filter Name,XCtcZC1cKFxkezN9XCktXGR7M30tXGR7NH0=,0,255:255:255"
+
+    val filter1 = Filter.createFromString(serialized1)
+    val filter2 = Filter.createFromString(serialized2)
+    val filter3 = Filter.createFromString(serialized1)
+
+    assertFalse(filter1.equals(filter2))
+    assertTrue(filter1.equals(filter3))
+  }
 }
