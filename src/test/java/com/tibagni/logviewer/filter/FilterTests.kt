@@ -3,6 +3,7 @@ package com.tibagni.logviewer.filter
 import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
+import com.tibagni.logviewer.log.LogStream
 import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.mock
@@ -241,5 +242,31 @@ class FilterTests {
 
     assertFalse(filter1.equals(filter2))
     assertTrue(filter1.equals(filter3))
+  }
+
+  @Test
+  fun testContextInfo() {
+    val filter = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    filter.initTemporaryInfo()
+    val contextInfo = filter.temporaryInfo
+
+    contextInfo.setAllowedStreams(setOf(LogStream.EVENTS, LogStream.MAIN, LogStream.SYSTEM))
+    for (i in 1..10) contextInfo.incrementLineCount(LogStream.SYSTEM)
+    for (i in 1..15) contextInfo.incrementLineCount(LogStream.MAIN)
+    for (i in 1..8) contextInfo.incrementLineCount(LogStream.EVENTS)
+
+    assertEquals(33, contextInfo.totalLinesFound)
+
+    contextInfo.setAllowedStreams(setOf(LogStream.MAIN))
+
+    assertEquals(15, contextInfo.totalLinesFound)
+
+    contextInfo.setAllowedStreams(setOf(LogStream.SYSTEM))
+
+    assertEquals(10, contextInfo.totalLinesFound)
+
+    contextInfo.setAllowedStreams(setOf(LogStream.EVENTS))
+
+    assertEquals(8, contextInfo.totalLinesFound)
   }
 }

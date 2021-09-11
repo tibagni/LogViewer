@@ -20,10 +20,14 @@ class BugReportPresenterImpl(
           updateAsyncProgress(progress, note)
         }
         doOnUiThread {
-          bugReportRepository.bugReport?.let { view.showBugReport(it) }
+          bugReportRepository.bugReport?.let { view.showBugReport(it) } ?: view.showErrorMessage("Empty bug report!")
         }
       } catch (e: OpenBugReportException) {
-        doOnUiThread{view.showErrorMessage(e.message)}
+        doOnUiThread {
+          // Make sure to finish loading when something fails
+          view.finishLoading()
+          view.showErrorMessage(e.message)
+        }
       }
     }
   }
