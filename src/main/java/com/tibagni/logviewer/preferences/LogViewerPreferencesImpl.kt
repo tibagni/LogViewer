@@ -16,6 +16,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS = "remember_applied_filters"
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS_PREFIX = "applied_for_group_"
     /*Visible for Testing*/ const val PREFERRED_TEXT_EDITOR = "preferred_text_editor"
+    /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -97,6 +98,12 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(textEditorFile) {
             preferences.put(PREFERRED_TEXT_EDITOR, textEditorFile?.absolutePath ?: "")
             listeners.forEach { l -> l.onPreferredTextEditorChanged() }
+        }
+    override var collapseAllGroupsStartup: Boolean
+        get() = preferences.getBoolean(COLLAPSE_ALL_GROUPS_STARTUP, false)
+        set(collapse) {
+            preferences.putBoolean(COLLAPSE_ALL_GROUPS_STARTUP, collapse)
+            listeners.forEach { l -> l.onCollapseAllGroupsStartupChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

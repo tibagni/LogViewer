@@ -54,6 +54,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showNavigationPrevOver()
   fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String)
   fun closeCurrentlyOpenedBugReports()
+  fun collapseAllGroups()
 }
 
 class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<File>) : LogViewerView,
@@ -107,8 +108,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     filteredLogList.setDefaultRenderer(LogEntry::class.java, logRenderer)
     setupLogsContextActions()
     setupFilteredLogsContextActions()
-
-    // Configure file drop
 
     // Configure file drop
     FileDrop(Logger.getDebugStream(), logsPane) { presenter.loadLogs(it) }
@@ -647,6 +646,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun closeCurrentlyOpenedBugReports() {
     mainView.onBugReportClosed()
+  }
+
+  override fun collapseAllGroups() {
+    filtersPane.setAllGroupsVisibility(false)
   }
 
   override fun showStartLoading() = mainView.showStartLoading("Logs")

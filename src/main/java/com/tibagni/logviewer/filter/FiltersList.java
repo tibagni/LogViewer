@@ -64,6 +64,10 @@ public class FiltersList extends JPanel {
 
   public void toggleGroupsVisibility() {
     boolean visible = !hasAtLeastOneGroupVisible();
+    setAllGroupsVisibility(visible);
+  }
+
+  public void setAllGroupsVisibility(boolean visible) {
     for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
       groupEntry.getValue().forceGroupVisibilitySilently(visible);
     }

@@ -58,6 +58,11 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
         loadFilters(lastFilters, false);
       }
     }
+
+    // Check if we need to collapse all groups on startup
+    if (userPrefs.getCollapseAllGroupsStartup()) {
+      view.collapseAllGroups();
+    }
   }
 
   @Override
