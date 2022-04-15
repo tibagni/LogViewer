@@ -37,6 +37,11 @@ class SearchableTextArea(hasScroll: Boolean = true) : JPanel() {
     set(value) {
       textArea.caretPosition = value
     }
+  var lineWrap: Boolean
+    get() = textArea.lineWrap
+    set(value) {
+      textArea.lineWrap = value
+    }
 
   init {
     buildUi(hasScroll)

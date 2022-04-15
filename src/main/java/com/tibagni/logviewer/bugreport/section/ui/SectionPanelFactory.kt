@@ -10,6 +10,7 @@ object SectionPanelFactory {
       SectionNames.APPLICATION_PKG -> PackageSectionPanel(section as PackagesSection)
       SectionNames.SYSTEM_HIDDEN_PKG -> PackageSectionPanel(section as PackagesSection)
       SectionNames.CARRIER_CONFIG -> CarrierConfigSectionPanel(section as CarrierConfigSection)
+      SectionNames.SUBSCRIPTIONS -> SubscriptionsSectionPanel(section as SubscriptionsSection)
       else -> object : SectionPanel("Invalid Section") {}// Should never reach here
     }
   }

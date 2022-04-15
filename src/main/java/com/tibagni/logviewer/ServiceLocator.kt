@@ -20,6 +20,7 @@ object ServiceLocator {
           ApplicationPackagesSectionParser(),
           SystemHiddenPackagesSectionParser(),
           CarrierConfigSectionParser(),
+          SubscriptionsSectionParser(),
           PlainTextContentParser()
         )
       )
