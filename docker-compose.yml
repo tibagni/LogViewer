@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  web:
+    image: jekyll/jekyll:3.5 
+    command: sh -c 'bundle update && bundle exec jekyll build && bundle exec jekyll serve -H 0.0.0.0 -t'
+    volumes:
+      - .:/srv/jekyll
+    ports:
+      - 4000:4000
