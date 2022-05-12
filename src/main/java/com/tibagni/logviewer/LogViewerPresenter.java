@@ -48,6 +48,7 @@ public interface LogViewerPresenter {
 
   LogEntry getFirstVisibleLog();
   LogEntry getLastVisibleLog();
+  List<String> getIgnoredKeywords();
 
   void finishing();
 }

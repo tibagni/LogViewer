@@ -21,11 +21,16 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 
   private val startingPointLogText = JTextArea(3, 30)
   private val endingPointLogText = JTextArea(3, 30)
+  private val ignoredKeywordsText = JTextArea(5, 30)
   private val clearStartingPointBtn = JButton("Clear")
   private val clearEndingPointBtn = JButton("Clear")
+  private val addIgnoredKeywordBtn = JButton("Add")
+  private val removeIgnoredKeywordBtn = JButton("Remove")
+  private val clearIgnoredKeywordBtn = JButton("Clear")
 
   private var startingLog: LogEntry? = configuration.startingLog
   private var endingLog: LogEntry? = configuration.endingLog
+  private var ignoredKeywords: List<String>? = configuration.ignoredKeywords
   private var returnConfiguration: VisibleLogConfiguration? = null
 
   companion object {
@@ -214,6 +219,84 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
         .build()
     )
 
+    positionsPane.add(
+      JSeparator(),
+      GBConstraintsBuilder()
+        .withGridy(8)
+        .withGridWidth(GridBagConstraints.REMAINDER)
+        .withInsets(UIScaleUtils.scaleInsets(Insets(15, 5, 15, 5)))
+        .withFill(GridBagConstraints.HORIZONTAL)
+        .build()
+    )
+
+    positionsPane.add(
+      JLabel("Ignored keywords"),
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(9)
+        .withGridWidth(2)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.HORIZONTAL)
+        .build()
+    )
+
+    ignoredKeywordsText.isEditable = false
+    ignoredKeywordsText.border = BorderFactory.createDashedBorder(borderColor)
+    ignoredKeywordsText.lineWrap = true
+    positionsPane.add(
+      JScrollPane(ignoredKeywordsText),
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(10)
+        .withGridWidth(1)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.HORIZONTAL)
+        .build()
+    )
+
+    val ignoredKeywordsPositionPane = JPanel()
+    ignoredKeywordsPositionPane.layout = GridBagLayout()
+    ignoredKeywordsPositionPane.add(
+      addIgnoredKeywordBtn,
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(1)
+        .withInsets(UIScaleUtils.scaleInsets(Insets(5, 5, 0, 0)))
+        .withFill(GridBagConstraints.VERTICAL)
+        .build()
+    )
+
+    ignoredKeywordsPositionPane.add(
+      removeIgnoredKeywordBtn,
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(2)
+        .withInsets(UIScaleUtils.scaleInsets(Insets(5, 5, 0, 0)))
+        .withFill(GridBagConstraints.VERTICAL)
+        .build()
+    )
+
+    ignoredKeywordsPositionPane.add(
+      clearIgnoredKeywordBtn,
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(3)
+        .withInsets(UIScaleUtils.scaleInsets(Insets(5, 5, 0, 0)))
+        .withFill(GridBagConstraints.VERTICAL)
+        .build()
+    )
+
+    positionsPane.add(
+      ignoredKeywordsPositionPane,
+      GBConstraintsBuilder()
+        .withGridx(1)
+        .withGridy(10)
+        .withGridWidth(1)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.CENTER)
+        .build()
+    )
+
     contentPane.add(
       positionsPane,
       GBConstraintsBuilder()
@@ -227,7 +310,7 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   }
 
   override fun onOk() {
-    returnConfiguration = VisibleLogConfiguration(startingLog, endingLog)
+    returnConfiguration = VisibleLogConfiguration(startingLog, endingLog, ignoredKeywords)
     dispose()
   }
 
@@ -237,4 +320,8 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   }
 }
 
-data class VisibleLogConfiguration(val startingLog: LogEntry?, val endingLog: LogEntry?)
+data class VisibleLogConfiguration(
+  val startingLog: LogEntry?,
+  val endingLog: LogEntry?,
+  val ignoredKeywords: List<String>?
+)

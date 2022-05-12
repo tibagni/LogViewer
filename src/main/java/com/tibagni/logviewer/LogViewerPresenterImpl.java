@@ -633,6 +633,11 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     return logsRepository.getCurrentlyOpenedLogs().get(lastVisibleIndex);
   }
 
+  @Override
+  public List<String> getIgnoredKeywords() {
+    return null;
+  }
+
   private List<LogEntry> excludeNonAllowedStreams(List<LogEntry> entries) {
     if (allowedStreamsMap.isEmpty()) {
       // If there is no stream restriction just work with all entries

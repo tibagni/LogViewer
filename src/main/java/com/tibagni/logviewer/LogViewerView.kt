@@ -491,7 +491,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   override fun handleConfigureIgnoredLogs() {
-    val config = VisibleLogConfiguration(presenter.firstVisibleLog, presenter.lastVisibleLog)
+    val config = VisibleLogConfiguration(presenter.firstVisibleLog, presenter.lastVisibleLog, presenter.ignoredKeywords)
     val userConfig = VisibleLogsConfigurationDialog.showIgnoredLogsConfigurationDialog(mainView.parent, config)
       ?: return // userConfig null mean dialog was cancelled. Don't do anything in this case
 
