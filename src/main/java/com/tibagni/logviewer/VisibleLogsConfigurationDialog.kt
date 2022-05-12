@@ -30,7 +30,7 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 
   private var startingLog: LogEntry? = configuration.startingLog
   private var endingLog: LogEntry? = configuration.endingLog
-  private var ignoredKeywords: List<String>? = configuration.ignoredKeywords
+  private var ignoredKeywords: MutableList<String>? = configuration.ignoredKeywords
   private var returnConfiguration: VisibleLogConfiguration? = null
 
   companion object {
@@ -78,21 +78,38 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
       updateVisibleLogsState()
     }
 
+    addIgnoredKeywordBtn.addActionListener {
+
+    }
+    removeIgnoredKeywordBtn.addActionListener {  }
+    clearIgnoredKeywordBtn.addActionListener {
+      ignoredKeywords?.clear()
+      updateVisibleLogsState()
+    }
+
     updateVisibleLogsState()
   }
 
   private fun updateVisibleLogsState() {
     val localStartingLog = startingLog
     val localEndingLog = endingLog
+    val localIgnoredKeywords = ignoredKeywords
 
     startingPointLogText.text = localStartingLog?.logText ?: "There is no \"starting point\" set for the visible logs"
     endingPointLogText.text = localEndingLog?.logText ?: "There is no \"ending point\" set for the visible logs"
+    ignoredKeywordsText.text = ""
+    localIgnoredKeywords?.forEach { keyword ->
+      ignoredKeywordsText.text += keyword
+      ignoredKeywordsText.text += "\n"
+    }
 
     clearStartingPointBtn.isEnabled = localStartingLog != null
     clearEndingPointBtn.isEnabled = localEndingLog != null
+    clearIgnoredKeywordBtn.isEnabled = localIgnoredKeywords?.isNotEmpty() == true
 
     startingPointLogText.caretPosition = 0
     endingPointLogText.caretPosition = 0
+    ignoredKeywordsText.caretPosition = 0
   }
 
   private fun buildUi() {
@@ -323,5 +340,5 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 data class VisibleLogConfiguration(
   val startingLog: LogEntry?,
   val endingLog: LogEntry?,
-  val ignoredKeywords: List<String>?
+  val ignoredKeywords: MutableList<String>?
 )
