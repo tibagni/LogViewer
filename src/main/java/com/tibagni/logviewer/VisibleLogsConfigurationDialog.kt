@@ -21,12 +21,15 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 
   private val startingPointLogText = JTextArea(3, 30)
   private val endingPointLogText = JTextArea(3, 30)
-  private val ignoredKeywordsText = JTextArea(5, 30)
+  private val ignoredKeywordsModel = DefaultListModel<String>()
+  private val ignoredKeywordsList = JList(ignoredKeywordsModel)
   private val clearStartingPointBtn = JButton("Clear")
   private val clearEndingPointBtn = JButton("Clear")
   private val addIgnoredKeywordBtn = JButton("Add")
   private val removeIgnoredKeywordBtn = JButton("Remove")
   private val clearIgnoredKeywordBtn = JButton("Clear")
+
+
 
   private var startingLog: LogEntry? = configuration.startingLog
   private var endingLog: LogEntry? = configuration.endingLog
@@ -81,7 +84,12 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     addIgnoredKeywordBtn.addActionListener {
 
     }
-    removeIgnoredKeywordBtn.addActionListener {  }
+    removeIgnoredKeywordBtn.addActionListener {
+      ignoredKeywordsModel.removeElement(ignoredKeywordsList.selectedValue)
+    }
+    ignoredKeywordsList.addListSelectionListener {
+      removeIgnoredKeywordBtn.isEnabled = true
+    }
     clearIgnoredKeywordBtn.addActionListener {
       ignoredKeywords?.clear()
       updateVisibleLogsState()
@@ -97,19 +105,17 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 
     startingPointLogText.text = localStartingLog?.logText ?: "There is no \"starting point\" set for the visible logs"
     endingPointLogText.text = localEndingLog?.logText ?: "There is no \"ending point\" set for the visible logs"
-    ignoredKeywordsText.text = ""
     localIgnoredKeywords?.forEach { keyword ->
-      ignoredKeywordsText.text += keyword
-      ignoredKeywordsText.text += "\n"
+      ignoredKeywordsModel.addElement(keyword)
     }
 
     clearStartingPointBtn.isEnabled = localStartingLog != null
     clearEndingPointBtn.isEnabled = localEndingLog != null
+    removeIgnoredKeywordBtn.isEnabled = !ignoredKeywordsList.isSelectionEmpty
     clearIgnoredKeywordBtn.isEnabled = localIgnoredKeywords?.isNotEmpty() == true
 
     startingPointLogText.caretPosition = 0
     endingPointLogText.caretPosition = 0
-    ignoredKeywordsText.caretPosition = 0
   }
 
   private fun buildUi() {
@@ -257,11 +263,9 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
         .build()
     )
 
-    ignoredKeywordsText.isEditable = false
-    ignoredKeywordsText.border = BorderFactory.createDashedBorder(borderColor)
-    ignoredKeywordsText.lineWrap = true
+    ignoredKeywordsList.border = BorderFactory.createDashedBorder(borderColor)
     positionsPane.add(
-      JScrollPane(ignoredKeywordsText),
+      JScrollPane(ignoredKeywordsList),
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(10)
