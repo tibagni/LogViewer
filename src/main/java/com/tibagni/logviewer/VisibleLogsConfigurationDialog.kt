@@ -7,7 +7,6 @@ import com.tibagni.logviewer.view.ButtonsPane
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
-import javax.swing.text.View
 
 class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogConfiguration) :
   JDialog(owner),
@@ -78,7 +77,8 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     }
 
     addIgnoredKeywordBtn.addActionListener {
-      //ignoredKeywordsModel.addElement(JTextField(30))
+      AddIgnoredKeywordsDialog.showAddIgnoredKeywordsDialog(rootPane.parent as? JFrame, null,
+        ignoredKeywordsModel, -1)
     }
     removeIgnoredKeywordBtn.addActionListener {
       ignoredKeywordsModel.removeElement(ignoredKeywordsList.selectedValue)
@@ -89,7 +89,8 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     ignoredKeywordsList.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent?) {
         if (e?.clickCount  == 2) {
-
+          AddIgnoredKeywordsDialog.showAddIgnoredKeywordsDialog(rootPane.parent as? JFrame,
+            ignoredKeywordsList.selectedValue, ignoredKeywordsModel, ignoredKeywordsList.selectedIndex)
         }
       }
     })
