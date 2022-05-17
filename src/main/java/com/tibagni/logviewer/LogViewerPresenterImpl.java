@@ -636,7 +636,9 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   @Override
   public List<String> getIgnoredKeywords() {
     // TODO - Implement where to get the keywords
-    List<String> ignoredKeywords = new ArrayList<>(Arrays.asList("Woshinibaba", "Nishiwoerzi", "Tianjin No.1", "Ice cream is wrong", "Soccer is the best", "OMADM"));
+    List<String> ignoredKeywords = new ArrayList<>(Arrays.asList("Woshinibaba", "Nishiwoerzi",
+        "Tianjin No.1", "Ice cream is wrong", "Soccer is the best", "OMADM",
+        "This is a long text. I'm your father. You're my son. Tianjin No.1 Ice cream is wrong. Soccer is the best"));
     return ignoredKeywords;
   }
 

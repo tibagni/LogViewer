@@ -4,14 +4,10 @@ import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
-import java.awt.Color
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
-import java.awt.Insets
-import java.awt.event.KeyEvent
-import java.awt.event.WindowAdapter
-import java.awt.event.WindowEvent
+import java.awt.*
+import java.awt.event.*
 import javax.swing.*
+import javax.swing.text.View
 
 class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogConfiguration) :
   JDialog(owner),
@@ -82,13 +78,31 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     }
 
     addIgnoredKeywordBtn.addActionListener {
-
+      //ignoredKeywordsModel.addElement(JTextField(30))
     }
     removeIgnoredKeywordBtn.addActionListener {
       ignoredKeywordsModel.removeElement(ignoredKeywordsList.selectedValue)
     }
     ignoredKeywordsList.addListSelectionListener {
       removeIgnoredKeywordBtn.isEnabled = true
+    }
+    ignoredKeywordsList.addMouseListener(object : MouseAdapter() {
+      override fun mouseClicked(e: MouseEvent?) {
+        if (e?.clickCount  == 2) {
+
+        }
+      }
+    })
+    ignoredKeywordsList.setCellRenderer { jList, keyword, index, isSelected, cellHasFocus ->
+      val ignoredKeywordItem = JTextArea(keyword)
+      ignoredKeywordItem.lineWrap = true
+      ignoredKeywordItem.wrapStyleWord = true
+      if (isSelected) {
+        ignoredKeywordItem.background = Color(38, 117, 191)
+      } else {
+        ignoredKeywordItem.background = null
+      }
+      ignoredKeywordItem
     }
     clearIgnoredKeywordBtn.addActionListener {
       ignoredKeywords?.clear()
@@ -105,9 +119,8 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 
     startingPointLogText.text = localStartingLog?.logText ?: "There is no \"starting point\" set for the visible logs"
     endingPointLogText.text = localEndingLog?.logText ?: "There is no \"ending point\" set for the visible logs"
-    localIgnoredKeywords?.forEach { keyword ->
-      ignoredKeywordsModel.addElement(keyword)
-    }
+    ignoredKeywordsModel.clear()
+    ignoredKeywordsModel.addAll(ignoredKeywords)
 
     clearStartingPointBtn.isEnabled = localStartingLog != null
     clearEndingPointBtn.isEnabled = localEndingLog != null
@@ -264,6 +277,8 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     )
 
     ignoredKeywordsList.border = BorderFactory.createDashedBorder(borderColor)
+    ignoredKeywordsList.visibleRowCount = 5
+    ignoredKeywordsList.selectionMode = ListSelectionModel.SINGLE_SELECTION
     positionsPane.add(
       JScrollPane(ignoredKeywordsList),
       GBConstraintsBuilder()
@@ -271,7 +286,7 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
         .withGridy(10)
         .withGridWidth(1)
         .withWeightx(1.0)
-        .withFill(GridBagConstraints.HORIZONTAL)
+        .withFill(GridBagConstraints.BOTH)
         .build()
     )
 
