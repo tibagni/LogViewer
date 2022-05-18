@@ -506,6 +506,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       return
     }
 
+    presenter.ignoredKeywords = userConfig.ignoredKeywords
+
     // Reset only what changed
     presenter.resetIgnoredLogs(
       config.startingLog != userConfig.startingLog,

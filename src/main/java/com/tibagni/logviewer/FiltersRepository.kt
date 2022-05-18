@@ -14,6 +14,7 @@ class PersistFiltersException(message: String?, cause: Throwable) : java.lang.Ex
 interface FiltersRepository {
   val currentlyOpenedFilters: Map<String, List<Filter>>
   val currentlyOpenedFilterFiles: Map<String, File>
+  var ignoredKeywords: List<String>
 
   @Throws(OpenFiltersException::class)
   fun openFilterFiles(files: Array<File>)
@@ -42,6 +43,15 @@ class FiltersRepositoryImpl: FiltersRepository {
     get() = _currentlyOpenedFilterFiles
 
   private val lastOpenedSerializedFilters = mutableMapOf<String, List<String>>()
+
+
+  private var _ignoredKeywords = mutableListOf<String>()
+  override var ignoredKeywords: List<String>
+    get() = _ignoredKeywords
+    set(value) {
+      _ignoredKeywords.clear()
+      _ignoredKeywords.addAll(value)
+    }
 
   @Throws(OpenFiltersException::class)
   override fun openFilterFiles(files: Array<File>) {

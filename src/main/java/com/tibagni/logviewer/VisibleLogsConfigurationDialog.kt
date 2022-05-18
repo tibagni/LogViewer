@@ -347,6 +347,10 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   }
 
   override fun onOk() {
+    ignoredKeywords?.clear()
+    for (i in 0 until ignoredKeywordsModel.size()) {
+      ignoredKeywords?.add(ignoredKeywordsModel[i])
+    }
     returnConfiguration = VisibleLogConfiguration(startingLog, endingLog, ignoredKeywords)
     dispose()
   }

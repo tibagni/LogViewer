@@ -6,7 +6,6 @@ import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.LogTimestamp;
 import com.tibagni.logviewer.logger.Logger;
-import com.tibagni.logviewer.logger.Profiler;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -636,11 +635,17 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   @Override
   public List<String> getIgnoredKeywords() {
     // TODO - Implement where to get the keywords
-    List<String> ignoredKeywords = new ArrayList<>(Arrays.asList("Woshinibaba", "Nishiwoerzi",
+    /*List<String> ignoredKeywords = new ArrayList<>(Arrays.asList("Woshinibaba", "Nishiwoerzi",
         "Tianjin No.1", "Ice cream is wrong", "Soccer is the best", "OMADM",
         "This is a long text. I'm your father. You're my son. Tianjin No.1 Ice cream is wrong. Soccer is the best",
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-    return ignoredKeywords;
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));*/
+    //return ignoredKeywords;
+    return filtersRepository.getIgnoredKeywords();
+  }
+
+  @Override
+  public void setIgnoredKeywords(List<String> ignoredKeywords) {
+    filtersRepository.setIgnoredKeywords(ignoredKeywords);
   }
 
   private List<LogEntry> excludeNonAllowedStreams(List<LogEntry> entries) {
