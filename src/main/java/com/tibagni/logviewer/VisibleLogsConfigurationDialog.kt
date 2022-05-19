@@ -7,6 +7,8 @@ import com.tibagni.logviewer.view.ButtonsPane
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
+import javax.swing.event.ListDataEvent
+import javax.swing.event.ListDataListener
 
 class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogConfiguration) :
   JDialog(owner),
@@ -80,9 +82,12 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
       AddIgnoredKeywordsDialog.showAddIgnoredKeywordsDialog(rootPane.parent as? JFrame, null,
         ignoredKeywordsModel, -1)
     }
+
     removeIgnoredKeywordBtn.addActionListener {
       ignoredKeywordsModel.removeElement(ignoredKeywordsList.selectedValue)
+      updateVisibleLogsState()
     }
+
     ignoredKeywordsList.addListSelectionListener {
       removeIgnoredKeywordBtn.isEnabled = true
     }
@@ -105,10 +110,23 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
       }
       ignoredKeywordItem
     }
+
+    ignoredKeywordsModel.addListDataListener(object : ListDataListener {
+      override fun intervalAdded(p0: ListDataEvent?) {
+        clearIgnoredKeywordBtn.isEnabled = true
+      }
+
+      override fun intervalRemoved(p0: ListDataEvent?) {}
+
+      override fun contentsChanged(p0: ListDataEvent?) {}
+    })
+
     clearIgnoredKeywordBtn.addActionListener {
-      ignoredKeywords?.clear()
+      ignoredKeywordsModel.clear()
       updateVisibleLogsState()
     }
+
+    ignoredKeywordsModel.addAll(ignoredKeywords)
 
     updateVisibleLogsState()
   }
@@ -116,17 +134,14 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   private fun updateVisibleLogsState() {
     val localStartingLog = startingLog
     val localEndingLog = endingLog
-    val localIgnoredKeywords = ignoredKeywords
 
     startingPointLogText.text = localStartingLog?.logText ?: "There is no \"starting point\" set for the visible logs"
     endingPointLogText.text = localEndingLog?.logText ?: "There is no \"ending point\" set for the visible logs"
-    ignoredKeywordsModel.clear()
-    ignoredKeywordsModel.addAll(ignoredKeywords)
 
     clearStartingPointBtn.isEnabled = localStartingLog != null
     clearEndingPointBtn.isEnabled = localEndingLog != null
     removeIgnoredKeywordBtn.isEnabled = !ignoredKeywordsList.isSelectionEmpty
-    clearIgnoredKeywordBtn.isEnabled = localIgnoredKeywords?.isNotEmpty() == true
+    clearIgnoredKeywordBtn.isEnabled = !ignoredKeywordsModel.isEmpty
 
     startingPointLogText.caretPosition = 0
     endingPointLogText.caretPosition = 0
