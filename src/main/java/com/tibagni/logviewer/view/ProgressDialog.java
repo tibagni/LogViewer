@@ -5,13 +5,18 @@ import javax.swing.*;
 public class ProgressDialog extends JDialog {
     private JPanel contentPane;
     private JProgressBar progressbar;
-    private JLabel progressText;
-
+    private JTextArea progressText;
     private final JFrame owner;
+    private final String initialText;
 
     public ProgressDialog(JFrame owner) {
+       this(owner, "Loading...");
+    }
+
+    public ProgressDialog(JFrame owner, String initialText) {
         super(owner);
         this.owner = owner;
+        this.initialText = initialText;
         buildUi();
         setUndecorated(true);
         setContentPane(contentPane);
@@ -45,13 +50,6 @@ public class ProgressDialog extends JDialog {
         return dialog;
     }
 
-    @Override
-    public void pack() {
-        contentPane.setPreferredSize(contentPane.getPreferredSize());
-        contentPane.validate();
-        super.pack();
-    }
-
     private void buildUi() {
         contentPane = new JPanel();
         progressbar = new JProgressBar(0, 100);
@@ -59,9 +57,13 @@ public class ProgressDialog extends JDialog {
         contentPane.add(progressbar);
         progressbar.setIndeterminate(true);
 
-        progressText = new JLabel();
+        progressText = new JTextArea(4, 50);
+        progressText.setLineWrap(true);
+        progressText.setWrapStyleWord(true);
+        progressText.setEditable(false);
+        progressText.setText(initialText);
 
-        JOptionPane optionPane = new JOptionPane(new Object[] {"Loading...", progressText, progressbar},
+        JOptionPane optionPane = new JOptionPane(new Object[] {progressText, progressbar},
                 JOptionPane.INFORMATION_MESSAGE,
                 JOptionPane.DEFAULT_OPTION,
                 null,

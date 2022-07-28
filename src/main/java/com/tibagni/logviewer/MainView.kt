@@ -212,14 +212,12 @@ class MainViewImpl(
       progressDialog = ProgressDialog.showProgressDialog(parent)
       progressDialogs[tag] = progressDialog
     }
-    progressDialog?.pack()
   }
 
   override fun showLoadingProgress(tag: String, progress: Int, note: String?) {
     val progressDialog = progressDialogs[tag]
     progressDialog?.publishProgress(progress)
     progressDialog?.updateProgressText(note)
-    progressDialog?.pack()
   }
 
   override fun finishLoading(tag: String) {
