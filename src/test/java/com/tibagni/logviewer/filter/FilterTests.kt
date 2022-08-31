@@ -35,6 +35,23 @@ class FilterTests {
   }
 
   @Test
+  fun testFilterCount() {
+    val filter = Filter("name", "Log line", Color.WHITE, LogLevel.VERBOSE)
+    val input = ArrayList<LogEntry>()
+    for (i in 1..200) {
+      input.add(LogEntry("Log line$i", LogLevel.INFO, null))
+    }
+    input.add(LogEntry("Last line", LogLevel.INFO, null))
+
+    // Run this test multiple times to increase the chances we catch concurrency issues
+    for (i in 0 .. 20) {
+      val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
+      assertEquals(200, filtered.size)
+      assertEquals(200, filter.temporaryInfo.totalLinesFound)
+    }
+  }
+
+  @Test
   fun singleSimpleFilterWithVerbosityVerboseTest() {
     val filter = Filter("name", "Log line", Color.WHITE, LogLevel.VERBOSE)
     val input = listOf(

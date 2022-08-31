@@ -4,7 +4,6 @@ import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.util.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.util.*;
@@ -212,7 +211,8 @@ public class Filter {
       return totalLinesFound;
     }
 
-    public void incrementLineCount(LogStream stream) {
+    // This method must be synchronized as the filters can be applied in parallel
+    public synchronized void incrementLineCount(LogStream stream) {
       int currentCount = 0;
       if (linesFound.containsKey(stream)) {
         currentCount = linesFound.get(stream);
