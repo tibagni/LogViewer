@@ -10,226 +10,327 @@ import org.mockito.Mockito.mock
 import java.awt.Color
 
 class FilterTests {
-    @Test
-    fun singleSimpleFilterTest() {
-        val filter = Filter("name", "filterText", Color.WHITE)
-        val input = listOf(
-                LogEntry("Log line 1", LogLevel.DEBUG, null),
-                LogEntry("Log line 2", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
-                LogEntry("Log line 3", LogLevel.DEBUG, null),
-                LogEntry("Log line 4", LogLevel.DEBUG, null),
-                LogEntry("Log line 5", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
-                LogEntry("Log line 6", LogLevel.DEBUG, null),
-                LogEntry("Log line 7", LogLevel.DEBUG, null),
-                LogEntry("Log line 8", LogLevel.DEBUG, null),
-                LogEntry("Log line 9", LogLevel.DEBUG, null),
-                LogEntry("Log line 10", LogLevel.DEBUG, null)
-        )
+  @Test
+  fun singleSimpleFilterTest() {
+    val filter = Filter("name", "filterText", Color.WHITE, LogLevel.VERBOSE)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null),
+      LogEntry("Log line 4", LogLevel.DEBUG, null),
+      LogEntry("Log line 5", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null),
+      LogEntry("Log line 7", LogLevel.DEBUG, null),
+      LogEntry("Log line 8", LogLevel.DEBUG, null),
+      LogEntry("Log line 9", LogLevel.DEBUG, null),
+      LogEntry("Log line 10", LogLevel.DEBUG, null)
+    )
 
-        val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        assertEquals(3, filtered.size)
-    }
+    assertEquals(3, filtered.size)
+  }
 
-    @Test
-    fun singleSimpleFilterTestCaseInsensitive() {
-        val filter = Filter("name", "filterText", Color.WHITE)
-        val input = listOf(
-                LogEntry("Log line 1", LogLevel.DEBUG, null),
-                LogEntry("Log line 2", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
-                LogEntry("Log line 3", LogLevel.DEBUG, null),
-                LogEntry("Log line 4", LogLevel.DEBUG, null),
-                LogEntry("Log line 5", LogLevel.DEBUG, null),
-                LogEntry("Log line containing FILTERtext", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterTEXT", LogLevel.DEBUG, null),
-                LogEntry("Log line 6", LogLevel.DEBUG, null),
-                LogEntry("Log line 7", LogLevel.DEBUG, null),
-                LogEntry("Log line 8", LogLevel.DEBUG, null),
-                LogEntry("Log line 9", LogLevel.DEBUG, null),
-                LogEntry("Log line 10", LogLevel.DEBUG, null)
-        )
+  @Test
+  fun singleSimpleFilterWithVerbosityVerboseTest() {
+    val filter = Filter("name", "Log line", Color.WHITE, LogLevel.VERBOSE)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.INFO, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.WARNING, null),
+      LogEntry("Log line 4", LogLevel.VERBOSE, null),
+      LogEntry("Log line 5", LogLevel.ERROR, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null)
+    )
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
+    assertEquals(6, filtered.size)
+  }
 
-        assertEquals(3, filtered.size)
-    }
+  @Test
+  fun singleSimpleFilterWithVerbosityDebugTest() {
+    val filter = Filter("name", "Log line", Color.WHITE, LogLevel.DEBUG)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.INFO, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.WARNING, null),
+      LogEntry("Log line 4", LogLevel.VERBOSE, null),
+      LogEntry("Log line 5", LogLevel.ERROR, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null)
+    )
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-    @Test
-    fun singleSimpleFilterTestCaseSensitive() {
-        val filter = Filter("name", "filterText", Color.WHITE, true)
-        val input = listOf(
-                LogEntry("Log line 1", LogLevel.DEBUG, null),
-                LogEntry("Log line 2", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
-                LogEntry("Log line 3", LogLevel.DEBUG, null),
-                LogEntry("Log line 4", LogLevel.DEBUG, null),
-                LogEntry("Log line 5", LogLevel.DEBUG, null),
-                LogEntry("Log line containing FILTERtext", LogLevel.DEBUG, null),
-                LogEntry("Log line containing filterTEXT", LogLevel.DEBUG, null),
-                LogEntry("Log line 6", LogLevel.DEBUG, null),
-                LogEntry("Log line 7", LogLevel.DEBUG, null),
-                LogEntry("Log line 8", LogLevel.DEBUG, null),
-                LogEntry("Log line 9", LogLevel.DEBUG, null),
-                LogEntry("Log line 10", LogLevel.DEBUG, null)
-        )
+    assertEquals(5, filtered.size)
+  }
 
-        val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
+  @Test
+  fun singleSimpleFilterWithVerbosityInfoTest() {
+    val filter = Filter("name", "Log line", Color.WHITE, LogLevel.INFO)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.INFO, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.WARNING, null),
+      LogEntry("Log line 4", LogLevel.VERBOSE, null),
+      LogEntry("Log line 5", LogLevel.ERROR, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null)
+    )
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        assertEquals(1, filtered.size)
-    }
+    assertEquals(3, filtered.size)
+  }
 
-    @Test
-    fun singleRegexFilterTest() {
-        val filter = Filter("name", "[\\w\\d]+@[\\w\\d]+\\.\\w+", Color.WHITE)
-        val input = listOf(
-                LogEntry("Log line 1", LogLevel.DEBUG, null),
-                LogEntry("Log line 2", LogLevel.DEBUG, null),
-                LogEntry("Log line containing eMail@bla.com", LogLevel.DEBUG, null),
-                LogEntry("Log line 3", LogLevel.DEBUG, null),
-                LogEntry("Log line 4", LogLevel.DEBUG, null),
-                LogEntry("Log line 5", LogLevel.DEBUG, null),
-                LogEntry("email@email.com", LogLevel.DEBUG, null),
-                LogEntry("Log otheremail@other.co Log", LogLevel.DEBUG, null),
-                LogEntry("Log line 6", LogLevel.DEBUG, null),
-                LogEntry("Log line 7", LogLevel.DEBUG, null),
-                LogEntry("Log line 8", LogLevel.DEBUG, null),
-                LogEntry("Log line 9", LogLevel.DEBUG, null),
-                LogEntry("Log line 10", LogLevel.DEBUG, null)
-        )
+  @Test
+  fun singleSimpleFilterWithVerbosityWarningTest() {
+    val filter = Filter("name", "Log line", Color.WHITE, LogLevel.WARNING)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.INFO, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.WARNING, null),
+      LogEntry("Log line 4", LogLevel.VERBOSE, null),
+      LogEntry("Log line 5", LogLevel.ERROR, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null)
+    )
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
+    assertEquals(2, filtered.size)
+  }
 
-        assertEquals(3, filtered.size)
-    }
+  @Test
+  fun singleSimpleFilterWithVerbosityErrorTest() {
+    val filter = Filter("name", "Log line", Color.WHITE, LogLevel.ERROR)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.INFO, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.WARNING, null),
+      LogEntry("Log line 4", LogLevel.VERBOSE, null),
+      LogEntry("Log line 5", LogLevel.ERROR, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null)
+    )
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-    @Test
-    fun multipleFilterTest() {
-        val filters = arrayOf(
-                Filter("name", "[\\w\\d]+@[\\w\\d]+\\.\\w+", Color.WHITE),
-                Filter("name", "caseSensitiveText", Color.WHITE, true),
-                Filter("name", "CaSeInSeNsitiveTeXT", Color.WHITE)
-        )
+    assertEquals(1, filtered.size)
+  }
 
-        val input = listOf(
-                LogEntry("Log line containing caseinsensitivetext", LogLevel.DEBUG, null),
-                LogEntry("Log line containing caseInsensitiveText", LogLevel.DEBUG, null),
-                LogEntry("Log line containing CASEINSENSITIVETEXT", LogLevel.DEBUG, null),
-                LogEntry("Log line 2", LogLevel.DEBUG, null),
-                LogEntry("Log line containing eMail@bla.com", LogLevel.DEBUG, null),
-                LogEntry("Log line 3", LogLevel.DEBUG, null),
-                LogEntry("Log line 4", LogLevel.DEBUG, null),
-                LogEntry("Log line 5", LogLevel.DEBUG, null),
-                LogEntry("email@email.com", LogLevel.DEBUG, null),
-                LogEntry("Log otheremail@other.co Log", LogLevel.DEBUG, null),
-                LogEntry("Log line 6", LogLevel.DEBUG, null),
-                LogEntry("Log line 7", LogLevel.DEBUG, null),
-                LogEntry("Log line containing caseSensitiveText", LogLevel.DEBUG, null),
-                LogEntry("Log line containing casesensitivetext", LogLevel.DEBUG, null),
-                LogEntry("Log line containing CASESENSITIVETEXT", LogLevel.DEBUG, null)
-        )
+  @Test
+  fun singleSimpleFilterTestCaseInsensitive() {
+    val filter = Filter("name", "filterText", Color.WHITE, LogLevel.VERBOSE)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null),
+      LogEntry("Log line 4", LogLevel.DEBUG, null),
+      LogEntry("Log line 5", LogLevel.DEBUG, null),
+      LogEntry("Log line containing FILTERtext", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterTEXT", LogLevel.DEBUG, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null),
+      LogEntry("Log line 7", LogLevel.DEBUG, null),
+      LogEntry("Log line 8", LogLevel.DEBUG, null),
+      LogEntry("Log line 9", LogLevel.DEBUG, null),
+      LogEntry("Log line 10", LogLevel.DEBUG, null)
+    )
 
-        val filtered = Filters.applyMultipleFilters(input, filters, mock(ProgressReporter::class.java))
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        assertEquals(7, filtered.size)
-    }
+    assertEquals(3, filtered.size)
+  }
 
-    @Test
-    fun testSerializeSimpleFilter() {
-        val filter1 = Filter("Filter Name", "Filter Query", Color(0, 0, 0))
-        val filter2 = Filter("Filter Name", "F", Color(255, 255, 255))
-        val filter3 = Filter("filter", "filter", Color(0, 255, 0), true)
-        val filter4 = Filter("(){}filter", "filter", Color(255, 0, 0))
-        val filter5 = Filter("./\\()*&ˆˆ", "Filter Query", Color(0, 0, 255))
+  @Test
+  fun singleSimpleFilterTestCaseSensitive() {
+    val filter = Filter("name", "filterText", Color.WHITE, LogLevel.VERBOSE, true)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterText", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null),
+      LogEntry("Log line 4", LogLevel.DEBUG, null),
+      LogEntry("Log line 5", LogLevel.DEBUG, null),
+      LogEntry("Log line containing FILTERtext", LogLevel.DEBUG, null),
+      LogEntry("Log line containing filterTEXT", LogLevel.DEBUG, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null),
+      LogEntry("Log line 7", LogLevel.DEBUG, null),
+      LogEntry("Log line 8", LogLevel.DEBUG, null),
+      LogEntry("Log line 9", LogLevel.DEBUG, null),
+      LogEntry("Log line 10", LogLevel.DEBUG, null)
+    )
 
-        val serialized1 = filter1.serializeFilter()
-        val serialized2 = filter2.serializeFilter()
-        val serialized3 = filter3.serializeFilter()
-        val serialized4 = filter4.serializeFilter()
-        val serialized5 = filter5.serializeFilter()
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        assertEquals("Filter Name,RmlsdGVyIFF1ZXJ5,2,0:0:0", serialized1)
-        assertEquals("Filter Name,Rg==,2,255:255:255", serialized2)
-        assertEquals("filter,ZmlsdGVy,0,0:255:0", serialized3)
-        assertEquals("(){}filter,ZmlsdGVy,2,255:0:0", serialized4)
-        assertEquals("./\\()*&ˆˆ,RmlsdGVyIFF1ZXJ5,2,0:0:255", serialized5)
-    }
+    assertEquals(1, filtered.size)
+  }
 
-    @Test
-    fun testSerializeRegexFilter() {
-        val filter1 = Filter("Filter Name", "\\w+@\\w+\\.(net|com)(\\.br){0,1}",
-                Color(0, 0, 0))
-        val filter2 = Filter("Filter Name", "\\+\\d-\\(\\d{3}\\)-\\d{3}-\\d{4}",
-                Color(255, 255, 255), true)
+  @Test
+  fun singleRegexFilterTest() {
+    val filter = Filter("name", "[\\w\\d]+@[\\w\\d]+\\.\\w+", Color.WHITE, LogLevel.VERBOSE)
+    val input = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line containing eMail@bla.com", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null),
+      LogEntry("Log line 4", LogLevel.DEBUG, null),
+      LogEntry("Log line 5", LogLevel.DEBUG, null),
+      LogEntry("email@email.com", LogLevel.DEBUG, null),
+      LogEntry("Log otheremail@other.co Log", LogLevel.DEBUG, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null),
+      LogEntry("Log line 7", LogLevel.DEBUG, null),
+      LogEntry("Log line 8", LogLevel.DEBUG, null),
+      LogEntry("Log line 9", LogLevel.DEBUG, null),
+      LogEntry("Log line 10", LogLevel.DEBUG, null)
+    )
 
-        val serialized1 = filter1.serializeFilter()
-        val serialized2 = filter2.serializeFilter()
+    val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
 
-        assertEquals("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0", serialized1)
-        assertEquals("Filter Name,XCtcZC1cKFxkezN9XCktXGR7M30tXGR7NH0=,0,255:255:255", serialized2)
-    }
+    assertEquals(3, filtered.size)
+  }
 
-    @Test
-    fun testDeSerializeSimpleFilter() {
-        val serialized1 = "Filter Name,RmlsdGVyIFF1ZXJ5,2,0:0:0"
-        val serialized2 = "Filter Name,Rg==,2,255:255:255"
-        val serialized3 = "filter,ZmlsdGVy,0,0:255:0"
-        val serialized4 = "(){}filter,ZmlsdGVy,2,255:0:0"
-        val serialized5 = "./\\()*&ˆˆ,RmlsdGVyIFF1ZXJ5,2,0:0:255"
+  @Test
+  fun multipleFilterTest() {
+    val filters = arrayOf(
+      Filter("name", "[\\w\\d]+@[\\w\\d]+\\.\\w+", Color.WHITE, LogLevel.VERBOSE),
+      Filter("name", "caseSensitiveText", Color.WHITE, LogLevel.VERBOSE, true),
+      Filter("name", "CaSeInSeNsitiveTeXT", Color.WHITE, LogLevel.VERBOSE)
+    )
 
-        val filter1 = Filter.createFromString(serialized1)
-        val filter2 = Filter.createFromString(serialized2)
-        val filter3 = Filter.createFromString(serialized3)
-        val filter4 = Filter.createFromString(serialized4)
-        val filter5 = Filter.createFromString(serialized5)
+    val input = listOf(
+      LogEntry("Log line containing caseinsensitivetext", LogLevel.DEBUG, null),
+      LogEntry("Log line containing caseInsensitiveText", LogLevel.DEBUG, null),
+      LogEntry("Log line containing CASEINSENSITIVETEXT", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line containing eMail@bla.com", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null),
+      LogEntry("Log line 4", LogLevel.DEBUG, null),
+      LogEntry("Log line 5", LogLevel.DEBUG, null),
+      LogEntry("email@email.com", LogLevel.DEBUG, null),
+      LogEntry("Log otheremail@other.co Log", LogLevel.DEBUG, null),
+      LogEntry("Log line 6", LogLevel.DEBUG, null),
+      LogEntry("Log line 7", LogLevel.DEBUG, null),
+      LogEntry("Log line containing caseSensitiveText", LogLevel.DEBUG, null),
+      LogEntry("Log line containing casesensitivetext", LogLevel.DEBUG, null),
+      LogEntry("Log line containing CASESENSITIVETEXT", LogLevel.DEBUG, null)
+    )
 
-        assertEquals("Filter Name", filter1.name)
-        assertEquals("Filter Query", filter1.patternString)
-        assertFalse(filter1.isCaseSensitive)
-        assertEquals(Color(0, 0, 0), filter1.color)
+    val filtered = Filters.applyMultipleFilters(input, filters, mock(ProgressReporter::class.java))
 
-        assertEquals("Filter Name", filter2.name)
-        assertEquals("F", filter2.patternString)
-        assertFalse(filter2.isCaseSensitive)
-        assertEquals(Color(255, 255, 255), filter2.color)
+    assertEquals(7, filtered.size)
+  }
 
-        assertEquals("filter", filter3.name)
-        assertEquals("filter", filter3.patternString)
-        assertTrue(filter3.isCaseSensitive)
-        assertEquals(Color(0, 255, 0), filter3.color)
+  @Test
+  fun testSerializeSimpleFilter() {
+    val filter1 = Filter("Filter Name", "Filter Query", Color(0, 0, 0), LogLevel.VERBOSE)
+    val filter2 = Filter("Filter Name", "F", Color(255, 255, 255), LogLevel.VERBOSE)
+    val filter3 = Filter("filter", "filter", Color(0, 255, 0), LogLevel.VERBOSE, true)
+    val filter4 = Filter("(){}filter", "filter", Color(255, 0, 0), LogLevel.VERBOSE)
+    val filter5 = Filter("./\\()*&ˆˆ", "Filter Query", Color(0, 0, 255), LogLevel.VERBOSE)
 
-        assertEquals("(){}filter", filter4.name)
-        assertEquals("filter", filter4.patternString)
-        assertFalse(filter4.isCaseSensitive)
-        assertEquals(Color(255, 0, 0), filter4.color)
+    val serialized1 = filter1.serializeFilter()
+    val serialized2 = filter2.serializeFilter()
+    val serialized3 = filter3.serializeFilter()
+    val serialized4 = filter4.serializeFilter()
+    val serialized5 = filter5.serializeFilter()
 
-        assertEquals("./\\()*&ˆˆ", filter5.name)
-        assertEquals("Filter Query", filter5.patternString)
-        assertFalse(filter5.isCaseSensitive)
-        assertEquals(Color(0, 0, 255), filter5.color)
-    }
+    assertEquals("Filter Name,RmlsdGVyIFF1ZXJ5,2,0:0:0,VERBOSE", serialized1)
+    assertEquals("Filter Name,Rg==,2,255:255:255,VERBOSE", serialized2)
+    assertEquals("filter,ZmlsdGVy,0,0:255:0,VERBOSE", serialized3)
+    assertEquals("(){}filter,ZmlsdGVy,2,255:0:0,VERBOSE", serialized4)
+    assertEquals("./\\()*&ˆˆ,RmlsdGVyIFF1ZXJ5,2,0:0:255,VERBOSE", serialized5)
+  }
 
-    @Test
-    fun testDeSerializeRegexFilter() {
-        val serialized1 = "Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0"
-        val serialized2 = "Filter Name,XCtcZC1cKFxkezN9XCktXGR7M30tXGR7NH0=,0,255:255:255"
+  @Test
+  fun testSerializeRegexFilter() {
+    val filter1 = Filter(
+      "Filter Name", "\\w+@\\w+\\.(net|com)(\\.br){0,1}",
+      Color(0, 0, 0), LogLevel.VERBOSE
+    )
+    val filter2 = Filter(
+      "Filter Name", "\\+\\d-\\(\\d{3}\\)-\\d{3}-\\d{4}",
+      Color(255, 255, 255), LogLevel.VERBOSE, true
+    )
 
-        val filter1 = Filter.createFromString(serialized1)
-        val filter2 = Filter.createFromString(serialized2)
+    val serialized1 = filter1.serializeFilter()
+    val serialized2 = filter2.serializeFilter()
 
-        assertEquals("Filter Name", filter1.name)
-        assertEquals("\\w+@\\w+\\.(net|com)(\\.br){0,1}", filter1.patternString)
-        assertFalse(filter1.isCaseSensitive)
-        assertEquals(Color(0, 0, 0), filter1.color)
+    assertEquals("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0,VERBOSE", serialized1)
+    assertEquals("Filter Name,XCtcZC1cKFxkezN9XCktXGR7M30tXGR7NH0=,0,255:255:255,VERBOSE", serialized2)
+  }
 
-        assertEquals("Filter Name", filter2.name)
-        assertEquals("\\+\\d-\\(\\d{3}\\)-\\d{3}-\\d{4}", filter2.patternString)
-        assertTrue(filter2.isCaseSensitive)
-        assertEquals(Color(255, 255, 255), filter2.color)
-    }
+  @Test
+  fun testDeSerializeSimpleFilter() {
+    val serialized1 = "Filter Name,RmlsdGVyIFF1ZXJ5,2,0:0:0,VERBOSE"
+    val serialized2 = "Filter Name,Rg==,2,255:255:255,DEBUG"
+    val serialized3 = "filter,ZmlsdGVy,0,0:255:0,INFO"
+    val serialized4 = "(){}filter,ZmlsdGVy,2,255:0:0,WARNING"
+    val serialized5 = "./\\()*&ˆˆ,RmlsdGVyIFF1ZXJ5,2,0:0:255,ERROR"
+
+    val filter1 = Filter.createFromString(serialized1)
+    val filter2 = Filter.createFromString(serialized2)
+    val filter3 = Filter.createFromString(serialized3)
+    val filter4 = Filter.createFromString(serialized4)
+    val filter5 = Filter.createFromString(serialized5)
+
+    assertEquals("Filter Name", filter1.name)
+    assertEquals("Filter Query", filter1.patternString)
+    assertFalse(filter1.isCaseSensitive)
+    assertEquals(Color(0, 0, 0), filter1.color)
+    assertEquals(LogLevel.VERBOSE, filter1.verbosity)
+
+    assertEquals("Filter Name", filter2.name)
+    assertEquals("F", filter2.patternString)
+    assertFalse(filter2.isCaseSensitive)
+    assertEquals(Color(255, 255, 255), filter2.color)
+    assertEquals(LogLevel.DEBUG, filter2.verbosity)
+
+    assertEquals("filter", filter3.name)
+    assertEquals("filter", filter3.patternString)
+    assertTrue(filter3.isCaseSensitive)
+    assertEquals(Color(0, 255, 0), filter3.color)
+    assertEquals(LogLevel.INFO, filter3.verbosity)
+
+    assertEquals("(){}filter", filter4.name)
+    assertEquals("filter", filter4.patternString)
+    assertFalse(filter4.isCaseSensitive)
+    assertEquals(Color(255, 0, 0), filter4.color)
+    assertEquals(LogLevel.WARNING, filter4.verbosity)
+
+    assertEquals("./\\()*&ˆˆ", filter5.name)
+    assertEquals("Filter Query", filter5.patternString)
+    assertFalse(filter5.isCaseSensitive)
+    assertEquals(Color(0, 0, 255), filter5.color)
+    assertEquals(LogLevel.ERROR, filter5.verbosity)
+  }
+
+  @Test
+  fun testCompatibilityWithOlderFilterFormat() {
+    // By default, older filters that do not contain "verbosity" info, should be created with
+    // the maximum verbosity allowed (VERBOSE)
+    val serialized1 = "Filter Name,RmlsdGVyIFF1ZXJ5,2,0:0:0"
+    val filter1 = Filter.createFromString(serialized1)
+
+    assertEquals(LogLevel.VERBOSE, filter1.verbosity)
+  }
+
+  @Test
+  fun testDeSerializeRegexFilter() {
+    val serialized1 = "Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0,VERBOSE"
+    val serialized2 = "Filter Name,XCtcZC1cKFxkezN9XCktXGR7M30tXGR7NH0=,0,255:255:255,DEBUG"
+
+    val filter1 = Filter.createFromString(serialized1)
+    val filter2 = Filter.createFromString(serialized2)
+
+    assertEquals("Filter Name", filter1.name)
+    assertEquals("\\w+@\\w+\\.(net|com)(\\.br){0,1}", filter1.patternString)
+    assertFalse(filter1.isCaseSensitive)
+    assertEquals(Color(0, 0, 0), filter1.color)
+    assertEquals(LogLevel.VERBOSE, filter1.verbosity)
+
+    assertEquals("Filter Name", filter2.name)
+    assertEquals("\\+\\d-\\(\\d{3}\\)-\\d{3}-\\d{4}", filter2.patternString)
+    assertTrue(filter2.isCaseSensitive)
+    assertEquals(Color(255, 255, 255), filter2.color)
+    assertEquals(LogLevel.DEBUG, filter2.verbosity)
+  }
 
   @Test
   fun testFilterEquals() {

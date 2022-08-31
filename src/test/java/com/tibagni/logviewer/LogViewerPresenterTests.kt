@@ -470,7 +470,7 @@ class LogViewerPresenterTests {
       )
     )
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -521,7 +521,7 @@ class LogViewerPresenterTests {
       )
     )
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -576,7 +576,7 @@ class LogViewerPresenterTests {
       )
     )
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -631,7 +631,7 @@ class LogViewerPresenterTests {
       )
     )
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -682,7 +682,7 @@ class LogViewerPresenterTests {
       )
     )
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -737,7 +737,7 @@ class LogViewerPresenterTests {
       )
     )
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -1178,7 +1178,7 @@ class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.MAIN, true)
     presenter.setStreamAllowed(LogStream.SYSTEM, true)
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -1240,7 +1240,7 @@ class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.MAIN, true)
     presenter.setStreamAllowed(LogStream.SYSTEM, true)
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -1299,7 +1299,7 @@ class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.MAIN, true)
     presenter.setStreamAllowed(LogStream.SYSTEM, true)
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 
@@ -1361,7 +1361,7 @@ class LogViewerPresenterTests {
     presenter.setStreamAllowed(LogStream.MAIN, true)
     presenter.setStreamAllowed(LogStream.SYSTEM, true)
 
-    val filters = listOf(Filter("name", "ABCDeF", Color.black))
+    val filters = listOf(Filter("name", "ABCDeF", Color.black, LogLevel.VERBOSE))
     val filter = filters.first()
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("Test" to filters))
 

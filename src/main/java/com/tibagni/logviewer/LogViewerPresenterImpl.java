@@ -212,7 +212,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
     for (int i = startSearch; i <= endSearch; i++) {
       int index = i % cachedAllowedFilteredLogs.size();
-      if (filter.appliesTo(cachedAllowedFilteredLogs.get(index).getLogText())) {
+      if (filter.appliesTo(cachedAllowedFilteredLogs.get(index))) {
         if (index < firstLogIndexSearch) {
           view.showNavigationNextOver();
         }
@@ -244,7 +244,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
     for (int i = startSearch; i >= endSearch; i--) {
       int index = i >= 0 ? i : (cachedAllowedFilteredLogs.size() + i);
-      if (filter.appliesTo(cachedAllowedFilteredLogs.get(index).getLogText())) {
+      if (filter.appliesTo(cachedAllowedFilteredLogs.get(index))) {
         if (index > firstLogIndexSearch && firstLogIndexSearch >= 0) {
           view.showNavigationPrevOver();
         }

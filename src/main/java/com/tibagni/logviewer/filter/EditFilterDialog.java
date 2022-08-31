@@ -4,6 +4,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
+import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -56,6 +57,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private JLabel colorLbl;
   private JLabel caseSensitiveLbl;
   private JCheckBox caseSensitiveCbx;
+  private JLabel verbosityLbl;
+  private JComboBox<LogLevel> verbosityCombo;
   private JButton regexEditorBtn;
   private JColorChooser colorChooser;
 
@@ -118,6 +121,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
       regexTxt.selectAll();
       colorChooser.setColor(filter.getColor());
       caseSensitiveCbx.setSelected(filter.isCaseSensitive());
+      verbosityCombo.setSelectedItem(filter.getVerbosity());
       nameIsPattern = filter.nameIsPattern();
     }
 
@@ -161,12 +165,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     String name = nameTxt.getText();
     String pattern = regexTxt.getText();
     boolean caseSensitive = caseSensitiveCbx.isSelected();
+    LogLevel verbosity = (LogLevel) verbosityCombo.getSelectedItem();
 
     try {
       if (filter == null) {
-        filter = new Filter(name, pattern, selectedColor, caseSensitive);
+        filter = new Filter(name, pattern, selectedColor, verbosity, caseSensitive);
       } else {
-        filter.updateFilter(name, pattern, selectedColor, caseSensitive);
+        filter.updateFilter(name, pattern, selectedColor, verbosity, caseSensitive);
       }
     } catch (FilterException e) {
       JOptionPane.showConfirmDialog(this, e.getMessage(), "Error...",
@@ -265,7 +270,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     final JPanel editPane = new JPanel();
     editPane.setLayout(new FormLayout(
         "fill:d:noGrow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:max(d;4px):noGrow",
-        "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow"));
+        "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow"));
 
     nameLbl = new JLabel();
     nameLbl.setText("Filter name:");
@@ -294,10 +299,19 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     caseSensitiveCbx.setText("Enable case sensitive for this filter");
     editPane.add(caseSensitiveCbx, cc.xy(3, 5));
 
+    verbosityLbl = new JLabel();
+    verbosityLbl.setText("Verbosity");
+    editPane.add(verbosityLbl, cc.xy(1, 7));
+    verbosityCombo = new JComboBox<>();
+    for (LogLevel level : LogLevel.values()) {
+      verbosityCombo.addItem(level);
+    }
+    editPane.add(verbosityCombo, cc.xy(3, 7));
+
     colorLbl = new JLabel();
     colorLbl.setText("Color:");
     colorLbl.setToolTipText("Choose a color to differentiate your filter");
-    editPane.add(colorLbl, cc.xy(1, 7));
+    editPane.add(colorLbl, cc.xy(1, 9));
     colorChooser = new JColorChooser();
 
     // Show a simple text field for preview
@@ -307,7 +321,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(15)));
     colorChooser.setPreviewPanel(preview);
-    editPane.add(colorChooser, cc.xy(3, 7));
+    editPane.add(colorChooser, cc.xy(3, 9));
 
     return editPane;
   }

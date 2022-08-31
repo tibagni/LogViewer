@@ -1,6 +1,7 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.log.LogLevel
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -12,9 +13,9 @@ class FiltersRepositoryTests {
   private lateinit var filtersRepository: FiltersRepository
 
   companion object {
-    private const val TEST_SERIALIZED_FILTER = "Test,VGVzdA==,2,255:0:0"
-    private const val TEST_SERIALIZED_FILTER2 = "Test2,VGVzdA==,2,255:0:0"
-    private const val TEST_SERIALIZED_FILTER3 = "Test3,VGVzdA==,2,255:0:0"
+    private const val TEST_SERIALIZED_FILTER = "Test,VGVzdA==,2,255:0:0,VERBOSE"
+    private const val TEST_SERIALIZED_FILTER2 = "Test2,VGVzdA==,2,255:0:0,VERBOSE"
+    private const val TEST_SERIALIZED_FILTER3 = "Test3,VGVzdA==,2,255:0:0,VERBOSE"
   }
 
   private fun createTempFilterFiles(vararg filterFiles: Pair<String, String>): Array<File> {
@@ -482,7 +483,7 @@ class FiltersRepositoryTests {
     filtersRepository.openFilterFiles(temporaryFilterFile)
     val filterToEdit = filtersRepository.currentlyOpenedFilters[temporaryFilterFile[0].name]?.get(0)
     filterToEdit?.let {
-      it.updateFilter("newName", it.patternString, it.color, it.isCaseSensitive)
+      it.updateFilter("newName", it.patternString, it.color, LogLevel.VERBOSE, it.isCaseSensitive)
     }
 
     val changed = filtersRepository.getChangedGroupsSinceLastOpened()

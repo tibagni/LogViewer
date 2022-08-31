@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.log.LogEntry;
+import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -15,6 +17,7 @@ public class Filter {
   private boolean applied;
   private String name;
   private Color color;
+  private LogLevel verbosity = LogLevel.VERBOSE;
 
   private Pattern pattern;
   private int flags = Pattern.CASE_INSENSITIVE;
@@ -29,25 +32,26 @@ public class Filter {
     flags = from.flags;
     applied = from.isApplied();
     pattern = getPattern(from.pattern.pattern());
+    verbosity = from.verbosity;
     if (temporaryInfo != null) {
       temporaryInfo = new ContextInfo(from.temporaryInfo);
     }
   }
 
-  public Filter(String name, String pattern, Color color) throws FilterException {
-    this(name, pattern, color, false);
+  public Filter(String name, String pattern, Color color, LogLevel verbosity) throws FilterException {
+    this(name, pattern, color, verbosity, false);
   }
 
-  public Filter(String name, String pattern, Color color, boolean caseSensitive)
+  public Filter(String name, String pattern, Color color, LogLevel verbosity, boolean caseSensitive)
       throws FilterException {
-    updateFilter(name, pattern, color, caseSensitive);
+    updateFilter(name, pattern, color, verbosity, caseSensitive);
   }
 
   boolean nameIsPattern() {
     return StringUtils.areEquals(getName(), getPatternString());
   }
 
-  public void updateFilter(String name, String pattern, Color color, boolean caseSensitive)
+  public void updateFilter(String name, String pattern, Color color, LogLevel verbosity, boolean caseSensitive)
       throws FilterException {
 
     if (StringUtils.isEmpty(name) || StringUtils.isEmpty(pattern) || color == null) {
@@ -63,6 +67,7 @@ public class Filter {
     this.name = name;
     this.color = color;
     this.pattern = getPattern(pattern);
+    this.verbosity = verbosity;
   }
 
   public boolean isApplied() {
@@ -75,6 +80,10 @@ public class Filter {
 
   public String getName() {
     return name;
+  }
+
+  public LogLevel getVerbosity() {
+    return verbosity;
   }
 
   public Color getColor() {
@@ -103,13 +112,17 @@ public class Filter {
   }
 
   /**
-   * Take a single String and return whether the it appliesTo this filter or not
+   * Take a single String and return whether it appliesTo this filter or not
    *
-   * @param inputLine A single log line
+   * @param entry A single log line entry
    * @return true if this filter is applicable to the input line. False otherwise
    */
-  public boolean appliesTo(String inputLine) {
-    return pattern.matcher(inputLine).find();
+  public boolean appliesTo(LogEntry entry) {
+    String inputLine = entry.getLogText();
+    boolean foundPattern = pattern.matcher(inputLine).find();
+    boolean isVerbosityAllowed = verbosity.ordinal() <= entry.logLevel.ordinal();
+
+    return foundPattern && isVerbosityAllowed;
   }
 
   private Pattern getPattern(String pattern) throws FilterException {
@@ -122,25 +135,26 @@ public class Filter {
 
   @Override
   public String toString() {
-    return String.format("Filter: [Name=%s, pattern=%s, regexFlags=%d, color=%s, applied=%b]",
-        name, pattern, flags, color, applied);
+    return String.format("Filter: [Name=%s, pattern=%s, regexFlags=%d, color=%s, verbosity=%s, applied=%b]",
+        name, pattern, flags, color, verbosity, applied);
   }
 
   public String serializeFilter() {
-    return String.format("%s,%s,%d,%d:%d:%d",
+    return String.format("%s,%s,%d,%d:%d:%d,%s",
         name.replaceAll(",", " "),
         StringUtils.encodeBase64(getPatternString()),
         flags,
         color.getRed(),
         color.getGreen(),
-        color.getBlue());
+        color.getBlue(),
+        verbosity);
   }
 
   public static Filter createFromString(String filterString) throws FilterException {
     // See format in 'serializeFilter'
     try {
       String[] params = filterString.split(",");
-      if (params.length != 4) {
+      if (params.length < 4) {
         throw new IllegalArgumentException();
       }
 
@@ -155,6 +169,11 @@ public class Filter {
       }
 
       filter.color = new Color(Integer.parseInt(rgb[0]), Integer.parseInt(rgb[1]), Integer.parseInt(rgb[2]));
+
+      // Check if the filter has information about verbosity level
+      if (params.length > 4) {
+        filter.verbosity = LogLevel.valueOf(params[4]);
+      }
 
       return filter;
     } catch (Exception e) {

@@ -57,10 +57,9 @@ public class Filters {
   }
 
   private static Filter getAppliedFilter(LogEntry entry, Filter[] filters) {
-    String inputLine = entry.getLogText();
     Filter firstFound = null;
     for (Filter filter : filters) {
-      if (filter.appliesTo(inputLine)) {
+      if (filter.appliesTo(entry)) {
         if (firstFound == null) {
           firstFound = filter;
         }
