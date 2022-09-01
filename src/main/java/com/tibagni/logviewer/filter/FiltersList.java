@@ -283,10 +283,10 @@ public class FiltersList extends JPanel {
       hideGroupBtn = new FlatButton(HIDE);
 
       prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);
-      prevBtn.setToolTipText("Navigate to previous filtered log");
+      prevBtn.setToolTipText("Navigate to previous filtered log (,)");
 
       nextBtn = new FlatButton(StringUtils.RIGHT_BLACK_POINTER);
-      nextBtn.setToolTipText("Navigate to next filtered log");
+      nextBtn.setToolTipText("Navigate to next filtered log (.)");
 
       addBtn = new FlatButton(StringUtils.PLUS);
       addBtn.setToolTipText("Add a new filter to this group");

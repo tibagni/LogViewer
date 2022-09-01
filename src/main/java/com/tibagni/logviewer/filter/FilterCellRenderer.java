@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.SwingUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -32,29 +33,26 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
   public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
                                                 boolean cellHasFocus) {
     Filter filter = (Filter) value;
-    String text = filter.getName();
+    String text =  filter.getName();
 
-    boolean useHtml = false;
     if (!StringUtils.isEmpty(highlightedText)) {
       int hlStart = text.toUpperCase().indexOf(highlightedText.toUpperCase());
       if (hlStart >= 0) {
         int hlEnd = hlStart + highlightedText.length();
         text = StringUtils.htmlHighlightAndEscape(text, hlStart, hlEnd);
-        useHtml = true;
       }
     }
+
+    // Add a marker indicating the verbosity of the filter
+    String verbosityMarkColor = ServiceLocator.INSTANCE.getThemeManager().isDark() ? "#FFF" : "#000";
+    text = "<small color=" + verbosityMarkColor + ">" + filter.getVerbosity().toString().charAt(0) + "</small> " + text;
 
     Filter.ContextInfo tempInfo = filter.getTemporaryInfo();
     if (tempInfo != null) {
       int totalLinesFound = tempInfo.getTotalLinesFound();
       text += String.format(" {%d}", totalLinesFound);
-
-      // Show the navigation shortcuts
-      if (totalLinesFound > 0) {
-        text += String.format(" %s %s(,) / %s(.)", StringUtils.VERTICAL_SEPARATOR,
-            StringUtils.LEFT_ARROW, StringUtils.RIGHT_ARROW);
-      }
     }
+
     setComponentOrientation(list.getComponentOrientation());
     setSelected(filter.isApplied());
 
@@ -75,12 +73,9 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
       setBackground(list.getBackground());
     }
     setForeground(filter.getColor());
+    text = StringUtils.wrapHtml(text);
 
-    if (useHtml) {
-      text = StringUtils.wrapHtml(text);
-    }
-
-    // Underline filters that have a different name so it is obvious just by looking at the list
+    // Underline filters that have a different name, so it is obvious just by looking at the list
     Font font = list.getFont();
     if (!filter.nameIsPattern()) {
       Map<TextAttribute, Object> attributes = new HashMap<>(font.getAttributes());
@@ -91,7 +86,7 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
     setText(text);
     setEnabled(list.isEnabled());
     setFont(font);
-    setToolTipText("search {" + filter.getPatternString() + "}");
+    setToolTipText(StringUtils.wrapHtml(filter.getPatternString() + "<br>" + filter.getVerbosity()));
 
     return this;
   }
