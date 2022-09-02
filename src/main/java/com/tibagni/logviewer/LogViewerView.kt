@@ -11,10 +11,7 @@ import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
-import com.tibagni.logviewer.view.FileDrop
-import com.tibagni.logviewer.view.FlatButton
-import com.tibagni.logviewer.view.SingleChoiceDialog
-import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.*
 import java.awt.*
 import java.awt.event.*
 import java.io.File
@@ -48,6 +45,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showUnsavedFilterIndication(group: String?)
   fun hideUnsavedFilterIndication(group: String?)
   fun showAskToSaveFilterDialog(group: String?): UserSelection
+  fun showAskToSaveMultipleFiltersDialog(groups: Array<String>): Array<Boolean>?
   fun showSaveFilters(group: String?): File?
   fun finish()
   fun showNavigationNextOver()
@@ -625,6 +623,17 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     )
 
     return convertFromSwing(userChoice)
+  }
+
+  override fun showAskToSaveMultipleFiltersDialog(groups: Array<String>): Array<Boolean>? {
+    val dialog = MultipleChoiceDialog(
+      "Save modified filter groups?",
+      "Select which groups to save",
+      groups,
+      true
+    )
+
+    return dialog.show(mainView.parent)
   }
 
   override fun showSaveFilters(group: String?) = mainView.showSaveFilterFileChooser(group)

@@ -352,7 +352,7 @@ class LogViewerPresenterTests {
     val testGroup = "testGroup"
     val testFile = File("testFile")
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveMultipleFiltersDialog(arrayOf(testGroup))).thenReturn(arrayOf(true))
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf(testGroup to testFile))
 
     presenter.finishing()
@@ -363,11 +363,33 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testFinishingSaveChangesOneGroupHasFile() {
+    val testGroup = "testGroup"
+    val testGroup2 = "testGroup2"
+    val testFile = File("testFile")
+    val testFile2 = File("testFile2")
+    presenter.setUnsavedGroupForTesting(testGroup)
+    presenter.setUnsavedGroupForTesting(testGroup2)
+    `when`(view.showAskToSaveMultipleFiltersDialog(arrayOf(testGroup, testGroup2))).thenReturn(arrayOf(true, false))
+    `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf(
+        testGroup to testFile,
+        testGroup2 to testFile2
+      ))
+
+    presenter.finishing()
+
+    verify(view, never()).showSaveFilters(testGroup)
+    verify(mockFiltersRepository).persistGroup(testFile, testGroup)
+    verify(mockFiltersRepository, never()).persistGroup(testFile2, testGroup2)
+    verify(view).finish()
+  }
+
+  @Test
   fun testFinishingSaveChangesGroupHasNoFileConfirmSave() {
     val testGroup = "testGroup"
     val testFile = File("testFile")
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveMultipleFiltersDialog(arrayOf(testGroup))).thenReturn(arrayOf(true))
     `when`(view.showSaveFilters(testGroup)).thenReturn(testFile)
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf())
 
@@ -382,7 +404,7 @@ class LogViewerPresenterTests {
   fun testFinishingSaveChangesGroupHasNoFileNoSave() {
     val testGroup = "testGroup"
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveMultipleFiltersDialog(arrayOf(testGroup))).thenReturn(arrayOf(true))
     `when`(view.showSaveFilters(testGroup)).thenReturn(null)
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf())
 
@@ -397,7 +419,7 @@ class LogViewerPresenterTests {
   fun testFinishingDontSaveChanges() {
     val testGroup = "testGroup"
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.REJECTED)
+    `when`(view.showAskToSaveMultipleFiltersDialog(arrayOf(testGroup))).thenReturn(arrayOf(false))
 
     presenter.finishing()
 
@@ -410,7 +432,7 @@ class LogViewerPresenterTests {
   fun testFinishingCancelChanges() {
     val testGroup = "testGroup"
     presenter.setUnsavedGroupForTesting(testGroup)
-    `when`(view.showAskToSaveFilterDialog(testGroup)).thenReturn(LogViewerPresenter.UserSelection.CANCELLED)
+    `when`(view.showAskToSaveMultipleFiltersDialog(arrayOf(testGroup))).thenReturn(null)
 
     presenter.finishing()
 
@@ -424,6 +446,7 @@ class LogViewerPresenterTests {
     presenter.finishing()
 
     verify(view, never()).showAskToSaveFilterDialog(any())
+    verify(view, never()).showAskToSaveMultipleFiltersDialog(anyOrNull())
     verify(view, never()).showSaveFilters(any())
     verify(view).finish()
   }

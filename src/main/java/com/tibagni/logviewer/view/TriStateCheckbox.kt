@@ -8,7 +8,7 @@ import javax.swing.JCheckBox
 import javax.swing.UIManager
 
 
-class TriStateCheckbox : JCheckBox() {
+class TriStateCheckbox(text: String? = null) : JCheckBox(text) {
   enum class SelectionState {
     SELECTED, PARTIALLY_SELECTED, NOT_SELECTED
   }

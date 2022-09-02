@@ -6,7 +6,6 @@ import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.LogTimestamp;
 import com.tibagni.logviewer.logger.Logger;
-import com.tibagni.logviewer.logger.Profiler;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -672,23 +671,26 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   private boolean requestSaveUnsavedGroups() {
-    boolean confirmed = true;
     // 'unsavedFilterGroups' can be changed while we are iterating over it
     // create an array with its elements to be safe instead
     String[] unsavedGroups = unsavedFilterGroups.toArray(new String[0]);
-
-    for (String unsavedGroup : unsavedGroups) {
-      UserSelection userSelection = view.showAskToSaveFilterDialog(unsavedGroup);
-      if (userSelection == UserSelection.CONFIRMED) {
-        saveFilters(unsavedGroup);
-      } else if (userSelection == UserSelection.CANCELLED) {
-        // Cancel all
-        confirmed = false;
-        break;
-      }
+    if (unsavedGroups.length == 0) {
+      // There is no unsaved groups, return early. don't bother showing anything to the user
+      return true;
     }
 
-    return confirmed;
+    Boolean[] groupsSelection = view.showAskToSaveMultipleFiltersDialog(unsavedGroups);
+    if (groupsSelection != null) {
+      for (int i = 0; i < unsavedGroups.length; i++) {
+        // Check each group if user selected to save
+        if (groupsSelection[i]) {
+          saveFilters(unsavedGroups[i]);
+        }
+      }
+      return true;
+    }
+
+    return false;
   }
 
   private void cleanUpFilterInfoFromLogEntries() {
