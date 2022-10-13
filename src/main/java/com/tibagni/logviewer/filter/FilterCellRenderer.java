@@ -35,12 +35,17 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
     Filter filter = (Filter) value;
     String text =  filter.getName();
 
+    int hlStart = -1;
     if (!StringUtils.isEmpty(highlightedText)) {
-      int hlStart = text.toUpperCase().indexOf(highlightedText.toUpperCase());
-      if (hlStart >= 0) {
-        int hlEnd = hlStart + highlightedText.length();
-        text = StringUtils.htmlHighlightAndEscape(text, hlStart, hlEnd);
-      }
+      hlStart = text.toUpperCase().indexOf(highlightedText.toUpperCase());
+    }
+
+    // If we have a matching search, highlight the text, otherwise just escape
+    if (hlStart >= 0) {
+      int hlEnd = hlStart + highlightedText.length();
+      text = StringUtils.htmlHighlightAndEscape(text, hlStart, hlEnd);
+    } else {
+      text = StringUtils.htmlEscape(text);
     }
 
     // Add a marker indicating the verbosity of the filter

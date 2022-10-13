@@ -60,6 +60,10 @@ public class StringUtils {
     return prefix + highlight(highlightedPart) + suffix;
   }
 
+  public static String htmlEscape(String text) {
+    return escape(text);
+  }
+
   private static String highlight(String text) {
     return "<span style=\"background-color:yellow;color:black\">" + text + "</span>";
   }
