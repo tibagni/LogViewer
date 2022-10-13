@@ -49,4 +49,9 @@ class StringUtilsTests {
   fun testWrapHtml() {
     assertEquals("<html>wrapped in html</html>", StringUtils.wrapHtml("wrapped in html"))
   }
+
+  @Test
+  fun testHtmlEscape() {
+    assertEquals("&lt;&gt;&amp;&quot;", StringUtils.htmlEscape("<>&\""))
+  }
 }
