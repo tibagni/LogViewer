@@ -23,6 +23,8 @@ public class Filter {
 
   private ContextInfo temporaryInfo;
 
+  public boolean wasLoadedFromLegacyFile = false;
+
   private Filter() { }
 
   public Filter(Filter from) throws FilterException {
@@ -172,6 +174,8 @@ public class Filter {
       // Check if the filter has information about verbosity level
       if (params.length > 4) {
         filter.verbosity = LogLevel.valueOf(params[4]);
+      } else {
+        filter.wasLoadedFromLegacyFile = true;
       }
 
       return filter;

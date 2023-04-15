@@ -2157,6 +2157,36 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testLoadLegacyFilterFile() {
+    val filterFiles = arrayOf(File("filter"))
+
+    val filter = Filter("name", "filterText", Color.WHITE, LogLevel.VERBOSE)
+    filter.wasLoadedFromLegacyFile = true
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("filter" to listOf(filter)))
+    `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf("filter" to filterFiles[0]))
+
+    presenter.loadFilters(filterFiles, false)
+
+    verify(mockFiltersRepository).persistGroup(anyOrNull(), anyString())
+    verify(view, never()).showSaveFilters(anyString());
+  }
+
+  @Test
+  fun testLoadNonLegacyFilterFile() {
+    val filterFiles = arrayOf(File("filter"))
+
+    val filter = Filter("name", "filterText", Color.WHITE, LogLevel.VERBOSE)
+    filter.wasLoadedFromLegacyFile = false
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(mapOf("filter" to listOf(filter)))
+    `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(mapOf("filter" to filterFiles[0]))
+
+    presenter.loadFilters(filterFiles, false)
+
+    verify(mockFiltersRepository, never()).persistGroup(anyOrNull(), anyString())
+    verify(view, never()).showSaveFilters(anyString());
+  }
+
+  @Test
   fun testSaveFiltersNonExistentGroupNoSave() {
     `when`(view.showSaveFilters(anyString())).thenReturn(null)
     presenter.saveFilters("newGroup")

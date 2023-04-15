@@ -362,7 +362,22 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       view.showErrorMessage(e.getMessage());
     }
 
-    view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
+    Map<String, List<Filter>> currentlyOpenedFilters = filtersRepository.getCurrentlyOpenedFilters();
+    // Check if we need to re-save the recently opened filters (in case they were converted to the new format)
+    for (File filterFile : filtersFiles) {
+      String group = filterFile.getName();
+      List<Filter> filters = currentlyOpenedFilters.getOrDefault(group, new ArrayList<>());
+      boolean isLegacy = filters.stream().anyMatch(filter -> filter.wasLoadedFromLegacyFile);
+      if (isLegacy) {
+        Logger.info("Filter Group: " + group + " is using old file format. Re-save it");
+        // Now that we checked, clear the legacy flag
+        filters.stream().forEach(filter -> filter.wasLoadedFromLegacyFile = false);
+        // ... and save it
+        saveFilters(group);
+      }
+    }
+
+    view.configureFiltersList(currentlyOpenedFilters);
     // Call checkForUnsavedChanges to clear the 'unsaved changes' state
     checkForUnsavedChanges();
 
