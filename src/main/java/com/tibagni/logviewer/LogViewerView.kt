@@ -137,8 +137,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     // If there are no groups, there is no point in closing anything
     closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
-    // If there are no logs open, don't let user un-apply
-    unApplyAllFilters.isEnabled = (logList.model?.rowCount ?: 0) > 0
 
     popup.add(closeAllGroupsItem)
     popup.add(unApplyAllFilters)
@@ -557,7 +555,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   override fun showFilteredLogs(logEntries: List<LogEntry>?) {
-    filteredLogListTableModel.setLogs(logEntries)
+    logEntries?.let {
+      filteredLogListTableModel.setLogs(it)
+    }
     logList.updateUI()
     filtersPane.updateUI()
 

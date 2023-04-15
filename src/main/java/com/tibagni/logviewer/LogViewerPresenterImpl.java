@@ -465,6 +465,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   public void applyFilters() {
     testStats.applyFiltersCallCount++;
     if (logsRepository.getCurrentlyOpenedLogs().isEmpty()) {
+      doOnUiThread(() -> view.showFilteredLogs(cachedAllowedFilteredLogs));
       return;
     }
 
