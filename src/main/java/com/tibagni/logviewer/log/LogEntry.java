@@ -2,6 +2,7 @@ package com.tibagni.logviewer.log;
 
 import com.tibagni.logviewer.filter.Filter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class LogEntry implements Comparable<LogEntry> {
 
@@ -12,6 +13,8 @@ public class LogEntry implements Comparable<LogEntry> {
   public final LogStream logStream;
 
   private Filter appliedFilter;
+  @Nullable
+  private Filter searchFilter;
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp) {
     this(logText, logLevel, timestamp, "");
@@ -54,6 +57,16 @@ public class LogEntry implements Comparable<LogEntry> {
 
   public int getLength() {
     return logText.length();
+  }
+
+  @Nullable
+  public Filter getSearchFilter() {
+    return searchFilter;
+  }
+
+  public LogEntry setSearchFilter(@Nullable Filter searchFilter) {
+    this.searchFilter = searchFilter;
+    return this;
   }
 
   @Override
