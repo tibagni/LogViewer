@@ -1,6 +1,7 @@
 buildscript {
     ext {
         kotlin_version = '1.5.21'
+        kotlinx_version = '1.5.2'
         junit_version = '4.12'
         mockito_version = '3.12.4'
         jgoodies_version = '1.6.0'
@@ -103,4 +104,6 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: "$apache_commons_version"
     implementation group: 'com.formdev', name: 'flatlaf', version: "$flatlaf_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-swing:$kotlinx_version"
 }

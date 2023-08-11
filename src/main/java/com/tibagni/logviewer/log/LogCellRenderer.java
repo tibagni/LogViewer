@@ -17,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LogCellRenderer extends JPanel implements TableCellRenderer {
+  private final JLabel lineNumLabel;
   protected final JTextArea textView;
   private final JPanel colorIndicator;
   private final JLabel streamIndicator;
@@ -28,6 +29,12 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
     colorIndicator = new JPanel();
     add(colorIndicator, BorderLayout.LINE_START);
+
+    lineNumLabel = new JLabel();
+    lineNumLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+    lineNumLabel.setPreferredSize(new Dimension(50, 20));
+    lineNumLabel.setBorder(new EmptyBorder(0,0,0,10));
+    add(lineNumLabel, BorderLayout.LINE_START);
 
     textView = new JTextArea();
     textView.setLineWrap(true);
@@ -78,6 +85,8 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       }
     }
 
+    lineNumLabel.setText(logEntry.getIndex() + 1 + "");
+
     textView.setText(logEntry.getLogText());
     textView.setWrapStyleWord(true);
     textView.setLineWrap(true);
@@ -121,18 +130,22 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   }
 
   private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry, boolean isSelected) {
-    Filter appliedFilter = logEntry.getAppliedFilter();
-    String hlText = appliedFilter != null ? appliedFilter.getPatternString() : null;
+    highlightMatchedText(logEntry.getAppliedFilter(), highlighter, logEntry, isSelected, false);
+    highlightMatchedText(logEntry.getSearchFilter(), highlighter, logEntry, isSelected, true);
+  }
+
+  private void highlightMatchedText(Filter filter, Highlighter highlighter, LogEntry logEntry, boolean isSelected, boolean isForSearch) {
+    String hlText = filter != null ? filter.getPatternString() : null;
     if (!StringUtils.isEmpty(hlText)) {
       try {
-        int flags = appliedFilter.isCaseSensitive() ? 0 : Pattern.CASE_INSENSITIVE;
+        int flags = filter.isCaseSensitive() ? 0 : Pattern.CASE_INSENSITIVE;
         Pattern pattern = Pattern.compile(hlText, flags);
         Matcher matcher = pattern.matcher(logEntry.getLogText());
         while (matcher.find()) {
           int start = matcher.start();
           int end = matcher.end();
           highlighter.addHighlight(start, end, new DefaultHighlighter.DefaultHighlightPainter(
-              getColorForHighlightedText(isSelected)));
+              getColorForHighlightedText(isSelected, isForSearch)));
         }
       } catch (Exception e) {
         // Should not happen
@@ -142,11 +155,11 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     }
   }
 
-  private Color getColorForHighlightedText(boolean isSelected) {
+  private Color getColorForHighlightedText(boolean isSelected, boolean isForSearch) {
     if (themeManager.isDark()) {
-      return isSelected ? new Color(111, 43, 0) : new Color(83, 87, 10);
+      return isSelected ? new Color(111, 43, 0) : isForSearch ? new Color(75,110,175) : new Color(83, 87, 10);
     } else {
-      return isSelected ? new Color(234, 115, 0) : new Color(250, 255, 162);
+      return isSelected ? new Color(234, 115, 0) : isForSearch ? new Color(38,117,191) : new Color(250, 255, 162);
     }
   }
 

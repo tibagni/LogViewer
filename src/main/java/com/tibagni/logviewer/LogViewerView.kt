@@ -60,7 +60,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private val presenter: LogViewerPresenter
 
   private lateinit var logList: JTable
-  private lateinit var filteredLogList: JTable
+  private lateinit var filteredLogList: SearchableTable
   private lateinit var addNewFilterGroupBtn: JButton
   private lateinit var moreFilterOptionsBtn: JButton
   private lateinit var collapseExpandAllGroupsBtn: JButton
@@ -103,7 +103,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     setupFiltersContextActions()
 
     logList.setDefaultRenderer(LogEntry::class.java, logRenderer)
-    filteredLogList.setDefaultRenderer(LogEntry::class.java, logRenderer)
+    filteredLogList.table.setDefaultRenderer(LogEntry::class.java, logRenderer)
     setupLogsContextActions()
     setupFilteredLogsContextActions()
 
@@ -279,20 +279,20 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
 
       override fun onNavigateNextFilteredLog(filter: Filter) {
-        val selectedFilteredLog = filteredLogList.selectedRow
+        val selectedFilteredLog = filteredLogList.table.selectedRow
         val filteredLogIdx = presenter.getNextFilteredLogForFilter(filter, selectedFilteredLog)
         if (filteredLogIdx != -1) {
-          SwingUtils.scrollToVisible(filteredLogList, filteredLogIdx)
-          filteredLogList.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
+          SwingUtils.scrollToVisible(filteredLogList.table, filteredLogIdx)
+          filteredLogList.table.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
         }
       }
 
       override fun onNavigatePrevFilteredLog(filter: Filter) {
-        val selectedFilteredLog = filteredLogList.selectedRow
+        val selectedFilteredLog = filteredLogList.table.selectedRow
         val filteredLogIdx = presenter.getPrevFilteredLogForFilter(filter, selectedFilteredLog)
         if (filteredLogIdx != -1) {
-          SwingUtils.scrollToVisible(filteredLogList, filteredLogIdx)
-          filteredLogList.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
+          SwingUtils.scrollToVisible(filteredLogList.table, filteredLogIdx)
+          filteredLogList.table.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
         }
       }
 
@@ -384,10 +384,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun setupFilteredLogsContextActions() {
-    filteredLogList.addMouseListener(object : MouseAdapter() {
+    filteredLogList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
-          val selectedIndex = filteredLogList.selectedRow
+          val selectedIndex = filteredLogList.table.selectedRow
           val clickedEntry = filteredLogListTableModel.getValueAt(selectedIndex, 0) as LogEntry
           val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
           SwingUtils.scrollToVisible(logList, logIndex)
@@ -455,9 +455,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun handleGoToTimestampMenu() {
     var hintText = "{month}-{day} {hour}:{min}:{sec}:{hund}"
     var ts: LogTimestamp? = null
-    if (filteredLogList.hasFocus() && filteredLogList.selectedRow >= 0) {
+    if (filteredLogList.table.hasFocus() && filteredLogList.table.selectedRow >= 0) {
       val selectedEntry =
-        filteredLogList.model.getValueAt(filteredLogList.selectedRow, filteredLogList.selectedColumn) as LogEntry
+        filteredLogList.table.model.getValueAt(filteredLogList.table.selectedRow, filteredLogList.table.selectedColumn) as LogEntry
       ts = selectedEntry.timestamp
     } else if (logList.hasFocus() && logList.selectedRow >= 0) {
       val selectedEntry =
@@ -573,8 +573,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
 
     if (filteredLogsPosition >= 0) {
-      SwingUtils.scrollToVisible(filteredLogList, filteredLogsPosition)
-      filteredLogList.setRowSelectionInterval(filteredLogsPosition, filteredLogsPosition)
+      SwingUtils.scrollToVisible(filteredLogList.table, filteredLogsPosition)
+      filteredLogList.table.setRowSelectionInterval(filteredLogsPosition, filteredLogsPosition)
     }
   }
 
@@ -726,8 +726,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
 
     filteredLogListTableModel = LogListTableModel("Filtered Logs")
-    filteredLogList = JTable(filteredLogListTableModel)
-    logsPane.rightComponent = JScrollPane(filteredLogList) // Right or below (below in this case)
+    filteredLogList = SearchableTable(filteredLogListTableModel)
+    logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
 
     mainSplitPane.rightComponent = logsPane
