@@ -27,14 +27,17 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
     setLayout(new BorderLayout());
 
+    JPanel leftPane = new JPanel(new BorderLayout());
+    add(leftPane, BorderLayout.LINE_START);
+
     colorIndicator = new JPanel();
-    add(colorIndicator, BorderLayout.LINE_START);
+    leftPane.add(colorIndicator, BorderLayout.LINE_START);
 
     lineNumLabel = new JLabel();
     lineNumLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     lineNumLabel.setPreferredSize(new Dimension(50, 20));
     lineNumLabel.setBorder(new EmptyBorder(0,0,0,10));
-    add(lineNumLabel, BorderLayout.LINE_START);
+    leftPane.add(lineNumLabel);
 
     textView = new JTextArea();
     textView.setLineWrap(true);
