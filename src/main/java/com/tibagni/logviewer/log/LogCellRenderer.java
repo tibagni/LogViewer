@@ -33,6 +33,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     lineNumLabel = new JLabel();
     lineNumLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     lineNumLabel.setPreferredSize(new Dimension(50, 20));
+    lineNumLabel.setBorder(new EmptyBorder(0,0,0,10));
     add(lineNumLabel, BorderLayout.LINE_START);
 
     textView = new JTextArea();

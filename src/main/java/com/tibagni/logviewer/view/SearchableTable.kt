@@ -7,6 +7,7 @@ import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import kotlinx.coroutines.*
@@ -30,9 +31,9 @@ class SearchableTable @JvmOverloads constructor(
 
   private val searchOptionPanel = JPanel()
   private val searchText = HintTextField("Search")
-  private val clearSearchText = JButton(ImageIcon(javaClass.getResource("/Images/clear.png")))
-  private val searchLast = JButton(ImageIcon(javaClass.getResource("/Images/up-arrow.png")))
-  private val searchNext = JButton(ImageIcon(javaClass.getResource("/Images/down-arrow.png")))
+  private val clearSearchText = JButton("Clear")
+  private val searchLast = JButton(StringUtils.UP_ARROW_HEAD_BIG)
+  private val searchNext = JButton(StringUtils.DOWN_ARROW_HEAD_BIG)
   private val searchResult = JLabel()
   private val matchCaseOption = JCheckBox("Match Case")
   private val useRegexOption = JCheckBox("Use Regex")
