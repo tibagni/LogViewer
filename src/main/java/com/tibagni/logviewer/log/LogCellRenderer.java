@@ -58,6 +58,11 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, fontSize));
   }
 
+  public void showLineNumbers(boolean showLineNumbers) {
+    lineNumLabel.setVisible(showLineNumbers);
+    Logger.debug("Show line number " + showLineNumbers);
+  }
+
   public void showStreams(boolean showStreams) {
     if (showStreams) {
       // Add the component if not already added

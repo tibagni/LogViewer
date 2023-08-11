@@ -219,13 +219,33 @@ class LogViewerPreferencesImplTests {
     }
 
     @Test
+    fun testSettingRememberAppliedFilters2() {
+        LogViewerPreferencesImpl.rememberAppliedFilters = false
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS, false)
+        verify(mockListener, only()).onRememberAppliedFiltersConfigChanged()
+    }
+
+    @Test
     fun testGettingRememberAppliedFilters() {
         `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS), anyBoolean())).thenReturn(true)
         val returnedVal = LogViewerPreferencesImpl.rememberAppliedFilters
 
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS, false)
         verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS, true)
         verify(mockListener, never()).onRememberAppliedFiltersConfigChanged()
         assertEquals(true, returnedVal)
+    }
+
+    @Test
+    fun testGettingRememberAppliedFilters2() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS), anyBoolean())).thenReturn(false)
+        val returnedVal = LogViewerPreferencesImpl.rememberAppliedFilters
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS, true)
+        verify(mockListener, never()).onRememberAppliedFiltersConfigChanged()
+        assertEquals(false, returnedVal)
     }
 
     @Test
@@ -297,6 +317,82 @@ class LogViewerPreferencesImplTests {
         assertEquals(4, returnedVal[0])
         assertEquals(11, returnedVal[1])
         assertEquals(6, returnedVal[2])
+    }
+
+    @Test
+    fun testSettingCollapseAllGroupsStartup() {
+        LogViewerPreferencesImpl.collapseAllGroupsStartup = true
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP, true)
+        verify(mockListener, only()).onCollapseAllGroupsStartupChanged()
+    }
+
+    @Test
+    fun testSettingCollapseAllGroupsStartup2() {
+        LogViewerPreferencesImpl.collapseAllGroupsStartup = false
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP, false)
+        verify(mockListener, only()).onCollapseAllGroupsStartupChanged()
+    }
+
+    @Test
+    fun testGettingCollapseAllGroupsStartup() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP), anyBoolean())).thenReturn(true)
+        val returnedVal = LogViewerPreferencesImpl.collapseAllGroupsStartup
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP, true)
+        verify(mockListener, never()).onCollapseAllGroupsStartupChanged()
+        assertEquals(true, returnedVal)
+    }
+
+    @Test
+    fun testGettingCollapseAllGroupsStartup2() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP), anyBoolean())).thenReturn(false)
+        val returnedVal = LogViewerPreferencesImpl.collapseAllGroupsStartup
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.COLLAPSE_ALL_GROUPS_STARTUP, true)
+        verify(mockListener, never()).onCollapseAllGroupsStartupChanged()
+        assertEquals(false, returnedVal)
+    }
+
+    @Test
+    fun testSettingShowLineNumbers() {
+        LogViewerPreferencesImpl.showLineNumbers = true
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS, true)
+        verify(mockListener, only()).onShowLineNumbersChanged()
+    }
+
+    @Test
+    fun testSettingShowLineNumbers2() {
+        LogViewerPreferencesImpl.showLineNumbers = false
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS, false)
+        verify(mockListener, only()).onShowLineNumbersChanged()
+    }
+
+    @Test
+    fun testGettingShowLineNumbers() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS), anyBoolean())).thenReturn(true)
+        val returnedVal = LogViewerPreferencesImpl.showLineNumbers
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS, true)
+        verify(mockListener, never()).onShowLineNumbersChanged()
+        assertEquals(true, returnedVal)
+    }
+
+    @Test
+    fun testGettingShowLineNumbers2() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS), anyBoolean())).thenReturn(false)
+        val returnedVal = LogViewerPreferencesImpl.showLineNumbers
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LINE_NUMBERS, true)
+        verify(mockListener, never()).onShowLineNumbersChanged()
+        assertEquals(false, returnedVal)
     }
 
     @Test

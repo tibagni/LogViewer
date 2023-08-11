@@ -7,6 +7,7 @@ import com.tibagni.logviewer.filter.FiltersList
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -81,16 +82,28 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   init {
     buildUi()
+    val userPrefs = ServiceLocator.logViewerPrefs
 
     presenter = LogViewerPresenterImpl(
       this,
-      ServiceLocator.logViewerPrefs,
+      userPrefs,
       ServiceLocator.logsRepository,
       ServiceLocator.filtersRepository
     )
     presenter.init()
 
     logRenderer = LogCellRenderer()
+    logRenderer.showLineNumbers(userPrefs.showLineNumbers)
+
+    userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
+      override fun onShowLineNumbersChanged() {
+        logRenderer.showLineNumbers(userPrefs.showLineNumbers)
+        logList.revalidate()
+        logList.repaint()
+        filteredLogList.table.revalidate()
+        filteredLogList.table.repaint()
+      }
+    })
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
     // Use Mouse event here to get the position on screen

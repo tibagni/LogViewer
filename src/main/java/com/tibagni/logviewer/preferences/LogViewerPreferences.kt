@@ -12,6 +12,7 @@ interface LogViewerPreferences {
     var rememberAppliedFilters: Boolean
     var preferredTextEditor: File?
     var collapseAllGroupsStartup: Boolean
+    var showLineNumbers: Boolean
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
@@ -28,6 +29,7 @@ interface LogViewerPreferences {
         fun onRememberAppliedFiltersConfigChanged()
         fun onPreferredTextEditorChanged()
         fun onCollapseAllGroupsStartupChanged()
+        fun onShowLineNumbersChanged()
     }
 
     abstract class Adapter : Listener {
@@ -40,5 +42,6 @@ interface LogViewerPreferences {
         override fun onRememberAppliedFiltersConfigChanged() {}
         override fun onPreferredTextEditorChanged() {}
         override fun onCollapseAllGroupsStartupChanged() {}
+        override fun onShowLineNumbersChanged() {}
     }
 }
