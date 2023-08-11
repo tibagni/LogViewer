@@ -36,7 +36,7 @@ class SearchableTable @JvmOverloads constructor(
   private val searchNext = JButton(StringUtils.DOWN_ARROW_HEAD_BIG)
   private val searchResult = JLabel()
   private val matchCaseOption = JCheckBox("Match Case")
-  private val useRegexOption = JCheckBox("Use Regex")
+  private val close = FlatButton(StringUtils.DELETE)
 
   val table = JTable(dm, cm, sm)
 
@@ -62,9 +62,6 @@ class SearchableTable @JvmOverloads constructor(
       matchCaseStateChanged()
     }
 
-    useRegexOption.addItemListener {
-      useRegexStateChanged()
-    }
     clearSearchText.addActionListener { searchText.text = "" }
 
     table.addKeyListener(object : KeyAdapter() {
@@ -85,6 +82,9 @@ class SearchableTable @JvmOverloads constructor(
         }
       }
     })
+
+    close.addActionListener { hideSearch() }
+    close.toolTipText = "Hide search bar"
 
     searchText.whenTextChanges { performSearchState.value = Any() }
 
@@ -182,7 +182,6 @@ class SearchableTable @JvmOverloads constructor(
     searchOptionPanel.isVisible = false
     searchText.text = ""
     matchCaseOption.isSelected = false
-    useRegexOption.isSelected = false
     table.requestFocus()
     revalidate()
   }
@@ -191,7 +190,7 @@ class SearchableTable @JvmOverloads constructor(
     layout = GridBagLayout()
 
     val layout = FormLayout(
-      "300dlu, pref, pref, pref, pref, pref, pref",  // columns
+      "300dlu, pref, pref, pref, pref, pref, pref:grow, right:pref",  // columns
       "pref"// rows
     )
     val builder = PanelBuilder(layout, searchOptionPanel)
@@ -201,7 +200,8 @@ class SearchableTable @JvmOverloads constructor(
     builder.add(searchNext, CC.xy(4, 1))
     builder.add(searchResult, CC.xy(5, 1))
     builder.add(matchCaseOption, CC.xy(6, 1))
-    //builder.add(useRegexOption, CC.xy(7, 1))
+    builder.add(JLabel(), CC.xy(7, 1)) // Empty space
+    builder.add(close, CC.xy(8, 1))
 
     add(
       searchOptionPanel,

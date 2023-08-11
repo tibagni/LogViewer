@@ -28,8 +28,8 @@ public class StringUtils {
 
   public static final String THREE_LINES = "\u2630";
 
-  public static final String DELETE = "x"; //TODO find a better symbol
-  public static final String PLUS = "+"; //TODO find a better symbol
+  public static final String DELETE = "\u2715";
+  public static final String PLUS = "\uFF0B";
 
   public static boolean isEmpty(String str) {
     return str == null || str.trim().length() == 0;
