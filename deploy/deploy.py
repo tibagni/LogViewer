@@ -116,14 +116,16 @@ def create_github_release(access_token, tag_name, release_notes, release_path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('tag', type=str, help='new release TAG')
+    parser.add_argument('-l', '--local', help='Run local, without uploading to github', action="store_true")
     option = parser.parse_args()
 
+    is_local = option.local
     CREDENTIALS = read_credentials() or None
     repo = Repo("..")
     new_version = float(option.tag)
     last_version = float(str(repo.tags[-1]))
 
-    if CREDENTIALS is None:
+    if CREDENTIALS is None and not is_local:
         print("Missing credentials.json file")
         print(""" 
 Credentials file should be in the following format:
@@ -167,20 +169,21 @@ Credentials file should be in the following format:
     print("committing and pushing changes...")
     commit_version_change(repo, new_version)
     repo.create_tag(new_version)
-    push_changes(repo, new_version)
 
     build_release(make_jar=True)
     release_path = glob.glob("../build/libs/*")[0]
 
-    print("Creating new relese on github (this can take a while)...")
-    try:
-        release_url = create_github_release(
-            CREDENTIALS["github_access_token"], new_version, release_notes, release_path)
-        print(f"Release {new_version} successfully created: {release_url}")
-    except Exception as e:
-        print("Failed to create or upload github release. Try manually")
-        print(e)
-        exit(1)
+    if not is_local:
+        print("Creating new relese on github (this can take a while)...")
+        push_changes(repo, new_version)
+        try:
+            release_url = create_github_release(
+                CREDENTIALS["github_access_token"], new_version, release_notes, release_path)
+            print(f"Release {new_version} successfully created: {release_url}")
+        except Exception as e:
+            print("Failed to create or upload github release. Try manually")
+            print(e)
+            exit(1)
 
 
 if __name__ == "__main__":
