@@ -23,4 +23,14 @@ class CommonUtilsTests {
     assertEquals("b", list[3])
     assertEquals("j", list[4])
   }
+
+  @Test
+  fun testSleepSilently() {
+    val start = System.currentTimeMillis()
+    CommonUtils.sleepSilently(100)
+    val end = System.currentTimeMillis()
+    val duration = end - start
+
+    assertTrue(duration >= 100)
+  }
 }

@@ -19,13 +19,6 @@ fun <T> HashSet<T>.reset(otherCollection: Collection<T>?) {
   }
 }
 
-fun <T> HashSet<T>.reset(elementsArray: Array<T>?) {
-  this.clear()
-  if (elementsArray != null) {
-    this.addAll(elementsArray)
-  }
-}
-
 fun <K, V> MutableMap<K, V>.reset(otherMap: Map<K, V>) {
   this.clear()
   this.putAll(otherMap)

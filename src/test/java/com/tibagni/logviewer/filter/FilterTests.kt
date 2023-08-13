@@ -387,4 +387,22 @@ class FilterTests {
 
     assertEquals(8, contextInfo.totalLinesFound)
   }
+
+  @Test
+  fun testEquals() {
+    val filter = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    val filter2 = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+
+    assertEquals(filter, filter2)
+    assertNotSame(filter, filter2)
+  }
+
+  @Test
+  fun testCopyFilter() {
+    val filter = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    val filterCopy = Filter(filter)
+
+    assertEquals(filter, filterCopy)
+    assertNotSame(filter, filterCopy)
+  }
 }
