@@ -62,4 +62,3 @@ fabric.properties
 # Deply Script
 deploy/env
 deploy/credentials.json
-.idea
