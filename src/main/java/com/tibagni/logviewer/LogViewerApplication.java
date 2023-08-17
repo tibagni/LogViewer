@@ -55,6 +55,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     String lookAndFeel = prefs.getLookAndFeel();
     Logger.debug("Installing theme: " + lookAndFeel);
     themeManager.setCurrentTheme(lookAndFeel);
+    initGlobalFont();
 
 //    UIScaleUtils.updateDefaultSizes();
     watchLookAndFeelUpdates();
@@ -85,12 +86,25 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
           mainView.themeChanged();
         }
       }
+
+      @Override
+      public void onGlobalCustomFontChanged() {
+        initGlobalFont();
+      }
     });
   }
 
   private void startCheckingForUpdates() {
     UpdateManager updateManager = new UpdateManager(this);
     updateManager.checkForUpdates();
+  }
+
+  private void initGlobalFont() {
+    UIManager.getDefaults().put("defaultFont",
+        ServiceLocator.INSTANCE.getLogViewerPrefs().getGlobalCustomFont());
+    if (mainView != null) {
+      SwingUtilities.updateComponentTreeUI(mainView.getParent());
+    }
   }
 
   @Override
