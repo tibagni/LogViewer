@@ -13,6 +13,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +25,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   private final JLabel streamIndicator;
   private final LogViewerThemeManager themeManager;
   private int mHighlightLine = -1;
+  private final FontRenderContext fontRenderContext = new FontRenderContext(new AffineTransform(), true, true);
 
   public LogCellRenderer() {
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
@@ -66,7 +69,6 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
   public void showLineNumbers(boolean showLineNumbers) {
     lineNumLabel.setVisible(showLineNumbers);
-    Logger.debug("Show line number " + showLineNumbers);
   }
 
   public void showStreams(boolean showStreams) {
@@ -85,6 +87,27 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
   public void highlightLine(int rowIndex) {
     mHighlightLine = rowIndex;
+  }
+
+  public void recalculateLineNumberPreferredSize(LogListTableModel model) {
+    if (!lineNumLabel.isVisible()) return;
+
+    int maxIndex = -1;
+    for (int index = 0; index < model.getRowCount(); index++) {
+      LogEntry logEntry = (LogEntry) model.getValueAt(index, 0);
+      if (logEntry.getIndex() > maxIndex) {
+        maxIndex = logEntry.getIndex();
+      }
+    }
+
+    if (maxIndex != -1) {
+      String line = String.valueOf(maxIndex + 1);
+      int width = (int) getFont().getStringBounds(line, fontRenderContext).getWidth();
+
+      // size = string width + border size
+      lineNumLabel.setPreferredSize(new Dimension(width + UIScaleUtils.dip(15),
+          lineNumLabel.getPreferredSize().height));
+    }
   }
 
   @Override
