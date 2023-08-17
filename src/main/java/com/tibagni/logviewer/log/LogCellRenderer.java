@@ -89,6 +89,12 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     mHighlightLine = rowIndex;
   }
 
+  public void updateLineNumberWidth(int width) {
+    // size = string width + border size
+    lineNumLabel.setPreferredSize(new Dimension(width + UIScaleUtils.dip(10),
+        lineNumLabel.getPreferredSize().height));
+  }
+
   @Override
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                  boolean hasFocus, int row, int column) {

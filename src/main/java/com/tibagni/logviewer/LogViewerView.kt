@@ -15,8 +15,11 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.*
 import java.awt.*
 import java.awt.event.*
+import java.awt.font.FontRenderContext
+import java.awt.geom.AffineTransform
 import java.io.File
 import javax.swing.*
+import kotlin.math.roundToInt
 
 // This is the interface known by other views (MainView)
 interface LogViewerView : View {
@@ -83,6 +86,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   private val logStreams: HashSet<LogStream> = HashSet()
   private var doFinish: (() -> Unit)? = null
+
+  private val frc = FontRenderContext(AffineTransform(), true, true)
 
   init {
     buildUi()
@@ -357,6 +362,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
               logList.table.selectedRows
                 .map { logListTableModel.getValueAt(it, 0) as LogEntry }
                 .forEach { pickedLogListTableModel.addLog(it) }
+              onPickedLogListModelUpdate()
             }
           if (logList.table.selectedRowCount == 1) {
             popup.add(JSeparator())
@@ -434,6 +440,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
             filteredLogList.table.selectedRows
               .map { filteredLogListTableModel.getValueAt(it, 0) as LogEntry }
               .forEach { pickedLogListTableModel.addLog(it) }
+            onPickedLogListModelUpdate()
           }
           popup.show(filteredLogList.table, e.x, e.y)
         }
@@ -468,10 +475,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           val popup = JPopupMenu()
           val removeItem = popup.add("Remove")
           removeItem.addActionListener {
-
             pickedLogList.table.selectedRows
               .map { pickedLogListTableModel.getValueAt(it, 0) as LogEntry }
               .forEach { pickedLogListTableModel.removeLog(it) }
+            onPickedLogListModelUpdate()
           }
           popup.show(pickedLogList.table, e.x, e.y)
         }
@@ -479,6 +486,21 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     })
     clearPickedLogButton.addActionListener {
       pickedLogListTableModel.clearLog()
+    }
+  }
+
+  private fun onPickedLogListModelUpdate() {
+    var maxIndex = -1
+    for (index in 0 until pickedLogListTableModel.rowCount) {
+      val e = pickedLogListTableModel.getValueAt(index, 0) as LogEntry
+      if (e.index > maxIndex) {
+        maxIndex = e.index
+      }
+    }
+    if (maxIndex != -1) {
+        val line = "${(maxIndex + 1)}"
+        val width = pickedLogList.font.getStringBounds(line, frc).width.roundToInt()
+        pickledLogRenderer.updateLineNumberWidth(width)
     }
   }
 
@@ -625,6 +647,12 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun showLogs(logEntries: List<LogEntry>?) {
     logListTableModel.setLogs(logEntries)
+    // calc the line number view needed width
+    logEntries?.maxByOrNull { it.index }?.index?.let {
+      val line = "${(it + 1)}"
+      val width = logList.font.getStringBounds(line, frc).width.roundToInt()
+      logRenderer.updateLineNumberWidth(width)
+    }
   }
 
   override fun showCurrentLogsLocation(logsPath: String?) {
