@@ -80,6 +80,8 @@ public class LogEntry implements Comparable<LogEntry> {
     if (timestamp == null) return -1;
     if (o.timestamp == null) return 1;
 
-    return timestamp.compareTo(o.timestamp);
+    int time = timestamp.compareTo(o.timestamp);
+    // compare index if same time
+    return time == 0 ? Integer.compare(index, o.index) : time;
   }
 }

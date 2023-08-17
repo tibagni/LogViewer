@@ -4,6 +4,7 @@ import com.jgoodies.forms.builder.PanelBuilder
 import com.jgoodies.forms.factories.CC
 import com.jgoodies.forms.layout.FormLayout
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.logger.Logger
@@ -90,6 +91,8 @@ class SearchableTable @JvmOverloads constructor(
 
     table.selectionModel.addListSelectionListener {
       lastSearchGoToPos = -1
+      val renderer = table.getDefaultRenderer(LogEntry::class.java) as LogCellRenderer
+      renderer.highlightLine(-1)
     }
 
     performSearchState
@@ -109,17 +112,18 @@ class SearchableTable @JvmOverloads constructor(
       } else {
         matchedIndexList.indexOfLast { it < lastPos }.takeIf { it != -1 } ?: matchedIndexList.lastIndex
       }
+      searchResult.text = " ${itemIndex + 1}/${matchedIndexList.size} "
       val targetCellPos = matchedIndexList[itemIndex]
       SwingUtils.scrollToVisible(table, targetCellPos)
+      val renderer = table.getDefaultRenderer(LogEntry::class.java) as LogCellRenderer
+      renderer.highlightLine(targetCellPos)
+      table.revalidate()
+      table.repaint()
       lastSearchGoToPos = targetCellPos
     }
   }
 
   private fun matchCaseStateChanged() {
-    performSearchState.value = Any()
-  }
-
-  private fun useRegexStateChanged() {
     performSearchState.value = Any()
   }
 
@@ -190,7 +194,7 @@ class SearchableTable @JvmOverloads constructor(
     layout = GridBagLayout()
 
     val layout = FormLayout(
-      "300dlu, pref, pref, pref, pref, pref, pref:grow, right:pref",  // columns
+      "200dlu, pref, pref, pref, pref, pref, pref:grow, right:pref",  // columns
       "pref"// rows
     )
     val builder = PanelBuilder(layout, searchOptionPanel)
@@ -206,8 +210,8 @@ class SearchableTable @JvmOverloads constructor(
     add(
       searchOptionPanel,
       GBConstraintsBuilder()
-        .withGridx(1)
-        .withGridy(0)
+        .withGridx(0)
+        .withGridy(1)
         .withWeightx(1.0)
         .withFill(GridBagConstraints.HORIZONTAL)
         .build()
@@ -216,9 +220,9 @@ class SearchableTable @JvmOverloads constructor(
     add(
       JScrollPane(table),
       GBConstraintsBuilder()
-        .withGridx(1)
-        .withGridy(1)
-        .withWeightx(1.0)
+        .withGridx(0)
+        .withGridy(2)
+        .withWeightx(2.0)
         .withWeighty(1.0)
         .withFill(GridBagConstraints.BOTH)
         .build()
