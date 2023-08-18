@@ -163,9 +163,6 @@ class SearchableTable @JvmOverloads constructor(
       withContext(Dispatchers.Main) {
         searchResult.text =
           if (filterResult?.isFailure == true) " bad pattern " else "  ${matchedEntries.size} results  "
-        if (matchedEntries.isNotEmpty()) {
-          SwingUtils.scrollToVisible(table, matchedEntries[0])
-        }
         updatedRow.forEach {
           (table.model as AbstractTableModel).fireTableCellUpdated(it, 0)
         }
