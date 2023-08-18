@@ -354,7 +354,24 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun setupLogsContextActions() {
     logList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
-        if (SwingUtilities.isRightMouseButton(e) && logList.table.selectedRow != -1) {
+        if (e.clickCount == 2) {
+          val selectedIndex = logList.table.selectedRow
+          val clickedEntry = logListTableModel.getValueAt(selectedIndex, 0) as LogEntry
+          // go back to the filter list pos
+          if (clickedEntry.appliedFilter != null) {
+            var logIndex = -1
+            for (index in 0 until filteredLogList.table.rowCount) {
+              if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
+                logIndex = index
+                break
+              }
+            }
+            if (logIndex != -1) {
+              SwingUtils.scrollToVisible(filteredLogList.table, logIndex)
+              filteredLogList.table.setRowSelectionInterval(logIndex, logIndex)
+            }
+          }
+        } else if (SwingUtilities.isRightMouseButton(e) && logList.table.selectedRow != -1) {
           val popup = JPopupMenu()
           popup
             .add("Pick this log into the right window")
