@@ -15,6 +15,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.apache.commons.lang3.time.StopWatch
 import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -41,7 +42,7 @@ class SearchableTable @JvmOverloads constructor(
 
   val table = JTable(dm, cm, sm)
 
-  private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+  private val scope: CoroutineScope = MainScope()
   private var lastSearchJob: Deferred<List<Int>>? = null
 
   private val performSearchState = MutableStateFlow(Any())
@@ -134,6 +135,10 @@ class SearchableTable @JvmOverloads constructor(
     lastSearchGoToPos = -1
     lastSearchJob = scope.async(Dispatchers.Default) {
       val pattern = searchText.text
+      withContext(Dispatchers.Main) {
+        searchResult.text = " searching "
+      }
+
       val filterResult = if (pattern.isNotBlank()) runCatching {
         Filter(
           "search",
@@ -145,34 +150,53 @@ class SearchableTable @JvmOverloads constructor(
       }.onFailure { Logger.error("create filter error", it) } else null
 
       val matchedEntries = mutableListOf<Int>()
-      val updatedRow = mutableListOf<Int>()
-      for (index in 0 until table.model.rowCount) {
+      val rowCount = table.model.rowCount
+      if (rowCount == 0) return@async matchedEntries
+
+      val filter = filterResult?.getOrNull()
+      val checkFilterTask: (Int) -> Int? = { index: Int ->
         val entry = table.model.getValueAt(index, 0) as LogEntry
-        if (filterResult?.getOrNull()?.appliesTo(entry) == true) {
-          matchedEntries += index
-          updatedRow += index
-          entry.searchFilter = filterResult.getOrNull()
+        // pattern.matcher also cost so many times
+        if (filter?.appliesTo(entry) == true) {
+          entry.searchFilter = filter
+          index
         } else {
           if (entry.searchFilter != null) {
-            updatedRow += index
             entry.searchFilter = null
           }
+          null
         }
       }
+
+      val parallelSearch: suspend () -> Unit = {
+        (0 until rowCount)
+          .chunked(1_0000)
+          .map { async(Dispatchers.Default) { it.mapNotNull(checkFilterTask) } }
+          .flatMap { it.await() }
+      }
+
+      parallelSearch()
+      //benchmarkOfSearch(rowCount, filter)
 
       withContext(Dispatchers.Main) {
         searchResult.text =
           if (filterResult?.isFailure == true) " bad pattern " else "  ${matchedEntries.size} results  "
-        updatedRow.forEach {
-          (table.model as AbstractTableModel).fireTableCellUpdated(it, 0)
-        }
+          (table.model as AbstractTableModel).fireTableDataChanged()
       }
       matchedEntries
+    }
+    scope.launch(CoroutineExceptionHandler { _, throwable -> Logger.error("lastSearchJob failed", throwable) }) {
+      lastSearchJob?.await()
     }
   }
 
   private fun showSearch() {
-    if (searchOptionPanel.isVisible) return
+    if (searchOptionPanel.isVisible) {
+      if (!searchText.hasFocus()) {
+        searchText.requestFocus()
+      }
+      return
+    }
 
     searchOptionPanel.isVisible = true
     searchText.requestFocus()
@@ -226,5 +250,110 @@ class SearchableTable @JvmOverloads constructor(
         .withFill(GridBagConstraints.BOTH)
         .build()
     )
+  }
+
+  private suspend fun benchmarkOfSearch(rowCount: Int,
+                                        filter: Filter?) = coroutineScope {
+    // Target env
+    //  core processor: 8
+    //  threads: 16
+    // Time: average(repeat(20))
+    // Log lines: 17_9406
+
+    // single thread: 70ms
+
+    // multi thread(0_0100/chunk): ~29.7ms
+    // multi thread(0_0500/chunk): ~18.9ms
+    // multi thread(0_1000/chunk): ~12.9ms
+    // multi thread(0_2000/chunk): ~10.8ms
+    // multi thread(0_5000/chunk): ~12.2ms
+    // multi thread(1_0000/chunk): ~11.6ms
+    // multi thread(5_0000/chunk): ~18.1ms
+    // multi thread(10_0000/chunk): ~37.1ms
+    // multi thread(15_0000/chunk): ~48.65ms
+    // multi thread(20_0000/chunk): ~57.85ms
+    // multi thread(25_0000/chunk): ~57.95ms
+    // multi thread(30_0000/chunk): ~58.15ms
+    // multi thread(40_0000/chunk): ~58.0ms
+    // multi thread(50_0000/chunk): ~59.1ms
+    // multi thread(100_0000/chunk): ~58.4ms
+
+    // log lines: 282_3528
+    // single thread: 2500ms
+    // multi thread(0_0100/chunk): ~398.2ms
+    // multi thread(0_0500/chunk): ~268.6ms
+    // multi thread(0_1000/chunk): ~296.65ms
+    // multi thread(0_2000/chunk): ~342.65ms
+    // multi thread(0_5000/chunk): ~316.35ms
+    // multi thread(1_0000/chunk): ~306.15ms
+    // multi thread(5_0000/chunk): ~279.6ms
+    // multi thread(10_0000/chunk): ~312.25ms
+    // multi thread(15_0000/chunk): ~299.75ms
+    // multi thread(20_0000/chunk): ~289.0ms
+    // multi thread(25_0000/chunk): ~302.8ms
+    // multi thread(30_0000/chunk): ~345.8ms
+    // multi thread(40_0000/chunk): ~380.05ms
+    // multi thread(50_0000/chunk): ~369.9ms
+    // multi thread(100_0000/chunk): ~499.85ms
+
+    val task: (Int) -> Unit = { index: Int ->
+      val entry = table.model.getValueAt(index, 0) as LogEntry
+      // this also cost many time, but for the benchmark, it a base time here
+      // pattern.matcher also cost so many times
+      if (filter?.appliesTo(entry) == true) {
+        entry.searchFilter = filter
+      } else {
+        if (entry.searchFilter != null) {
+          entry.searchFilter = null
+        }
+      }
+    }
+
+    val test: suspend (Int) -> Pair<Int, Double> = { chunk: Int ->
+      val times = mutableListOf<Long>()
+      repeat(20) {
+        val sw = StopWatch().apply { start() }
+        (0 until rowCount)
+          .chunked(chunk)
+          .map { async(Dispatchers.Default) { it.map(task) } }
+          .flatMap { it.await() }
+        sw.stop()
+        times += sw.time
+      }
+      val average = times.average()
+      Logger.debug("test with chunk $chunk cost average ~ $average")
+      chunk to average
+    }
+
+    val times = mutableListOf<Pair<Int, Double>>()
+    times += test(100)
+    times += test(500)
+    times += test(1000)
+    times += test(2000)
+    times += test(5000)
+    times += test(1_0000)
+    times += test(5_0000)
+    times += test(10_0000)
+    times += test(15_0000)
+    times += test(20_0000)
+    times += test(25_0000)
+    times += test(30_0000)
+    times += test(40_0000)
+    times += test(50_0000)
+    times += test(100_0000)
+
+    times.sortBy { it.second }
+    Logger.debug("multi-thread test with chunk top 5:\n ${times.take(5).map { "Chunk: ${it.first}, time: ${it.second}" }}")
+
+    (0 until rowCount)
+      .chunked(10_0000)
+      .map { async(Dispatchers.Default) { it.map(task) } }
+      .flatMap { it.await() }
+
+    val sw = StopWatch().also { it.start() }
+    for (index in 0 until rowCount) {
+      task(index)
+    }
+    Logger.debug("single-thread test ${sw.time}")
   }
 }
