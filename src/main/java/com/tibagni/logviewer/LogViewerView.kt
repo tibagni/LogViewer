@@ -13,6 +13,9 @@ import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import java.awt.*
 import java.awt.event.*
 import java.awt.font.FontRenderContext
@@ -88,6 +91,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private var doFinish: (() -> Unit)? = null
 
   private val frc = FontRenderContext(AffineTransform(), true, true)
+
+  private val mainScope: CoroutineScope = MainScope()
 
   init {
     buildUi()
@@ -640,6 +645,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun requestFinish(doFinish: () -> Unit) {
     this.doFinish = doFinish
     presenter.finishing()
+    mainScope.cancel()
   }
 
   override fun configureFiltersList(filters: Map<String, List<Filter>>?) {
@@ -858,15 +864,15 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logsPane.resizeWeight = 0.6
 
     logListTableModel = LogListTableModel("All Logs")
-    logList = SearchableTable(logListTableModel)
+    logList = SearchableTable(mainScope, logListTableModel)
     logsPane.leftComponent = logList // Left or above (above in this case)
 
     filteredLogListTableModel = LogListTableModel("Filtered Logs")
-    filteredLogList = SearchableTable(filteredLogListTableModel)
+    filteredLogList = SearchableTable(mainScope, filteredLogListTableModel)
     logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
     pickedLogListTableModel = LogListTableModel("Picked Logs")
-    pickedLogList = SearchableTable(pickedLogListTableModel)
+    pickedLogList = SearchableTable(mainScope, pickedLogListTableModel)
 
     pickedLogList.add(JButton("Clear Picked Logs").also { clearPickedLogButton = it },
       GBConstraintsBuilder()

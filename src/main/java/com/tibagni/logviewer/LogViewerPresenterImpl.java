@@ -409,7 +409,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
           view.showLogs(logsRepository.getCurrentlyOpenedLogs());
           view.showAvailableLogStreams(allowedStreamsMap.keySet());
 
-          if (logsRepository.getCurrentlyOpenedLogs().size() > 0) {
+          if (!logsRepository.getCurrentlyOpenedLogs().isEmpty()) {
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getAbsolutePath());
             view.showCurrentLogsLocation(logsPath);
             long appliedFiltersCount = getFiltersThat(Filter::isApplied).size();
@@ -438,6 +438,9 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
         });
       } catch (OpenLogsException e) {
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
+      } finally {
+        System.gc();
+        System.runFinalization();
       }
     });
   }

@@ -2,17 +2,14 @@ package com.tibagni.logviewer.log;
 
 import com.tibagni.logviewer.util.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class FileLogReader implements LogReader {
   private File[] logFiles;
-  private Map<String, String> logStrings;
+  private Map<String, File> logStrings;
 
   private boolean isClosed;
 
@@ -31,15 +28,8 @@ public class FileLogReader implements LogReader {
       throw new LogReaderException("There are no logs to read!");
     }
 
-    File currentFile = null;
-    try {
-      for (File logFile : logFiles) {
-        currentFile = logFile;
-        logStrings.put(currentFile.getPath(), readFile(currentFile));
-      }
-
-    } catch (IOException e) {
-      throw new LogReaderException("Error reading: " + currentFile, e);
+    for (File logFile : logFiles) {
+      logStrings.put(logFile.getPath(), logFile);
     }
   }
 
@@ -63,7 +53,7 @@ public class FileLogReader implements LogReader {
   }
 
   @Override
-  public String get(String logName) {
+  public File get(String logName) {
     return logStrings.get(logName);
   }
 

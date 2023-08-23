@@ -3,10 +3,15 @@ package com.tibagni.logviewer.log.parser;
 import com.tibagni.logviewer.ProgressReporter;
 import com.tibagni.logviewer.log.*;
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.util.LargeFileReader;
 import com.tibagni.logviewer.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,12 +29,16 @@ public class LogParser {
   private static final String LOG_START_PATTERN = "^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.*";
   private static final Pattern LOG_TIMESTAMP_PATTERN =
       Pattern.compile("^(\\d{1,2})-(\\d{1,2})\\s(\\d{1,2}):(\\d{1,2}):(\\d{1,2}).(\\d{3,})");
+  // read max line to check if the reading file is a bugreport file
+  private static final int MAX_LINE_TO_CHECK_POTENTIAL_BUGREPORT = 100;
+  private static final boolean USE_MULTI_THREAD_TO_PARSE_LOG = true;
 
   private LogReader logReader;
   private List<LogEntry> logEntries;
   private ProgressReporter progressReporter;
   private final List<String> logsSkipped;
   private final Map<String, String> potentialBugReports;
+  private final Lock logLock = new ReentrantLock();
 
   public LogParser(LogReader logReader, ProgressReporter progressReporter) {
     this.logReader = logReader;
@@ -50,8 +59,8 @@ public class LogParser {
       try {
         int progress = logsRead++ * 90 / availableLogs.size();
         progressReporter.onProgress(progress, "Reading " + log + "...");
-        String logText = logReader.get(log);
-        List<LogEntry> logEntriesFromFile = getLogEntries(logText, log);
+        File logFile = logReader.get(log);
+        List<LogEntry> logEntriesFromFile = getLogEntries(logFile, log);
 
         if (!logEntriesFromFile.isEmpty()) {
           logEntries.addAll(logEntriesFromFile);
@@ -59,13 +68,13 @@ public class LogParser {
           Logger.warning("Skipping " + log + " because it was empty");
           logsSkipped.add(log);
         }
-      } catch(Exception e) {
+      } catch (Exception e) {
         Logger.warning("Skipping " + log + " because it failed to parse", e);
         logsSkipped.add(log);
       }
     }
 
-    if (availableLogs.size() > 1) {
+    if (!availableLogs.isEmpty()) {
       progressReporter.onProgress(91, "Sorting...");
       Collections.sort(logEntries);
     }
@@ -119,7 +128,122 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText, String logPath) {
+  private List<LogEntry> getLogEntries(File logFile, String logPath) throws Exception {
+    // 300Mb file
+    // single thread: ~13s
+    // multi thread: ~2.5s
+    // 1Gb file
+    // single thread: ~50s
+    // multi thread: ~9s
+    if (!USE_MULTI_THREAD_TO_PARSE_LOG) {
+      return getLogEntriesSingleThread(logFile, logPath);
+    }
+    return getEntriesMultiThread(logFile, logPath);
+  }
+
+  @NotNull
+  private List<LogEntry> getEntriesMultiThread(File logFile, String logPath) throws IOException {
+    boolean maybeBugreport = checkPotentialBugReport(logFile, logPath);
+
+    List<LogEntry> logLines = new ArrayList<>();
+    Map<Integer, StringBuilder> bugreportLines = new HashMap<>();
+    // todo: consider move to the coroutine way
+    new LargeFileReader(logFile,
+        null,
+        2 * 1024 * 1024,
+        Runtime.getRuntime().availableProcessors(),
+        (sliceIndex, line) -> {
+          LogEntry e = createLogEntryLocked(line, logPath);
+          logLock.lock();
+          try {
+            if (e != null) {
+              logLines.add(e);
+            } else if (maybeBugreport) {
+              // merge all non log line to bugreport content
+              StringBuilder builder = bugreportLines.computeIfAbsent(sliceIndex, StringBuilder::new);
+              builder.append(line).append(StringUtils.LINE_SEPARATOR);
+            }
+          } finally {
+            logLock.unlock();
+          }
+        })
+        .startAndWaitComplete();
+
+    // merge bugreport slice content
+    if (!bugreportLines.isEmpty()) {
+      StringBuilder builder = new StringBuilder();
+      bugreportLines.keySet()
+          .stream()
+          .sorted()
+          .forEach(index -> builder
+              .append(bugreportLines.get(index)));
+      // Make sure to remove all '\r' so it does not get in the way of the parsers
+      String bugReportText = builder.toString().replaceAll("\r", "");
+      potentialBugReports.put(logPath, bugReportText);
+    }
+    return logLines;
+  }
+
+  private boolean checkPotentialBugReport(File logFile, String logPath) throws IOException {
+    // First check if we have already considered this as a potential bugreport. If so,
+    // don't waste any more time here
+    boolean potential = false;
+    if (!potentialBugReports.containsKey(logPath)) {
+      try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
+        String line;
+        int readLineNum = 0;
+        while ((line = reader.readLine()) != null && readLineNum <= MAX_LINE_TO_CHECK_POTENTIAL_BUGREPORT) {
+          // This could be a bugreport. If this is the case, keep track of it
+          if (isPotentialBugReport(line)) {
+            Logger.info("Found a potential bugreport: " + logPath);
+            potential = true;
+            break;
+          }
+          readLineNum++;
+        }
+      }
+    }
+    return potential;
+  }
+
+  @Nullable
+  private LogEntry createLogEntryLocked(String line, String logPath) {
+    // Sometimes a line can contain a lot of NULL chars at the end, making it fail when trying to open the log
+    // (as these NULL chars will make the line length too long). So check here if the line has NULL chars
+    // and remove them to avoid failing to open valid log files
+    if (!line.isEmpty() && line.charAt(line.length() - 1) == '\u0000') {
+      line = line.replaceAll("\\u0000", "");
+    }
+
+    if (isLogLine(line)) {
+      StringBuilder currentLogLine = new StringBuilder(line);
+      // This is probably a continuation of a already started log line. Append to it
+      if (currentLogLine.length() >= MAX_LOG_LINE_ALLOWED) {
+        currentLogLine.delete(MAX_LOG_LINE_ALLOWED, currentLogLine.length());
+        String incorrectLinePreview = currentLogLine.substring(0, 100) + "...";
+        Logger.warning(
+            "Incorrect format on following line (too long - " + currentLogLine.length() + " bytes):\n" +
+                "\"" + incorrectLinePreview + "\"\n\n" +
+                "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+      }
+      return createLogEntry(currentLogLine.toString(), logPath);
+    }
+    return null;
+  }
+
+  private List<LogEntry> getLogEntriesSingleThread(File file, String logPath) throws IOException {
+    StringBuilder builder = new StringBuilder();
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        builder.append(line);
+        builder.append(StringUtils.LINE_SEPARATOR);
+      }
+    }
+    return getLogEntries2(builder.toString(), logPath);
+  }
+
+  private List<LogEntry> getLogEntries2(String logText, String logPath) {
     String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
     List<LogEntry> logLines = new ArrayList<>(lines.length);
 
@@ -224,7 +348,7 @@ public class LogParser {
   }
 
   private boolean shouldIgnoreLine(String line) {
-    return line.startsWith("--------- beginning of");
+    return line.startsWith("--------- beginning of") || line.startsWith("=aplogcat=");
   }
 
   private boolean isPotentialBugReport(String logText) {

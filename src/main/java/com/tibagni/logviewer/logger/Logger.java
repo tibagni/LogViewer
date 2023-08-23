@@ -80,9 +80,10 @@ public class Logger {
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
     String date = simpleDateFormat.format(new Date());
 
+    long threadId = Thread.currentThread().getId();
     String levelIndicator = level.name().substring(0,1).toUpperCase();
 
-    String logMessage = date + " " + levelIndicator + " " + message;
+    String logMessage = date + " " + threadId  + " " + levelIndicator + " " + message;
     if (level == LogLevelConfig.Level.WARNING || level == LogLevelConfig.Level.ERROR) {
       errorStream.println(logMessage);
     } else {

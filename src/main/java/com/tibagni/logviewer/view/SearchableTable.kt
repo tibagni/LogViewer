@@ -26,6 +26,7 @@ import javax.swing.table.TableModel
 
 
 class SearchableTable @JvmOverloads constructor(
+  private val scope: CoroutineScope,
   dm: TableModel? = null,
   cm: TableColumnModel? = null,
   sm: ListSelectionModel? = null
@@ -42,7 +43,6 @@ class SearchableTable @JvmOverloads constructor(
 
   val table = JTable(dm, cm, sm)
 
-  private val scope: CoroutineScope = MainScope()
   private var lastSearchJob: Deferred<List<Int>>? = null
 
   private val performSearchState = MutableStateFlow(Any())
