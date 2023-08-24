@@ -65,6 +65,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     JFrame frame = new JFrame(getApplicationTitle());
 
     mainView = new MainViewImpl(frame, ServiceLocator.INSTANCE.getLogViewerPrefs(), initialLogFiles);
+    frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     frame.setContentPane(mainView.getContentPane());
     frame.pack();
     frame.setVisible(true);
