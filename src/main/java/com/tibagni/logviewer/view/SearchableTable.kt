@@ -149,7 +149,7 @@ class SearchableTable @JvmOverloads constructor(
         )
       }.onFailure { Logger.error("create filter error", it) } else null
 
-      val matchedEntries = mutableListOf<Int>()
+      var matchedEntries: List<Int> = mutableListOf()
       val rowCount = table.model.rowCount
       if (rowCount == 0) return@async matchedEntries
 
@@ -168,14 +168,14 @@ class SearchableTable @JvmOverloads constructor(
         }
       }
 
-      val parallelSearch: suspend () -> Unit = {
+      val parallelSearch: suspend () -> List<Int> = {
         (0 until rowCount)
           .chunked(1_0000)
           .map { async(Dispatchers.Default) { it.mapNotNull(checkFilterTask) } }
           .flatMap { it.await() }
       }
 
-      parallelSearch()
+      matchedEntries = parallelSearch()
       //benchmarkOfSearch(rowCount, filter)
 
       withContext(Dispatchers.Main) {
