@@ -131,7 +131,6 @@ class MainViewImpl(
     if (finishChainPosition > finishChain.lastIndex) {
       // We wen through all views, we can close the app now
       parent.dispose()
-      mainScope.cancel()
       return
     }
 
