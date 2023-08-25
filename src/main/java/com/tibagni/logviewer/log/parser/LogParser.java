@@ -68,6 +68,8 @@ public class LogParser {
           Logger.warning("Skipping " + log + " because it was empty");
           logsSkipped.add(log);
         }
+      } catch (LogReaderException e) {
+        throw new LogReaderException("Error reading: " + log, e);
       } catch (Exception e) {
         Logger.warning("Skipping " + log + " because it failed to parse", e);
         logsSkipped.add(log);
@@ -128,7 +130,7 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(File logFile, String logPath) throws Exception {
+  private List<LogEntry> getLogEntries(File logFile, String logPath) throws LogReaderException {
     // 300Mb file
     // single thread: ~13s
     // multi thread: ~2.5s
@@ -142,32 +144,35 @@ public class LogParser {
   }
 
   @NotNull
-  private List<LogEntry> getEntriesMultiThread(File logFile, String logPath) throws IOException {
+  private List<LogEntry> getEntriesMultiThread(File logFile, String logPath) throws LogReaderException {
     boolean maybeBugreport = checkPotentialBugReport(logFile, logPath);
 
     List<LogEntry> logLines = new ArrayList<>();
     Map<Integer, StringBuilder> bugreportLines = new HashMap<>();
     // todo: consider move to the coroutine way
-    new LargeFileReader(logFile,
-        null,
-        2 * 1024 * 1024,
-        Runtime.getRuntime().availableProcessors(),
-        (sliceIndex, line) -> {
-          LogEntry e = createLogEntryLocked(line, logPath);
-          logLock.lock();
-          try {
-            if (e != null) {
-              logLines.add(e);
-            } else if (maybeBugreport) {
-              // merge all non log line to bugreport content
-              StringBuilder builder = bugreportLines.computeIfAbsent(sliceIndex, StringBuilder::new);
-              builder.append(line).append(StringUtils.LINE_SEPARATOR);
+    try {
+      new LargeFileReader(logFile,
+          null,
+          2 * 1024 * 1024,
+          Runtime.getRuntime().availableProcessors(),
+          (sliceIndex, line) -> {
+            LogEntry e = createLogEntryLocked(line, logPath);
+            logLock.lock();
+            try {
+              if (e != null) {
+                logLines.add(e);
+              } else if (maybeBugreport) {
+                // merge all non log line to bugreport content
+                StringBuilder builder = bugreportLines.computeIfAbsent(sliceIndex, StringBuilder::new);
+                builder.append(line).append(StringUtils.LINE_SEPARATOR);
+              }
+            } finally {
+              logLock.unlock();
             }
-          } finally {
-            logLock.unlock();
-          }
-        })
-        .startAndWaitComplete();
+          }).startAndWaitComplete();
+    } catch (IOException e) {
+      throw new LogReaderException("Error reading: " + logFile, e);
+    }
 
     // merge bugreport slice content
     if (!bugreportLines.isEmpty()) {
@@ -184,7 +189,7 @@ public class LogParser {
     return logLines;
   }
 
-  private boolean checkPotentialBugReport(File logFile, String logPath) throws IOException {
+  private boolean checkPotentialBugReport(File logFile, String logPath) throws LogReaderException {
     // First check if we have already considered this as a potential bugreport. If so,
     // don't waste any more time here
     boolean potential = false;
@@ -201,6 +206,8 @@ public class LogParser {
           }
           readLineNum++;
         }
+      } catch (IOException e) {
+        throw new LogReaderException("Error reading: " + logFile, e);
       }
     }
     return potential;
@@ -231,7 +238,7 @@ public class LogParser {
     return null;
   }
 
-  private List<LogEntry> getLogEntriesSingleThread(File file, String logPath) throws IOException {
+  private List<LogEntry> getLogEntriesSingleThread(File file, String logPath) throws LogReaderException {
     StringBuilder builder = new StringBuilder();
     try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
       String line;
@@ -239,6 +246,8 @@ public class LogParser {
         builder.append(line);
         builder.append(StringUtils.LINE_SEPARATOR);
       }
+    } catch (IOException e) {
+      throw new LogReaderException("Error reading: " + file, e);
     }
     return getLogEntries2(builder.toString(), logPath);
   }

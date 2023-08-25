@@ -48,6 +48,7 @@ class LargeFileReader @JvmOverloads constructor(
     return this
   }
 
+  @Throws(IOException::class)
   fun startAndWaitComplete() {
     start()
     waitComplete()
