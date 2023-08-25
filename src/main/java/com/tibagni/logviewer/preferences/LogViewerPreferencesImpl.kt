@@ -1,9 +1,11 @@
 package com.tibagni.logviewer.preferences
 
+import java.awt.Font
 import javax.swing.filechooser.FileSystemView
 import java.io.File
 import java.util.HashSet
 import java.util.prefs.Preferences
+import javax.swing.plaf.FontUIResource
 
 object LogViewerPreferencesImpl : LogViewerPreferences {
 
@@ -18,6 +20,8 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val PREFERRED_TEXT_EDITOR = "preferred_text_editor"
     /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
+    /*Visible for Testing*/ const val GLOBAL_CUSTOM_FONT_NAME = "global_custom_font_name"
+    /*Visible for Testing*/ const val GLOBAL_CUSTOM_FONT_SIZE = "global_custom_font_size"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -112,6 +116,15 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(show) {
             preferences.putBoolean(SHOW_LINE_NUMBERS, show)
             listeners.forEach { l -> l.onShowLineNumbersChanged() }
+        }
+    override var globalCustomFont: Font
+        get() = FontUIResource(preferences.get(GLOBAL_CUSTOM_FONT_NAME, Font.SANS_SERIF),
+            Font.PLAIN,
+            preferences.getInt(GLOBAL_CUSTOM_FONT_SIZE, 14))
+        set(value) {
+            preferences.put(GLOBAL_CUSTOM_FONT_NAME, value.family)
+            preferences.putInt(GLOBAL_CUSTOM_FONT_SIZE, value.size)
+            listeners.forEach { l -> l.onGlobalCustomFontChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

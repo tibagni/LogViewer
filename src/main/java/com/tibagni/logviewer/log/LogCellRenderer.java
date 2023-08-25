@@ -22,6 +22,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   private final JPanel colorIndicator;
   private final JLabel streamIndicator;
   private final LogViewerThemeManager themeManager;
+  private int mHighlightLine = -1;
 
   public LogCellRenderer() {
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
@@ -35,8 +36,10 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
     lineNumLabel = new JLabel();
     lineNumLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-    lineNumLabel.setPreferredSize(new Dimension(50, 20));
-    lineNumLabel.setBorder(new EmptyBorder(0,0,0,10));
+    lineNumLabel.setPreferredSize(new Dimension(UIScaleUtils.dip(70),
+        UIScaleUtils.dip(20)));
+    lineNumLabel.setBorder(new EmptyBorder(0,0,0,
+        UIScaleUtils.dip(10)));
     leftPane.add(lineNumLabel);
 
     textView = new JTextArea();
@@ -46,8 +49,9 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(10),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(10)));
-    int fontSize = textView.getFont().getSize();
-    textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
+    // follow the global custom font config
+    //int fontSize = textView.getFont().getSize();
+    //textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
     add(textView);
 
     // Create the stream indicator component but do not show initially
@@ -57,8 +61,9 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5)));
-    fontSize = textView.getFont().getSize();
-    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, fontSize));
+    // follow the global custom font config
+    //fontSize = textView.getFont().getSize();
+    //streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, fontSize));
   }
 
   public void showLineNumbers(boolean showLineNumbers) {
@@ -80,6 +85,16 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     }
   }
 
+  public void highlightLine(int rowIndex) {
+    mHighlightLine = rowIndex;
+  }
+
+  public void updateLineNumberWidth(int width) {
+    // size = string width + border size
+    lineNumLabel.setPreferredSize(new Dimension(width + UIScaleUtils.dip(10),
+        lineNumLabel.getPreferredSize().height));
+  }
+
   @Override
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                  boolean hasFocus, int row, int column) {
@@ -92,6 +107,8 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
         return null;
       }
     }
+    // make the highlight line ui same as the select ui
+    isSelected = isSelected || row == mHighlightLine;
 
     lineNumLabel.setText(logEntry.getIndex() + 1 + "");
 
@@ -175,19 +192,19 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     Color logColor = Color.LIGHT_GRAY;
     switch (level) {
       case VERBOSE:
-        logColor = new Color(165, 255, 183);
+        logColor = new Color(185, 189, 186);
         break;
       case DEBUG:
-        logColor = new Color(147, 178, 191);
+        logColor = new Color(90, 153, 196);
         break;
       case INFO:
-        logColor = new Color(124, 124, 124);
+        logColor = new Color(2, 142, 2);
         break;
       case WARNING:
-        logColor = new Color(217, 204, 135);
+        logColor = new Color(214, 188, 76);
         break;
       case ERROR:
-        logColor = new Color(208, 108, 89);
+        logColor = new Color(156, 31, 2);
         break;
     }
 

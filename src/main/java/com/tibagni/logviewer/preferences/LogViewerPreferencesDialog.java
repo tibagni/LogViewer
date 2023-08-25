@@ -28,10 +28,17 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private static final String PREFERRED_TEXT_EDITOR_ID = "preferred_text_editor";
   private static final String COLLAPSE_ALL_GROUPS_STARTUP_ID = "collapse_all_groups_startup";
   private static final String SHOW_LINE_NUMBERS_ID = "show_line_numbers";
+  private static final String GLOBAL_CUSTOM_FONT_ID = "global_custom_font";
+
+  private static final int[] SUPPORTED_FONT_SIZE_ARRAY = {
+      8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72
+  };
 
   private ButtonsPane buttonsPane;
   private JPanel contentPane;
   private JComboBox<String> lookAndFeelCbx;
+  private JComboBox<String> customFontCbx;
+  private JComboBox<String> customFontSizeCbx;
   private JTextField filtersPathTxt;
   private JButton filtersPathBtn;
   private JCheckBox openLastFilterChbx;
@@ -64,6 +71,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     initFiltersPathPreference();
     initLogsPathPreference();
     initLookAndFeelPreference();
+    initCustomFontPreference();
     initPreferredEditorPathPreference();
 
     // Adjust the size according to the content after everything is populated
@@ -127,6 +135,26 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
         saveActions.put(LOOK_FEEL_PREF_ID, () -> userPrefs.setLookAndFeel(theme));
       }
     });
+  }
+
+  private void initCustomFontPreference() {
+    Runnable onFontUpdate = () -> saveActions.put(GLOBAL_CUSTOM_FONT_ID, () -> userPrefs.setGlobalCustomFont(
+        new Font((String) customFontCbx.getSelectedItem(),
+            Font.PLAIN,
+            Integer.parseInt((String) customFontSizeCbx.getSelectedItem()))
+    ));
+
+    for (String font : GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()) {
+      customFontCbx.addItem(font);
+    }
+    customFontCbx.setSelectedItem(userPrefs.getGlobalCustomFont().getFamily());
+    customFontCbx.addActionListener(l -> onFontUpdate.run());
+
+    for (int size : SUPPORTED_FONT_SIZE_ARRAY) {
+      customFontSizeCbx.addItem(String.valueOf(size));
+    }
+    customFontSizeCbx.setSelectedItem(String.valueOf(userPrefs.getGlobalCustomFont().getSize()));
+    customFontSizeCbx.addActionListener(l -> onFontUpdate.run());
   }
 
   private void initPreferredEditorPathPreference() {
@@ -245,7 +273,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -256,82 +284,93 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     lookAndFeelCbx.setMinimumSize(new Dimension());
     formPane.add(lookAndFeelCbx, cc.xy(3, 1));
 
+    final JLabel customFontLbl = new JLabel();
+    customFontLbl.setText("Custom Font");
+    formPane.add(customFontLbl, cc.xy(1, 3));
+    customFontCbx = new JComboBox<>();
+    customFontCbx.setRenderer(new CustomFontCellRender());
+    customFontCbx.setMinimumSize(new Dimension());
+    formPane.add(customFontCbx, cc.xy(3, 3));
+    customFontSizeCbx = new JComboBox<>();
+    customFontSizeCbx.setMinimumSize(new Dimension());
+    formPane.add(customFontSizeCbx, cc.xy(5, 3));
+
     final JSeparator sep1 = new JSeparator();
-    formPane.add(sep1, cc.xyw(1, 3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep1, cc.xyw(1, 5, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel defaultLogsLbl = new JLabel();
     defaultLogsLbl.setText("Default path for log files");
-    formPane.add(defaultLogsLbl, cc.xy(1, 5));
+    formPane.add(defaultLogsLbl, cc.xy(1, 7));
     logsPathTxt = new JTextField();
     logsPathTxt.setEditable(false);
-    formPane.add(logsPathTxt, cc.xy(3, 5, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(logsPathTxt, cc.xy(3, 7, CellConstraints.FILL, CellConstraints.DEFAULT));
     logsPathBtn = new JButton();
     logsPathBtn.setText("...");
-    formPane.add(logsPathBtn, cc.xy(5, 5));
+    formPane.add(logsPathBtn, cc.xy(5, 7));
 
     final JSeparator sep2 = new JSeparator();
-    formPane.add(sep2, cc.xyw(1, 7, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep2, cc.xyw(1, 8, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel defaultFiltersLbl = new JLabel();
     defaultFiltersLbl.setText("Default path for filter files");
-    formPane.add(defaultFiltersLbl, cc.xy(1, 9));
+    formPane.add(defaultFiltersLbl, cc.xy(1, 11));
     filtersPathTxt = new JTextField();
     filtersPathTxt.setEditable(false);
-    formPane.add(filtersPathTxt, cc.xy(3, 9, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(filtersPathTxt, cc.xy(3, 11, CellConstraints.FILL, CellConstraints.DEFAULT));
     filtersPathBtn = new JButton();
     filtersPathBtn.setText("...");
-    formPane.add(filtersPathBtn, cc.xy(5, 9));
+    formPane.add(filtersPathBtn, cc.xy(5, 11));
 
     final JLabel openLastLbl = new JLabel();
     openLastLbl.setText("Open last filters on startup");
-    formPane.add(openLastLbl, cc.xy(1, 11));
+    formPane.add(openLastLbl, cc.xy(1, 13));
     openLastFilterChbx = new JCheckBox();
     openLastFilterChbx.setText("");
-    formPane.add(openLastFilterChbx, cc.xy(3, 11));
+    formPane.add(openLastFilterChbx, cc.xy(3, 13));
 
     final JSeparator sep3 = new JSeparator();
-    formPane.add(sep3, cc.xyw(1, 13, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep3, cc.xyw(1, 15, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel applyFiltersLbl = new JLabel();
     applyFiltersLbl.setText("Apply filters after edit");
-    formPane.add(applyFiltersLbl, cc.xy(1, 15));
+    formPane.add(applyFiltersLbl, cc.xy(1, 17));
     applyFiltersAfterEditChbx = new JCheckBox();
     applyFiltersAfterEditChbx.setText("");
-    formPane.add(applyFiltersAfterEditChbx, cc.xy(3, 15));
+    formPane.add(applyFiltersAfterEditChbx, cc.xy(3, 17));
 
     final JLabel rememberFiltersLbl = new JLabel();
     rememberFiltersLbl.setText("Remember applied filters");
-    formPane.add(rememberFiltersLbl, cc.xy(1, 17));
+    formPane.add(rememberFiltersLbl, cc.xy(1, 19));
     rememberAppliedFiltersChbx = new JCheckBox();
     rememberAppliedFiltersChbx.setText("");
-    formPane.add(rememberAppliedFiltersChbx, cc.xy(3, 17));
+    formPane.add(rememberAppliedFiltersChbx, cc.xy(3, 19));
 
     final JLabel collapseOnStartLbl = new JLabel();
     collapseOnStartLbl.setText("Collapse all groups on startup");
-    formPane.add(collapseOnStartLbl, cc.xy(1, 19));
+    formPane.add(collapseOnStartLbl, cc.xy(1, 21));
     collapseAllGroupsStartup = new JCheckBox();
     collapseAllGroupsStartup.setText("");
-    formPane.add(collapseAllGroupsStartup, cc.xy(3, 19));
+    formPane.add(collapseAllGroupsStartup, cc.xy(3, 21));
 
     final JLabel showLineNumberLbl = new JLabel();
     showLineNumberLbl.setText("Show Line numbers");
-    formPane.add(showLineNumberLbl, cc.xy(1, 21));
+    formPane.add(showLineNumberLbl, cc.xy(1, 23));
     showLineNumbersChbx = new JCheckBox();
     showLineNumbersChbx.setText("");
-    formPane.add(showLineNumbersChbx, cc.xy(3, 21));
+    formPane.add(showLineNumbersChbx, cc.xy(3, 23));
 
     final JSeparator sep4 = new JSeparator();
-    formPane.add(sep4, cc.xyw(1, 22, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep4, cc.xyw(1, 24, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel preferredEditorLbl = new JLabel();
     preferredEditorLbl.setText("Preferred text Editor");
-    formPane.add(preferredEditorLbl, cc.xy(1, 23));
+    formPane.add(preferredEditorLbl, cc.xy(1, 25));
     preferredEditorPathTxt = new JTextField();
     preferredEditorPathTxt.setEditable(false);
-    formPane.add(preferredEditorPathTxt, cc.xy(3, 23, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(preferredEditorPathTxt, cc.xy(3, 25, CellConstraints.FILL, CellConstraints.DEFAULT));
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
-    formPane.add(preferredEditorPathBtn, cc.xy(5, 23));
+    formPane.add(preferredEditorPathBtn, cc.xy(5, 25));
 
     return formPane;
   }

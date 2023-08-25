@@ -13,6 +13,9 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
+import java.io.File
+import java.nio.file.Files
+import kotlin.io.path.bufferedWriter
 
 class ParserTests {
     private lateinit var logParser: LogParser
@@ -71,57 +74,68 @@ class ParserTests {
     @Test
     fun testParseLogs() {
         val testLogLine = "10-12 22:32:50.264  2646  2664 I test  : Test log Test Log"
-        val logNames = setOf("main", "radio", "system", "events")
+        val testLogFile = buildTempFile(testLogLine)
+        try{
+            val logNames = setOf("main", "radio", "system", "events")
 
-        val expectedLogs = Array(4) { testLogLine }
+            val expectedLogs = Array(4) { testLogLine }
 
-        `when`(reader.availableLogPaths).thenReturn(logNames)
-        `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
+            `when`(reader.availableLogPaths).thenReturn(logNames)
+            `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogFile)
 
-        val entries = logParser.parseLogs()
+            val entries = logParser.parseLogs()
 
-        val progressCaptor = ArgumentCaptor.forClass(Int::class.java)
-        val descriptionCaptor = ArgumentCaptor.forClass(String::class.java)
-        verify<ProgressReporter>(progressReporter, times(7))
+            val progressCaptor = ArgumentCaptor.forClass(Int::class.java)
+            val descriptionCaptor = ArgumentCaptor.forClass(String::class.java)
+            verify<ProgressReporter>(progressReporter, times(7))
                 .onProgress(progressCaptor.capture(), descriptionCaptor.capture())
 
-        val progresses = progressCaptor.allValues
-        val descriptions = descriptionCaptor.allValues
+            val progresses = progressCaptor.allValues
+            val descriptions = descriptionCaptor.allValues
 
-        assertTrue(progresses.contains(0))
-        assertTrue(progresses.contains(22))
-        assertTrue(progresses.contains(45))
-        assertTrue(progresses.contains(67))
-        assertTrue(progresses.contains(91))
-        assertTrue(progresses.contains(95))
-        assertTrue(progresses.contains(100))
+            assertTrue(progresses.contains(0))
+            assertTrue(progresses.contains(22))
+            assertTrue(progresses.contains(45))
+            assertTrue(progresses.contains(67))
+            assertTrue(progresses.contains(91))
+            assertTrue(progresses.contains(95))
+            assertTrue(progresses.contains(100))
 
-        assertTrue(descriptions.contains("Reading main..."))
-        assertTrue(descriptions.contains("Reading radio..."))
-        assertTrue(descriptions.contains("Reading system..."))
-        assertTrue(descriptions.contains("Reading events..."))
-        assertTrue(descriptions.contains("Sorting..."))
-        assertTrue(descriptions.contains("Setting index..."))
-        assertTrue(descriptions.contains("Completed"))
+            assertTrue(descriptions.contains("Reading main..."))
+            assertTrue(descriptions.contains("Reading radio..."))
+            assertTrue(descriptions.contains("Reading system..."))
+            assertTrue(descriptions.contains("Reading events..."))
+            assertTrue(descriptions.contains("Sorting..."))
+            assertTrue(descriptions.contains("Setting index..."))
+            assertTrue(descriptions.contains("Completed"))
 
-        val actualLogs = entries.map { it.logText }.toTypedArray()
-        assertArrayEquals(expectedLogs, actualLogs)
+            val actualLogs = entries.map { it.logText }.toTypedArray()
+            assertArrayEquals(expectedLogs, actualLogs)
+        } finally {
+          testLogFile.delete()
+        }
     }
 
     @Test
     fun testParseInvalidLogs() {
         val testLogLine = buildHugeLogPayload()
-        val logNames = setOf("bugreport")
+        val testLogFile = buildTempFile(testLogLine)
+        try {
+            val logNames = setOf("bugreport")
 
-        `when`(reader.availableLogPaths).thenReturn(logNames)
-        `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
+            `when`(reader.availableLogPaths).thenReturn(logNames)
+            `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogFile)
 
-        val parsedLogs = logParser.parseLogs()
+            val parsedLogs = logParser.parseLogs()
 
-        // The log should still have been parsed. But it should be truncated to the maximum allowed size
-        assertEquals(0, logParser.logsSkipped.size)
-        assertEquals(1, parsedLogs.size)
-        assertEquals(LogParser.MAX_LOG_LINE_ALLOWED, parsedLogs[0].logText.length)
+
+            // The log should still have been parsed. But it should be truncated to the maximum allowed size
+            assertEquals(0, logParser.logsSkipped.size)
+            assertEquals(1, parsedLogs.size)
+            assertEquals(LogParser.MAX_LOG_LINE_ALLOWED, parsedLogs[0].logText.length)
+        } finally {
+            testLogFile.delete()
+        }
     }
 
     private fun buildHugeLogPayload(): String {
@@ -130,10 +144,17 @@ class ParserTests {
 
         repeat(1000) {
             builder.append(" Test log Test Log test")
-            builder.append(System.lineSeparator())
+            // no need the line separator for max length test anymore
+            //builder.append(System.lineSeparator())
         }
 
         return builder.toString()
+    }
+
+    private fun buildTempFile(content: String): File {
+        val tempFile = Files.createTempFile(null, null)
+        tempFile.bufferedWriter().use { it.write(content) }
+        return tempFile.toFile()
     }
 
     @Test

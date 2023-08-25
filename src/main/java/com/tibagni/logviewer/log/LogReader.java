@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.log;
 
+import java.io.File;
 import java.util.Set;
 
 public interface LogReader {
@@ -7,7 +8,7 @@ public interface LogReader {
 
   int size();
 
-  String get(String logName);
+  File get(String logName);
 
   Set<String> getAvailableLogPaths();
 

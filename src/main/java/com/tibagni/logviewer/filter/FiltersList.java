@@ -255,7 +255,8 @@ public class FiltersList extends JPanel {
           searchHint.setBorder(BorderFactory.createLineBorder(Color.GRAY));
           searchHint.setOpaque(true);
           searchHint.setBackground(themeManager.isDark() ? Color.BLACK : Color.LIGHT_GRAY);
-          searchHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(24)));
+          // follow the global custom font config
+          //searchHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(24)));
           Point targetListLocation = targetList.getRootPane().getLocationOnScreen();
           int popupX = targetListLocation.x + UIScaleUtils.dip(50);
           int popupY = targetListLocation.y + UIScaleUtils.dip(50);
