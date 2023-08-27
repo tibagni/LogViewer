@@ -7,8 +7,8 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 
 public class FlatButton extends JButton {
-  private Color normalColor;
-  private Color rolloverColor;
+  protected Color normalColor;
+  protected Color rolloverColor;
 
   public FlatButton() {
     initialize();
@@ -53,12 +53,20 @@ public class FlatButton extends JButton {
   protected void processMouseEvent(MouseEvent e) {
     if (isEnabled()) {
       if (e.getID() == MouseEvent.MOUSE_ENTERED) {
-        setForeground(rolloverColor);
+        onMouseEntered();
       } else if (e.getID() == MouseEvent.MOUSE_EXITED) {
-        setForeground(normalColor);
+        onMouseExited();
       }
     }
 
     super.processMouseEvent(e);
+  }
+
+  protected void onMouseEntered() {
+    setForeground(rolloverColor);
+  }
+
+  protected void onMouseExited() {
+    setForeground(normalColor);
   }
 }

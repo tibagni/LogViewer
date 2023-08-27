@@ -5,6 +5,7 @@ import com.tibagni.logviewer.logger.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -167,5 +168,47 @@ public final class SwingUtils {
 
   public static Color changeColorAlpha(Color source, int alpha) {
     return new Color(source.getRed(), source.getGreen(), source.getBlue(), alpha);
+  }
+
+  public static ImageIcon tintImage(ImageIcon originalIcon, Color tintColor) {
+    BufferedImage originalImage = new BufferedImage(
+        originalIcon.getIconWidth(),
+        originalIcon.getIconHeight(),
+        BufferedImage.TYPE_INT_ARGB);
+
+    Graphics2D graphics = originalImage.createGraphics();
+    originalIcon.paintIcon(null, graphics, 0, 0);
+    graphics.dispose();
+
+    BufferedImage tintedImage = new BufferedImage(
+        originalIcon.getIconWidth(),
+        originalIcon.getIconHeight(),
+        BufferedImage.TYPE_INT_ARGB);
+
+    for (int x = 0; x < originalImage.getWidth(); x++) {
+      for (int y = 0; y < originalImage.getHeight(); y++) {
+        int rgba = originalImage.getRGB(x, y);
+        int alpha = (rgba >> 24) & 0xFF;
+        int red = (rgba >> 16) & 0xFF;
+        int green = (rgba >> 8) & 0xFF;
+        int blue = rgba & 0xFF;
+
+        Color newColor = new Color(
+            (red + tintColor.getRed()) / 2,
+            (green + tintColor.getGreen()) / 2,
+            (blue + tintColor.getBlue()) / 2,
+            alpha);
+
+        tintedImage.setRGB(x, y, newColor.getRGB());
+      }
+    }
+
+    return new ImageIcon(tintedImage);
+  }
+
+  public static ImageIcon resizeImage(ImageIcon originalIcon, int width, int height) {
+    Image image = originalIcon.getImage();
+    Image resizedImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+    return new ImageIcon(resizedImage);
   }
 }

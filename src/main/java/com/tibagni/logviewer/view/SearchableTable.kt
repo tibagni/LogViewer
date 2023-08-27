@@ -93,6 +93,8 @@ class SearchableTable @JvmOverloads constructor(
       lastSearchGoToPos = -1
       val renderer = table.getDefaultRenderer(LogEntry::class.java) as LogCellRenderer
       renderer.highlightLine(-1)
+      table.revalidate()
+      table.repaint()
     }
 
     performSearchState

@@ -18,6 +18,7 @@ import java.awt.event.*
 import java.io.File
 import javax.swing.*
 
+
 // This is the interface known by other views (MainView)
 interface LogViewerView : View {
   val contentPane: JPanel
@@ -56,26 +57,66 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun collapseAllGroups()
 }
 
+private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
+  val toggleMyLogs : ToggleButton
+  private var lastDividerLocation = -1.0
+
+  init {
+    layout = BoxLayout(this, BoxLayout.Y_AXIS)
+    targetSplitPanel.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
+      if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
+        val newDividerLocation = evt.newValue as Int
+
+        // Do not save the divider location when we collapse the panel
+        if (newDividerLocation < targetSplitPanel.maximumDividerLocation) {
+          // Get the divider position as a percentage of the panel
+          lastDividerLocation = newDividerLocation.toDouble() / targetSplitPanel.width
+        }
+      }
+    }
+
+    toggleMyLogs = ToggleButton(ImageIcon(javaClass.getResource("/Images/view_list_icon.png"))) { showPanel(it) }
+    toggleMyLogs.toolTipText = "My Logs"
+
+    add(toggleMyLogs)
+  }
+
+  private fun showPanel(show: Boolean) {
+    if (show) {
+      targetSplitPanel.rightComponent.isVisible = true
+      val dividerPos = if (lastDividerLocation < 0) 0.7 else lastDividerLocation
+      targetSplitPanel.setDividerLocation(dividerPos)
+    } else {
+      targetSplitPanel.rightComponent.isVisible = false
+    }
+  }
+
+  fun showMyLogsView() {
+    if (toggleMyLogs.isActive) return // Nothing to do here. It is already active
+    toggleMyLogs.toggle()
+  }
+}
+
 class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<File>) : LogViewerView,
   LogViewerPresenterView {
   private val presenter: LogViewerPresenter
 
   private lateinit var logList: SearchableTable
   private lateinit var filteredLogList: SearchableTable
-  private lateinit var pickedLogList: SearchableTable
-  private lateinit var clearPickedLogButton: JButton
+  private lateinit var myLogsList: SearchableTable
   private lateinit var addNewFilterGroupBtn: JButton
   private lateinit var moreFilterOptionsBtn: JButton
   private lateinit var collapseExpandAllGroupsBtn: JButton
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
   private lateinit var filtersPane: FiltersList
+  private lateinit var sidePanel: SidePanel
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
-  private lateinit var pickedLogListTableModel: LogListTableModel
+  private lateinit var myLogsListTableModel: LogListTableModel
   private val logRenderer: LogCellRenderer
-  private val pickledLogRenderer: LogCellRenderer
+  private val myLogsRenderer: LogCellRenderer
 
   private lateinit var _contentPane: JPanel
   override val contentPane: JPanel
@@ -99,22 +140,24 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logRenderer = LogCellRenderer()
     logRenderer.showLineNumbers(userPrefs.showLineNumbers)
 
+    // not shared with the log/filtered log list
+    // the 'my logs' panel was shorten that others, so it will
+    // make the line wrap, it will also affect the log/filtered log list
+    myLogsRenderer = LogCellRenderer()
+    myLogsRenderer.showLineNumbers(userPrefs.showLineNumbers)
+
     userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
       override fun onShowLineNumbersChanged() {
         logRenderer.showLineNumbers(userPrefs.showLineNumbers)
+        myLogsRenderer.showLineNumbers(userPrefs.showLineNumbers)
         logList.revalidate()
         logList.repaint()
         filteredLogList.table.revalidate()
         filteredLogList.table.repaint()
-        pickedLogList.table.revalidate()
-        pickedLogList.table.repaint()
+        myLogsList.table.revalidate()
+        myLogsList.table.repaint()
       }
     })
-    // not share with the log/filtered log list
-    // the picked log panel was shorten that others, so it will
-    // make the line wrap, it will also affect the log/filtered log list
-    pickledLogRenderer = LogCellRenderer()
-    pickledLogRenderer.showLineNumbers(userPrefs.showLineNumbers)
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
     // Use Mouse event here to get the position on screen
@@ -128,10 +171,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     logList.table.setDefaultRenderer(LogEntry::class.java, logRenderer)
     filteredLogList.table.setDefaultRenderer(LogEntry::class.java, logRenderer)
-    pickedLogList.table.setDefaultRenderer(LogEntry::class.java, pickledLogRenderer)
+    myLogsList.table.setDefaultRenderer(LogEntry::class.java, myLogsRenderer)
     setupLogsContextActions()
     setupFilteredLogsContextActions()
-    setupPickedLogsContextActions()
+    setupMyLogsContextActions()
 
     // Configure file drop
     FileDrop(Logger.getDebugStream(), logsPane) { presenter.loadLogs(it) }
@@ -368,36 +411,44 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           }
         } else if (SwingUtilities.isRightMouseButton(e) && logList.table.selectedRow != -1) {
           val popup = JPopupMenu()
-          popup
-            .add("Pick this log into the right window")
-            .addActionListener {
-              logList.table.selectedRows
-                .map { logListTableModel.getValueAt(it, 0) as LogEntry }
-                .forEach { pickedLogListTableModel.addLog(it) }
-            }
+          addCommonLogsContextActions(popup, logList.table.selectedRows, logListTableModel)
           if (logList.table.selectedRowCount == 1) {
             popup.add(JSeparator())
-            val createFilterItem = popup.add("Create Filter from this line...")
-            popup.add(JSeparator())
-            val ignorePrevLines = popup.add("Ignore all logs before this point")
-            val ignoreNextLines = popup.add("Ignore all logs after this point")
-            createFilterItem.addActionListener {
-              val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
-              addFilterFromLogLine(entry.logText)
-            }
-            ignorePrevLines.addActionListener {
+            popup.add("Ignore all logs before this point").addActionListener {
               val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
               presenter.ignoreLogsBefore(entry.index)
             }
-            ignoreNextLines.addActionListener {
+
+            popup.add("Ignore all logs after this point").addActionListener {
               val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
               presenter.ignoreLogsAfter(entry.index)
             }
           }
+
           popup.show(logList.table, e.x, e.y)
         }
       }
     })
+  }
+
+  private fun addCommonLogsContextActions(popup: JPopupMenu, selectedRows: IntArray, model: LogListTableModel) {
+    popup
+      .add("Add to 'My Logs'")
+      .addActionListener {
+        selectedRows
+          .map { model.getValueAt(it, 0) as LogEntry }
+          .forEach { myLogsListTableModel.addLog(it) }
+        sidePanel.showMyLogsView()
+      }
+
+    if (selectedRows.size == 1) {
+      popup.add(JSeparator())
+      popup.add("Create Filter from this line...")
+        .addActionListener {
+          val entry = model.getValueAt(selectedRows[0], 0) as LogEntry
+          addFilterFromLogLine(entry.logText)
+        }
+    }
   }
 
   private fun addFilterFromLogLine(logLine: String) {
@@ -446,27 +497,28 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           logList.table.setRowSelectionInterval(logIndex, logIndex)
         } else if (SwingUtilities.isRightMouseButton(e) && filteredLogList.table.selectedRow != -1) {
           val popup = JPopupMenu()
-          val pickItem = popup.add("Pick into the right window")
-          pickItem.addActionListener {
-            filteredLogList.table.selectedRows
-              .map { filteredLogListTableModel.getValueAt(it, 0) as LogEntry }
-              .forEach { pickedLogListTableModel.addLog(it) }
-          }
+          addCommonLogsContextActions(popup, filteredLogList.table.selectedRows, filteredLogListTableModel)
           popup.show(filteredLogList.table, e.x, e.y)
         }
       }
     })
   }
 
-  private fun setupPickedLogsContextActions() {
-    pickedLogList.table.addMouseListener(object : MouseAdapter() {
+  private fun setupMyLogsContextActions() {
+    val deleteSelectedFromMyLogs: () -> Unit = {
+      myLogsList.table.selectedRows
+        .map { myLogsListTableModel.getValueAt(it, 0) as LogEntry }
+        .forEach { myLogsListTableModel.removeLog(it) }
+    }
+
+    myLogsList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
-          val selectedIndex = pickedLogList.table.selectedRow
-          val clickedEntry = pickedLogListTableModel.getValueAt(selectedIndex, 0) as LogEntry
+          val selectedIndex = myLogsList.table.selectedRow
+          val clickedEntry = myLogsListTableModel.getValueAt(selectedIndex, 0) as LogEntry
           var logIndex = clickedEntry.index
 
-          // if the picked log has the filter, first jump to the filtered log panel
+          // if it is filtered, first jump to the filtered log panel
           val targetTable = if (clickedEntry.appliedFilter != null) {
             for (index in 0 until filteredLogList.table.rowCount) {
               if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
@@ -481,22 +533,24 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           }
           SwingUtils.scrollToVisible(targetTable, logIndex)
           targetTable.setRowSelectionInterval(logIndex, logIndex)
-        } else if (SwingUtilities.isRightMouseButton(e) && pickedLogList.table.selectedRow != -1) {
+        } else if (SwingUtilities.isRightMouseButton(e) && myLogsList.table.selectedRow != -1) {
           val popup = JPopupMenu()
           val removeItem = popup.add("Remove")
           removeItem.addActionListener {
-
-            pickedLogList.table.selectedRows
-              .map { pickedLogListTableModel.getValueAt(it, 0) as LogEntry }
-              .forEach { pickedLogListTableModel.removeLog(it) }
+            deleteSelectedFromMyLogs()
           }
-          popup.show(pickedLogList.table, e.x, e.y)
+          popup.show(myLogsList.table, e.x, e.y)
         }
       }
     })
-    clearPickedLogButton.addActionListener {
-      pickedLogListTableModel.clearLog()
-    }
+
+    myLogsList.table.addKeyListener(object : KeyAdapter() {
+      override fun keyPressed(e: KeyEvent?) {
+        if (myLogsList.table.selectedRow != -1 && (e?.keyCode == KeyEvent.VK_DELETE)) {
+          deleteSelectedFromMyLogs()
+        }
+      }
+    })
   }
 
   override fun buildStreamsMenu(): JMenu? {
@@ -515,7 +569,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun handleOpenLogsMenu() {
     val openFiles = mainView.showOpenMultipleLogsFileChooser()
-    if (openFiles != null && openFiles.isNotEmpty()) {
+    if (!openFiles.isNullOrEmpty()) {
       presenter.loadLogs(openFiles)
     }
   }
@@ -532,7 +586,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     if (filterFiles.isNotEmpty()) {
       var keepCurrentFilters = false
       if (!filtersPane.isEmpty) {
-        // Ask the user if we should keep the the existing filters
+        // Ask the user if we should keep the existing filters
         val dialog = SingleChoiceDialog(
           "There are currently opened filters already.",
           "What do you want to do?",
@@ -702,7 +756,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val showStreams = logStreams != null && logStreams.size > 1
 
     logRenderer.showStreams(showStreams)
-    pickledLogRenderer.showStreams(showStreams)
+    myLogsRenderer.showStreams(showStreams)
 
     // Refresh the menu bar to make sure the streams are shown
     mainView.refreshMenuBar()
@@ -796,7 +850,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     _contentPane.add(
       currentLogsLbl,
       GBConstraintsBuilder()
-        .withGridx(1)
+        .withGridx(0)
         .withGridy(0)
         .withAnchor(GridBagConstraints.WEST)
         .build()
@@ -805,14 +859,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val mainSplitPane = JSplitPane()
     mainSplitPane.dividerSize = UIScaleUtils.dip(5)
     mainSplitPane.isOneTouchExpandable = true
-    mainSplitPane.resizeWeight = 0.05
+    mainSplitPane.resizeWeight = 0.15
     _contentPane.add(
       mainSplitPane,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(1)
-        .withGridWidth(6)
-        .withWeightx(1.0)
+        .withWeightx(0.999)
         .withWeighty(1.0)
         .withFill(GridBagConstraints.BOTH)
         .withAnchor(GridBagConstraints.CENTER)
@@ -821,7 +874,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     val mainLogSplit = JSplitPane()
     mainLogSplit.dividerSize = UIScaleUtils.dip(5)
-    mainLogSplit.isOneTouchExpandable = true
     mainLogSplit.resizeWeight = 0.8
 
     logsPane = JSplitPane()
@@ -837,21 +889,26 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     filteredLogList = SearchableTable(filteredLogListTableModel)
     logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
-    pickedLogListTableModel = LogListTableModel("Picked Logs")
-    pickedLogList = SearchableTable(pickedLogListTableModel)
-
-    pickedLogList.add(JButton("Clear Picked Logs").also { clearPickedLogButton = it },
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(2)
-        .withAnchor(GridBagConstraints.WEST)
-        .build()
-    )
+    myLogsListTableModel = LogListTableModel("My Logs")
+    myLogsList = SearchableTable(myLogsListTableModel)
 
     mainLogSplit.leftComponent = logsPane
-    mainLogSplit.rightComponent = pickedLogList
+    mainLogSplit.rightComponent = myLogsList
+    mainLogSplit.rightComponent.isVisible = false // Start collapsed
 
     mainSplitPane.rightComponent = mainLogSplit
+
+    sidePanel = SidePanel(mainLogSplit)
+    _contentPane.add(
+      sidePanel,
+      GBConstraintsBuilder()
+        .withGridx(1)
+        .withGridy(1)
+        .withWeightx(0.001)
+        .withAnchor(GridBagConstraints.EAST)
+        .withFill(GridBagConstraints.VERTICAL)
+        .build()
+    )
 
     val filtersMainPane = JPanel()
     filtersMainPane.layout = GridBagLayout()

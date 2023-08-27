@@ -102,7 +102,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     // make the highlight line ui same as the select ui
     isSelected = isSelected || row == mHighlightLine;
 
-    lineNumLabel.setText(logEntry.getIndex() + 1 + "");
+    lineNumLabel.setText(String.valueOf(logEntry.getIndex() + 1));
 
     textView.setText(logEntry.getLogText());
     textView.setWrapStyleWord(true);
