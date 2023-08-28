@@ -439,7 +439,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           .map { model.getValueAt(it, 0) as LogEntry }
           .forEach { myLogsListTableModel.addLog(it) }
         sidePanel.showMyLogsView()
-        myLogsRenderer.recalculateLineNumberPreferredSize(myLogsListTableModel)
+        myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
       }
 
     if (selectedRows.size == 1) {
@@ -510,7 +510,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       myLogsList.table.selectedRows
         .map { myLogsListTableModel.getValueAt(it, 0) as LogEntry }
         .forEach { myLogsListTableModel.removeLog(it) }
-      myLogsRenderer.recalculateLineNumberPreferredSize(myLogsListTableModel)
+      myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
     }
 
     myLogsList.table.addMouseListener(object : MouseAdapter() {
@@ -699,7 +699,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun showLogs(logEntries: List<LogEntry>?) {
     logListTableModel.setLogs(logEntries)
     // calc the line number view needed width
-    logRenderer.recalculateLineNumberPreferredSize(logListTableModel)
+    logEntries?.lastOrNull()?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
   }
 
   override fun showCurrentLogsLocation(logsPath: String?) {

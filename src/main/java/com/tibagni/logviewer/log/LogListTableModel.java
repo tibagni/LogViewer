@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.log;
 
+import org.jetbrains.annotations.Nullable;
+
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +39,14 @@ public class LogListTableModel extends AbstractTableModel {
   @Override
   public Object getValueAt(int rowIndex, int columnIndex) {
     return entries.get(rowIndex);
+  }
+
+  public @Nullable LogEntry getLastEntry() {
+    if (entries.isEmpty()) {
+      return null;
+    }
+
+    return entries.get(entries.size() - 1);
   }
 
   public void setLogs(List<LogEntry> entries) {

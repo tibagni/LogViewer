@@ -89,25 +89,17 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     mHighlightLine = rowIndex;
   }
 
-  public void recalculateLineNumberPreferredSize(LogListTableModel model) {
-    if (!lineNumLabel.isVisible()) return;
-
-    int maxIndex = -1;
-    for (int index = 0; index < model.getRowCount(); index++) {
-      LogEntry logEntry = (LogEntry) model.getValueAt(index, 0);
-      if (logEntry.getIndex() > maxIndex) {
-        maxIndex = logEntry.getIndex();
-      }
+  public void recalculateLineNumberPreferredSize(int maxLineNumber) {
+    if (!lineNumLabel.isVisible()) {
+      return;
     }
 
-    if (maxIndex != -1) {
-      String line = String.valueOf(maxIndex + 1);
-      int width = (int) getFont().getStringBounds(line, fontRenderContext).getWidth();
+    String line = String.valueOf(maxLineNumber + 1);
+    int width = (int) getFont().getStringBounds(line, fontRenderContext).getWidth();
 
-      // size = string width + border size
-      lineNumLabel.setPreferredSize(new Dimension(width + UIScaleUtils.dip(15),
-          lineNumLabel.getPreferredSize().height));
-    }
+    // size = string width + border size
+    lineNumLabel.setPreferredSize(new Dimension(width + UIScaleUtils.dip(15),
+        lineNumLabel.getPreferredSize().height));
   }
 
   @Override
