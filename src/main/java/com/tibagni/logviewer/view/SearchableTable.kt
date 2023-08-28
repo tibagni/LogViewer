@@ -20,6 +20,7 @@ import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
+import javax.swing.event.TableModelEvent
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.TableColumnModel
 import javax.swing.table.TableModel
@@ -97,6 +98,12 @@ class SearchableTable @JvmOverloads constructor(
       table.revalidate()
       table.repaint()
     }
+    table.model.addTableModelListener {
+      // perform search if the model insert/delete items, ignore the update action
+      if (searchOptionPanel.isVisible && it.type != TableModelEvent.UPDATE) {
+        performSearchState.value = Any()
+      }
+    }
 
     performSearchState
       .onEach { searchContent() }
@@ -135,6 +142,8 @@ class SearchableTable @JvmOverloads constructor(
     lastSearchGoToPos = -1
     lastSearchJob = scope.async(Dispatchers.Default) {
       val pattern = searchText.text
+      val startTime = System.currentTimeMillis()
+      Logger.debug("start searching for [$pattern]")
       withContext(Dispatchers.Main) {
         searchResult.text = " searching "
       }
@@ -178,6 +187,7 @@ class SearchableTable @JvmOverloads constructor(
       matchedEntries = parallelSearch()
       //benchmarkOfSearch(rowCount, filter)
 
+      Logger.debug("done for search [$pattern], time ${System.currentTimeMillis() - startTime}ms")
       withContext(Dispatchers.Main) {
         searchResult.text =
           if (filterResult?.isFailure == true) " bad pattern " else "  ${matchedEntries.size} results  "
