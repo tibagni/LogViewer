@@ -476,23 +476,26 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         if (e.clickCount == 2) {
           val selectedIndex = pickedLogList.table.selectedRow
           val clickedEntry = pickedLogListTableModel.getValueAt(selectedIndex, 0) as LogEntry
-          var logIndex = clickedEntry.index
 
           // if the picked log has the filter, first jump to the filtered log panel
-          val targetTable = if (clickedEntry.appliedFilter != null) {
+          var targetTable = logList.table
+          var targetIndex = -1
+          if (clickedEntry.appliedFilter != null) {
             for (index in 0 until filteredLogList.table.rowCount) {
               if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
-                logIndex = index
+                targetIndex = index
                 break
               }
             }
-            filteredLogList.table
-          } else {
-            logIndex -= presenter.visibleLogsOffset // Map to the visible index
-            logList.table
+            targetTable = filteredLogList.table
           }
-          SwingUtils.scrollToVisible(targetTable, logIndex)
-          targetTable.setRowSelectionInterval(logIndex, logIndex)
+          if (targetIndex == -1) {
+            // if cannot go to the filtered list(no match or stream not shown), fallback to the all log
+            targetIndex = clickedEntry.index - presenter.visibleLogsOffset // Map to the visible index
+            targetTable = logList.table
+          }
+          SwingUtils.scrollToVisible(targetTable, targetIndex)
+          targetTable.setRowSelectionInterval(targetIndex, targetIndex)
         } else if (SwingUtilities.isRightMouseButton(e) && pickedLogList.table.selectedRow != -1) {
           val popup = JPopupMenu()
           val removeItem = popup.add("Remove")
