@@ -153,7 +153,7 @@ class SearchableTable @JvmOverloads constructor(
           "search",
           pattern,
           Color.RED,
-          LogLevel.DEBUG,
+          LogLevel.VERBOSE,
           matchCaseOption.isSelected
         )
       }.onFailure { Logger.error("create filter error", it) } else null
