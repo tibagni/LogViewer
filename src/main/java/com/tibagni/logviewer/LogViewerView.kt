@@ -437,7 +437,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       .addActionListener {
         selectedRows
           .map { model.getValueAt(it, 0) as LogEntry }
-          .forEach { myLogsListTableModel.addLog(it) }
+          .forEach { myLogsListTableModel.addLogIfDoesNotExist(it) }
         sidePanel.showMyLogsView()
         myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
       }

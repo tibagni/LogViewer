@@ -55,15 +55,14 @@ public class LogListTableModel extends AbstractTableModel {
     fireTableRowsInserted(0, this.entries.size() - 1);
   }
 
-  public void addLog(LogEntry entry) {
+  public void addLogIfDoesNotExist(LogEntry entry) {
     // find the nearest time pos to insert the new entry
-    int possibleIndex = Collections.binarySearch(this.entries, entry);
-    int targetIndex = possibleIndex;
-    if (possibleIndex < 0) {
-      targetIndex = Math.abs(possibleIndex + 1);
+    int indexFound = Collections.binarySearch(this.entries, entry);
+    if (indexFound < 0) { // Element not found. Insert
+      int targetIndex = Math.abs(indexFound + 1);
+      this.entries.add(targetIndex, entry);
+      fireTableRowsInserted(targetIndex, targetIndex);
     }
-    this.entries.add(targetIndex, entry);
-    fireTableRowsInserted(targetIndex, targetIndex);
   }
 
   public void removeLog(LogEntry entry) {
