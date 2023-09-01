@@ -4,6 +4,8 @@ import com.tibagni.logviewer.filter.Filter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 public class LogEntry implements Comparable<LogEntry> {
 
   private int index;
@@ -83,5 +85,22 @@ public class LogEntry implements Comparable<LogEntry> {
     int time = timestamp.compareTo(o.timestamp);
     // compare index if same time
     return time == 0 ? Integer.compare(index, o.index) : time;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    LogEntry logEntry = (LogEntry) o;
+    return index == logEntry.index &&
+        Objects.equals(timestamp, logEntry.timestamp) &&
+        Objects.equals(logText, logEntry.logText) &&
+        logLevel == logEntry.logLevel &&
+        logStream == logEntry.logStream;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(index, timestamp, logText, logLevel, logStream);
   }
 }

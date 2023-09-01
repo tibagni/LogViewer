@@ -17,6 +17,8 @@ import java.awt.*
 import java.awt.event.*
 import java.io.File
 import javax.swing.*
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 
 // This is the interface known by other views (MainView)
@@ -114,7 +116,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
-  private lateinit var myLogsListTableModel: LogListTableModel
+  private lateinit var myLogsListTableModel: EditableLogListTableModel
   private val logRenderer: LogCellRenderer
   private val myLogsRenderer: LogCellRenderer
 
@@ -555,6 +557,56 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     })
   }
 
+  // TODO Move 'My Logs' handling logic to the presenter/repository
+  private fun clearMyLogsIfNeeded() {
+    // We only want to clear logs in 'My Logs' if the new logs that are being loaded are different
+    // So we check if the logs under 'My Logs' are still matching the logs that are open. If not, clear
+    // This is to avoid clearing 'My Logs' when the user is simply refreshing the logs (F5)
+    if (myLogsListTableModel.rowCount == 0) {
+      return
+    }
+
+    var mismatch = false
+    for (i in 0 until myLogsListTableModel.rowCount) {
+      val myLogEntry = myLogsListTableModel.getValueAt(i, 0) as LogEntry
+
+      // If myLog's index is greater than the number of new logs, it is a mismatch
+      if (myLogEntry.index >= logListTableModel.rowCount) {
+        mismatch = true
+        break
+      }
+
+      // If the myLog no longer matches the same index in the new logs, it is a mismatch
+      if (!logListTableModel.getValueAt(myLogEntry.index, 0).equals(myLogEntry)) {
+        mismatch = true
+        break
+      }
+    }
+
+    if (mismatch) {
+      // It is a mismatch, the logs under 'My Logs' could still match the opened logs in a different position.
+      // For example if the user opened the same log file again, but in addition with some other logs.
+      // To cover this case, make sure all logs in 'MyLogs' have a match in the opened logs. And if so, update the
+      // indices of the 'My Logs'
+      val matchedLogs = mutableListOf<LogEntry>()
+
+      for (i in 0 until myLogsListTableModel.rowCount) {
+        val myLogEntry = myLogsListTableModel.getValueAt(i, 0) as LogEntry
+        val matchedLogEntry = logListTableModel.getMatchingLogEntry(myLogEntry)
+
+        if (matchedLogEntry != null) {
+          // Match found, update the 'My Logs' entry
+          matchedLogs.add(matchedLogEntry)
+        }
+      }
+
+      // Now, we always want to update the log entries in 'MyLogs' so remove all and reinsert the ones that have
+      // a match
+      myLogsListTableModel.clear()
+      myLogsListTableModel.setLogs(matchedLogs)
+    }
+  }
+
   override fun buildStreamsMenu(): JMenu? {
     if (logStreams.isEmpty()) return null
 
@@ -700,6 +752,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logListTableModel.setLogs(logEntries)
     // calc the line number view needed width
     logEntries?.lastOrNull()?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
+    clearMyLogsIfNeeded()
   }
 
   override fun showCurrentLogsLocation(logsPath: String?) {
@@ -893,7 +946,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     filteredLogList = SearchableTable(filteredLogListTableModel)
     logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
-    myLogsListTableModel = LogListTableModel("My Logs")
+    myLogsListTableModel = EditableLogListTableModel("My Logs")
     myLogsList = SearchableTable(myLogsListTableModel)
 
     mainLogSplit.leftComponent = logsPane
