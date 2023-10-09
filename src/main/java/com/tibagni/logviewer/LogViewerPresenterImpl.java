@@ -30,16 +30,19 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   private final LogViewerPreferences userPrefs;
 
   private final LogsRepository logsRepository;
+  private final MyLogsRepository myLogsRepository;
   private final FiltersRepository filtersRepository;
 
   LogViewerPresenterImpl(LogViewerPresenterView view,
                          LogViewerPreferences userPrefs,
                          LogsRepository logsRepository,
+                         MyLogsRepository myLogsRepository,
                          FiltersRepository filtersRepository) {
     super(view);
     this.view = view;
     this.userPrefs = userPrefs;
     this.logsRepository = logsRepository;
+    this.myLogsRepository = myLogsRepository;
     this.filtersRepository = filtersRepository;
 
     unsavedFilterGroups = new ArrayList<>();
@@ -371,7 +374,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
       if (isLegacy) {
         Logger.info("Filter Group: " + group + " is using old file format. Re-save it");
         // Now that we checked, clear the legacy flag
-        filters.stream().forEach(filter -> filter.wasLoadedFromLegacyFile = false);
+        filters.forEach(filter -> filter.wasLoadedFromLegacyFile = false);
         // ... and save it
         saveFilters(group);
       }
@@ -404,10 +407,15 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
         List<String> skippedLogs = logsRepository.getLastSkippedLogFiles();
         Map<String, String> bugReports = logsRepository.getPotentialBugReports();
+        final boolean myLogsChanged = updateMyLogs();
         doOnUiThread(() -> {
           view.showFilteredLogs(cachedAllowedFilteredLogs);
           view.showLogs(logsRepository.getCurrentlyOpenedLogs());
           view.showAvailableLogStreams(allowedStreamsMap.keySet());
+          // In case something changed with 'My Logs', make sure to update the UI as well
+          if (myLogsChanged) {
+            view.showMyLogs(myLogsRepository.getLogs());
+          }
 
           if (logsRepository.getCurrentlyOpenedLogs().size() > 0) {
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getAbsolutePath());
@@ -646,6 +654,77 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
     // "currently opened logs" already represents the visible logs, so just return the last one
     return logsRepository.getCurrentlyOpenedLogs().get(lastVisibleIndex);
+  }
+
+  @Override
+  public void addLogEntriesToMyLogs(List<LogEntry> entries) {
+    myLogsRepository.addLogEntries(entries);
+    view.showMyLogs(myLogsRepository.getLogs());
+  }
+
+  @Override
+  public void removeFromMyLog(int[] indices) {
+    List<LogEntry> toRemove = new ArrayList<>();
+    for (int i : indices) {
+      int myLogsSize = myLogsRepository.getLogs().size();
+      if (i < 0 || i >= myLogsSize) {
+        Logger.warning("Trying to remove invalid index " + i + " from MyLogs. Current size: " + myLogsSize);
+      } else {
+        toRemove.add(myLogsRepository.getLogs().get(i));
+      }
+    }
+    myLogsRepository.removeLogEntries(toRemove);
+    view.showMyLogs(myLogsRepository.getLogs());
+  }
+
+  boolean updateMyLogs() {
+    // We only want to update logs in 'My Logs' if the new logs that are being loaded are different
+    // So we check if the logs under 'My Logs' are still matching the logs that are open. If not, clear
+    // This is to avoid clearing 'My Logs' when the user is simply refreshing the logs (F5)
+    if (myLogsRepository.getLogs().isEmpty()) {
+      return false;
+    }
+
+    boolean mismatch = false;
+    for (LogEntry myLogEntry : myLogsRepository.getLogs()) {
+      // If myLog's index is greater than the number of new logs, it is a mismatch
+      if (myLogEntry.getIndex() > logsRepository.getLastVisibleLogIndex()) {
+        mismatch = true;
+        break;
+      }
+
+      // If the myLog no longer matches the same index in the new logs, it is a mismatch
+      List<LogEntry> currentLogs = logsRepository.getCurrentlyOpenedLogs();
+      if (myLogEntry.getIndex() >= 0 && myLogEntry.getIndex() < currentLogs.size() &&
+          !myLogEntry.equals(currentLogs.get(myLogEntry.getIndex()))) {
+        mismatch = true;
+        break;
+      }
+    }
+
+    if (mismatch) {
+      // It is a mismatch, the logs under 'My Logs' could still match the opened logs in a different position.
+      // For example if the user opened the same log file again, but in addition with some other logs.
+      // To cover this case, make sure all logs in 'MyLogs' have a match in the opened logs. And if so, update the
+      // indices of the 'My Logs'
+      List<LogEntry> matchedLogs = new ArrayList<>();
+
+      for (LogEntry myLogEntry : myLogsRepository.getLogs()) {
+        LogEntry matchedLogEntry = logsRepository.getMatchingLogEntry(myLogEntry);
+
+        if (matchedLogEntry != null) {
+          // Match found, update the 'My Logs' entry
+          matchedLogs.add(matchedLogEntry);
+        }
+      }
+
+      // Now, we always want to update the log entries in 'MyLogs' to have the correct indices so, remove all and
+      // reinsert the ones that have a match
+      myLogsRepository.reset(matchedLogs);
+      return true;
+    }
+
+    return false;
   }
 
   private List<LogEntry> excludeNonAllowedStreams(List<LogEntry> entries) {

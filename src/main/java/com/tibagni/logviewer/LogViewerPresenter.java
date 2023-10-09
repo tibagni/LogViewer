@@ -49,5 +49,8 @@ public interface LogViewerPresenter {
   LogEntry getFirstVisibleLog();
   LogEntry getLastVisibleLog();
 
+  void addLogEntriesToMyLogs(List<LogEntry> entries);
+  void removeFromMyLog(int[] indices);
+
   void finishing();
 }

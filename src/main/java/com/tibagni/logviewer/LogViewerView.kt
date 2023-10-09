@@ -40,6 +40,7 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showErrorMessage(message: String?)
   fun showSkippedLogsMessage(skippedLogs: List<String>)
   fun showLogs(logEntries: List<LogEntry>?)
+  fun showMyLogs(logEntries: List<LogEntry>?)
   fun showCurrentLogsLocation(logsPath: String?)
   fun showFilteredLogs(logEntries: List<LogEntry>?)
   fun showLogLocationAtSearchedTimestamp(allLogsPosition: Int, filteredLogsPosition: Int)
@@ -116,7 +117,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
-  private lateinit var myLogsListTableModel: EditableLogListTableModel
+  private lateinit var myLogsListTableModel: LogListTableModel
   private val logRenderer: LogCellRenderer
   private val myLogsRenderer: LogCellRenderer
 
@@ -135,6 +136,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       this,
       userPrefs,
       ServiceLocator.logsRepository,
+      ServiceLocator.myLogsRepository,
       ServiceLocator.filtersRepository
     )
     presenter.init()
@@ -152,8 +154,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       override fun onShowLineNumbersChanged() {
         logRenderer.showLineNumbers(userPrefs.showLineNumbers)
         myLogsRenderer.showLineNumbers(userPrefs.showLineNumbers)
-        logList.revalidate()
-        logList.repaint()
+        logList.table.revalidate()
+        logList.table.repaint()
         filteredLogList.table.revalidate()
         filteredLogList.table.repaint()
         myLogsList.table.revalidate()
@@ -437,11 +439,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     popup
       .add("Add to 'My Logs'")
       .addActionListener {
-        selectedRows
-          .map { model.getValueAt(it, 0) as LogEntry }
-          .forEach { myLogsListTableModel.addLogIfDoesNotExist(it) }
-        sidePanel.showMyLogsView()
-        myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
+        presenter.addLogEntriesToMyLogs(selectedRows.map { model.getValueAt(it, 0) as LogEntry })
       }
 
     if (selectedRows.size == 1) {
@@ -508,13 +506,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun setupMyLogsContextActions() {
-    val deleteSelectedFromMyLogs: () -> Unit = {
-      myLogsList.table.selectedRows
-        .map { myLogsListTableModel.getValueAt(it, 0) as LogEntry }
-        .forEach { myLogsListTableModel.removeLog(it) }
-      myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
-    }
-
     myLogsList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
@@ -541,7 +532,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           val popup = JPopupMenu()
           val removeItem = popup.add("Remove")
           removeItem.addActionListener {
-            deleteSelectedFromMyLogs()
+            presenter.removeFromMyLog(myLogsList.table.selectedRows)
           }
           popup.show(myLogsList.table, e.x, e.y)
         }
@@ -551,60 +542,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     myLogsList.table.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent?) {
         if (myLogsList.table.selectedRow != -1 && (e?.keyCode == KeyEvent.VK_DELETE)) {
-          deleteSelectedFromMyLogs()
+          presenter.removeFromMyLog(myLogsList.table.selectedRows)
         }
       }
     })
-  }
-
-  // TODO Move 'My Logs' handling logic to the presenter/repository
-  private fun clearMyLogsIfNeeded() {
-    // We only want to clear logs in 'My Logs' if the new logs that are being loaded are different
-    // So we check if the logs under 'My Logs' are still matching the logs that are open. If not, clear
-    // This is to avoid clearing 'My Logs' when the user is simply refreshing the logs (F5)
-    if (myLogsListTableModel.rowCount == 0) {
-      return
-    }
-
-    var mismatch = false
-    for (i in 0 until myLogsListTableModel.rowCount) {
-      val myLogEntry = myLogsListTableModel.getValueAt(i, 0) as LogEntry
-
-      // If myLog's index is greater than the number of new logs, it is a mismatch
-      if (myLogEntry.index >= logListTableModel.rowCount) {
-        mismatch = true
-        break
-      }
-
-      // If the myLog no longer matches the same index in the new logs, it is a mismatch
-      if (!logListTableModel.getValueAt(myLogEntry.index, 0).equals(myLogEntry)) {
-        mismatch = true
-        break
-      }
-    }
-
-    if (mismatch) {
-      // It is a mismatch, the logs under 'My Logs' could still match the opened logs in a different position.
-      // For example if the user opened the same log file again, but in addition with some other logs.
-      // To cover this case, make sure all logs in 'MyLogs' have a match in the opened logs. And if so, update the
-      // indices of the 'My Logs'
-      val matchedLogs = mutableListOf<LogEntry>()
-
-      for (i in 0 until myLogsListTableModel.rowCount) {
-        val myLogEntry = myLogsListTableModel.getValueAt(i, 0) as LogEntry
-        val matchedLogEntry = logListTableModel.getMatchingLogEntry(myLogEntry)
-
-        if (matchedLogEntry != null) {
-          // Match found, update the 'My Logs' entry
-          matchedLogs.add(matchedLogEntry)
-        }
-      }
-
-      // Now, we always want to update the log entries in 'MyLogs' so remove all and reinsert the ones that have
-      // a match
-      myLogsListTableModel.clear()
-      myLogsListTableModel.setLogs(matchedLogs)
-    }
   }
 
   override fun buildStreamsMenu(): JMenu? {
@@ -752,7 +693,16 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logListTableModel.setLogs(logEntries)
     // calc the line number view needed width
     logEntries?.lastOrNull()?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
-    clearMyLogsIfNeeded()
+  }
+
+  override fun showMyLogs(logEntries: List<LogEntry>?) {
+    if (logEntries.isNullOrEmpty()) {
+      myLogsListTableModel.clear()
+    } else {
+      myLogsListTableModel.setLogs(logEntries)
+      myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
+      sidePanel.showMyLogsView()
+    }
   }
 
   override fun showCurrentLogsLocation(logsPath: String?) {
@@ -946,7 +896,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     filteredLogList = SearchableTable(filteredLogListTableModel)
     logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
-    myLogsListTableModel = EditableLogListTableModel("My Logs")
+    myLogsListTableModel = LogListTableModel("My Logs")
     myLogsList = SearchableTable(myLogsListTableModel)
 
     mainLogSplit.leftComponent = logsPane

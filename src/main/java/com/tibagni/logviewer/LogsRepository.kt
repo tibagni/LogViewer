@@ -1,12 +1,10 @@
 package com.tibagni.logviewer
 
-import com.tibagni.logviewer.log.FileLogReader
-import com.tibagni.logviewer.log.LogEntry
-import com.tibagni.logviewer.log.LogReaderException
-import com.tibagni.logviewer.log.LogStream
+import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.log.parser.LogParser
 import com.tibagni.logviewer.logger.wrapProfiler
 import java.io.File
+import java.util.*
 
 class OpenLogsException(message: String?, cause: Throwable) : java.lang.Exception(message, cause)
 
@@ -27,6 +25,7 @@ interface LogsRepository {
 
   @Throws(OpenLogsException::class)
   fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter)
+  fun getMatchingLogEntry(entry: LogEntry): LogEntry?
 }
 
 class LogsRepositoryImpl : LogsRepository {
@@ -96,5 +95,37 @@ class LogsRepositoryImpl : LogsRepository {
         else -> throw e
       }
     }
+  }
+
+  override fun getMatchingLogEntry(entry: LogEntry): LogEntry? {
+    // Here we want to check if the given log entry exists anywhere in the list, not necessarily in the same index,
+    // And we also want to make sure the text is the same. So, use a different comparator here that only considers
+    // the timestamp for comparison and also checks if the log text is the same
+    val cmp = Comparator.comparing { o: LogEntry -> o.timestamp }
+
+    val indexFound = Collections.binarySearch(currentlyOpenedLogs, entry, cmp)
+    if (indexFound >= 0) {
+      // We found one index for a possible entry. But there might be multiple log entries for the same timestamp
+      // so, iterate until we find the exact line we are looking for.
+      // First we want to find the first log in this timestamp
+      var i = indexFound
+      while (i >= 0 && currentlyOpenedLogs[i].timestamp == entry.timestamp) {
+        i--
+      }
+
+      // Now that we are in the beginning of the timestamp, look for the entry
+      while (currentlyOpenedLogs[i].logText != entry.logText &&
+        currentlyOpenedLogs[i].timestamp <= entry.timestamp) {
+        i++
+      }
+
+      // We either found or finished search. check which one
+      if (currentlyOpenedLogs[i].logText == entry.logText) {
+        return currentlyOpenedLogs[i]
+      }
+    }
+
+    // Not found
+    return null
   }
 }

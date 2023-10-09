@@ -31,6 +31,9 @@ class LogViewerPresenterTests {
   @Mock
   private lateinit var mockFiltersRepository: FiltersRepository
 
+  @Mock
+  private lateinit var mockMyLogsRepository: MyLogsRepository
+
   private lateinit var presenter: LogViewerPresenterImpl
   private var tempFilterFile: File? = null
   private var tempLogFile: File? = null
@@ -49,6 +52,7 @@ class LogViewerPresenterTests {
       view,
       mockPrefs,
       mockLogsRepository,
+      mockMyLogsRepository,
       mockFiltersRepository
     )
     presenter.setBgExecutorService(MockExecutorService())
@@ -1854,6 +1858,37 @@ class LogViewerPresenterTests {
     verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
+    verify(view, never()).showMyLogs(any())
+    verify(view).showAvailableLogStreams(any())
+    verify(view).showCurrentLogsLocation(notNull())
+    verify(view, never()).showErrorMessage(any())
+    verify(view, never()).showSkippedLogsMessage(anyOrNull())
+    assertEquals(0, presenter.testStats.applyFiltersCallCount)
+  }
+
+  @Test
+  fun testLoadLogsChangeMyLogs() {
+    val inputLogFiles = arrayOf(File("test"))
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+
+    `when`(mockMyLogsRepository.logs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null).also { it.index = 10 })
+    )
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(1)
+    `when`(mockLogsRepository.getMatchingLogEntry(anyOrNull())).thenReturn(
+      LogEntry("Matching Log", LogLevel.DEBUG, null)
+    )
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(view).showFilteredLogs(any())
+    verify(view).showLogs(any())
+    verify(view).showMyLogs(any())
     verify(view).showAvailableLogStreams(any())
     verify(view).showCurrentLogsLocation(notNull())
     verify(view, never()).showErrorMessage(any())
@@ -2544,6 +2579,162 @@ class LogViewerPresenterTests {
     val firstLog = presenter.firstVisibleLog
 
     assertNull(firstLog)
+  }
+
+  @Test
+  fun testAddToMyLogs() {
+    val logs = listOf(
+      LogEntry("Log line 1", LogLevel.DEBUG, null),
+      LogEntry("Log line 2", LogLevel.DEBUG, null),
+      LogEntry("Log line 3", LogLevel.DEBUG, null)
+    )
+    `when`(mockMyLogsRepository.logs).thenReturn(logs)
+
+    presenter.addLogEntriesToMyLogs(logs)
+
+    verify(mockMyLogsRepository).addLogEntries(logs)
+    verify(view).showMyLogs(logs)
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testRemoveOneFromMyLogs() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null)
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null)
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null)
+    val logs = listOf(log1, log2, log3)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(logs)
+
+    presenter.removeFromMyLog(intArrayOf(0))
+
+    verify(mockMyLogsRepository).removeLogEntries(listOf(log1))
+    verify(view).showMyLogs(anyList())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testRemoveMultipleFromMyLogs() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null)
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null)
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null)
+    val logs = listOf(log1, log2, log3)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(logs)
+
+    presenter.removeFromMyLog(intArrayOf(0, 2))
+
+    verify(mockMyLogsRepository).removeLogEntries(listOf(log1, log3))
+    verify(view).showMyLogs(anyList())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testRemoveInvalidFromMyLogs() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null)
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null)
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null)
+    val logs = listOf(log1, log2, log3)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(logs)
+
+    presenter.removeFromMyLog(intArrayOf(4))
+
+    verify(mockMyLogsRepository).removeLogEntries(emptyList())
+    verify(view).showMyLogs(any())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testRemoveInvalidAndValidFromMyLogs() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null)
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null)
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null)
+    val logs = listOf(log1, log2, log3)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(logs)
+
+    presenter.removeFromMyLog(intArrayOf(1, 4))
+
+    verify(mockMyLogsRepository).removeLogEntries(listOf(log2))
+    verify(view).showMyLogs(any())
+    verify(view, never()).showLogs(any())
+  }
+
+  @Test
+  fun testUpdateMyLogsNoChangeEmptyMyLogs() {
+    `when`(mockMyLogsRepository.logs).thenReturn(emptyList())
+    val ret = presenter.updateMyLogs()
+    verify(mockMyLogsRepository, never()).reset(anyList())
+    assertFalse(ret)
+  }
+
+  @Test
+  fun testUpdateMyLogsNoChange() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null).also { it.index = 0 }
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null).also { it.index = 1 }
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null).also { it.index = 2 }
+    val log4 = LogEntry("Log line 4", LogLevel.DEBUG, null).also { it.index = 3 }
+    val log5 = LogEntry("Log line 5", LogLevel.DEBUG, null).also { it.index = 4 }
+    val logs = listOf(log1, log2, log3, log4, log5)
+    val myLogs = listOf(log3, log5)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(myLogs)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(4)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+
+    val ret = presenter.updateMyLogs()
+    verify(mockMyLogsRepository, never()).reset(anyList())
+    assertFalse(ret)
+  }
+
+  @Test
+  fun testUpdateMyLogsMismatch() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null).also { it.index = 0 }
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null).also { it.index = 1 }
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null).also { it.index = 2 }
+    val log4 = LogEntry("Log line 4", LogLevel.DEBUG, null).also { it.index = 3 }
+    val log5 = LogEntry("Log line 5", LogLevel.DEBUG, null).also { it.index = 4 }
+
+    val myLog4 = LogEntry("Log line 4", LogLevel.DEBUG, null).also { it.index = 0 }
+    val myLog5 = LogEntry("Log line 5", LogLevel.DEBUG, null).also { it.index = 1 }
+    val logs = listOf(log1, log2, log3, log4, log5)
+    val myLogs = listOf(myLog4, myLog5)
+
+    val matchingLog = LogEntry("Matching Log", LogLevel.DEBUG, null)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(myLogs)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(4)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+    `when`(mockLogsRepository.getMatchingLogEntry(anyOrNull())).thenReturn(matchingLog)
+
+    val ret = presenter.updateMyLogs()
+    verify(mockMyLogsRepository).reset(anyList())
+    assertTrue(ret)
+  }
+
+  @Test
+  fun testUpdateMyLogsMismatchGreaterIndex() {
+    val log1 = LogEntry("Log line 1", LogLevel.DEBUG, null).also { it.index = 0 }
+    val log2 = LogEntry("Log line 2", LogLevel.DEBUG, null).also { it.index = 1 }
+    val log3 = LogEntry("Log line 3", LogLevel.DEBUG, null).also { it.index = 2 }
+    val log4 = LogEntry("Log line 4", LogLevel.DEBUG, null).also { it.index = 3 }
+    val log5 = LogEntry("Log line 5", LogLevel.DEBUG, null).also { it.index = 4 }
+
+    val myLog4 = LogEntry("Log line 4", LogLevel.DEBUG, null).also { it.index = 5 }
+    val logs = listOf(log1, log2, log3, log4, log5)
+    val myLogs = listOf(myLog4)
+
+    val matchingLog = LogEntry("Matching Log", LogLevel.DEBUG, null)
+
+    `when`(mockMyLogsRepository.logs).thenReturn(myLogs)
+    `when`(mockLogsRepository.lastVisibleLogIndex).thenReturn(4)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(logs)
+    `when`(mockLogsRepository.getMatchingLogEntry(anyOrNull())).thenReturn(matchingLog)
+
+    val ret = presenter.updateMyLogs()
+    verify(mockMyLogsRepository).reset(anyList())
+    assertTrue(ret)
   }
 
   companion object {

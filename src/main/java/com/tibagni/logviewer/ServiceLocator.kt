@@ -11,6 +11,7 @@ object ServiceLocator {
   val themeManager: LogViewerThemeManager = LogViewerThemeManager
   val logViewerPrefs: LogViewerPreferences = LogViewerPreferencesImpl
   val logsRepository: LogsRepository by lazy { LogsRepositoryImpl() }
+  val myLogsRepository: MyLogsRepository by lazy {MyLogsRepositoryImpl()}
   val filtersRepository: FiltersRepository by lazy { FiltersRepositoryImpl() }
   val bugReportRepository: BugReportRepository by lazy {
     BugReportRepositoryImpl(
