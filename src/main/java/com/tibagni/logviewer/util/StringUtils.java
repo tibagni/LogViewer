@@ -79,4 +79,15 @@ public class StringUtils {
   public static String wrapHtml(String text) {
     return "<html>" + text + "</html>";
   }
+
+  public static boolean isPotentialRegex(String input) {
+    final String regexSpecialCharacters = ".*+?|()[]{}\\^$";
+    for (char c : input.toCharArray()) {
+      if (regexSpecialCharacters.contains(String.valueOf(c))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

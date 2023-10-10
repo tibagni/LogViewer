@@ -54,4 +54,27 @@ class StringUtilsTests {
   fun testHtmlEscape() {
     assertEquals("&lt;&gt;&amp;&quot;", StringUtils.htmlEscape("<>&\""))
   }
+
+  @Test
+  fun testPotentialRegexForValidRegex() {
+    assertTrue(StringUtils.isPotentialRegex(".*"))
+    assertTrue(StringUtils.isPotentialRegex("."))
+    assertTrue(StringUtils.isPotentialRegex("\\d{3}-\\d{2}-\\d{4}"))
+    assertTrue(StringUtils.isPotentialRegex("[A-Za-z]+"))
+    assertTrue(StringUtils.isPotentialRegex("\\d{1,3}"))
+    assertTrue(StringUtils.isPotentialRegex("(red|blue)"))
+    assertTrue(StringUtils.isPotentialRegex("a{5}"))
+    assertTrue(StringUtils.isPotentialRegex("a{3,5}"))
+    assertTrue(StringUtils.isPotentialRegex("^[A-Za-z]+$"))
+    assertTrue(StringUtils.isPotentialRegex("[0-9]{2,3}|[A-Za-z]{3,4}"))
+    assertTrue(StringUtils.isPotentialRegex("(\\d{3}-\\d{2}-\\d{4})|(\\d{4}-\\d{2}-\\d{2})"))
+    assertTrue(StringUtils.isPotentialRegex("word.word"))
+  }
+
+  @Test
+  fun testPotentialRegexForNonRegex() {
+    assertFalse(StringUtils.isPotentialRegex("Not a regex"))
+    assertFalse(StringUtils.isPotentialRegex("This is a normal string"))
+    assertFalse(StringUtils.isPotentialRegex("12345"))
+  }
 }

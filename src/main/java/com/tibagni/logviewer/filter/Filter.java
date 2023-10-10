@@ -17,12 +17,12 @@ public class Filter {
   private String name;
   private Color color;
   private LogLevel verbosity = LogLevel.VERBOSE;
-
   private Pattern pattern;
   private int flags = Pattern.CASE_INSENSITIVE;
 
   private ContextInfo temporaryInfo;
 
+  private boolean isSimpleFilter;
   public boolean wasLoadedFromLegacyFile = false;
 
   private Filter() { }
@@ -34,6 +34,7 @@ public class Filter {
     applied = from.isApplied();
     pattern = getPattern(from.pattern.pattern());
     verbosity = from.verbosity;
+    isSimpleFilter = from.isSimpleFilter;
     if (temporaryInfo != null) {
       temporaryInfo = new ContextInfo(from.temporaryInfo);
     }
@@ -69,6 +70,38 @@ public class Filter {
     this.color = color;
     this.pattern = getPattern(pattern);
     this.verbosity = verbosity;
+    this.isSimpleFilter = !StringUtils.isPotentialRegex(pattern);
+  }
+
+  public static Filter createFromString(String filterString) throws FilterException {
+    // See format in 'serializeFilter'
+    try {
+      String[] params = filterString.split(",");
+      if (params.length < 4) {
+        throw new IllegalArgumentException();
+      }
+
+      String[] rgb = params[3].split(":");
+      if (rgb.length != 3) {
+        throw new IllegalArgumentException("Wrong color format");
+      }
+
+      boolean isLegacy = params.length == 4;
+
+      String name = params[0];
+      String pattern = StringUtils.decodeBase64(params[1]);
+      Color color = new Color(Integer.parseInt(rgb[0]), Integer.parseInt(rgb[1]), Integer.parseInt(rgb[2]));
+      LogLevel verbosity = isLegacy ? LogLevel.VERBOSE : LogLevel.valueOf(params[4]);
+      int flags = Integer.parseInt(params[2]);
+      boolean isCaseSensitive = (flags & Pattern.CASE_INSENSITIVE) == 0;
+
+      Filter filter = new Filter();
+      filter.updateFilter(name, pattern, color, verbosity, isCaseSensitive);
+      filter.wasLoadedFromLegacyFile = isLegacy;
+      return filter;
+    } catch (Exception e) {
+      throw new FilterException("Wrong filter format: " + filterString, e);
+    }
   }
 
   public boolean isApplied() {
@@ -120,10 +153,21 @@ public class Filter {
    */
   public boolean appliesTo(LogEntry entry) {
     String inputLine = entry.getLogText();
-    boolean foundPattern = pattern.matcher(inputLine).find();
+    boolean foundPattern = isSimpleFilter ? simpleMatch(inputLine) : regexMatch(inputLine);
     boolean isVerbosityAllowed = verbosity.ordinal() <= entry.logLevel.ordinal();
 
     return foundPattern && isVerbosityAllowed;
+  }
+
+  private boolean simpleMatch(String inputLine) {
+    if (isCaseSensitive()) {
+      return inputLine.contains(getPatternString());
+    }
+    return inputLine.toLowerCase().contains(getPatternString().toLowerCase());
+  }
+
+  private boolean regexMatch(String inputLine) {
+    return pattern.matcher(inputLine).find();
   }
 
   private Pattern getPattern(String pattern) throws FilterException {
@@ -151,37 +195,21 @@ public class Filter {
         verbosity);
   }
 
-  public static Filter createFromString(String filterString) throws FilterException {
-    // See format in 'serializeFilter'
-    try {
-      String[] params = filterString.split(",");
-      if (params.length < 4) {
-        throw new IllegalArgumentException();
-      }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Filter filter = (Filter) o;
+    return flags == filter.flags &&
+        Objects.equals(name, filter.name) &&
+        Objects.equals(color, filter.color) &&
+        Objects.equals(getPatternString(), filter.getPatternString()) &&
+        Objects.equals(temporaryInfo, filter.temporaryInfo);
+  }
 
-      Filter filter = new Filter();
-      filter.name = params[0];
-      filter.flags = Integer.parseInt(params[2]);
-      filter.pattern = filter.getPattern(StringUtils.decodeBase64(params[1]));
-
-      String[] rgb = params[3].split(":");
-      if (rgb.length != 3) {
-        throw new IllegalArgumentException("Wrong color format");
-      }
-
-      filter.color = new Color(Integer.parseInt(rgb[0]), Integer.parseInt(rgb[1]), Integer.parseInt(rgb[2]));
-
-      // Check if the filter has information about verbosity level
-      if (params.length > 4) {
-        filter.verbosity = LogLevel.valueOf(params[4]);
-      } else {
-        filter.wasLoadedFromLegacyFile = true;
-      }
-
-      return filter;
-    } catch (Exception e) {
-      throw new FilterException("Wrong filter format: " + filterString, e);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, color, pattern, flags, temporaryInfo);
   }
 
   public static class ContextInfo {
@@ -237,22 +265,5 @@ public class Filter {
     public int hashCode() {
       return Objects.hash(linesFound, allowedStreams);
     }
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Filter filter = (Filter) o;
-    return flags == filter.flags &&
-        Objects.equals(name, filter.name) &&
-        Objects.equals(color, filter.color) &&
-        Objects.equals(getPatternString(), filter.getPatternString()) &&
-        Objects.equals(temporaryInfo, filter.temporaryInfo);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, color, pattern, flags, temporaryInfo);
   }
 }
