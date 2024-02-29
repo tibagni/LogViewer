@@ -19,14 +19,14 @@ public class Filter {
   private LogLevel verbosity = LogLevel.VERBOSE;
   private Pattern pattern;
   private int flags = Pattern.CASE_INSENSITIVE;
-
   private ContextInfo temporaryInfo;
-
   private boolean isSimpleFilter;
+
   public boolean wasLoadedFromLegacyFile = false;
 
-  private Filter() { }
-
+  // We intentionally don't copy the temporary info as it is temporary
+  // We intentionally don't copy 'wasLoadedFromLegacyFile' as the copied filter would not have been loaded from a file
+  @SuppressWarnings("CopyConstructorMissesField")
   public Filter(Filter from) throws FilterException {
     name = from.name;
     color = new Color(from.color.getRGB());
@@ -35,9 +35,6 @@ public class Filter {
     pattern = getPattern(from.pattern.pattern());
     verbosity = from.verbosity;
     isSimpleFilter = from.isSimpleFilter;
-    if (temporaryInfo != null) {
-      temporaryInfo = new ContextInfo(from.temporaryInfo);
-    }
   }
 
   public Filter(String name, String pattern, Color color, LogLevel verbosity) throws FilterException {
@@ -95,8 +92,7 @@ public class Filter {
       int flags = Integer.parseInt(params[2]);
       boolean isCaseSensitive = (flags & Pattern.CASE_INSENSITIVE) == 0;
 
-      Filter filter = new Filter();
-      filter.updateFilter(name, pattern, color, verbosity, isCaseSensitive);
+      Filter filter = new Filter(name, pattern, color, verbosity, isCaseSensitive);
       filter.wasLoadedFromLegacyFile = isLegacy;
       return filter;
     } catch (Exception e) {
@@ -216,18 +212,9 @@ public class Filter {
     private final Map<LogStream, Integer> linesFound;
     private Set<LogStream> allowedStreams;
 
-
-    private ContextInfo(ContextInfo from) {
-      linesFound = new HashMap<>(from.linesFound);
-      if (from.allowedStreams != null) {
-        allowedStreams = new HashSet<>(from.allowedStreams);
-      }
-    }
-
     private ContextInfo() {
       linesFound = new HashMap<>();
     }
-
     public void setAllowedStreams(Set<LogStream> allowedStreams) {
       this.allowedStreams = allowedStreams;
     }
