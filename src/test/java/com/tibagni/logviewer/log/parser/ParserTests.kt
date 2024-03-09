@@ -13,6 +13,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
+import java.nio.charset.StandardCharsets
 
 class ParserTests {
     private lateinit var logParser: LogParser
@@ -78,7 +79,7 @@ class ParserTests {
         `when`(reader.availableLogPaths).thenReturn(logNames)
         `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
 
-        val entries = logParser.parseLogs()
+        val entries = logParser.parseLogs(StandardCharsets.UTF_8)
 
         val progressCaptor = ArgumentCaptor.forClass(Int::class.java)
         val descriptionCaptor = ArgumentCaptor.forClass(String::class.java)
@@ -116,7 +117,7 @@ class ParserTests {
         `when`(reader.availableLogPaths).thenReturn(logNames)
         `when`(reader.get(ArgumentMatchers.any())).thenReturn(testLogLine)
 
-        val parsedLogs = logParser.parseLogs()
+        val parsedLogs = logParser.parseLogs(StandardCharsets.UTF_8)
 
         // The log should still have been parsed. But it should be truncated to the maximum allowed size
         assertEquals(0, logParser.logsSkipped.size)

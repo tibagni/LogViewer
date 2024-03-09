@@ -6,7 +6,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -23,7 +23,7 @@ public class FileLogReader implements LogReader {
   }
 
   @Override
-  public void readLogs() throws LogReaderException {
+  public void readLogs(Charset charset) throws LogReaderException {
     if (isClosed) {
       throw new IllegalStateException("Reader already closed");
     }
@@ -36,7 +36,7 @@ public class FileLogReader implements LogReader {
     try {
       for (File logFile : logFiles) {
         currentFile = logFile;
-        logStrings.put(currentFile.getPath(), readFile(currentFile));
+        logStrings.put(currentFile.getPath(), readFile(currentFile, charset));
       }
 
     } catch (IOException e) {
@@ -44,11 +44,11 @@ public class FileLogReader implements LogReader {
     }
   }
 
-  private String readFile(File file) throws IOException {
+  private String readFile(File file, Charset charset) throws IOException {
     String line;
     StringBuilder builder = new StringBuilder();
 
-    try (BufferedReader reader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(file, charset))) {
       while ((line = reader.readLine()) != null) {
         builder.append(line);
         builder.append(StringUtils.LINE_SEPARATOR);

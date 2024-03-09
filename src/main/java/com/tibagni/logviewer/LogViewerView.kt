@@ -16,6 +16,7 @@ import com.tibagni.logviewer.view.*
 import java.awt.*
 import java.awt.event.*
 import java.io.File
+import java.nio.charset.Charset
 import javax.swing.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
@@ -27,6 +28,7 @@ interface LogViewerView : View {
   fun buildStreamsMenu(): JMenu?
   fun handleOpenLogsMenu()
   fun handleRefreshLogsMenu()
+  fun handleChangeCharsetMenu(charset: Charset)
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
   fun handleGoToTimestampMenu()
@@ -570,6 +572,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   override fun handleRefreshLogsMenu() = presenter.refreshLogs()
+  override fun handleChangeCharsetMenu(charset: Charset) = presenter.refreshLogsWithDifferentCharset(charset)
 
   override fun handleSaveFilteredLogsMenu() {
     val file = mainView.showSaveLogFileChooser()

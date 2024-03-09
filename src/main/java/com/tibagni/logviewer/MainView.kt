@@ -20,6 +20,7 @@ import java.io.File
 import java.io.IOException
 import java.net.URISyntaxException
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import javax.swing.*
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -261,6 +262,11 @@ class MainViewImpl(
     refreshLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)
     refreshLogsItem.addActionListener { logViewerView.handleRefreshLogsMenu() }
     logsMenu.add(refreshLogsItem)
+
+    val changeEncodingMenu = JMenu("Change encoding")
+    configureCharsetsMenu(changeEncodingMenu)
+    logsMenu.add(changeEncodingMenu)
+
     saveFilteredLogs = JMenuItem("Save Filtered Logs")
     saveFilteredLogs?.addActionListener { logViewerView.handleSaveFilteredLogsMenu() }
     logsMenu.add(saveFilteredLogs)
@@ -302,6 +308,27 @@ class MainViewImpl(
     parent.jMenuBar = menuBar
     menuBar.revalidate()
     menuBar.repaint()
+  }
+
+  private fun configureCharsetsMenu(menu: JMenu) {
+    val asciiSubMenuItem = JMenuItem("ASCII")
+    asciiSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.US_ASCII) }
+    val latinSubMenuItem = JMenuItem("ISO-LATIN-1")
+    latinSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.ISO_8859_1) }
+    val utf8SubMenuItem = JMenuItem("UTF-8")
+    utf8SubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_8) }
+    val utf16beSubMenuItem = JMenuItem("UTF-16 Big Endian")
+    utf16beSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16BE) }
+    val utf16leSubMenuItem = JMenuItem("UTF-16 Little Endian")
+    utf16leSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16LE) }
+    val utf16SubMenuItem = JMenuItem("UTF-16")
+    utf16SubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16) }
+    menu.add(asciiSubMenuItem)
+    menu.add(latinSubMenuItem)
+    menu.add(utf8SubMenuItem)
+    menu.add(utf16beSubMenuItem)
+    menu.add(utf16leSubMenuItem)
+    menu.add(utf16SubMenuItem)
   }
 
 

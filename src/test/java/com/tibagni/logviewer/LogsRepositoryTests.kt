@@ -8,6 +8,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 class LogsRepositoryTests {
   private var temporaryFiles: Array<File>? = null
@@ -57,7 +58,7 @@ class LogsRepositoryTests {
   @Test
   fun testOpenSingleLogFile() {
     val temporaryLogFile = createTempLogFiles("log")
-    logsRepository.openLogFiles(temporaryLogFile, mockProgressReporter)
+    logsRepository.openLogFiles(temporaryLogFile, StandardCharsets.UTF_8, mockProgressReporter)
 
     verify(mockProgressReporter, atLeastOnce()).onProgress(anyInt(), anyString())
     verify(mockProgressReporter, never()).failProgress()
@@ -70,7 +71,7 @@ class LogsRepositoryTests {
   fun testOpenMultipleLogFilesOneStream() {
     val temporaryLogFiles = createTempLogFiles("log", "log2")
 
-    logsRepository.openLogFiles(temporaryLogFiles, mockProgressReporter)
+    logsRepository.openLogFiles(temporaryLogFiles, StandardCharsets.UTF_8, mockProgressReporter)
 
     verify(mockProgressReporter, atLeastOnce()).onProgress(anyInt(), anyString())
     verify(mockProgressReporter, never()).failProgress()
@@ -83,7 +84,7 @@ class LogsRepositoryTests {
   fun testOpenMultipleLogFilesMultipleStreams() {
     val temporaryLogFiles = createTempLogFiles("main", "system")
 
-    logsRepository.openLogFiles(temporaryLogFiles, mockProgressReporter)
+    logsRepository.openLogFiles(temporaryLogFiles, StandardCharsets.UTF_8, mockProgressReporter)
 
     verify(mockProgressReporter, atLeastOnce()).onProgress(anyInt(), anyString())
     verify(mockProgressReporter, never()).failProgress()
@@ -96,7 +97,7 @@ class LogsRepositoryTests {
   fun testOpenEmptyLogFiles() {
     val temporaryLogFiles = createTempLogEmptyFiles("main")
 
-    logsRepository.openLogFiles(temporaryLogFiles, mockProgressReporter)
+    logsRepository.openLogFiles(temporaryLogFiles, StandardCharsets.UTF_8, mockProgressReporter)
 
     verify(mockProgressReporter, atLeastOnce()).onProgress(anyInt(), anyString())
     verify(mockProgressReporter, never()).failProgress()
@@ -108,7 +109,7 @@ class LogsRepositoryTests {
   fun testOpenLogFilesInvalidFiles() {
     val temporaryInvalidLogFile = File("invalid")
 
-    logsRepository.openLogFiles(arrayOf(temporaryInvalidLogFile), mockProgressReporter)
+    logsRepository.openLogFiles(arrayOf(temporaryInvalidLogFile), StandardCharsets.UTF_8, mockProgressReporter)
   }
 
   @Test

@@ -17,6 +17,7 @@ import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import java.awt.Color
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 class LogViewerPresenterTests {
   @Mock
@@ -1855,7 +1856,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view, never()).showMyLogs(any())
@@ -1885,7 +1886,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view).showMyLogs(any())
@@ -1909,7 +1910,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view).showAvailableLogStreams(any())
@@ -1934,7 +1935,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
 
     // It should be called twice: first when the logs are loaded and then when filters are applied
     verify(view, times(2)).showFilteredLogs(any())
@@ -1962,7 +1963,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
 
     // It should be called twice: first when the logs are loaded and then when filters are applied
     verify(view, times(2)).showFilteredLogs(any())
@@ -1991,7 +1992,7 @@ class LogViewerPresenterTests {
 
   @Test
   fun testLoadLogsInvalidFile() {
-    `when`(mockLogsRepository.openLogFiles(anyOrNull(), anyOrNull())).thenThrow(
+    `when`(mockLogsRepository.openLogFiles(anyOrNull(), anyOrNull(), anyOrNull())).thenThrow(
       OpenLogsException(
         "test invalid file message",
         Exception()
@@ -2024,7 +2025,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view).showAvailableLogStreams(any())
@@ -2048,7 +2049,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view).showAvailableLogStreams(any())
@@ -2070,7 +2071,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view).showAvailableLogStreams(any())
@@ -2094,7 +2095,7 @@ class LogViewerPresenterTests {
 
     presenter.loadLogs(inputLogFiles)
 
-    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull())
+    verify(mockLogsRepository).openLogFiles(eqOrNull(inputLogFiles), anyOrNull(), anyOrNull())
     verify(view).showFilteredLogs(any())
     verify(view).showLogs(any())
     verify(view).showAvailableLogStreams(any())

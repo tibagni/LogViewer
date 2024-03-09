@@ -1,9 +1,10 @@
 package com.tibagni.logviewer.log;
 
+import java.nio.charset.Charset;
 import java.util.Set;
 
 public interface LogReader {
-  void readLogs() throws LogReaderException;
+  void readLogs(Charset charset) throws LogReaderException;
 
   int size();
 

@@ -5,6 +5,7 @@ import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.List;
 
 public interface LogViewerPresenter {
@@ -30,7 +31,9 @@ public interface LogViewerPresenter {
   void saveFilters(String group);
   void loadFilters(File[] filtersFile, boolean keepCurrentFilters);
   void loadLogs(File[] logFiles);
+  void loadLogs(File[] logFiles, Charset charset);
   void refreshLogs();
+  void refreshLogsWithDifferentCharset(Charset charset);
   void saveFilteredLogs(File file);
   void applyFilters();
   void filterEdited(Filter filter);

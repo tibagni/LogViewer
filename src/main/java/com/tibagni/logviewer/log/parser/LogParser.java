@@ -6,6 +6,8 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,10 +41,14 @@ public class LogParser {
     this.potentialBugReports = new HashMap<>();
   }
 
-  public LogEntry[] parseLogs() throws LogReaderException {
+//  public LogEntry[] parseLogs() throws LogReaderException {
+//    return parseLogs(StandardCharsets.UTF_8);
+//  }
+
+  public LogEntry[] parseLogs(Charset charset) throws LogReaderException {
     ensureState();
 
-    logReader.readLogs();
+    logReader.readLogs(charset);
     Set<String> availableLogs = logReader.getAvailableLogPaths();
 
     int logsRead = 0;

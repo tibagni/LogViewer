@@ -13,6 +13,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -394,12 +396,17 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   @Override
-  public void loadLogs(File[] logFiles) {
+  public void  loadLogs(File[] logFiles) {
+    loadLogs(logFiles, StandardCharsets.UTF_8);
+  }
+
+  @Override
+  public void  loadLogs(File[] logFiles, Charset charset) {
     // Clean up the filters info as it does not apply anymore
     cleanUpFilterTempInfo();
     doAsync(() -> {
       try {
-        logsRepository.openLogFiles(logFiles, this::updateAsyncProgress);
+        logsRepository.openLogFiles(logFiles, charset, this::updateAsyncProgress);
         rebuildLogStreamsMap(logsRepository.getAvailableStreams());
         filteredLogs.clear();
         cachedAllowedFilteredLogs.clear();
@@ -448,6 +455,15 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
       }
     });
+  }
+
+  @Override
+  public void refreshLogsWithDifferentCharset(Charset charset) {
+    if (logsRepository.getCurrentlyOpenedLogFiles().isEmpty()) {
+      view.showErrorMessage("No logs currently open");
+    } else {
+      loadLogs(logsRepository.getCurrentlyOpenedLogFiles().toArray(new File[0]), charset);
+    }
   }
 
   @Override

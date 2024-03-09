@@ -4,6 +4,8 @@ import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.log.parser.LogParser
 import com.tibagni.logviewer.logger.wrapProfiler
 import java.io.File
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.util.*
 
 class OpenLogsException(message: String?, cause: Throwable) : java.lang.Exception(message, cause)
@@ -24,7 +26,7 @@ interface LogsRepository {
   val allLogsSize: Int
 
   @Throws(OpenLogsException::class)
-  fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter)
+  fun openLogFiles(files: Array<File>, charset: Charset, progressReporter: ProgressReporter)
   fun getMatchingLogEntry(entry: LogEntry): LogEntry?
 }
 
@@ -67,10 +69,10 @@ class LogsRepositoryImpl : LogsRepository {
 
 
   @Throws(OpenLogsException::class)
-  override fun openLogFiles(files: Array<File>, progressReporter: ProgressReporter) {
+  override fun openLogFiles(files: Array<File>, charset: Charset, progressReporter: ProgressReporter) {
     try {
       val logParser = LogParser(FileLogReader(files), progressReporter)
-      val parsedLogs = wrapProfiler("ParseLogs") { logParser.parseLogs() }
+      val parsedLogs = wrapProfiler("ParseLogs") { logParser.parseLogs(charset) }
 
       _firstVisibleLogIndex = 0
       _lastVisibleLogIndex = parsedLogs.lastIndex
