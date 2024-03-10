@@ -41,10 +41,6 @@ public class LogParser {
     this.potentialBugReports = new HashMap<>();
   }
 
-//  public LogEntry[] parseLogs() throws LogReaderException {
-//    return parseLogs(StandardCharsets.UTF_8);
-//  }
-
   public LogEntry[] parseLogs(Charset charset) throws LogReaderException {
     ensureState();
 
