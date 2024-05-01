@@ -9,15 +9,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 public class RuntimeConfiguration {
     private static final Path RC_FILE_PATH = Paths.get(System.getProperty("user.home"), ".logviewer");
     private static RuntimeConfiguration instance;
 
-    private HashMap<String, Config> runtimeConfigs = new HashMap<>();
+    private final HashMap<String, Config<?>> runtimeConfigs = new HashMap<>();
 
     public static final String UI_SCALE = "uiscale";
     public static final String LOG_LEVEL = "loglevel";
+    public static final String CRASH_REPORT = "crashreport";
 
     @NotNull
     static RuntimeConfiguration initializeForTest() {
@@ -35,14 +37,14 @@ public class RuntimeConfiguration {
 
     public static <T> T getConfig(String configName, Class<T> type) {
         if (instance.runtimeConfigs.containsKey(configName)) {
-            return (T) instance.runtimeConfigs.get(configName);
+            Object config = instance.runtimeConfigs.get(configName);
+            if (type.isInstance(config)) {
+                //noinspection unchecked
+                return (T) config;
+            }
         }
 
         return null;
-    }
-
-    public static Config getConfig(String configName) {
-        return getConfig(configName, Config.class);
     }
 
     // For test only
@@ -54,10 +56,8 @@ public class RuntimeConfiguration {
             return;
         }
 
-        try {
-            Files.lines(rcFilePath)
-                    .filter(StringUtils::isNotEmpty)
-                    .forEach(this::parseConfig);
+        try (Stream<String> lines = Files.lines(rcFilePath)) {
+            lines.filter(StringUtils::isNotEmpty).forEach(this::parseConfig);
         } catch (IOException e) {
             Logger.error("Could not read rc file", e);
         }
@@ -74,13 +74,16 @@ public class RuntimeConfiguration {
 
         String configName = configParts[0].toLowerCase();
         String configValue = configParts[1].toLowerCase();
-        Config config = null;
+        Config<?> config = null;
         switch (configName) {
             case UI_SCALE:
                 config = new UIScaleConfig(configValue);
                 break;
             case LOG_LEVEL:
                 config = new LogLevelConfig(configValue);
+                break;
+            case CRASH_REPORT:
+                config = new CrashReportConfig(configValue);
                 break;
             default:
                 Logger.error("Invalid config: " + configName);

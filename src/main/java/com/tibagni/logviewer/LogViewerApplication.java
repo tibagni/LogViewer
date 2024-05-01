@@ -3,6 +3,7 @@ package com.tibagni.logviewer;
 import com.formdev.flatlaf.util.UIScale;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.rc.CrashReportConfig;
 import com.tibagni.logviewer.rc.LogLevelConfig;
 import com.tibagni.logviewer.rc.RuntimeConfiguration;
 import com.tibagni.logviewer.rc.UIScaleConfig;
@@ -10,12 +11,15 @@ import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.updates.ReleaseInfo;
 import com.tibagni.logviewer.updates.UpdateAvailableDialog;
 import com.tibagni.logviewer.updates.UpdateManager;
+import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.io.File;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +34,13 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     UIScaleUtils.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig.class));
     Logger.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig.class));
 
+    CrashReportConfig crashReportConfig = RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT,
+        CrashReportConfig.class);
+    if (crashReportConfig != null && crashReportConfig.getConfigValue()) {
+      Logger.info("Enabling crash report...");
+      configureUncaughtExceptionHandler();
+    }
+
     Set<File> initialLogFiles = Arrays
             .stream(args)
             .map(File::new)
@@ -38,6 +49,18 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
     LogViewerApplication application = new LogViewerApplication();
     application.start(initialLogFiles);
+  }
+
+  private static void configureUncaughtExceptionHandler() {
+    Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+      String fileName = "CRASH-logviewer_" + CommonUtils.calculateStackTraceHash(e) + ".txt";
+      Path filePath = Paths.get(System.getProperty("user.home"), fileName);
+      try (PrintWriter pw = new PrintWriter(new FileWriter(filePath.toFile()))) {
+        e.printStackTrace(pw);
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    });
   }
 
   private void start(Set<File> initialLogFiles) {

@@ -17,31 +17,45 @@ class RuntimeConfigurationTests {
     fun testUiScaleConfig() {
         testRcConfig.parseConfig("uiscale=2")
 
-        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
+        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
     }
 
     @Test
     fun testLogLevelConfig() {
         testRcConfig.parseConfig("loglevel=v")
 
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
-        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
+    }
+
+    @Test
+    fun testCrashReportConfig() {
+        testRcConfig.parseConfig("crashreport=on")
+
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
     }
 
     @Test
     fun testAllConfig() {
         testRcConfig.parseConfig("loglevel=verbose")
         testRcConfig.parseConfig("uiscale=5")
+        testRcConfig.parseConfig("crashreport=ON")
 
-        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
-        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
+        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNotNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
     }
 
     @Test
     fun testNoConfig() {
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
     }
 
     @Test
@@ -49,8 +63,9 @@ class RuntimeConfigurationTests {
         testRcConfig.parseConfig("invalidkey=dddddd")
         testRcConfig.parseConfig("nonexistentconfig=eeee")
 
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
     }
 
     @Test
@@ -60,7 +75,8 @@ class RuntimeConfigurationTests {
         testRcConfig.parseConfig("")
         testRcConfig.parseConfig(" ")
 
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE))
-        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig::class.java))
+        assertNull(RuntimeConfiguration.getConfig(RuntimeConfiguration.CRASH_REPORT, CrashReportConfig::class.java))
     }
 }
