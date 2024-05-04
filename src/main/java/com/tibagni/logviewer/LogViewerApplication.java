@@ -20,7 +20,9 @@ import javax.swing.*;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,8 +57,13 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
       String fileName = "CRASH-logviewer_" + CommonUtils.calculateStackTraceHash(e) + ".txt";
       Path filePath = Paths.get(System.getProperty("user.home"), fileName);
+      SimpleDateFormat formatter = new SimpleDateFormat("dd-MM HH:mm:ss.SSS");
       try (PrintWriter pw = new PrintWriter(new FileWriter(filePath.toFile()))) {
+        pw.println("Exception happened on thread " + t.getId() + " (" + t.getName() + ") at "
+            + formatter.format(new Date()));
         e.printStackTrace(pw);
+        pw.println("\n---------------- Previous logs before the exception:");
+        Logger.dump(pw);
       } catch (IOException ex) {
         ex.printStackTrace();
       }

@@ -10,7 +10,7 @@ public class LogLevelConfig implements Config<LogLevelConfig.Level> {
         WARNING,
         ERROR
     }
-    public static final Level DEFAULT_LEVEL = Level.DEBUG;
+    public static final Level DEFAULT_LEVEL = Level.WARNING;
     private final Level levelConfig;
 
     public LogLevelConfig(String value) {
