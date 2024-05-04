@@ -50,7 +50,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
             .collect(Collectors.toSet());
 
     LogViewerApplication application = new LogViewerApplication();
-    application.start(initialLogFiles);
+    SwingUtilities.invokeLater(() -> application.start(initialLogFiles));
   }
 
   private static void configureUncaughtExceptionHandler() {
