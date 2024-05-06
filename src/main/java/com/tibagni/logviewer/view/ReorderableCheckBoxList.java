@@ -60,6 +60,10 @@ public class ReorderableCheckBoxList<E> extends CheckBoxList<E> implements DragG
         return false;
       }
 
+      if (!support.isDrop()) {
+        return false;
+      }
+
       JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
       return dl.getIndex() != -1;
     }
