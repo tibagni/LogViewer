@@ -85,9 +85,6 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void initFiltersPathPreference() {
-    filterFolderChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
-    filterFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
     filtersPathBtn.addActionListener(e -> onSelectFilterPath());
     filtersPathTxt.setText(userPrefs.getDefaultFiltersPath().getAbsolutePath());
 
@@ -108,9 +105,6 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void initLogsPathPreference() {
-    logsFolderChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
-    logsFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
     logsPathBtn.addActionListener(e -> onSelectLogsPath());
     logsPathTxt.setText(userPrefs.getDefaultLogsPath().getAbsolutePath());
   }
@@ -130,8 +124,6 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void initPreferredEditorPathPreference() {
-    preferredEditorFileChooser = new JFileChooserExt(userPrefs.getPreferredTextEditor());
-
     preferredEditorPathBtn.addActionListener(e -> onSelectPreferredEditorPath());
     File editorFile = userPrefs.getPreferredTextEditor();
     String path = editorFile != null ? editorFile.getAbsolutePath() : null;
@@ -150,6 +142,11 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void onSelectFilterPath() {
+    if (filterFolderChooser == null) {
+      filterFolderChooser = new JFileChooserExt(userPrefs.getDefaultFiltersPath());
+      filterFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    }
+
     int selectedOption = filterFolderChooser.showOpenDialog(this);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
       File selectedFolder = filterFolderChooser.getSelectedFile();
@@ -160,6 +157,11 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void onSelectLogsPath() {
+    if (logsFolderChooser == null) {
+      logsFolderChooser = new JFileChooserExt(userPrefs.getDefaultLogsPath());
+      logsFolderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    }
+
     int selectedOption = logsFolderChooser.showOpenDialog(this);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
       File selectedFolder = logsFolderChooser.getSelectedFile();
@@ -195,6 +197,10 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   }
 
   private void onSelectPreferredEditorPath() {
+    if (preferredEditorFileChooser == null) {
+      preferredEditorFileChooser = new JFileChooserExt(userPrefs.getPreferredTextEditor());
+    }
+
     int selectedOption = preferredEditorFileChooser.showOpenDialog(this);
     if (selectedOption == JFileChooser.APPROVE_OPTION) {
       File selectedFolder = preferredEditorFileChooser.getSelectedFile();
