@@ -67,6 +67,11 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
       } catch (IOException ex) {
         ex.printStackTrace();
       }
+
+      if (e instanceof Error || e instanceof RuntimeException) {
+        // The exception would likely kill the application, so do it
+        System.exit(1);
+      }
     });
   }
 
