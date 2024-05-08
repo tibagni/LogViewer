@@ -26,7 +26,7 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
     container.add(buildSubsListsPanel())
     container.add(JSeparator())
     container.add(JPanel(FlowLayout(FlowLayout.LEFT)).also {
-      val logsTitle = JLabel("Loading logs")
+      val logsTitle = JLabel("Dump of service")
       logsTitle.font = Font(Font.DIALOG, Font.BOLD, logsTitle.font.size)
       it.add(logsTitle)
     })
@@ -70,7 +70,7 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
   private fun buildSubsListsPanel(): Component {
     val container = JPanel()
     container.layout = BoxLayout(container, BoxLayout.Y_AXIS)
-    val headers = arrayOf("Sub Id", "Carrier Id", "MCC", "MNC", "Display Name", "Carrier Name", "Name Source")
+    val headers = arrayOf("Sub Id", "Carrier Id", "Number", "Number from IMS", "Number from carrier", "MCC", "MNC", "Display Name", "Carrier Name", "Name Source")
 
     val activeSubList = JTable()
     activeSubList.model = PropTableModel(getDataFromSubList(section.activeSubscriptions), headers)
@@ -123,11 +123,14 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
       arrayOf(
         it.id.toString(),
         it.carrierId.toString(),
+        it.number,
+        it.imsNumber,
+        it.carrierNumber,
         it.mcc.toString(),
         it.mnc.toString(),
         it.displayName,
         it.carrierName,
-        it.nameSource.toString())
+        it.nameSource)
     }.toTypedArray()
   }
 

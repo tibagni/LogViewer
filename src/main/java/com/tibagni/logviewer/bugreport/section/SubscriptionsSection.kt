@@ -12,8 +12,11 @@ data class SubscriptionInfo(
   val mcc: Int,
   val mnc: Int,
   val carrierId: Int,
+  val number: String,
+  val imsNumber: String,
+  val carrierNumber: String,
   val displayName: String,
   val carrierName: String,
-  val nameSource: Int,
+  val nameSource: String,
   val fullText: String
 )
