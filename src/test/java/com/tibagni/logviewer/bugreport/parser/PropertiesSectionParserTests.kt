@@ -1,12 +1,12 @@
 package com.tibagni.logviewer.bugreport.parser
 
-import com.tibagni.logviewer.bugreport.section.PropertiesSection
+import com.tibagni.logviewer.bugreport.section.BugreportInfoSection
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
 class PropertiesSectionParserTests {
-  private lateinit var propertiesSectionParser: PropertiesSectionParser
+  private lateinit var propertiesSectionParser: BugreportInfoSectionParser
 
   companion object {
     const val PROPERTIES = "========================================================\n" +
@@ -22,12 +22,12 @@ class PropertiesSectionParserTests {
 
   @Before
   fun setUp() {
-    propertiesSectionParser = PropertiesSectionParser()
+    propertiesSectionParser = BugreportInfoSectionParser()
   }
 
   @Test
   fun testParseProperties() {
-    val section = propertiesSectionParser.parse("", PROPERTIES) as PropertiesSection
+    val section = propertiesSectionParser.parse("", PROPERTIES) as BugreportInfoSection
 
     assertEquals("blabla-userdebug 11 AAA11.111 57ca8 test-keys", section.build)
     assertEquals("'bla/blabla/bla:11/AAA11.111/57ca8:userdebug/intcfg,test-keys'", section.fingerprint)
@@ -38,7 +38,7 @@ class PropertiesSectionParserTests {
 
   @Test
   fun testParsePropertiesMissingData() {
-    val section = propertiesSectionParser.parse("", "INVALID") as PropertiesSection
+    val section = propertiesSectionParser.parse("", "INVALID") as BugreportInfoSection
 
     assertEquals("Not Found", section.build)
     assertEquals("Not Found", section.fingerprint)

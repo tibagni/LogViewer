@@ -1,13 +1,13 @@
 package com.tibagni.logviewer.bugreport.section.ui
 
-import com.tibagni.logviewer.bugreport.section.PropertiesSection
+import com.tibagni.logviewer.bugreport.section.BugreportInfoSection
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.view.maxWidthOfColumn
 import java.awt.GridBagConstraints
 import javax.swing.JScrollPane
 import javax.swing.JTable
 
-class PropertiesSectionPanel(private val section: PropertiesSection) : SectionPanel(section.sectionName) {
+class BugreportInfoSectionPanel(private val section: BugreportInfoSection) : SectionPanel(section.sectionName) {
   init {
     buildUi()
   }

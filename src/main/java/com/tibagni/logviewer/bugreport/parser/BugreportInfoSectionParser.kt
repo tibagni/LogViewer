@@ -1,9 +1,9 @@
 package com.tibagni.logviewer.bugreport.parser
 
 import com.tibagni.logviewer.bugreport.section.BugReportSection
-import com.tibagni.logviewer.bugreport.section.PropertiesSection
+import com.tibagni.logviewer.bugreport.section.BugreportInfoSection
 
-class PropertiesSectionParser : BugReportSectionParser {
+class BugreportInfoSectionParser : BugReportSectionParser {
   override val name = "BugreportInfo"
   companion object {
     private const val NOT_FOUND = "Not Found"
@@ -16,7 +16,7 @@ class PropertiesSectionParser : BugReportSectionParser {
     val kernel = parseBRProperty(bugReportText, "Kernel: ")
     val uptime = parseBRProperty(bugReportText, "Uptime: ")
 
-    return PropertiesSection(build, buildFingerprint, bootloader, kernel, uptime)
+    return BugreportInfoSection(build, buildFingerprint, bootloader, kernel, uptime)
   }
 
   private fun parseBRProperty(text: String, prefix: String): String {
