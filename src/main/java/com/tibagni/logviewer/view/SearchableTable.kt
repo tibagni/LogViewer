@@ -3,6 +3,7 @@ package com.tibagni.logviewer.view
 import com.jgoodies.forms.builder.PanelBuilder
 import com.jgoodies.forms.factories.CC
 import com.jgoodies.forms.layout.FormLayout
+import com.tibagni.logviewer.LogViewerPresenter
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
@@ -16,7 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.apache.commons.lang3.time.StopWatch
-import java.awt.*
+import java.awt.Color
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
@@ -28,12 +31,15 @@ import javax.swing.table.TableModel
 
 class SearchableTable @JvmOverloads constructor(
   private val scope: CoroutineScope,
+  private val presenter: LogViewerPresenter,
+  private val showFilterPidPanel: Boolean = false,
   dm: TableModel? = null,
   cm: TableColumnModel? = null,
   sm: ListSelectionModel? = null
 ) : JPanel() {
 
   private val searchOptionPanel = JPanel()
+  private val filterOptionPanel = JPanel()
   private val searchText = HintTextField("Search")
   private val clearSearchText = JButton("Clear")
   private val searchLast = JButton(StringUtils.UP_ARROW_HEAD_BIG)
@@ -41,6 +47,10 @@ class SearchableTable @JvmOverloads constructor(
   private val searchResult = JLabel()
   private val matchCaseOption = JCheckBox("Match Case")
   private val close = FlatButton(StringUtils.DELETE)
+
+  private val filterText = HintTextField("filter pid, use '/' to include multi pid")
+  private val confirmFilterText = JButton("Filter")
+  private val clearFilterText = JButton("Clear")
 
   val table = JTable(dm, cm, sm)
 
@@ -52,6 +62,7 @@ class SearchableTable @JvmOverloads constructor(
   init {
     buildUi()
     searchOptionPanel.isVisible = false
+    filterOptionPanel.isVisible = false
 
     searchLast.addActionListener {
       searchInDirection(false)
@@ -66,6 +77,7 @@ class SearchableTable @JvmOverloads constructor(
     }
 
     clearSearchText.addActionListener { searchText.text = "" }
+    clearFilterText.addActionListener { cancelFilter() }
 
     table.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
@@ -85,6 +97,17 @@ class SearchableTable @JvmOverloads constructor(
         }
       }
     })
+
+    filterText.addKeyListener(object : KeyAdapter() {
+      override fun keyPressed(e: KeyEvent) {
+        if (e.keyCode == KeyEvent.VK_ESCAPE) {
+          hideSearch()
+        } else if (e.keyCode == KeyEvent.VK_ENTER) {
+          confirmFilter()
+        }
+      }
+    })
+    confirmFilterText.addActionListener { confirmFilter() }
 
     close.addActionListener { hideSearch() }
     close.toolTipText = "Hide search bar"
@@ -108,6 +131,20 @@ class SearchableTable @JvmOverloads constructor(
     performSearchState
       .onEach { searchContent() }
       .launchIn(scope)
+  }
+
+  private fun confirmFilter() {
+    val pids = filterText.text.splitToSequence('/')
+      .mapNotNull { it.toIntOrNull() }
+      .toSet()
+      .toIntArray()
+    Logger.debug("confirmFilter ${pids.contentToString()}")
+    presenter.filterPid(*pids)
+  }
+
+  private fun cancelFilter() {
+    filterText.text = ""
+    presenter.filterPid()
   }
 
   private fun searchInDirection(searchDown: Boolean) {
@@ -209,6 +246,9 @@ class SearchableTable @JvmOverloads constructor(
     }
 
     searchOptionPanel.isVisible = true
+    if (showFilterPidPanel) {
+      filterOptionPanel.isVisible = true
+    }
     searchText.requestFocus()
     revalidate()
   }
@@ -217,6 +257,8 @@ class SearchableTable @JvmOverloads constructor(
     if (!searchOptionPanel.isVisible) return
 
     searchOptionPanel.isVisible = false
+    filterOptionPanel.isVisible = false
+    cancelFilter()
     searchText.text = ""
     matchCaseOption.isSelected = false
     table.requestFocus()
@@ -250,11 +292,26 @@ class SearchableTable @JvmOverloads constructor(
         .build()
     )
 
+    val filterBuilder = PanelBuilder(layout, filterOptionPanel)
+    filterBuilder.add(filterText, CC.xy(1, 1))
+    filterBuilder.add(confirmFilterText, CC.xy(2, 1))
+    filterBuilder.add(clearFilterText, CC.xy(3, 1))
+
+    add(
+      filterOptionPanel,
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(2)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.HORIZONTAL)
+        .build()
+    )
+
     add(
       JScrollPane(table),
       GBConstraintsBuilder()
         .withGridx(0)
-        .withGridy(2)
+        .withGridy(3)
         .withWeightx(2.0)
         .withWeighty(1.0)
         .withFill(GridBagConstraints.BOTH)

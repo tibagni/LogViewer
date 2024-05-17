@@ -95,7 +95,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private val mainScope: CoroutineScope = MainScope()
 
   init {
-    buildUi()
     val userPrefs = ServiceLocator.logViewerPrefs
 
     presenter = LogViewerPresenterImpl(
@@ -104,6 +103,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       ServiceLocator.logsRepository,
       ServiceLocator.filtersRepository
     )
+    buildUi()
     presenter.init()
 
     logRenderer = LogCellRenderer()
@@ -867,15 +867,16 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logsPane.resizeWeight = 0.6
 
     logListTableModel = LogListTableModel("All Logs")
-    logList = SearchableTable(mainScope, logListTableModel)
+    logList = SearchableTable(mainScope, presenter, dm = logListTableModel)
     logsPane.leftComponent = logList // Left or above (above in this case)
 
     filteredLogListTableModel = LogListTableModel("Filtered Logs")
-    filteredLogList = SearchableTable(mainScope, filteredLogListTableModel)
+    filteredLogList = SearchableTable(mainScope, presenter, showFilterPidPanel = true,
+      dm = filteredLogListTableModel)
     logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
     pickedLogListTableModel = LogListTableModel("Picked Logs")
-    pickedLogList = SearchableTable(mainScope, pickedLogListTableModel)
+    pickedLogList = SearchableTable(mainScope, presenter, dm = pickedLogListTableModel)
 
     pickedLogList.add(JButton("Clear Picked Logs").also { clearPickedLogButton = it },
       GBConstraintsBuilder()

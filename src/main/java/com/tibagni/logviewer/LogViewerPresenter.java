@@ -46,6 +46,8 @@ public interface LogViewerPresenter {
   void resetIgnoredLogs(boolean resetStarting, boolean resetEnding);
   int getVisibleLogsOffset();
 
+  void filterPid(int... pid);
+
   LogEntry getFirstVisibleLog();
   LogEntry getLastVisibleLog();
 

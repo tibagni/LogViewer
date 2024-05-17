@@ -12,7 +12,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -27,6 +30,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
   private final List<String> unsavedFilterGroups;
   private final Map<LogStream, Boolean> allowedStreamsMap;
+  private final Set<Integer> allowedPids;
   private final LogViewerPreferences userPrefs;
 
   private final LogsRepository logsRepository;
@@ -46,6 +50,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     cachedAllowedFilteredLogs = new ArrayList<>();
     filteredLogs = new ArrayList<>();
     allowedStreamsMap = new HashMap<>();
+    allowedPids = new HashSet<>();
   }
 
   @Override
@@ -625,6 +630,17 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   @Override
+  public void filterPid(int... pid) {
+    allowedPids.clear();
+    for (int p : pid) {
+      allowedPids.add(p);
+    }
+    cachedAllowedFilteredLogs.clear();
+    cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
+    view.showFilteredLogs(cachedAllowedFilteredLogs);
+  }
+
+  @Override
   public LogEntry getFirstVisibleLog() {
     int index = logsRepository.getFirstVisibleLogIndex();
     if (index <= 0) {
@@ -666,12 +682,17 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     for (LogEntry entry : entries) {
-      if (allowedStreams.contains(entry.getStream())) {
+      if (allowedStreams.contains(entry.getStream()) && allowedPid(entry.getPid())) {
         result.add(entry);
       }
     }
 
     return result;
+  }
+
+  private boolean allowedPid(int pid) {
+    if (allowedPids.isEmpty() || pid == -1) return true;
+    return allowedPids.contains(pid);
   }
 
   @Override

@@ -8,7 +8,10 @@ import com.tibagni.logviewer.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -27,6 +30,10 @@ public class LogParser {
   private static final Pattern LOG_LEVEL_PATTERN =
       Pattern.compile("^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}.*?([VDIWE])");
   private static final String LOG_START_PATTERN = "^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.*";
+  // 05-11 06:16:13.880  1424  1424 I tag: xxxxxxx
+  // ${timestamp}  ${pid}  ${tid} ${log level} ${tag}: ${content}
+  private static final Pattern LOG_PID_PATTERN =
+      Pattern.compile("^\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{1,2}:\\d{1,2}.\\d{3,}\\s+(\\d+)\\s+(\\d+)\\s([VDIWE])");
   private static final Pattern LOG_TIMESTAMP_PATTERN =
       Pattern.compile("^(\\d{1,2})-(\\d{1,2})\\s(\\d{1,2}):(\\d{1,2}):(\\d{1,2}).(\\d{3,})");
   // read max line to check if the reading file is a bugreport file
@@ -316,7 +323,7 @@ public class LogParser {
   }
 
   private LogEntry createLogEntry(String logLine, String logName) {
-    return new LogEntry(logLine, findLogLevel(logLine), findTimestamp(logLine), logName);
+    return new LogEntry(logLine, findPid(logLine), findLogLevel(logLine), findTimestamp(logLine), logName);
   }
 
   LogLevel findLogLevel(String logLine) {
@@ -350,6 +357,20 @@ public class LogParser {
     }
 
     return timestamp;
+  }
+
+  int findPid(String logLine) {
+    int pid = -1;
+    Matcher matcher = LOG_PID_PATTERN.matcher(logLine);
+
+    if (matcher.find()) {
+      try {
+        pid = Integer.parseInt(matcher.group(1));
+      } catch (NumberFormatException e) {
+        Logger.error("Failed to parse pid for: " + logLine, e);
+      }
+    }
+    return pid;
   }
 
   private boolean isLogLine(String line) {

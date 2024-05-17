@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 public class LogEntry implements Comparable<LogEntry> {
 
   private int index;
+  public final int pid;
   public final LogTimestamp timestamp;
   public final String logText;
   public final LogLevel logLevel;
@@ -21,7 +22,12 @@ public class LogEntry implements Comparable<LogEntry> {
   }
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, String logName) {
+    this(logText, -1, logLevel, timestamp, logName);
+  }
+
+  public LogEntry(String logText, int pid, LogLevel logLevel, LogTimestamp timestamp, String logName) {
     this.logText = logText;
+    this.pid = pid;
     this.logLevel = logLevel;
     this.timestamp = timestamp;
     this.logStream = LogStream.inferLogStreamFromName(logName);
@@ -67,6 +73,10 @@ public class LogEntry implements Comparable<LogEntry> {
   public LogEntry setSearchFilter(@Nullable Filter searchFilter) {
     this.searchFilter = searchFilter;
     return this;
+  }
+
+  public int getPid() {
+    return pid;
   }
 
   @Override
