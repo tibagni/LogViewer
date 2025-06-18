@@ -8,4 +8,4 @@ pycodestyle==2.6.0
 requests==2.32.2
 smmap==3.0.4
 toml==0.10.1
-urllib3==1.26.19
+urllib3==2.5.0
