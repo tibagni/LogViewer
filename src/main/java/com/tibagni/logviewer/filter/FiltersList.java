@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.CommonUtils;
 import com.tibagni.logviewer.util.StringUtils;
@@ -26,6 +27,7 @@ public class FiltersList extends JPanel {
   private Map<String, Filter[]> filters;
   private Map<String, FilterUIGroup> filterUIGroups;
   private final LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
+  private final LogViewerPreferences userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
 
   public FiltersList(LayoutManager layout, boolean isDoubleBuffered) {
     super(layout, isDoubleBuffered);
@@ -478,7 +480,8 @@ public class FiltersList extends JPanel {
       list.setReorderedListener(this::reorderFilters);
       list.setItemsCheckListener((CheckBoxList.ItemsCheckListener<Filter>) elements -> {
         elements.forEach(f -> f.setApplied(!f.isApplied()));
-        if (listener != null) {
+        // If the user has the preference to apply the filter on check, we notify the listener
+        if (userPrefs.getApplyFilterOnCheck() && listener != null) {
           listener.onFiltersApplied();
         }
         updateActionPaneButtons();

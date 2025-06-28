@@ -449,4 +449,43 @@ class LogViewerPreferencesImplTests {
         verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.PREFERRED_TEXT_EDITOR, "")
         verify(mockListener, only()).onPreferredTextEditorChanged()
     }
+
+    /**
+     * Tests the applyFilterOnCheck setting
+     * This setting is used to determine if the filters should be applied when the user checks a filter checkbox
+     */
+    @Test
+    fun testSettingApplyFilterOnCheck() {
+        LogViewerPreferencesImpl.applyFilterOnCheck = true
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.REAPPLY_FILTERS_ON_CHANGE, true)
+        verify(mockListener, only()).onApplyFiltersOnCheckChanged()
+    }
+
+    /**
+     * Tests the applyFilterOnCheck setting
+     * This setting is used to determine if the filters should be applied when the user unchecks a filter checkbox
+     */
+    @Test
+    fun testSettingApplyFilterOnCheck2() {
+        LogViewerPreferencesImpl.applyFilterOnCheck = false
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.REAPPLY_FILTERS_ON_CHANGE, false)
+        verify(mockListener, only()).onApplyFiltersOnCheckChanged()
+    }
+
+    /**
+     * Tests the applyFilterOnCheck setting
+     * This setting is used to determine if the filters should be applied when the user checks and unchecks a filter checkbox
+     */
+    @Test
+    fun testGettingApplyFilterOnCheck() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.REAPPLY_FILTERS_ON_CHANGE), anyBoolean())).thenReturn(true)
+        val returnedVal = LogViewerPreferencesImpl.applyFilterOnCheck
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.REAPPLY_FILTERS_ON_CHANGE, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.REAPPLY_FILTERS_ON_CHANGE, true)
+        verify(mockListener, never()).onApplyFiltersOnCheckChanged()
+        assertEquals(true, returnedVal)
+    }
 }
