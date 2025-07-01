@@ -28,6 +28,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private static final String PREFERRED_TEXT_EDITOR_ID = "preferred_text_editor";
   private static final String COLLAPSE_ALL_GROUPS_STARTUP_ID = "collapse_all_groups_startup";
   private static final String SHOW_LINE_NUMBERS_ID = "show_line_numbers";
+  private static final String APPLY_FILTER_CHECK_ID = "apply_filter_check";
 
   private ButtonsPane buttonsPane;
   private JPanel contentPane;
@@ -43,6 +44,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JCheckBox showLineNumbersChbx;
   private JTextField preferredEditorPathTxt;
   private JButton preferredEditorPathBtn;
+  private JCheckBox applyFiltersOnCheckChbx;
 
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
@@ -102,6 +104,9 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
 
     showLineNumbersChbx.addActionListener(e -> onShowLineNumbersChanged());
     showLineNumbersChbx.setSelected(userPrefs.getShowLineNumbers());
+
+    applyFiltersOnCheckChbx.addActionListener(e -> onApplyFiltersOnCheckChanged());
+    applyFiltersOnCheckChbx.setSelected(userPrefs.getApplyFilterOnCheck());
   }
 
   private void initLogsPathPreference() {
@@ -218,6 +223,14 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     dialog.setVisible(true);
   }
 
+  /**
+   * This method is called when the "Apply filters on check" checkbox is toggled.
+   */
+  private void onApplyFiltersOnCheckChanged() {
+    boolean isChecked = applyFiltersOnCheckChbx.getModel().isSelected();
+    saveActions.put(APPLY_FILTER_CHECK_ID, () -> userPrefs.setApplyFilterOnCheck(isChecked));
+  }
+
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
@@ -251,7 +264,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -326,18 +339,25 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     showLineNumbersChbx.setText("");
     formPane.add(showLineNumbersChbx, cc.xy(3, 21));
 
+    final JLabel applyFiltersOnChangeLbl = new JLabel();
+    applyFiltersOnChangeLbl.setText("Apply filters on check");
+    formPane.add(applyFiltersOnChangeLbl, cc.xy(1, 23));
+    applyFiltersOnCheckChbx = new JCheckBox();
+    applyFiltersOnCheckChbx.setText("");
+    formPane.add(applyFiltersOnCheckChbx, cc.xy(3, 23));
+
     final JSeparator sep4 = new JSeparator();
-    formPane.add(sep4, cc.xyw(1, 22, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep4, cc.xyw(1, 24, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel preferredEditorLbl = new JLabel();
     preferredEditorLbl.setText("Preferred text Editor");
-    formPane.add(preferredEditorLbl, cc.xy(1, 23));
+    formPane.add(preferredEditorLbl, cc.xy(1, 25));
     preferredEditorPathTxt = new JTextField();
     preferredEditorPathTxt.setEditable(false);
-    formPane.add(preferredEditorPathTxt, cc.xy(3, 23, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(preferredEditorPathTxt, cc.xy(3, 25, CellConstraints.FILL, CellConstraints.DEFAULT));
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
-    formPane.add(preferredEditorPathBtn, cc.xy(5, 23));
+    formPane.add(preferredEditorPathBtn, cc.xy(5, 25));
 
     return formPane;
   }

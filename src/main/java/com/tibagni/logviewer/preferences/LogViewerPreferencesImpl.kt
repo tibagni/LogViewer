@@ -18,6 +18,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val PREFERRED_TEXT_EDITOR = "preferred_text_editor"
     /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
+    /*Visible for Testing*/ const val REAPPLY_FILTERS_ON_CHANGE = "reapply_filters_on_change"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -112,6 +113,16 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(show) {
             preferences.putBoolean(SHOW_LINE_NUMBERS, show)
             listeners.forEach { l -> l.onShowLineNumbersChanged() }
+        }
+
+    /**
+     * If true, the filters will be re-applied every time when a checkbox is checked or unchecked.
+     */
+    override var applyFilterOnCheck: Boolean
+        get() = preferences.getBoolean(REAPPLY_FILTERS_ON_CHANGE, true)
+        set(reApply) {
+            preferences.putBoolean(REAPPLY_FILTERS_ON_CHANGE, reApply)
+            listeners.forEach { l -> l.onApplyFiltersOnCheckChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

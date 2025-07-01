@@ -116,6 +116,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var currentLogsLbl: JLabel
   private lateinit var filtersPane: FiltersList
   private lateinit var sidePanel: SidePanel
+  private lateinit var applyFiltersBtn: JButton
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
@@ -152,6 +153,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     myLogsRenderer = LogCellRenderer()
     myLogsRenderer.showLineNumbers(userPrefs.showLineNumbers)
 
+    // Listen to user preferences changes
     userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
       override fun onShowLineNumbersChanged() {
         logRenderer.showLineNumbers(userPrefs.showLineNumbers)
@@ -163,6 +165,14 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         myLogsList.table.revalidate()
         myLogsList.table.repaint()
       }
+
+      /*
+       * This is called when the user changes the "Apply filters on check change" preference.
+       */
+      override fun onApplyFiltersOnCheckChanged() {
+        // if the user has the preference to not apply the filter on check, we add the apply button
+        applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
+      }
     })
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
@@ -173,6 +183,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
     })
     collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
+    applyFiltersBtn.addActionListener { applyFilters() }
+
     setupFiltersContextActions()
 
     logList.table.setDefaultRenderer(LogEntry::class.java, logRenderer)
@@ -197,6 +209,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
 
     updateCollapseExpandButtonState()
+
+    // if the user has the preference to not apply the filter on check, we add the apply button
+    applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
   }
 
   private fun showFilterOptionsMenu(e: MouseEvent) {
@@ -261,6 +276,22 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     if (newFilter != null) {
       presenter.addFilter(group, newFilter)
     }
+  }
+
+  /**
+   * Applies the filter changes currently done by the user in the filters pane.
+   */
+  private fun applyFilters() {
+    if (filtersPane.isEmpty) {
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        "There are no filters to apply",
+        "No filters",
+        JOptionPane.INFORMATION_MESSAGE
+      )
+      return
+    }
+    presenter.applyFilters()
   }
 
   private fun setupFiltersContextActions() {
@@ -956,7 +987,12 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     moreFilterOptionsBtn = JButton()
     moreFilterOptionsBtn.toolTipText = "More options"
     moreFilterOptionsBtn.text = StringUtils.THREE_LINES
+    applyFiltersBtn = JButton()
+    applyFiltersBtn.actionCommand = "Apply"
+    applyFiltersBtn.text = "Apply"
+    applyFiltersBtn.toolTipText = "Apply all selected filters"
 
+    filterActionButtonsPane.add(applyFiltersBtn)
     filterActionButtonsPane.add(addNewFilterGroupBtn)
     filterActionButtonsPane.add(moreFilterOptionsBtn)
 
