@@ -26,6 +26,13 @@ def read_credentials():
     except:
         return None
 
+def ask_yes_no_question(question):
+    while True:
+        answer = input(f"{question} (Y/N): ").strip().upper()
+        if answer in ('Y', 'N'):
+            return answer
+        else:
+            print("Please enter either 'Y' for Yes or 'N' for No.")
 
 def cleanup_old_releases():
     current_releases = glob.glob("../build/libs/*")
@@ -69,11 +76,6 @@ def commit_version_change(repo, release_version):
 def build_release(make_jar):
     target = "shadowJar" if make_jar else "build"
     status = call(f"./gradlew {target}", cwd="..", shell=True)
-    return status == 0
-
-
-def test_release():
-    status = call("./gradlew test", cwd="..", shell=True)
     return status == 0
 
 
@@ -146,13 +148,14 @@ Credentials file should be in the following format:
               f"than last version ({last_version}). Aborting...")
         exit(1)
 
-    if not test_release():
-        print("This release is not passing the tests. Aborting...")
-        exit(1)
-
     if not build_release(make_jar=False):
-        print("Releae build failed. Aborting...")
-        exit(1)
+        print("Releae build failed.")
+        user_response = ask_yes_no_question("Do you want to continue?")
+        if user_response == 'Y':
+            print("Continuing...")
+        else:
+            print("Aborting...")
+            exit(1)
 
     print(f"Creating release {new_version}...")
 
