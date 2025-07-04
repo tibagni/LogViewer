@@ -90,6 +90,8 @@ class LogsRepositoryImpl : LogsRepository {
 
       logParser.release()
     } catch (e: Exception) {
+      // End the progress if we failed to read the file
+      progressReporter.failProgress()
       when (e) {
         is LogReaderException -> {
           throw OpenLogsException(e.message, e)
