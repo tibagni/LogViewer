@@ -10,6 +10,7 @@ on:
 
 jobs:
   build-and-release:
+    if: github.actor == 'tibagni'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout at TAG
