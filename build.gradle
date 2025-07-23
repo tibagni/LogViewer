@@ -14,6 +14,7 @@ buildscript {
         testlogger_version = '1.7.0'
         coveralls_version = '2.12.0'
         ollama4j_version = '1.0.100'
+        flexmark_version = '0.64.8'
     }
 
     repositories {
@@ -108,4 +109,5 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-swing:$kotlinx_version"
     implementation "io.github.ollama4j:ollama4j:$ollama4j_version"
+    implementation "com.vladsch.flexmark:flexmark-all:$flexmark_version"
 }

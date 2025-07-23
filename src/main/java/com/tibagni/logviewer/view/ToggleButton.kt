@@ -1,32 +1,27 @@
 package com.tibagni.logviewer.view
 
-import com.tibagni.logviewer.util.SwingUtils
 import javax.swing.BorderFactory
-import javax.swing.ImageIcon
+import javax.swing.JLabel
 
-class ToggleButton(imageIcon: ImageIcon, val listener: (Boolean) -> Unit) : FlatButton() {
-  private val originalIcon: ImageIcon
-  private val selectedIcon: ImageIcon
-  private val normalIcon: ImageIcon
+class ToggleButton(unicodeIcon: String) : FlatButton() {
+  private val iconLabel = JLabel(unicodeIcon)
   private var _isActive = false
   val isActive: Boolean
     get() = _isActive
+  var listener: (Boolean) -> Unit = {}
 
   private val selectedBorder = BorderFactory.createCompoundBorder(
-      BorderFactory.createMatteBorder(0, 0, 0, 2, rolloverColor),
-      BorderFactory.createEmptyBorder(5, 5, 5, 3))
-
+    BorderFactory.createMatteBorder(0, 0, 0, 2, rolloverColor),
+    BorderFactory.createEmptyBorder(5, 5, 5, 3)
+  )
   private val normalBorder = BorderFactory.createEmptyBorder(5, 5, 5, 5)
 
   init {
-    addActionListener {
-      toggle()
-    }
-
+    add(iconLabel)
+    iconLabel.font = font.deriveFont(25f)
+    iconLabel.foreground = normalColor
+    addActionListener { toggle() }
     isBorderPainted = true
-    originalIcon = SwingUtils.resizeImage(imageIcon, 25, 25)
-    normalIcon = SwingUtils.tintImage(originalIcon, normalColor)
-    selectedIcon = SwingUtils.tintImage(originalIcon, rolloverColor)
     updateUiState()
   }
 
@@ -39,26 +34,31 @@ class ToggleButton(imageIcon: ImageIcon, val listener: (Boolean) -> Unit) : Flat
   private fun updateUiState() {
     if (_isActive) {
       border = selectedBorder
-      foreground = rolloverColor
-      icon = selectedIcon
+      iconLabel.foreground = rolloverColor
     } else {
       border = normalBorder
-      foreground = normalColor
-      icon = originalIcon
+      iconLabel.foreground = normalColor
     }
   }
 
   override fun onMouseEntered() {
     if (!_isActive) {
       super.onMouseEntered()
-      icon = selectedIcon
+      iconLabel.foreground = rolloverColor
     }
   }
 
   override fun onMouseExited() {
     if (!_isActive) {
       super.onMouseExited()
-      icon = normalIcon
+      iconLabel.foreground = normalColor
+    }
+  }
+
+  fun setActive(active: Boolean) {
+    if (_isActive != active) {
+      _isActive = active
+      updateUiState()
     }
   }
 }
