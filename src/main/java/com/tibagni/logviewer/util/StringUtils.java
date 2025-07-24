@@ -31,6 +31,10 @@ public class StringUtils {
   public static final String DELETE = "\u2715";
   public static final String PLUS = "\uFF0B";
 
+  public static final String LOG = "\uD83D\uDCDD"; // Scroll emoji, often used to represent logs
+  public static final String ROBOT = "\uD83E\uDD16"; // Robot emoji
+  public static final String ROCKET = "\uD83D\uDE80"; // Rocket emoji, often used to represent AI or fast processing
+
   public static boolean isEmpty(String str) {
     return str == null || str.trim().length() == 0;
   }

@@ -3,6 +3,7 @@ package com.tibagni.logviewer.preferences;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.ai.ollama.configs.OllamaConfig;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
@@ -45,12 +46,16 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JTextField preferredEditorPathTxt;
   private JButton preferredEditorPathBtn;
   private JCheckBox applyFiltersOnCheckChbx;
+  // Ollama settings
+  private JTextField ollamaHostTxt;
+  private JComboBox<String> ollamaModelCbx;
 
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
   private JFileChooser preferredEditorFileChooser;
   private final LogViewerPreferences userPrefs;
   private final LogViewerThemeManager themeManager;
+  private final OllamaConfig ollamaConfig;
 
   private final Map<String, Runnable> saveActions = new HashMap<>();
 
@@ -62,11 +67,13 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     buttonsPane.setDefaultButtonOk();
     userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
+    ollamaConfig = ServiceLocator.INSTANCE.getOllamaConfig();
 
     initFiltersPathPreference();
     initLogsPathPreference();
     initLookAndFeelPreference();
     initPreferredEditorPathPreference();
+    initOllamaPreference();
 
     // Adjust the size according to the content after everything is populated
     contentPane.setPreferredSize(contentPane.getPreferredSize());
@@ -133,6 +140,34 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     File editorFile = userPrefs.getPreferredTextEditor();
     String path = editorFile != null ? editorFile.getAbsolutePath() : null;
     preferredEditorPathTxt.setText(path);
+  }
+
+  // Initializes Ollama host and model preferences
+  private void initOllamaPreference() {
+    // set Ollama host text field
+    String ollamaHost = userPrefs.getOllamaHost();
+    ollamaHostTxt.setText(ollamaHost);
+    ollamaHostTxt.setToolTipText("Ollama host URL, e.g., http://localhost:11434");
+
+    // Populate Ollama model combo box with available models
+    for (String model : ollamaConfig.getAvailableModels()) {
+      ollamaModelCbx.addItem(model);
+    }
+    ollamaModelCbx.setSelectedItem(userPrefs.getOllamaModel());
+
+    // Ollama host text field listener
+    ollamaHostTxt.addActionListener(e -> {
+      String host = ollamaHostTxt.getText();
+      saveActions.put("ollama_host", () -> userPrefs.setOllamaHost(host));
+    });
+
+    // Ollama model selection listener
+    ollamaModelCbx.addActionListener(e -> {
+      String model = (String) ollamaModelCbx.getSelectedItem();
+      if (model != null) {
+        saveActions.put("ollama_model", () -> userPrefs.setOllamaModel(model));
+      }
+    });
   }
 
   @Override
@@ -264,7 +299,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -347,17 +382,36 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(applyFiltersOnCheckChbx, cc.xy(3, 23));
 
     final JSeparator sep4 = new JSeparator();
-    formPane.add(sep4, cc.xyw(1, 24, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep4, cc.xyw(1, 25, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel preferredEditorLbl = new JLabel();
     preferredEditorLbl.setText("Preferred text Editor");
-    formPane.add(preferredEditorLbl, cc.xy(1, 25));
+    formPane.add(preferredEditorLbl, cc.xy(1, 27));
     preferredEditorPathTxt = new JTextField();
     preferredEditorPathTxt.setEditable(false);
-    formPane.add(preferredEditorPathTxt, cc.xy(3, 25, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(preferredEditorPathTxt, cc.xy(3, 27, CellConstraints.FILL, CellConstraints.DEFAULT));
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
-    formPane.add(preferredEditorPathBtn, cc.xy(5, 25));
+    formPane.add(preferredEditorPathBtn, cc.xy(5, 27));
+
+    final JSeparator sep5 = new JSeparator();
+    formPane.add(sep5, cc.xyw(1, 29, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    // add setting to select ollama host
+    final JLabel ollamaHostLbl = new JLabel();
+    ollamaHostLbl.setText("Ollama Host");
+    formPane.add(ollamaHostLbl, cc.xy(1, 31));
+    ollamaHostTxt = new JTextField();
+    formPane.add(ollamaHostTxt, cc.xy(3, 31, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    // add setting to select ollama model
+    final JLabel ollamaModelLbl = new JLabel();
+    ollamaModelLbl.setText("Ollama Model");
+    formPane.add(ollamaModelLbl, cc.xy(1, 33));
+    ollamaModelCbx = new JComboBox<>();
+    ollamaModelCbx.setMinimumSize(new Dimension());
+    formPane.add(ollamaModelCbx, cc.xy(3, 1));
+    formPane.add(ollamaModelCbx, cc.xy(3, 33, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     return formPane;
   }
