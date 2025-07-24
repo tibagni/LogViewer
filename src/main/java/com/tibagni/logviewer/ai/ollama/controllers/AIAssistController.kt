@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.ai.ollama.controllers
 
+import com.tibagni.logviewer.ServiceLocator.logViewerPrefs
 import com.tibagni.logviewer.ai.ollama.configs.OllamaConfig
 import com.tibagni.logviewer.ai.ollama.models.AIAssistModel
 import com.tibagni.logviewer.ai.ollama.views.AIAssistView
@@ -53,7 +54,7 @@ class AIAssistController(
       }
 
       try {
-        val result = ollama.generate(OllamaConfig.MODEL, userMessage, false, options, streamHandler)
+        val result = ollama.generate(logViewerPrefs.ollamaModel, userMessage, false, options, streamHandler)
         SwingUtilities.invokeLater {
           appendMarkdown("${result.response}")
         }
@@ -92,6 +93,7 @@ class AIAssistController(
     appendMarkdown("---")
   }
 
+  // Updates the input field and send button status
   private fun updateInputStatus(status: Boolean) {
     view.inputField.isEnabled = status
     view.sendButton.isEnabled = status
