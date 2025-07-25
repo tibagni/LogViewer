@@ -8,7 +8,6 @@ Check out more details on [https://tibagni.github.io/LogViewer/](https://tibagni
 ## 💻 Features
 * 🔍 Analyze multiple log files at once
 * 🎨 Create and apply different filters on the set of log files, showing a single filtered output differentiating each filter by a different color (defined by you)
-* 💾 Export the filtered log data as a CSV file
 * 🤖 Read bugreport information such as system properties, application packages, hidden system packages, carrier config, subscriptions etc.
 * 📝 Note the important log entries in my log view
 * ⏱️ Limit all logs by ignoring everything before or after a selected timestamp
