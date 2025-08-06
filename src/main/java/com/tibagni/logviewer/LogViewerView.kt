@@ -1,9 +1,9 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.LogViewerPresenter.UserSelection
-import com.tibagni.logviewer.ai.ollama.controllers.AIAssistController
-import com.tibagni.logviewer.ai.ollama.models.AIAssistModel
-import com.tibagni.logviewer.ai.ollama.views.AIAssistView
+import com.tibagni.logviewer.ai.AIAssistController
+import com.tibagni.logviewer.ai.AIAssistModel
+import com.tibagni.logviewer.ai.AIAssistView
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersList

@@ -14,8 +14,8 @@ interface LogViewerPreferences {
     var collapseAllGroupsStartup: Boolean
     var showLineNumbers: Boolean
     var applyFilterOnCheck: Boolean
-    var ollamaHost: String
-    var ollamaModel: String
+    var aiHost: String
+    var aiModel: String
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
@@ -34,8 +34,8 @@ interface LogViewerPreferences {
         fun onCollapseAllGroupsStartupChanged()
         fun onShowLineNumbersChanged()
         fun onApplyFiltersOnCheckChanged() {}
-        fun onOllamaHostChanged() {}
-        fun onOllamaModelChanged() {}
+        fun onAiHostChanged() {}
+        fun onAiModelChanged() {}
     }
 
     abstract class Adapter : Listener {
@@ -50,7 +50,7 @@ interface LogViewerPreferences {
         override fun onCollapseAllGroupsStartupChanged() {}
         override fun onShowLineNumbersChanged() {}
         override fun onApplyFiltersOnCheckChanged() {}
-        override fun onOllamaHostChanged() {}
-        override fun onOllamaModelChanged() {}
+        override fun onAiHostChanged() {}
+        override fun onAiModelChanged() {}
     }
 }

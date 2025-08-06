@@ -1,9 +1,7 @@
-package com.tibagni.logviewer.ai.ollama.controllers
+package com.tibagni.logviewer.ai
 
 import com.tibagni.logviewer.ServiceLocator.logViewerPrefs
-import com.tibagni.logviewer.ai.ollama.configs.OllamaConfig
-import com.tibagni.logviewer.ai.ollama.models.AIAssistModel
-import com.tibagni.logviewer.ai.ollama.views.AIAssistView
+import com.tibagni.logviewer.ai.ollama.Config
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import io.github.ollama4j.models.generate.OllamaStreamHandler
@@ -33,18 +31,21 @@ class AIAssistController(
     val userMessage = view.inputField.text.trim()
     if (userMessage.isEmpty()) return
 
-    if (!OllamaConfig.isServerReachable()) {
+    // Check if the Ollama server is reachable before sending the messages
+    if (!Config.isServerReachable()) {
       JOptionPane.showMessageDialog(view, "Ollama server is not reachable.", "Error", JOptionPane.ERROR_MESSAGE)
       return
     }
 
+    // Append the user's message to the chat history and clear the input field
     appendMarkdown("**$userMessage**")
     view.inputField.text = ""
     updateAIMessage("...")
     updateInputStatus(false)
 
+    // Start a new thread to handle the AI response
     Thread {
-      val ollama = OllamaConfig.getAPI()
+      val ollama = Config.getAPI()
       val options = OptionsBuilder().build()
 
       val streamHandler = OllamaStreamHandler { token ->
@@ -54,7 +55,7 @@ class AIAssistController(
       }
 
       try {
-        val result = ollama.generate(logViewerPrefs.ollamaModel, userMessage, false, options, streamHandler)
+        val result = ollama.generate(logViewerPrefs.aiModel, userMessage, false, options, streamHandler)
         SwingUtilities.invokeLater {
           appendMarkdown("${result.response}")
         }

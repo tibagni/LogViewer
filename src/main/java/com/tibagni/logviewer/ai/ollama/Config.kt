@@ -1,16 +1,15 @@
-package com.tibagni.logviewer.ai.ollama.configs
+package com.tibagni.logviewer.ai.ollama
 
-import com.tibagni.logviewer.ServiceLocator.logViewerPrefs
-import com.tibagni.logviewer.preferences.LogViewerPreferences
+import com.tibagni.logviewer.ServiceLocator
 import io.github.ollama4j.OllamaAPI
 
 /**
  * Configuration for the Ollama AI integration.
  * This includes the host URL and model name.
  */
-object OllamaConfig {
+object Config {
   // Create an instance of OllamaAPI with the configured host
-  fun getAPI(): OllamaAPI = OllamaAPI(logViewerPrefs.ollamaHost)
+  fun getAPI(): OllamaAPI = OllamaAPI(ServiceLocator.logViewerPrefs.aiHost)
 
   // Check if the Ollama server is reachable
   fun isServerReachable(): Boolean {

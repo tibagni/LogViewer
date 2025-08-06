@@ -1,6 +1,5 @@
-package com.tibagni.logviewer.ai.ollama.views
+package com.tibagni.logviewer.ai
 
-import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.ServiceLocator.themeManager
 import com.tibagni.logviewer.util.StringUtils
 import java.awt.BorderLayout
@@ -20,8 +19,6 @@ class AIAssistView : JPanel() {
   // Initializes the views
   init {
     layout = BorderLayout()
-
-    val themeManager = ServiceLocator.themeManager
 
     val titleLabel = JLabel("AI Assist")
     titleLabel.horizontalAlignment = SwingConstants.CENTER

@@ -1,4 +1,4 @@
-package com.tibagni.logviewer.ai.ollama.models
+package com.tibagni.logviewer.ai
 
 /**
  * Model for managing AI chat history and interactions.
