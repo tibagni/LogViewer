@@ -6,6 +6,7 @@ import com.tibagni.logviewer.bugreport.parser.*
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl
 import com.tibagni.logviewer.theme.LogViewerThemeManager
+import com.tibagni.logviewer.ai.ollama.Config
 
 object ServiceLocator {
   val themeManager: LogViewerThemeManager = LogViewerThemeManager
@@ -28,4 +29,5 @@ object ServiceLocator {
       )
     )
   }
+  val aiConfig: Config by lazy { Config }
 }

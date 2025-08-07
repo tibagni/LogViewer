@@ -19,6 +19,8 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
     /*Visible for Testing*/ const val REAPPLY_FILTERS_ON_CHANGE = "reapply_filters_on_change"
+    /*Visible for Testing*/ const val AI_HOST = "ai_host"
+    /*Visible for Testing*/ const val AI_MODEL = "ai_model"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -123,6 +125,28 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(reApply) {
             preferences.putBoolean(REAPPLY_FILTERS_ON_CHANGE, reApply)
             listeners.forEach { l -> l.onApplyFiltersOnCheckChanged() }
+        }
+
+    /**
+     * The AI server host URL.
+     * Default is "http://localhost:11434".
+     */
+    override var aiHost: String
+        get() = preferences.get(AI_HOST, "http://localhost:11434")
+        set(host) {
+            preferences.put(AI_HOST, host)
+            listeners.forEach { l -> l.onAiHostChanged() }
+        }
+
+    /**
+     * The model to use for AI assistance.
+     * Default is an empty string, which means no model is set.
+     */
+    override var aiModel: String
+        get() = preferences.get(AI_MODEL, "")
+        set(model) {
+            preferences.put(AI_MODEL, model)
+            listeners.forEach { l -> l.onAiModelChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

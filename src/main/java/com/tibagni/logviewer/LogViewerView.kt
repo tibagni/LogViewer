@@ -1,6 +1,9 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.LogViewerPresenter.UserSelection
+import com.tibagni.logviewer.ai.AIAssistController
+import com.tibagni.logviewer.ai.AIAssistModel
+import com.tibagni.logviewer.ai.AIAssistView
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersList
@@ -62,8 +65,9 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun collapseAllGroups()
 }
 
-private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
+private class SidePanel(val targetSplitPanel: JSplitPane, val myLogsPanel: JPanel, val aiAssistPanel: JPanel) : JPanel() {
   val toggleMyLogs : ToggleButton
+  val aiAssistToggleButton : ToggleButton
   private var lastDividerLocation = -1.0
 
   init {
@@ -80,13 +84,27 @@ private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
       }
     }
 
-    toggleMyLogs = ToggleButton(ImageIcon(javaClass.getResource("/Images/view_list_icon.png"))) { showPanel(it) }
+    toggleMyLogs = ToggleButton(StringUtils.LOG)
     toggleMyLogs.toolTipText = "My Logs"
-
     add(toggleMyLogs)
+
+    aiAssistToggleButton = ToggleButton(StringUtils.ROBOT)
+    aiAssistToggleButton.toolTipText = "AI assist"
+    add(aiAssistToggleButton)
+
+    toggleMyLogs.listener = {
+      showPanel(myLogsPanel, it)
+      if (aiAssistToggleButton.isActive) aiAssistToggleButton.setActive(false)
+    }
+
+    aiAssistToggleButton.listener =  {
+      showPanel(aiAssistPanel, it)
+      if (toggleMyLogs.isActive) toggleMyLogs.setActive(false)
+    }
   }
 
-  private fun showPanel(show: Boolean) {
+  private fun showPanel(panel: JPanel, show: Boolean) {
+    targetSplitPanel.rightComponent = panel
     if (show) {
       targetSplitPanel.rightComponent.isVisible = true
       val dividerPos = if (lastDividerLocation < 0) 0.7 else lastDividerLocation
@@ -117,6 +135,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var filtersPane: FiltersList
   private lateinit var sidePanel: SidePanel
   private lateinit var applyFiltersBtn: JButton
+  private lateinit var aiAssistPanel: AIAssistView
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
@@ -171,7 +190,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
        */
       override fun onApplyFiltersOnCheckChanged() {
         // if the user has the preference to not apply the filter on check, we add the apply button
-        applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
+        applyFiltersBtn.isVisible = !userPrefs.applyFilterOnCheck
       }
     })
 
@@ -211,7 +230,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     updateCollapseExpandButtonState()
 
     // if the user has the preference to not apply the filter on check, we add the apply button
-    applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
+    applyFiltersBtn.isVisible = !userPrefs.applyFilterOnCheck
   }
 
   private fun showFilterOptionsMenu(e: MouseEvent) {
@@ -279,7 +298,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   /**
-   * Applies the filter changes currently done by the user in the filters pane.
+   * Applies the filter changes currently done by the user in the filters' pane.
    */
   private fun applyFilters() {
     if (filtersPane.isEmpty) {
@@ -933,13 +952,15 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     myLogsListTableModel = LogListTableModel("My Logs")
     myLogsList = SearchableTable(myLogsListTableModel)
 
-    mainLogSplit.leftComponent = logsPane
-    mainLogSplit.rightComponent = myLogsList
-    mainLogSplit.rightComponent.isVisible = false // Start collapsed
+    // Add the AI assist panel
+    aiAssistPanel = AIAssistView()
+    AIAssistController(AIAssistModel(), aiAssistPanel)
 
+    mainLogSplit.leftComponent = logsPane
+    mainLogSplit.rightComponent.isVisible = false // Start collapsed
     mainSplitPane.rightComponent = mainLogSplit
 
-    sidePanel = SidePanel(mainLogSplit)
+    sidePanel = SidePanel(mainLogSplit, myLogsList, aiAssistPanel)
     _contentPane.add(
       sidePanel,
       GBConstraintsBuilder()

@@ -3,6 +3,7 @@ package com.tibagni.logviewer.preferences;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.ai.ollama.Config;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
@@ -45,12 +46,16 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JTextField preferredEditorPathTxt;
   private JButton preferredEditorPathBtn;
   private JCheckBox applyFiltersOnCheckChbx;
+  // AI settings
+  private JTextField aiHostTxt;
+  private JComboBox<String> aiModelCbx;
 
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
   private JFileChooser preferredEditorFileChooser;
   private final LogViewerPreferences userPrefs;
   private final LogViewerThemeManager themeManager;
+  private final Config aiConfig;
 
   private final Map<String, Runnable> saveActions = new HashMap<>();
 
@@ -62,11 +67,13 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     buttonsPane.setDefaultButtonOk();
     userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
+    aiConfig = ServiceLocator.INSTANCE.getAiConfig();
 
     initFiltersPathPreference();
     initLogsPathPreference();
     initLookAndFeelPreference();
     initPreferredEditorPathPreference();
+    initAiAssistPreference();
 
     // Adjust the size according to the content after everything is populated
     contentPane.setPreferredSize(contentPane.getPreferredSize());
@@ -133,6 +140,34 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     File editorFile = userPrefs.getPreferredTextEditor();
     String path = editorFile != null ? editorFile.getAbsolutePath() : null;
     preferredEditorPathTxt.setText(path);
+  }
+
+  // Initializes AI assist preferences
+  private void initAiAssistPreference() {
+    // set Ollama host text field
+    String aiHost = userPrefs.getAiHost();
+    aiHostTxt.setText(aiHost);
+    aiHostTxt.setToolTipText("Ollama host URL, e.g., http://localhost:11434");
+
+    // Populate Ollama model combo box with available models
+    for (String model : aiConfig.getAvailableModels()) {
+      aiModelCbx.addItem(model);
+    }
+    aiModelCbx.setSelectedItem(userPrefs.getAiModel());
+
+    // Ollama host text field listener
+    aiHostTxt.addActionListener(e -> {
+      String host = aiHostTxt.getText();
+      saveActions.put("ollama_host", () -> userPrefs.setAiHost(host));
+    });
+
+    // Ollama model selection listener
+    aiModelCbx.addActionListener(e -> {
+      String model = (String) aiModelCbx.getSelectedItem();
+      if (model != null) {
+        saveActions.put("ollama_model", () -> userPrefs.setAiModel(model));
+      }
+    });
   }
 
   @Override
@@ -264,7 +299,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -347,17 +382,36 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(applyFiltersOnCheckChbx, cc.xy(3, 23));
 
     final JSeparator sep4 = new JSeparator();
-    formPane.add(sep4, cc.xyw(1, 24, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep4, cc.xyw(1, 25, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel preferredEditorLbl = new JLabel();
     preferredEditorLbl.setText("Preferred text Editor");
-    formPane.add(preferredEditorLbl, cc.xy(1, 25));
+    formPane.add(preferredEditorLbl, cc.xy(1, 27));
     preferredEditorPathTxt = new JTextField();
     preferredEditorPathTxt.setEditable(false);
-    formPane.add(preferredEditorPathTxt, cc.xy(3, 25, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(preferredEditorPathTxt, cc.xy(3, 27, CellConstraints.FILL, CellConstraints.DEFAULT));
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
-    formPane.add(preferredEditorPathBtn, cc.xy(5, 25));
+    formPane.add(preferredEditorPathBtn, cc.xy(5, 27));
+
+    final JSeparator sep5 = new JSeparator();
+    formPane.add(sep5, cc.xyw(1, 29, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    // add setting to select AI host
+    final JLabel aiHostLbl = new JLabel();
+    aiHostLbl.setText("AI Host");
+    formPane.add(aiHostLbl, cc.xy(1, 31));
+    aiHostTxt = new JTextField();
+    formPane.add(aiHostTxt, cc.xy(3, 31, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    // add setting to select AI model
+    final JLabel aiModelLbl = new JLabel();
+    aiModelLbl.setText("AI Model");
+    formPane.add(aiModelLbl, cc.xy(1, 33));
+    aiModelCbx = new JComboBox<>();
+    aiModelCbx.setMinimumSize(new Dimension());
+    formPane.add(aiModelCbx, cc.xy(3, 1));
+    formPane.add(aiModelCbx, cc.xy(3, 33, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     return formPane;
   }
