@@ -22,8 +22,8 @@ To get started with LogViewer, follow these steps:
 1. Clone this repository and open it in IntelliJ IDEA or any other Java development environment of your choice.
 2. Install the required dependencies by running `./gradlew install` on the command line.
 3. Build the application by running `./gradlew build` on the command line.
-4. Run the application by running `./gradlew run` on the command line.
-5. Use the UI to analyze log files and apply filters
+4. Run the application by running `./gradlew shadowJar` on the command line, and running the jar file on `build/libs` (Or just run directly from IntelliJ).
+5. Use the UI to analyze log files, appling filters and more...
 
 ## 📦 Creating a JAR File
 To create a JAR file for the project, you can use the `shadowJar` task provided by Gradle. Run `./gradlew shadowJar` on the command line to create a JAR file in the `build/libs` directory. The JAR file will be named `LogViewer-{version}-all.jar`, where `{version}` is the current version of the project.
