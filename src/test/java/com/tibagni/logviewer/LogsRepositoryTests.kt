@@ -1,5 +1,8 @@
 package com.tibagni.logviewer
 
+import com.tibagni.logviewer.log.LogEntry
+import com.tibagni.logviewer.log.LogTimestamp
+import com.tibagni.logviewer.log.LogLevel
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -142,5 +145,56 @@ class LogsRepositoryTests {
     assertEquals(0, logsRepository.firstVisibleLogIndex)
     assertEquals(4, logsRepository.lastVisibleLogIndex)
     assertEquals(5, logsRepository.currentlyOpenedLogs.size)
+  }
+
+  @Test
+  fun testGetMatchingLogEntrySuccess() {
+    testOpenSingleLogFile()
+    val targetEntry = logsRepository.currentlyOpenedLogs[2]
+    val queryEntry = LogEntry(targetEntry.logText, targetEntry.logLevel, targetEntry.timestamp)
+
+    val matched = logsRepository.getMatchingLogEntry(queryEntry)
+    assertNotNull(matched)
+    assertEquals(targetEntry.logText, matched?.logText)
+    assertEquals(targetEntry.timestamp, matched?.timestamp)
+  }
+
+  @Test
+  fun testGetMatchingLogEntryDuplicateTimestampsAndCrashRegression() {
+    testOpenSingleLogFile()
+    // The logs have two entries at 01-06 20:46:26.091 at indices 0 (VERBOSE) and 1 (DEBUG)
+    val firstEntry = logsRepository.currentlyOpenedLogs[0]
+    val secondEntry = logsRepository.currentlyOpenedLogs[1]
+
+    assertEquals(firstEntry.timestamp, secondEntry.timestamp)
+
+    // Match the second entry (DEBUG)
+    val querySecond = LogEntry(secondEntry.logText, secondEntry.logLevel, secondEntry.timestamp)
+    val matchedSecond = logsRepository.getMatchingLogEntry(querySecond)
+    assertNotNull(matchedSecond)
+    assertEquals(secondEntry.logText, matchedSecond?.logText)
+
+    // Match the first entry (VERBOSE) - this was the crash regression case where i becomes -1
+    val queryFirst = LogEntry(firstEntry.logText, firstEntry.logLevel, firstEntry.timestamp)
+    val matchedFirst = logsRepository.getMatchingLogEntry(queryFirst)
+    assertNotNull(matchedFirst)
+    assertEquals(firstEntry.logText, matchedFirst?.logText)
+  }
+
+  @Test
+  fun testGetMatchingLogEntryNotFound() {
+    testOpenSingleLogFile()
+    val nonExistentTimestamp = LogTimestamp(1, 6, 23, 59, 59, 999)
+    val queryEntry = LogEntry("Some non-existent log text", LogLevel.INFO, nonExistentTimestamp)
+
+    val matched = logsRepository.getMatchingLogEntry(queryEntry)
+    assertNull(matched)
+  }
+
+  @Test
+  fun testGetMatchingLogEntryEmptyLogs() {
+    val queryEntry = LogEntry("Log text", LogLevel.INFO, LogTimestamp(1, 6, 20, 46, 26, 91))
+    val matched = logsRepository.getMatchingLogEntry(queryEntry)
+    assertNull(matched)
   }
 }

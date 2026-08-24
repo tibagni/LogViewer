@@ -117,15 +117,14 @@ class LogsRepositoryImpl : LogsRepository {
         i--
       }
 
+      i++ // Adjust back to a valid index matching entry.timestamp
       // Now that we are in the beginning of the timestamp, look for the entry
-      while (currentlyOpenedLogs[i].logText != entry.logText &&
+      while (i < currentlyOpenedLogs.size &&
         currentlyOpenedLogs[i].timestamp <= entry.timestamp) {
+        if (currentlyOpenedLogs[i].logText == entry.logText) {
+          return currentlyOpenedLogs[i]
+        }
         i++
-      }
-
-      // We either found or finished search. check which one
-      if (currentlyOpenedLogs[i].logText == entry.logText) {
-        return currentlyOpenedLogs[i]
       }
     }
 

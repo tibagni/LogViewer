@@ -135,7 +135,7 @@ class FiltersRepositoryImpl: FiltersRepository {
     var fileWriter: BufferedWriter? = null
     try {
       var firstLoop = true
-      fileWriter = BufferedWriter(FileWriter(file))
+      fileWriter = file.bufferedWriter()
       val serializedFilters = _currentlyOpenedFilters[group].serialized()
       for (serializedFilter in serializedFilters) {
         if (firstLoop) {
