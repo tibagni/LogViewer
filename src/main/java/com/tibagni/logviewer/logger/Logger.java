@@ -91,7 +91,7 @@ public class Logger {
     String levelIndicator = level.name().substring(0, 1).toUpperCase();
     DecimalFormat tidFormat = new DecimalFormat("000");
     String tid = tidFormat.format(Thread.currentThread().getId());
-    String pid = "001"; // TODO use the real PID one day if needed
+    String pid = java.lang.management.ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
 
     String logMessage = date + " " + pid + " " + tid + " " + levelIndicator + " " + getCallingClassName() + ": " + message;
     if (level == LogLevelConfig.Level.WARNING || level == LogLevelConfig.Level.ERROR) {

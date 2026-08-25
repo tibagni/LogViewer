@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class UIScaleUtils {
-    private static int SCALE_FACTOR;
+    private static int SCALE_FACTOR = 1;
 
     // Nimbus theme re-uses some font objects for different properties. Keep track of all the already scaled font
     // objects here to avoid scaling it twice (or more)
