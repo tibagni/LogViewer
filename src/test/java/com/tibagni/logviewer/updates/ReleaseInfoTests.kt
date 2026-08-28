@@ -39,7 +39,7 @@ class ReleaseInfoTests {
     val releaseInfo = ReleaseInfo(JSONObject(LATEST_VERSION))
 
     assertEquals("https://github.com/tibagni/LogViewer/releases/tag/2.3", releaseInfo.releaseUrl)
-    assertEquals(2.3, releaseInfo.version, 0.01)
+    assertEquals(Version("2.3"), releaseInfo.version)
     assertEquals("2.3", releaseInfo.versionName)
     assertEquals("release notes", releaseInfo.releaseNotes)
   }

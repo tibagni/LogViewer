@@ -1,6 +1,7 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.updates.Version
 import com.tibagni.logviewer.util.PropertiesWrapper
 import java.io.IOException
 import java.lang.NumberFormatException
@@ -32,16 +33,30 @@ object AppInfo {
       return currentVersion
     }
 
+  /**
+   * Retrieves the current application version parsed as a semantic [Version] object.
+   *
+   * Post-conditions:
+   * - Returns a valid [Version] instance, or null if the loaded version string is invalid.
+   */
+  val currentVersionObject: Version?
+    get() {
+      val versionName = currentVersion
+      return try {
+        Version(versionName)
+      } catch (e: IllegalArgumentException) {
+        Logger.error("Not possible to parse current version as Version: $versionName", e)
+        null
+      }
+    }
+
+  @Deprecated("Use currentVersionObject instead", ReplaceWith("currentVersionObject"))
   val currentVersionNumber: Double
     get() {
       val versionName = currentVersion
       return try {
         versionName.toDouble()
       } catch (nfe: NumberFormatException) {
-        Logger.error(
-          "Not possible to parse current version: "
-              + versionName, nfe
-        )
         (-1).toDouble()
       }
     }

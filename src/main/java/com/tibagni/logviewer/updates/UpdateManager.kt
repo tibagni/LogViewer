@@ -17,7 +17,8 @@ class UpdateManager(private val listener: UpdateListener) {
 
   fun checkForUpdates() {
     // If we fail to read the current version for some reason, do not proceed
-    if (AppInfo.currentVersionNumber < 0) {
+    val currentVersion = AppInfo.currentVersionObject
+    if (currentVersion == null) {
       Logger.error("Not a valid current version. Do not check for updates")
       return
     }
@@ -32,7 +33,12 @@ class UpdateManager(private val listener: UpdateListener) {
   }
 
   private fun notifyIfUpdateAvailable(latest: ReleaseInfo, listener: UpdateListener) {
-    val currentVersion = AppInfo.currentVersionNumber
+    val currentVersion = AppInfo.currentVersionObject
+    if (currentVersion == null) {
+      Logger.error("Current version is invalid")
+      return
+    }
+
     if (latest.version > currentVersion) {
       Logger.debug("New version available: " + latest.versionName)
       listener.onUpdateFound(latest)
