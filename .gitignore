@@ -28,6 +28,9 @@
 .idea/**/libraries
 .idea/compiler.xml
 build/
+bin/
+.gemini/
+openspec/
 
 # CMake
 cmake-build-debug/

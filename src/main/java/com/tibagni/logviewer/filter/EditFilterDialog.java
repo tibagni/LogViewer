@@ -2,6 +2,7 @@ package com.tibagni.logviewer.filter;
 
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
+import com.tibagni.logviewer.FiltersRepository;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.log.LogLevel;
@@ -18,6 +19,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
@@ -63,6 +66,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private JColorChooser colorChooser;
 
   private Filter filter;
+  private final Filter editingFilter;
   private String previewText;
   private final LogViewerThemeManager themeManager;
 
@@ -83,12 +87,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     }
   };
 
-  private EditFilterDialog(Frame owner, Filter editingFilter) {
+  EditFilterDialog(Frame owner, Filter editingFilter) {
     this(owner, editingFilter, null);
   }
 
-  private EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
+  EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
     super(owner);
+    this.editingFilter = editingFilter;
     previewText = preDefinedText;
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
     buildUi();
@@ -167,6 +172,28 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     boolean caseSensitive = caseSensitiveCbx.isSelected();
     LogLevel verbosity = (LogLevel) verbosityCombo.getSelectedItem();
 
+    FilterMatch similarMatch = checkForDuplicateOrSimilarFilter(pattern, caseSensitive);
+    if (similarMatch != null) {
+      String message = String.format(
+          "A similar filter ('%s') already exists in group '%s'.\nDo you still want to proceed?",
+          similarMatch.getFilter().getPatternString(),
+          similarMatch.getGroup()
+      );
+      int choice = JOptionPane.showOptionDialog(
+          this,
+          message,
+          "Potential Duplicate Filter",
+          JOptionPane.YES_NO_OPTION,
+          JOptionPane.WARNING_MESSAGE,
+          null,
+          new Object[]{"Add Anyway", "Cancel"},
+          "Cancel"
+      );
+      if (choice != JOptionPane.YES_OPTION) {
+        return;
+      }
+    }
+
     try {
       if (filter == null) {
         filter = new Filter(name, pattern, selectedColor, verbosity, caseSensitive);
@@ -180,6 +207,16 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     }
 
     dispose();
+  }
+
+  FilterMatch checkForDuplicateOrSimilarFilter(String newPattern, boolean caseSensitive) {
+    return FilterSimilarityUtils.INSTANCE.findFirstDuplicateOrSimilar(
+        newPattern,
+        caseSensitive,
+        editingFilter,
+        ServiceLocator.INSTANCE.getFiltersRepository().getCurrentlyOpenedFilters(),
+        FilterSimilarityUtils.DEFAULT_SIMILARITY_THRESHOLD
+    );
   }
 
   @Override

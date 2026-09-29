@@ -148,10 +148,10 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10)));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(15),
+            UIScaleUtils.dip(15),
+            UIScaleUtils.dip(15),
+            UIScaleUtils.dip(15)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,

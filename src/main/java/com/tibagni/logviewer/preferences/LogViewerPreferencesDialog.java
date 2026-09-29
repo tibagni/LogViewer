@@ -235,10 +235,10 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
     contentPane.setRequestFocusEnabled(true);
-    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10)));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(15),
+            UIScaleUtils.dip(15),
+            UIScaleUtils.dip(15),
+            UIScaleUtils.dip(15)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,

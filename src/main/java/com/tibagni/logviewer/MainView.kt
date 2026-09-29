@@ -53,8 +53,12 @@ interface MainView {
   fun enableSaveFilteredLogsMenu(enabled: Boolean)
   fun refreshMenuBar()
 
+  fun showSaveSessionFileChooser(): File?
+  fun showOpenSessionFileChooser(): File?
+
   fun onBugReportLoaded(bugreportPath: String, bugreportText: String)
   fun onBugReportClosed()
+  fun restoreSession(session: com.tibagni.logviewer.session.SessionData)
 }
 
 class MainViewImpl(
@@ -64,10 +68,16 @@ class MainViewImpl(
 ) : MainView {
   private lateinit var mainPanel: JPanel
 
-  private var logSaveFileChooser: JFileChooserExt
-  private var logOpenFileChooser: JFileChooserExt
-  private var filterSaveFileChooser: JFileChooserExt
-  private var filterOpenFileChooser: JFileChooserExt
+  override fun restoreSession(session: com.tibagni.logviewer.session.SessionData) {
+    logViewerView.restoreSession(session)
+  }
+
+  private lateinit var logSaveFileChooser: JFileChooserExt
+  private lateinit var logOpenFileChooser: JFileChooserExt
+  private lateinit var filterSaveFileChooser: JFileChooserExt
+  private lateinit var filterOpenFileChooser: JFileChooserExt
+  private lateinit var sessionSaveFileChooser: JFileChooserExt
+  private lateinit var sessionOpenFileChooser: JFileChooserExt
   private val progressDialogs = mutableMapOf<String, ProgressDialog>()
 
   private val logViewerView: LogViewerView
@@ -90,10 +100,7 @@ class MainViewImpl(
     buildUi()
     configureMenuBar()
 
-    logSaveFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
-    logOpenFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
-    filterSaveFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)
-    filterOpenFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)
+    recreateFileChoosers()
     userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
       override fun onDefaultFiltersPathChanged() {
         filterSaveFileChooser.currentDirectory = userPrefs.defaultFiltersPath
@@ -126,11 +133,14 @@ class MainViewImpl(
     logOpenFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
     filterSaveFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)
     filterOpenFileChooser = JFileChooserExt(userPrefs.defaultFiltersPath)
+    sessionSaveFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
+    sessionOpenFileChooser = JFileChooserExt(userPrefs.defaultLogsPath)
   }
 
   private fun handleClose() {
     if (finishChainPosition > finishChain.lastIndex) {
       // We wen through all views, we can close the app now
+      ServiceLocator.sessionManager.markCleanExit()
       parent.dispose()
       return
     }
@@ -207,6 +217,34 @@ class MainViewImpl(
     } else arrayOf()
   }
 
+  override fun showSaveSessionFileChooser(): File? {
+    sessionSaveFileChooser.resetChoosableFileFilters()
+    sessionSaveFileChooser.fileFilter = FileNameExtensionFilter("Session files (*.json)", "json")
+    sessionSaveFileChooser.isMultiSelectionEnabled = false
+    sessionSaveFileChooser.dialogTitle = "Save Session As..."
+
+    val selectedOption = sessionSaveFileChooser.showSaveDialog(mainPanel)
+    return if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      var file = sessionSaveFileChooser.selectedFile
+      if (!file.name.endsWith(".json", ignoreCase = true)) {
+        file = File(file.parentFile, "${file.name}.json")
+      }
+      file
+    } else null
+  }
+
+  override fun showOpenSessionFileChooser(): File? {
+    sessionOpenFileChooser.resetChoosableFileFilters()
+    sessionOpenFileChooser.fileFilter = FileNameExtensionFilter("Session files (*.json)", "json")
+    sessionOpenFileChooser.isMultiSelectionEnabled = false
+    sessionOpenFileChooser.dialogTitle = "Open Session..."
+
+    val selectedOption = sessionOpenFileChooser.showOpenDialog(mainPanel)
+    return if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      sessionOpenFileChooser.selectedFile
+    } else null
+  }
+
   override fun showStartLoading(tag: String) {
     var progressDialog = progressDialogs[tag]
     if (progressDialog == null) {
@@ -247,6 +285,28 @@ class MainViewImpl(
 
     val fileMenu = JMenu("File")
     fileMenu.setMnemonic('F')
+
+    val saveSessionItem = JMenuItem("Save Session")
+    saveSessionItem.accelerator = KeyStroke.getKeyStroke(
+      KeyEvent.VK_S, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx or InputEvent.SHIFT_DOWN_MASK
+    )
+    saveSessionItem.addActionListener { logViewerView.handleSaveSession() }
+    fileMenu.add(saveSessionItem)
+
+    val saveSessionAsItem = JMenuItem("Save Session As...")
+    saveSessionAsItem.addActionListener { logViewerView.handleSaveSessionAs() }
+    fileMenu.add(saveSessionAsItem)
+
+    val restoreSessionItem = JMenuItem("Restore Session...")
+    restoreSessionItem.addActionListener { logViewerView.handleRestoreSession() }
+    fileMenu.add(restoreSessionItem)
+
+    val openSessionItem = JMenuItem("Open Session From File...")
+    openSessionItem.addActionListener { logViewerView.handleOpenSessionFromFile() }
+    fileMenu.add(openSessionItem)
+
+    fileMenu.addSeparator()
+
     val settingsItem = JMenuItem("Settings")
     settingsItem.accelerator = KeyStroke.getKeyStroke(
       KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx
@@ -285,6 +345,15 @@ class MainViewImpl(
     val openFilterItem = JMenuItem("Open Filters...")
     openFilterItem.addActionListener { logViewerView.handleOpenFiltersMenu() }
     filtersMenu.add(openFilterItem)
+    val cleanDuplicatesItem = JMenuItem("Find & Clean Duplicate Filters...")
+    cleanDuplicatesItem.addActionListener { logViewerView.handleCleanDuplicateFilters() }
+    filtersMenu.add(cleanDuplicatesItem)
+    val searchFiltersItem = JMenuItem("Search Filters...")
+    searchFiltersItem.accelerator = KeyStroke.getKeyStroke(
+      KeyEvent.VK_F, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx or InputEvent.SHIFT_DOWN_MASK
+    )
+    searchFiltersItem.addActionListener { logViewerView.handleSearchFilters() }
+    filtersMenu.add(searchFiltersItem)
 
     val helpMenu = JMenu("Help")
     val aboutItem = JMenuItem("About")
@@ -299,7 +368,6 @@ class MainViewImpl(
 
     // Add all menus in order
     menuBar.add(fileMenu)
-    menuBar.add(logsMenu)
     menuBar.add(logsMenu)
     menuBar.add(filtersMenu)
     streamsMenu?.let { menuBar.add(it) }

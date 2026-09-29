@@ -3,11 +3,15 @@ package com.tibagni.logviewer
 import com.tibagni.logviewer.LogViewerPresenter.UserSelection
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterDeduplicationDialog
+import com.tibagni.logviewer.filter.FilterSimilarityUtils
 import com.tibagni.logviewer.filter.FiltersList
+import com.tibagni.logviewer.filter.FiltersSearchPanel
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
+import com.tibagni.logviewer.session.SessionRestoreDialog
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -31,13 +35,31 @@ interface LogViewerView : View {
   fun handleChangeCharsetMenu(charset: Charset)
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
+  fun handleCleanDuplicateFilters()
+  fun handleSearchFilters()
   fun handleGoToTimestampMenu()
   fun handleConfigureIgnoredLogs()
   fun onThemeChanged()
+  
+  fun handleSaveSession()
+  fun handleSaveSessionAs()
+  fun handleRestoreSession()
+  fun handleOpenSessionFromFile()
+  
+  fun applyLayout(mainSplit: Int, logsSplit: Int, mainLogSplit: Int, myLogsVisible: Boolean, selectedTab: Int)
+  fun restoreSession(session: com.tibagni.logviewer.session.SessionData)
 }
 
 // This is the interface known by the presenter
 interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
+  val mainSplitLocation: Int
+  val logsSplitLocation: Int
+  val mainLogSplitLocation: Int
+  val myLogsVisible: Boolean
+  val selectedTab: Int
+  val windowState: com.tibagni.logviewer.session.WindowState
+  fun applyLayout(mainSplit: Int, logsSplit: Int, mainLogSplit: Int, myLogsVisible: Boolean, selectedTab: Int)
+
   fun configureFiltersList(filters: Map<String, List<Filter>>?)
   fun showErrorMessage(message: String?)
   fun showSkippedLogsMessage(skippedLogs: List<String>)
@@ -112,9 +134,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var addNewFilterGroupBtn: JButton
   private lateinit var moreFilterOptionsBtn: JButton
   private lateinit var collapseExpandAllGroupsBtn: JButton
+  private lateinit var mainSplitPane: JSplitPane
+  private lateinit var mainLogSplit: JSplitPane
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
   private lateinit var filtersPane: FiltersList
+  private lateinit var filtersSearchPanel: FiltersSearchPanel
+  private lateinit var searchFiltersBtn: JButton
   private lateinit var sidePanel: SidePanel
   private lateinit var applyFiltersBtn: JButton
 
@@ -131,6 +157,41 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private val logStreams: HashSet<LogStream> = HashSet()
   private var doFinish: (() -> Unit)? = null
 
+  override val mainSplitLocation: Int
+    get() = mainSplitPane.dividerLocation
+  override val logsSplitLocation: Int
+    get() = logsPane.dividerLocation
+  override val mainLogSplitLocation: Int
+    get() = mainLogSplit.dividerLocation
+  override val myLogsVisible: Boolean
+    get() = sidePanel.toggleMyLogs.isActive
+  override val selectedTab: Int
+    get() = 0 // TBD, LogViewer currently has no main tabs to switch between
+  override val windowState: com.tibagni.logviewer.session.WindowState
+    get() = com.tibagni.logviewer.session.WindowState(
+        mainView.parent.x,
+        mainView.parent.y,
+        mainView.parent.width,
+        mainView.parent.height,
+        (mainView.parent.extendedState and JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH
+    )
+
+  override fun applyLayout(mainSplit: Int, logsSplit: Int, mainLogSplitParam: Int, myLogsVisible: Boolean, selectedTab: Int) {
+    if (mainSplit >= 0) mainSplitPane.dividerLocation = mainSplit
+    if (logsSplit >= 0) logsPane.dividerLocation = logsSplit
+    if (mainLogSplitParam >= 0) mainLogSplit.dividerLocation = mainLogSplitParam
+    
+    if (myLogsVisible && !sidePanel.toggleMyLogs.isActive) {
+      sidePanel.toggleMyLogs.toggle()
+    } else if (!myLogsVisible && sidePanel.toggleMyLogs.isActive) {
+      sidePanel.toggleMyLogs.toggle()
+    }
+  }
+
+  override fun restoreSession(session: com.tibagni.logviewer.session.SessionData) {
+    presenter.restoreSession(session)
+  }
+
   init {
     buildUi()
     val userPrefs = ServiceLocator.logViewerPrefs
@@ -142,6 +203,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       ServiceLocator.myLogsRepository,
       ServiceLocator.filtersRepository
     )
+    mainSplitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { presenter.layoutChanged() }
+    mainLogSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { presenter.layoutChanged() }
+    logsPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { presenter.layoutChanged() }
+    sidePanel.toggleMyLogs.addActionListener { presenter.layoutChanged() }
+
     presenter.init()
 
     logRenderer = LogCellRenderer()
@@ -610,6 +676,52 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     file?.let { presenter.saveFilteredLogs(it) }
   }
 
+  override fun handleSaveSession() {
+    val session = presenter.currentSessionData
+    ServiceLocator.sessionManager.writeSession(session)
+    Toast.showToast(mainView.parent, "Session saved successfully", Toast.LENGTH_SHORT)
+  }
+
+  override fun handleSaveSessionAs() {
+    val file = mainView.showSaveSessionFileChooser() ?: return
+    val session = presenter.currentSessionData
+    ServiceLocator.sessionManager.writeSession(session, file)
+    Toast.showToast(mainView.parent, "Session saved to ${file.name}", Toast.LENGTH_SHORT)
+  }
+
+  override fun handleRestoreSession() {
+    val session = ServiceLocator.sessionManager.readSession()
+    if (session == null) {
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        "No saved session found.",
+        "Restore Session",
+        JOptionPane.INFORMATION_MESSAGE
+      )
+      return
+    }
+    if (SessionRestoreDialog.showDialog(mainView.parent, session)) {
+      presenter.restoreSession(session)
+    }
+  }
+
+  override fun handleOpenSessionFromFile() {
+    val file = mainView.showOpenSessionFileChooser() ?: return
+    val session = ServiceLocator.sessionManager.readSession(file)
+    if (session == null) {
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        "Could not load session from ${file.name}",
+        "Error Loading Session",
+        JOptionPane.ERROR_MESSAGE
+      )
+      return
+    }
+    if (SessionRestoreDialog.showDialog(mainView.parent, session)) {
+      presenter.restoreSession(session)
+    }
+  }
+
   override fun handleOpenFiltersMenu() {
     val filterFiles = mainView.showOpenMultipleFiltersFileChooser()
     if (filterFiles.isNotEmpty()) {
@@ -635,6 +747,31 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
       presenter.loadFilters(filterFiles, keepCurrentFilters)
     }
+  }
+
+  override fun handleCleanDuplicateFilters() {
+    val clusters = FilterSimilarityUtils.findDuplicateClusters(ServiceLocator.filtersRepository.currentlyOpenedFilters)
+    if (clusters.isEmpty()) {
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        "No duplicate or similar filters found.",
+        "Duplicate Filters",
+        JOptionPane.INFORMATION_MESSAGE
+      )
+      return
+    }
+
+    val removals = FilterDeduplicationDialog.showDialog(mainView.parent, clusters)
+    if (removals != null && removals.isNotEmpty()) {
+      presenter.applyDeduplicationResolution(removals)
+      val totalDeleted = removals.values.map { it.size }.sum()
+      Toast.showToast(mainView.parent, "Cleaned $totalDeleted duplicate filter(s)", Toast.LENGTH_SHORT)
+    }
+  }
+
+  override fun handleSearchFilters() {
+    filtersSearchPanel.isVisible = true
+    filtersSearchPanel.focusSearch()
   }
 
   override fun handleGoToTimestampMenu() {
@@ -897,8 +1034,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .build()
     )
 
-    val mainSplitPane = JSplitPane()
-    mainSplitPane.dividerSize = UIScaleUtils.dip(5)
+    mainSplitPane = JSplitPane()
     mainSplitPane.isOneTouchExpandable = true
     mainSplitPane.resizeWeight = 0.15
     _contentPane.add(
@@ -913,12 +1049,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .build()
     )
 
-    val mainLogSplit = JSplitPane()
-    mainLogSplit.dividerSize = UIScaleUtils.dip(5)
+    mainLogSplit = JSplitPane()
     mainLogSplit.resizeWeight = 0.8
 
     logsPane = JSplitPane()
-    logsPane.dividerSize = UIScaleUtils.dip(5)
     logsPane.orientation = JSplitPane.VERTICAL_SPLIT
     logsPane.resizeWeight = 0.6
 
@@ -954,27 +1088,61 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val filtersMainPane = JPanel()
     filtersMainPane.layout = GridBagLayout()
     filtersMainPane.border = BorderFactory.createTitledBorder("Filters")
+
+    filtersPane = FiltersList()
+
+    fun toggleFiltersSearch() {
+      filtersSearchPanel.isVisible = !filtersSearchPanel.isVisible
+      if (filtersSearchPanel.isVisible) {
+        filtersSearchPanel.focusSearch()
+      } else {
+        filtersSearchPanel.closeSearch()
+      }
+    }
+
+    filtersSearchPanel = FiltersSearchPanel(
+      onSearchQueryChanged = { query ->
+        val matches = filtersPane.filterByQuery(query)
+        val total = filtersPane.totalFiltersCount
+        filtersSearchPanel.updateMatchesCount(matches, total, query)
+      },
+      onCloseRequested = {
+        filtersSearchPanel.isVisible = false
+        filtersPane.clearSearchFilter()
+      }
+    )
+    filtersSearchPanel.isVisible = false
+
+    filtersMainPane.add(
+      filtersSearchPanel,
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(1)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.HORIZONTAL)
+        .build()
+    )
+
+    filtersMainPane.add(
+      JScrollPane(filtersPane).also { it.verticalScrollBar.unitIncrement = 16 },
+      GBConstraintsBuilder()
+        .withGridx(0)
+        .withGridy(2)
+        .withWeightx(1.0)
+        .withWeighty(1.0)
+        .withFill(GridBagConstraints.BOTH)
+        .build()
+    )
+
     val emptyPane = JPanel()
     emptyPane.layout = FlowLayout(FlowLayout.CENTER, 5, 5)
     filtersMainPane.add(
       emptyPane,
       GBConstraintsBuilder()
         .withGridx(0)
-        .withGridy(2)
+        .withGridy(3)
         .withWeightx(1.0)
         .withAnchor(GridBagConstraints.SOUTH)
-        .build()
-    )
-
-    filtersPane = FiltersList()
-    filtersMainPane.add(
-      JScrollPane(filtersPane).also { it.verticalScrollBar.unitIncrement = 16 },
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(1)
-        .withWeightx(1.0)
-        .withWeighty(1.0)
-        .withFill(GridBagConstraints.BOTH)
         .build()
     )
 
@@ -984,6 +1152,12 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     addNewFilterGroupBtn = JButton()
     addNewFilterGroupBtn.actionCommand = "Add"
     addNewFilterGroupBtn.text = "New Group"
+    searchFiltersBtn = JButton()
+    searchFiltersBtn.toolTipText = "Search filters (Ctrl+Shift+F)"
+    searchFiltersBtn.text = "Search"
+    searchFiltersBtn.addActionListener {
+      toggleFiltersSearch()
+    }
     moreFilterOptionsBtn = JButton()
     moreFilterOptionsBtn.toolTipText = "More options"
     moreFilterOptionsBtn.text = StringUtils.THREE_LINES
@@ -994,6 +1168,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     filterActionButtonsPane.add(applyFiltersBtn)
     filterActionButtonsPane.add(addNewFilterGroupBtn)
+    filterActionButtonsPane.add(searchFiltersBtn)
     filterActionButtonsPane.add(moreFilterOptionsBtn)
 
     filterButtonsPane.add(collapseExpandAllGroupsBtn, BorderLayout.WEST)
@@ -1014,6 +1189,16 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         )
         .withFill(GridBagConstraints.BOTH)
         .build()
+    )
+
+    val shortcutStroke = KeyStroke.getKeyStroke(
+      KeyEvent.VK_F,
+      Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx or InputEvent.SHIFT_DOWN_MASK
+    )
+    filtersMainPane.registerKeyboardAction(
+      { toggleFiltersSearch() },
+      shortcutStroke,
+      JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
     )
 
     mainSplitPane.leftComponent = filtersMainPane

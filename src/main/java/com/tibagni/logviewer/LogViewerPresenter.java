@@ -37,7 +37,10 @@ public interface LogViewerPresenter {
   void saveFilteredLogs(File file);
   void applyFilters();
   void filterEdited(Filter filter);
-
+  void layoutChanged();
+  void restoreSession(com.tibagni.logviewer.session.SessionData sessionData);
+  com.tibagni.logviewer.session.SessionData getCurrentSessionData();
+  void applyDeduplicationResolution(java.util.Map<String, ? extends java.util.Collection<Filter>> filtersToRemove);
   void setAllFiltersApplied(String group, boolean isApplied);
   void setAllFiltersApplied(boolean isApplied);
 

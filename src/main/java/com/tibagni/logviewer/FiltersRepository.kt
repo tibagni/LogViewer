@@ -21,6 +21,8 @@ interface FiltersRepository {
   fun addFilter(group: String, filter: Filter)
   fun addFilters(group: String, filters: List<Filter>)
   fun deleteFilters(group: String, indices: IntArray): List<Filter>
+  fun removeFilter(group: String, filter: Filter): Boolean
+  fun removeFilters(removalsByGroup: Map<String, Collection<Filter>>)
   fun reorderFilters(group: String, indOrig: Int, indDest: Int)
   fun addGroup(group: String): String
   fun deleteGroup(group: String): Boolean
@@ -98,6 +100,16 @@ class FiltersRepositoryImpl: FiltersRepository {
     }
 
     return deletedFilters
+  }
+
+  override fun removeFilter(group: String, filter: Filter): Boolean {
+    return _currentlyOpenedFilters[group]?.remove(filter) ?: false
+  }
+
+  override fun removeFilters(removalsByGroup: Map<String, Collection<Filter>>) {
+    for ((group, filtersToRemove) in removalsByGroup) {
+      _currentlyOpenedFilters[group]?.removeAll(filtersToRemove)
+    }
   }
 
   override fun reorderFilters(group: String, indOrig: Int, indDest: Int) {

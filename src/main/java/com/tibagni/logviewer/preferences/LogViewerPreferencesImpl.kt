@@ -19,6 +19,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
     /*Visible for Testing*/ const val REAPPLY_FILTERS_ON_CHANGE = "reapply_filters_on_change"
+    /*Visible for Testing*/ const val RESTORE_SESSION_BEHAVIOR = "restore_session_behavior"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -119,10 +120,19 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
      * If true, the filters will be re-applied every time when a checkbox is checked or unchecked.
      */
     override var applyFilterOnCheck: Boolean
-        get() = preferences.getBoolean(REAPPLY_FILTERS_ON_CHANGE, true)
-        set(reApply) {
-            preferences.putBoolean(REAPPLY_FILTERS_ON_CHANGE, reApply)
+        get() = preferences.getBoolean(REAPPLY_FILTERS_ON_CHANGE, false)
+        set(value) {
+            preferences.putBoolean(REAPPLY_FILTERS_ON_CHANGE, value)
             listeners.forEach { l -> l.onApplyFiltersOnCheckChanged() }
+        }
+
+    override var restoreSessionBehavior: RestoreSessionBehavior
+        get() = RestoreSessionBehavior.valueOf(
+            preferences.get(RESTORE_SESSION_BEHAVIOR, RestoreSessionBehavior.PROMPT.name)
+        )
+        set(value) {
+            preferences.put(RESTORE_SESSION_BEHAVIOR, value.name)
+            listeners.forEach { l -> l.onRestoreSessionBehaviorChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

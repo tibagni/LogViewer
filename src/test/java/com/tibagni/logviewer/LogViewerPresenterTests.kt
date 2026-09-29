@@ -49,6 +49,9 @@ class LogViewerPresenterTests {
   @Before
   fun setUp() {
     MockitoAnnotations.initMocks(this)
+    `when`(mockPrefs.defaultFiltersPath).thenReturn(File("."))
+    `when`(view.windowState).thenReturn(com.tibagni.logviewer.session.WindowState())
+
     presenter = LogViewerPresenterImpl(
       view,
       mockPrefs,
@@ -2736,6 +2739,50 @@ class LogViewerPresenterTests {
     val ret = presenter.updateMyLogs()
     verify(mockMyLogsRepository).reset(anyList())
     assertTrue(ret)
+  }
+
+  @Test
+  fun testApplyDeduplicationResolution() {
+    val f1 = Filter("f1", "ActivityManager", Color.RED, LogLevel.DEBUG)
+    val removals = mapOf("GroupA" to listOf(f1))
+
+    presenter.applyDeduplicationResolution(removals)
+
+    verify(mockFiltersRepository).removeFilters(removals)
+    verify(view).configureFiltersList(anyOrNull())
+  }
+
+  @Test
+  fun testGetCurrentSessionDataIncludesMyLogs() {
+    val myLog = LogEntry("My special log line", LogLevel.INFO, null).also { it.index = 3 }
+    `when`(mockMyLogsRepository.logs).thenReturn(listOf(myLog))
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(emptyList())
+    `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(emptyMap())
+
+    val session = presenter.currentSessionData
+    assertEquals(1, session.myLogs.size)
+    assertEquals(3, session.myLogs[0].index)
+    assertEquals("My special log line", session.myLogs[0].text)
+  }
+
+  @Test
+  fun testRestoreSessionRestoresMyLogs() {
+    val log0 = LogEntry("Line 0", LogLevel.DEBUG, null).also { it.index = 0 }
+    val log1 = LogEntry("Line 1", LogLevel.INFO, null).also { it.index = 1 }
+    val openedLogs = listOf(log0, log1)
+
+    val session = com.tibagni.logviewer.session.SessionData(
+      logFiles = listOf(File("test.log")),
+      myLogs = listOf(com.tibagni.logviewer.session.MyLogEntryData(1, "Line 1"))
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(openedLogs)
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(listOf(File("test.log")))
+
+    presenter.restoreSession(session)
+
+    verify(mockMyLogsRepository).reset(listOf(log1))
+    verify(view).showMyLogs(anyOrNull())
   }
 
   companion object {

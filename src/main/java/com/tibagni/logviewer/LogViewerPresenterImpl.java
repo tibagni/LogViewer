@@ -18,6 +18,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import com.tibagni.logviewer.session.LayoutState;
+import com.tibagni.logviewer.session.MyLogEntryData;
+import com.tibagni.logviewer.session.SessionData;
+import com.tibagni.logviewer.session.WindowState;
 
 import static com.tibagni.logviewer.logger.ProfilerKt.wrapProfiler;
 
@@ -32,10 +36,59 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   private final LogViewerPreferences userPrefs;
 
   private final LogsRepository logsRepository;
-  private final MyLogsRepository myLogsRepository;
   private final FiltersRepository filtersRepository;
+  private final MyLogsRepository myLogsRepository;
 
-  LogViewerPresenterImpl(LogViewerPresenterView view,
+  @Override
+  public SessionData getCurrentSessionData() {
+    List<MyLogEntryData> myLogsData = new ArrayList<>();
+    for (LogEntry entry : myLogsRepository.getLogs()) {
+      myLogsData.add(new MyLogEntryData(entry.getIndex(), entry.getLogText()));
+    }
+
+    return new SessionData(
+            1,
+            System.currentTimeMillis(),
+            true,
+            new ArrayList<File>(logsRepository.getCurrentlyOpenedLogFiles()),
+            new ArrayList<File>(filtersRepository.getCurrentlyOpenedFilterFiles().values()),
+            getCurrentlyAppliedFiltersMap(),
+            view.getWindowState(),
+            new LayoutState(
+                    view.getMainSplitLocation(),
+                    view.getLogsSplitLocation(),
+                    view.getMainLogSplitLocation(),
+                    view.getMyLogsVisible(),
+                    view.getSelectedTab()
+            ),
+            myLogsData
+    );
+  }
+
+  private void saveSessionState() {
+    SessionData session = getCurrentSessionData();
+    session.setCleanExit(false);
+    ServiceLocator.INSTANCE.getSessionManager().writeSessionDebounced(session);
+  }
+
+  private Map<String, List<Integer>> getCurrentlyAppliedFiltersMap() {
+    Map<String, List<Integer>> appliedFiltersMap = new HashMap<>();
+    for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
+      List<Integer> appliedIndices = new ArrayList<>();
+      List<Filter> filters = entry.getValue();
+      for (int i = 0; i < filters.size(); i++) {
+        if (filters.get(i).isApplied()) {
+          appliedIndices.add(i);
+        }
+      }
+      if (!appliedIndices.isEmpty()) {
+        appliedFiltersMap.put(entry.getKey(), appliedIndices);
+      }
+    }
+    return appliedFiltersMap;
+  }
+
+  public LogViewerPresenterImpl(LogViewerPresenterView view,
                          LogViewerPreferences userPrefs,
                          LogsRepository logsRepository,
                          MyLogsRepository myLogsRepository,
@@ -450,6 +503,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
             view.showCurrentLogsLocation(null);
             view.showErrorMessage("No logs found");
           }
+          saveSessionState();
         });
       } catch (OpenLogsException e) {
         doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
@@ -541,12 +595,14 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   public void setAllFiltersApplied(String group, boolean isApplied) {
     forEachFilterInGroup(group, filter -> filter.setApplied(isApplied));
     applyFilters();
+    saveSessionState();
   }
 
   @Override
   public void setAllFiltersApplied(boolean isApplied) {
     forEachFilter(filter -> filter.setApplied(isApplied));
     applyFilters();
+    saveSessionState();
   }
 
   @Override
@@ -560,6 +616,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     cachedAllowedFilteredLogs.clear();
     cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
     view.showFilteredLogs(cachedAllowedFilteredLogs);
+    saveSessionState();
   }
 
   private void updateFiltersContextInfo() {
@@ -607,6 +664,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     logsRepository.setFirstVisibleLogIndex(index);
     view.showLogs(logsRepository.getCurrentlyOpenedLogs());
     applyFilters();
+    saveSessionState();
   }
 
   @Override
@@ -625,6 +683,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     logsRepository.setLastVisibleLogIndex(index);
     view.showLogs(logsRepository.getCurrentlyOpenedLogs());
     applyFilters();
+    saveSessionState();
   }
 
   @Override
@@ -638,6 +697,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
     view.showLogs(logsRepository.getCurrentlyOpenedLogs());
     applyFilters();
+    saveSessionState();
   }
 
   @Override
@@ -676,6 +736,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   public void addLogEntriesToMyLogs(List<LogEntry> entries) {
     myLogsRepository.addLogEntries(entries);
     view.showMyLogs(myLogsRepository.getLogs());
+    saveSessionState();
   }
 
   @Override
@@ -691,6 +752,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
     myLogsRepository.removeLogEntries(toRemove);
     view.showMyLogs(myLogsRepository.getLogs());
+    saveSessionState();
   }
 
   boolean updateMyLogs() {
@@ -764,6 +826,145 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     return result;
+  }
+
+  @Override
+  public void restoreSession(SessionData sessionData) {
+    if (!sessionData.getLogFiles().isEmpty()) {
+      File[] logs = sessionData.getLogFiles().toArray(new File[0]);
+      
+      // We need to pass a Runnable or hook into the completion of log loading
+      // For now, loadLogs is async. If we call loadFilters afterwards, it should be fine
+      // because filters are just added to the repository and UI. 
+      // But wait! If we apply filters before logs finish loading, it won't apply to the logs immediately.
+      // Actually, when logs finish loading, it automatically calls applyFilters().
+      
+      cleanUpFilterTempInfo();
+      doAsync(() -> {
+        try {
+          logsRepository.openLogFiles(logs, StandardCharsets.UTF_8, this::updateAsyncProgress);
+          doOnUiThread(() -> {
+            if (!logsRepository.getCurrentlyOpenedLogFiles().isEmpty()) {
+              // Load the filters
+              if (!sessionData.getFilterFiles().isEmpty()) {
+                try {
+                  filtersRepository.openFilterFiles(sessionData.getFilterFiles().toArray(new File[0]));
+                } catch (com.tibagni.logviewer.OpenFiltersException e) {
+                  view.showErrorMessage(e.getMessage());
+                }
+              }
+              
+              // Apply specific filters
+              for (Map.Entry<String, List<Integer>> entry : sessionData.getAppliedFilters().entrySet()) {
+                List<Filter> filtersInGroup = filtersRepository.getCurrentlyOpenedFilters().get(entry.getKey());
+                if (filtersInGroup != null) {
+                  for (int i = 0; i < filtersInGroup.size(); i++) {
+                    filtersInGroup.get(i).setApplied(entry.getValue().contains(i));
+                  }
+                }
+              }
+              
+              // Apply layout
+              view.applyLayout(
+                sessionData.getLayout().getMainSplit(),
+                sessionData.getLayout().getLogsSplit(),
+                sessionData.getLayout().getMainLogSplit(),
+                sessionData.getLayout().getMyLogsVisible(),
+                sessionData.getLayout().getSelectedTab()
+              );
+              
+              rebuildLogStreamsMap(logsRepository.getAvailableStreams());
+              filteredLogs.clear();
+              cachedAllowedFilteredLogs.clear();
+              cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
+              
+              view.showFilteredLogs(cachedAllowedFilteredLogs);
+              view.showLogs(logsRepository.getCurrentlyOpenedLogs());
+              view.showAvailableLogStreams(allowedStreamsMap.keySet());
+              
+              // Restore My Logs entries
+              if (!sessionData.getMyLogs().isEmpty()) {
+                List<LogEntry> myLogsToRestore = new ArrayList<>();
+                List<LogEntry> currentLogs = logsRepository.getCurrentlyOpenedLogs();
+                for (MyLogEntryData myLogData : sessionData.getMyLogs()) {
+                  int idx = myLogData.getIndex();
+                  LogEntry matched = null;
+                  if (idx >= 0 && idx < currentLogs.size()) {
+                    LogEntry candidate = currentLogs.get(idx);
+                    if (candidate.getLogText().equals(myLogData.getText())) {
+                      matched = candidate;
+                    }
+                  }
+                  if (matched == null && !myLogData.getText().isEmpty()) {
+                    for (LogEntry entry : currentLogs) {
+                      if (entry.getLogText().equals(myLogData.getText())) {
+                        matched = entry;
+                        break;
+                      }
+                    }
+                  }
+                  if (matched == null && idx >= 0 && idx < currentLogs.size()) {
+                    matched = currentLogs.get(idx);
+                  }
+                  if (matched != null) {
+                    myLogsToRestore.add(matched);
+                  }
+                }
+                if (!myLogsToRestore.isEmpty()) {
+                  myLogsRepository.reset(myLogsToRestore);
+                }
+              }
+              view.showMyLogs(myLogsRepository.getLogs());
+              
+              String logsPath = FilenameUtils.getFullPath(logs[0].getAbsolutePath());
+              view.showCurrentLogsLocation(logsPath);
+              applyFilters();
+              
+              List<String> skippedLogs = logsRepository.getLastSkippedLogFiles();
+              if (!skippedLogs.isEmpty()) {
+                view.showSkippedLogsMessage(skippedLogs);
+              }
+              
+              view.closeCurrentlyOpenedBugReports();
+              Map<String, String> bugReports = logsRepository.getPotentialBugReports();
+              if (!bugReports.isEmpty()) {
+                Map.Entry<String, String> bugEntry = bugReports.entrySet().iterator().next();
+                view.showOpenPotentialBugReport(bugEntry.getKey(), bugEntry.getValue());
+              }
+            } else {
+              view.showCurrentLogsLocation(null);
+              view.showErrorMessage("No logs found");
+            }
+          });
+        } catch (OpenLogsException e) {
+          doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
+        } catch (Exception e) {
+          doOnUiThread(() -> view.showErrorMessage(e.getMessage()));
+        }
+      });
+    } else {
+      // Just apply layout if there are no logs
+      view.applyLayout(
+        sessionData.getLayout().getMainSplit(),
+        sessionData.getLayout().getLogsSplit(),
+        sessionData.getLayout().getMainLogSplit(),
+        sessionData.getLayout().getMyLogsVisible(),
+        sessionData.getLayout().getSelectedTab()
+      );
+    }
+  }
+
+  @Override
+  public void layoutChanged() {
+    saveSessionState();
+  }
+
+  @Override
+  public void applyDeduplicationResolution(Map<String, ? extends Collection<Filter>> filtersToRemove) {
+    filtersRepository.removeFilters(filtersToRemove);
+    view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
+    applyFilters();
+    saveSessionState();
   }
 
   @Override
@@ -893,6 +1094,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     applyFilters();
+    saveSessionState();
   }
 
   // Test helpers

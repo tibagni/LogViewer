@@ -2,6 +2,10 @@ package com.tibagni.logviewer.preferences
 
 import java.io.File
 
+enum class RestoreSessionBehavior {
+    PROMPT, AUTO, DISABLE
+}
+
 interface LogViewerPreferences {
     var defaultFiltersPath: File
     var lastFilterPaths: Array<File>
@@ -14,6 +18,7 @@ interface LogViewerPreferences {
     var collapseAllGroupsStartup: Boolean
     var showLineNumbers: Boolean
     var applyFilterOnCheck: Boolean
+    var restoreSessionBehavior: RestoreSessionBehavior
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
@@ -32,6 +37,7 @@ interface LogViewerPreferences {
         fun onCollapseAllGroupsStartupChanged()
         fun onShowLineNumbersChanged()
         fun onApplyFiltersOnCheckChanged() {}
+        fun onRestoreSessionBehaviorChanged() {}
     }
 
     abstract class Adapter : Listener {
@@ -46,5 +52,6 @@ interface LogViewerPreferences {
         override fun onCollapseAllGroupsStartupChanged() {}
         override fun onShowLineNumbersChanged() {}
         override fun onApplyFiltersOnCheckChanged() {}
+        override fun onRestoreSessionBehaviorChanged() {}
     }
 }

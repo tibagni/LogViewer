@@ -550,4 +550,39 @@ class FiltersRepositoryTests {
     assertTrue(filtersRepository.currentlyOpenedFilters.isEmpty())
     assertTrue(filtersRepository.currentlyOpenedFilterFiles.isEmpty())
   }
+
+  @Test
+  fun testRemoveFilter() {
+    val temporaryFilterFile = createTempFilterFiles(
+      "test" to listOf(TEST_SERIALIZED_FILTER, TEST_SERIALIZED_FILTER2).joinToString("\n")
+    )
+    filtersRepository.openFilterFiles(temporaryFilterFile)
+    val groupName = temporaryFilterFile[0].name
+    val filters = filtersRepository.currentlyOpenedFilters[groupName]!!
+    val filterToRemove = filters[0]
+
+    val removed = filtersRepository.removeFilter(groupName, filterToRemove)
+    assertTrue(removed)
+    assertEquals(1, filtersRepository.currentlyOpenedFilters[groupName]?.size)
+    assertFalse(filtersRepository.currentlyOpenedFilters[groupName]!!.contains(filterToRemove))
+  }
+
+  @Test
+  fun testRemoveFiltersBatch() {
+    val temporaryFilterFile = createTempFilterFiles(
+      "test1" to listOf(TEST_SERIALIZED_FILTER, TEST_SERIALIZED_FILTER2).joinToString("\n"),
+      "test2" to listOf(TEST_SERIALIZED_FILTER3).joinToString("\n")
+    )
+    filtersRepository.openFilterFiles(temporaryFilterFile)
+    val group1 = temporaryFilterFile[0].name
+    val group2 = temporaryFilterFile[1].name
+
+    val f1 = filtersRepository.currentlyOpenedFilters[group1]!![0]
+    val f3 = filtersRepository.currentlyOpenedFilters[group2]!![0]
+
+    filtersRepository.removeFilters(mapOf(group1 to listOf(f1), group2 to listOf(f3)))
+
+    assertEquals(1, filtersRepository.currentlyOpenedFilters[group1]?.size)
+    assertEquals(0, filtersRepository.currentlyOpenedFilters[group2]?.size)
+  }
 }

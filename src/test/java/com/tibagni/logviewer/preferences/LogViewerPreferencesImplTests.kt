@@ -473,6 +473,22 @@ class LogViewerPreferencesImplTests {
         verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.REAPPLY_FILTERS_ON_CHANGE, false)
         verify(mockListener, only()).onApplyFiltersOnCheckChanged()
     }
+    
+    @Test
+    fun testGettingRestoreSessionBehavior() {
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.RESTORE_SESSION_BEHAVIOR), anyString())).thenReturn(RestoreSessionBehavior.AUTO.name)
+        val returnedVal = LogViewerPreferencesImpl.restoreSessionBehavior
+
+        assertEquals(RestoreSessionBehavior.AUTO, returnedVal)
+    }
+
+    @Test
+    fun testSettingRestoreSessionBehavior() {
+        LogViewerPreferencesImpl.restoreSessionBehavior = RestoreSessionBehavior.DISABLE
+        
+        verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.RESTORE_SESSION_BEHAVIOR, RestoreSessionBehavior.DISABLE.name)
+        verify(mockListener, only()).onRestoreSessionBehaviorChanged()
+    }
 
     /**
      * Tests the applyFilterOnCheck setting

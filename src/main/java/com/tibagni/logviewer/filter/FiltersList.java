@@ -15,6 +15,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -160,6 +161,46 @@ public class FiltersList extends JPanel {
     }
   }
 
+  private boolean isFilteringBySearch = false;
+
+  public int filterByQuery(String query) {
+    int totalMatches = 0;
+    boolean isQueryEmpty = StringUtils.isEmpty(query);
+
+    if (!isFilteringBySearch && !isQueryEmpty) {
+      for (FilterUIGroup group : filterUIGroups.values()) {
+        group.saveVisibilityBeforeSearch();
+      }
+      isFilteringBySearch = true;
+    } else if (isQueryEmpty) {
+      isFilteringBySearch = false;
+    }
+
+    for (FilterUIGroup group : filterUIGroups.values()) {
+      totalMatches += group.filterByQuery(query);
+    }
+
+    revalidate();
+    repaint();
+    return totalMatches;
+  }
+
+  public void clearSearchFilter() {
+    filterByQuery("");
+  }
+
+  public boolean isFilteringBySearch() {
+    return isFilteringBySearch;
+  }
+
+  public int getTotalFiltersCount() {
+    int total = 0;
+    for (FilterUIGroup group : filterUIGroups.values()) {
+      total += group.currentFilters.length;
+    }
+    return total;
+  }
+
   private void onFilterUIGroupFocusChanged(String currentFocus) {
     // Whenever the focus is changed to a different filter group, make sure to clean the search of all others
     for (String group : filterUIGroups.keySet()) {
@@ -174,6 +215,8 @@ public class FiltersList extends JPanel {
     private final String HIDE;
 
     String groupName;
+    Filter[] currentFilters = new Filter[0];
+    boolean wasVisibleBeforeSearch = true;
     private final JButton hideGroupBtn;
     private final JButton prevBtn;
     private final JButton nextBtn;
@@ -306,8 +349,9 @@ public class FiltersList extends JPanel {
       list.setCellRenderer(cellRenderer);
 
       JPanel optionsPane = new JPanel(new BorderLayout());
+      optionsPane.setBorder(new EmptyBorder(UIScaleUtils.dip(5), UIScaleUtils.dip(5), UIScaleUtils.dip(5), UIScaleUtils.dip(5)));
       optionsPane.add(hideGroupBtn, BorderLayout.WEST);
-      JPanel groupActionsPane = new JPanel(new FlowLayout(FlowLayout.TRAILING));
+      JPanel groupActionsPane = new JPanel(new FlowLayout(FlowLayout.TRAILING, UIScaleUtils.dip(5), 0));
       groupActionsPane.add(selectAllCb);
       groupActionsPane.add(saveBtn);
       groupActionsPane.add(addBtn);
@@ -326,8 +370,45 @@ public class FiltersList extends JPanel {
     }
 
     public void setListData(Filter[] filters) {
-      list.setListData(filters);
+      currentFilters = filters != null ? filters : new Filter[0];
+      list.setListData(currentFilters);
       updatePreferredSize();
+    }
+
+    void saveVisibilityBeforeSearch() {
+      wasVisibleBeforeSearch = isGroupVisible();
+    }
+
+    public int filterByQuery(String query) {
+      if (StringUtils.isEmpty(query)) {
+        list.setListData(currentFilters);
+        cellRenderer.setHighlightedText(null);
+        forceGroupVisibilitySilently(wasVisibleBeforeSearch);
+        hideGroupBtn.setText(wasVisibleBeforeSearch ? HIDE : SHOW);
+        updatePreferredSize();
+        return currentFilters.length;
+      }
+
+      List<Filter> matched = FiltersSearchLogic.INSTANCE.filterGroup(java.util.Arrays.asList(currentFilters), query);
+
+      list.setListData(matched.toArray(new Filter[0]));
+      cellRenderer.setHighlightedText(query);
+
+      int matchCount = matched.size();
+      if (matchCount > 0) {
+        forceGroupVisibilitySilently(true);
+        hideGroupBtn.setText(HIDE + " (" + matchCount + "/" + currentFilters.length + ")");
+      } else {
+        forceGroupVisibilitySilently(false);
+        hideGroupBtn.setText(SHOW + " (0/" + currentFilters.length + ")");
+      }
+
+      updatePreferredSize();
+      return matchCount;
+    }
+
+    public int getVisibleFiltersCount() {
+      return list.getModel().getSize();
     }
 
     private void toggleGroupVisibility() {

@@ -81,7 +81,25 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
 
     // Update ScaleFactor based on theme
     UIScaleUtils.updateScaleFactor((int) UIScale.getUserScaleFactor());
-    newLogViewerWindow(initialLogFiles);
+    
+    com.tibagni.logviewer.session.SessionData session = ServiceLocator.INSTANCE.getSessionManager().readSession();
+    boolean shouldRestore = false;
+    
+    if (session != null && initialLogFiles.isEmpty()) {
+      com.tibagni.logviewer.preferences.RestoreSessionBehavior behavior = ServiceLocator.INSTANCE.getLogViewerPrefs().getRestoreSessionBehavior();
+      if (behavior == com.tibagni.logviewer.preferences.RestoreSessionBehavior.AUTO) {
+        shouldRestore = true;
+      } else if (behavior == com.tibagni.logviewer.preferences.RestoreSessionBehavior.PROMPT) {
+        shouldRestore = com.tibagni.logviewer.session.SessionRestoreDialog.Companion.showDialog(null, session);
+      }
+    }
+
+    if (shouldRestore && session != null) {
+      newLogViewerWindow(session);
+    } else {
+      ServiceLocator.INSTANCE.getSessionManager().deleteSession();
+      newLogViewerWindow(initialLogFiles);
+    }
   }
 
   private void initLookAndFeel() {
@@ -102,6 +120,32 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     frame.setContentPane(mainView.getContentPane());
     frame.pack();
     frame.setVisible(true);
+  }
+
+  void newLogViewerWindow(com.tibagni.logviewer.session.SessionData session) {
+    JFrame frame = new JFrame(getApplicationTitle());
+
+    mainView = new MainViewImpl(frame, ServiceLocator.INSTANCE.getLogViewerPrefs(), new java.util.HashSet<>());
+    frame.setContentPane(mainView.getContentPane());
+    frame.pack();
+    
+    // Restore window bounds
+    if (session.getWindow().getWidth() > 0 && session.getWindow().getHeight() > 0) {
+      frame.setBounds(
+          session.getWindow().getX(),
+          session.getWindow().getY(),
+          session.getWindow().getWidth(),
+          session.getWindow().getHeight()
+      );
+    }
+    if (session.getWindow().getMaximized()) {
+      frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+    }
+    
+    frame.setVisible(true);
+    
+    // Initiate session restoration
+    mainView.restoreSession(session);
   }
 
   private String getApplicationTitle() {

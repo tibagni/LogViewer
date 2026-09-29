@@ -93,9 +93,9 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   private fun buildUi() {
     contentPane.layout = GridBagLayout()
     contentPane.border = BorderFactory.createEmptyBorder(
-      UIScaleUtils.dip(10), UIScaleUtils.dip(10),
-      UIScaleUtils.dip(10),
-      UIScaleUtils.dip(10)
+      UIScaleUtils.dip(15), UIScaleUtils.dip(15),
+      UIScaleUtils.dip(15),
+      UIScaleUtils.dip(15)
     )
     contentPane.add(
       buttonsPane,
