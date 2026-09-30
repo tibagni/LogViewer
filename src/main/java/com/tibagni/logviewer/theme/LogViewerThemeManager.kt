@@ -3,7 +3,11 @@ package com.tibagni.logviewer.theme
 import com.formdev.flatlaf.FlatDarkLaf
 import com.formdev.flatlaf.FlatLaf
 import com.formdev.flatlaf.FlatLightLaf
+import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import java.awt.Dimension
 import java.lang.IllegalArgumentException
+import javax.swing.UIManager
 
 object LogViewerThemeManager {
   private val LIGHT = LogViewerTheme("Light", false) { FlatLightLaf.install() }
@@ -34,6 +38,25 @@ object LogViewerThemeManager {
   private fun install(theme: LogViewerTheme) {
     installedTheme = theme
     theme.install()
+
+    val showDividers = try {
+      ServiceLocator.logViewerPrefs.showLogLineDividers
+    } catch (e: Throwable) {
+      true
+    }
+
+    UIManager.put("Component.arc", 8)
+    UIManager.put("Button.arc", 8)
+    UIManager.put("TextComponent.arc", 8)
+    UIManager.put("ScrollBar.thumbArc", 6)
+    UIManager.put("ScrollBar.showButtons", false)
+    UIManager.put("TabbedPane.showTabSeparators", true)
+    UIManager.put("TabbedPane.tabSeparatorsFullHeight", false)
+    UIManager.put("Table.showHorizontalLines", showDividers)
+    UIManager.put("Table.showVerticalLines", false)
+    UIManager.put("Table.intercellSpacing", Dimension(0, 1))
+    UIManager.put("Table.rowHeight", UIScaleUtils.dip(22))
+
     FlatLaf.updateUILater()
   }
 

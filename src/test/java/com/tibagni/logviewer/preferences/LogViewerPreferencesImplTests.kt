@@ -396,6 +396,44 @@ class LogViewerPreferencesImplTests {
     }
 
     @Test
+    fun testSettingShowLogLineDividers() {
+        LogViewerPreferencesImpl.showLogLineDividers = true
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS, true)
+        verify(mockListener, only()).onShowLogLineDividersChanged()
+    }
+
+    @Test
+    fun testSettingShowLogLineDividers2() {
+        LogViewerPreferencesImpl.showLogLineDividers = false
+
+        verify(mockPrefs, times(1)).putBoolean(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS, false)
+        verify(mockListener, only()).onShowLogLineDividersChanged()
+    }
+
+    @Test
+    fun testGettingShowLogLineDividers() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS), anyBoolean())).thenReturn(true)
+        val returnedVal = LogViewerPreferencesImpl.showLogLineDividers
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS, true)
+        verify(mockListener, never()).onShowLogLineDividersChanged()
+        assertEquals(true, returnedVal)
+    }
+
+    @Test
+    fun testGettingShowLogLineDividers2() {
+        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS), anyBoolean())).thenReturn(false)
+        val returnedVal = LogViewerPreferencesImpl.showLogLineDividers
+
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS, false)
+        verify(mockPrefs, never()).putBoolean(LogViewerPreferencesImpl.SHOW_LOG_LINE_DIVIDERS, true)
+        verify(mockListener, never()).onShowLogLineDividersChanged()
+        assertEquals(false, returnedVal)
+    }
+
+    @Test
     fun testSettingPreferredEditorPath() {
         val testFile = File("test")
         LogViewerPreferencesImpl.preferredTextEditor = testFile

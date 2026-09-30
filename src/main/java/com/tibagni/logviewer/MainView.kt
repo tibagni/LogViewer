@@ -300,7 +300,6 @@ class MainViewImpl(
     // Add all menus in order
     menuBar.add(fileMenu)
     menuBar.add(logsMenu)
-    menuBar.add(logsMenu)
     menuBar.add(filtersMenu)
     streamsMenu?.let { menuBar.add(it) }
     menuBar.add(helpMenu)

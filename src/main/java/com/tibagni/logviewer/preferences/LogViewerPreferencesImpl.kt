@@ -18,6 +18,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val PREFERRED_TEXT_EDITOR = "preferred_text_editor"
     /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
+    /*Visible for Testing*/ const val SHOW_LOG_LINE_DIVIDERS = "show_log_line_dividers"
     /*Visible for Testing*/ const val REAPPLY_FILTERS_ON_CHANGE = "reapply_filters_on_change"
 
     // Allow changing for tests
@@ -113,6 +114,13 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(show) {
             preferences.putBoolean(SHOW_LINE_NUMBERS, show)
             listeners.forEach { l -> l.onShowLineNumbersChanged() }
+        }
+
+    override var showLogLineDividers: Boolean
+        get() = preferences.getBoolean(SHOW_LOG_LINE_DIVIDERS, true)
+        set(show) {
+            preferences.putBoolean(SHOW_LOG_LINE_DIVIDERS, show)
+            listeners.forEach { l -> l.onShowLogLineDividersChanged() }
         }
 
     /**

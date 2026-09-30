@@ -153,6 +153,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     myLogsRenderer = LogCellRenderer()
     myLogsRenderer.showLineNumbers(userPrefs.showLineNumbers)
 
+    val showDividers = userPrefs.showLogLineDividers
+    logList.table.showHorizontalLines = showDividers
+    filteredLogList.table.showHorizontalLines = showDividers
+    myLogsList.table.showHorizontalLines = showDividers
+
     // Listen to user preferences changes
     userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
       override fun onShowLineNumbersChanged() {
@@ -163,6 +168,16 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         filteredLogList.table.revalidate()
         filteredLogList.table.repaint()
         myLogsList.table.revalidate()
+        myLogsList.table.repaint()
+      }
+
+      override fun onShowLogLineDividersChanged() {
+        val show = userPrefs.showLogLineDividers
+        logList.table.showHorizontalLines = show
+        filteredLogList.table.showHorizontalLines = show
+        myLogsList.table.showHorizontalLines = show
+        logList.table.repaint()
+        filteredLogList.table.repaint()
         myLogsList.table.repaint()
       }
 
