@@ -5,6 +5,7 @@ import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersList
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
+import com.tibagni.logviewer.filter.SearchFiltersDialog
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
@@ -31,6 +32,8 @@ interface LogViewerView : View {
   fun handleChangeCharsetMenu(charset: Charset)
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
+  fun handleFindFiltersMenu()
+  fun showSearchFiltersDialog()
   fun handleGoToTimestampMenu()
   fun handleConfigureIgnoredLogs()
   fun onThemeChanged()
@@ -112,6 +115,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var addNewFilterGroupBtn: JButton
   private lateinit var moreFilterOptionsBtn: JButton
   private lateinit var collapseExpandAllGroupsBtn: JButton
+  private lateinit var findFiltersBtn: JButton
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
   private lateinit var filtersPane: FiltersList
@@ -198,6 +202,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
     })
     collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
+    findFiltersBtn.addActionListener { showSearchFiltersDialog() }
     applyFiltersBtn.addActionListener { applyFilters() }
 
     setupFiltersContextActions()
@@ -243,8 +248,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     // If there are no groups, there is no point in closing anything
     closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
 
-    popup.add(closeAllGroupsItem)
-    popup.add(unApplyAllFilters)
     popup.show(e.component, e.x, e.y)
   }
 
@@ -652,6 +655,32 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
   }
 
+  override fun handleFindFiltersMenu() {
+    showSearchFiltersDialog()
+  }
+
+  override fun showSearchFiltersDialog() {
+    if (filtersPane.isEmpty) {
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        "There are no filters to search",
+        "No filters",
+        JOptionPane.INFORMATION_MESSAGE
+      )
+      return
+    }
+
+    SearchFiltersDialog.show(
+      mainView.parent,
+      presenter,
+      ServiceLocator.filtersRepository
+    ) { group, filter ->
+      filtersPane.selectFilter(group, filter)
+    }
+
+    filtersPane.updateUI()
+  }
+
   override fun handleGoToTimestampMenu() {
     var hintText = "{month}-{day} {hour}:{min}:{sec}:{hund}"
     var ts: LogTimestamp? = null
@@ -1006,8 +1035,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     applyFiltersBtn.actionCommand = "Apply"
     applyFiltersBtn.text = "Apply"
     applyFiltersBtn.toolTipText = "Apply all selected filters"
+    findFiltersBtn = JButton()
+    findFiltersBtn.actionCommand = "Find"
+    findFiltersBtn.text = "Find"
+    findFiltersBtn.toolTipText = "Find filters"
 
     filterActionButtonsPane.add(applyFiltersBtn)
+    filterActionButtonsPane.add(findFiltersBtn)
     filterActionButtonsPane.add(addNewFilterGroupBtn)
     filterActionButtonsPane.add(moreFilterOptionsBtn)
 

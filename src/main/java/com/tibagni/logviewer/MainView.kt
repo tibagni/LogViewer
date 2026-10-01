@@ -285,6 +285,13 @@ class MainViewImpl(
     val openFilterItem = JMenuItem("Open Filters...")
     openFilterItem.addActionListener { logViewerView.handleOpenFiltersMenu() }
     filtersMenu.add(openFilterItem)
+    val findFilterItem = JMenuItem("Find Filters...")
+    findFilterItem.accelerator = KeyStroke.getKeyStroke(
+      KeyEvent.VK_F,
+      Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx or InputEvent.SHIFT_DOWN_MASK
+    )
+    findFilterItem.addActionListener { logViewerView.handleFindFiltersMenu() }
+    filtersMenu.add(findFilterItem)
 
     val helpMenu = JMenu("Help")
     val aboutItem = JMenuItem("About")

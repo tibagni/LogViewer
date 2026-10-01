@@ -160,6 +160,27 @@ public class FiltersList extends JPanel {
     }
   }
 
+  public void selectFilter(String group, Filter filter) {
+    FilterUIGroup groupContainer = filterUIGroups.get(group);
+    if (groupContainer == null) return;
+
+    if (!groupContainer.isGroupVisible()) {
+      groupContainer.toggleGroupVisibility();
+    }
+
+    groupContainer.list.setSelectedValue(filter, true);
+    groupContainer.list.requestFocusInWindow();
+
+    int index = groupContainer.list.getSelectedIndex();
+    if (index >= 0) {
+      Rectangle cellBounds = groupContainer.list.getCellBounds(index, index);
+      if (cellBounds != null) {
+        Rectangle groupBounds = groupContainer.getBounds();
+        scrollRectToVisible(new Rectangle(groupBounds.x, groupBounds.y + cellBounds.y, groupBounds.width, cellBounds.height));
+      }
+    }
+  }
+
   private void onFilterUIGroupFocusChanged(String currentFocus) {
     // Whenever the focus is changed to a different filter group, make sure to clean the search of all others
     for (String group : filterUIGroups.keySet()) {
