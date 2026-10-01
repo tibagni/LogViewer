@@ -4,7 +4,8 @@ import com.tibagni.logviewer.util.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ public class FileLogReader implements LogReader {
     String line;
     StringBuilder builder = new StringBuilder();
 
-    try (BufferedReader reader = new BufferedReader(new FileReader(file, charset))) {
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset))) {
       while ((line = reader.readLine()) != null) {
         builder.append(line);
         builder.append(StringUtils.LINE_SEPARATOR);

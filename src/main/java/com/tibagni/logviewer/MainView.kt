@@ -245,11 +245,23 @@ class MainViewImpl(
   private fun configureMenuBar() {
     val menuBar = JMenuBar()
 
+    // Toolkit.getMenuShortcutKeyMaskEx() was introduced in Java 10. To maintain backwards compatibility
+    // with Java 8 runtimes without throwing NoSuchMethodError or triggering compile-time deprecation
+    // warnings on modern JDKs, use reflection to invoke getMenuShortcutKeyMaskEx() if available and
+    // fall back to getMenuShortcutKeyMask() on Java 8.
+    val menuShortcutMask = try {
+      val method = Toolkit::class.java.getMethod("getMenuShortcutKeyMaskEx")
+      method.invoke(Toolkit.getDefaultToolkit()) as Int
+    } catch (e: Exception) {
+      @Suppress("DEPRECATION")
+      Toolkit.getDefaultToolkit().menuShortcutKeyMask
+    }
+
     val fileMenu = JMenu("File")
     fileMenu.setMnemonic('F')
     val settingsItem = JMenuItem("Settings")
     settingsItem.accelerator = KeyStroke.getKeyStroke(
-      KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx
+      KeyEvent.VK_COMMA, menuShortcutMask
     )
     settingsItem.addActionListener { openUserPreferences() }
     fileMenu.add(settingsItem)
@@ -288,7 +300,7 @@ class MainViewImpl(
     val findFilterItem = JMenuItem("Find Filters...")
     findFilterItem.accelerator = KeyStroke.getKeyStroke(
       KeyEvent.VK_F,
-      Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx or InputEvent.SHIFT_DOWN_MASK
+      menuShortcutMask or InputEvent.SHIFT_DOWN_MASK
     )
     findFilterItem.addActionListener { logViewerView.handleFindFiltersMenu() }
     filtersMenu.add(findFilterItem)
