@@ -1,6 +1,9 @@
 package com.tibagni.logviewer
 
+import com.tibagni.logviewer.filter.DuplicateCluster
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterDuplicateUtils
+import com.tibagni.logviewer.filter.FilterMatch
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
@@ -35,6 +38,9 @@ class LogViewerPresenterTests {
   @Mock
   private lateinit var mockMyLogsRepository: MyLogsRepository
 
+  @Mock
+  private lateinit var mockFilterDuplicateUtils: FilterDuplicateUtils
+
   private lateinit var presenter: LogViewerPresenterImpl
   private var tempFilterFile: File? = null
   private var tempLogFile: File? = null
@@ -54,7 +60,8 @@ class LogViewerPresenterTests {
       mockPrefs,
       mockLogsRepository,
       mockMyLogsRepository,
-      mockFiltersRepository
+      mockFiltersRepository,
+      mockFilterDuplicateUtils
     )
     presenter.setBgExecutorService(MockExecutorService())
     presenter.setUiExecutor { it.run() }
@@ -350,6 +357,101 @@ class LogViewerPresenterTests {
 
     verify(mockFiltersRepository, never()).reorderFilters("testGroup", 2, 1)
     verify(view, never()).configureFiltersList(any())
+  }
+
+  @Test
+  fun testCleanDuplicateFiltersNoFiltersLoaded() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(emptyMap())
+
+    presenter.cleanDuplicateFilters()
+
+    verify(view).showInfoMessage("Clean Duplicate Filters", "There are no filters loaded.")
+    verify(view, never()).showDuplicateFiltersDialog(anyOrNull())
+    verify(mockFiltersRepository, never()).deleteFilters(anyOrNull(), anyOrNull())
+  }
+
+  @Test
+  fun testCleanDuplicateFiltersNoDuplicatesFound() {
+    val filter1 = Filter("f1", "p1", Color.RED, LogLevel.DEBUG)
+    val opened = mapOf("group1" to listOf(filter1))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(opened)
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(opened)).thenReturn(emptyList())
+
+    presenter.cleanDuplicateFilters()
+
+    verify(view).showInfoMessage("Clean Duplicate Filters", "No duplicate filters found.")
+    verify(view, never()).showDuplicateFiltersDialog(anyOrNull())
+    verify(mockFiltersRepository, never()).deleteFilters(anyOrNull(), anyOrNull())
+  }
+
+  @Test
+  fun testCleanDuplicateFiltersUserCancelsDialog() {
+    val filter1 = Filter("f1", "p1", Color.RED, LogLevel.DEBUG)
+    val opened = mapOf("group1" to listOf(filter1))
+    val cluster = DuplicateCluster(filter1, listOf(FilterMatch("group1", filter1, 0)))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(opened)
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(opened)).thenReturn(listOf(cluster))
+    `when`(view.showDuplicateFiltersDialog(listOf(cluster))).thenReturn(null)
+
+    presenter.cleanDuplicateFilters()
+
+    verify(mockFiltersRepository, never()).deleteFilters(anyOrNull(), anyOrNull())
+    verify(view, never()).showToast(anyOrNull())
+  }
+
+  @Test
+  fun testCleanDuplicateFiltersUserConfirmsRemovals() {
+    val f1 = Filter("f1", "p1", Color.RED, LogLevel.DEBUG)
+    val f2 = Filter("f2", "p1", Color.BLUE, LogLevel.INFO)
+    f2.isApplied = true
+    val opened = mapOf("group1" to listOf(f1, f2))
+    val cluster = DuplicateCluster(f1, listOf(
+      FilterMatch("group1", f1, 0),
+      FilterMatch("group1", f2, 1)
+    ))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(opened)
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(opened)).thenReturn(listOf(cluster))
+    `when`(view.showDuplicateFiltersDialog(listOf(cluster))).thenReturn(mapOf("group1" to listOf(f2)))
+
+    presenter.cleanDuplicateFilters()
+
+    verify(mockFiltersRepository).deleteFilters(eqOrNull("group1"), anyOrNull())
+    verify(view).configureFiltersList(anyOrNull())
+    verify(view).showToast("Cleaned 1 duplicate filter(s)")
+  }
+
+  @Test
+  fun testCleanDuplicateFiltersRemovalsNotFoundInRepo() {
+    val f1 = Filter("f1", "p1", Color.RED, LogLevel.DEBUG)
+    val fNotFound = Filter("f2", "p1", Color.BLUE, LogLevel.INFO)
+    val opened = mapOf("group1" to listOf(f1))
+    val cluster = DuplicateCluster(f1, listOf(
+      FilterMatch("group1", f1, 0)
+    ))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(opened)
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(opened)).thenReturn(listOf(cluster))
+    // Dialog returns filter that does not exist in group1
+    `when`(view.showDuplicateFiltersDialog(listOf(cluster))).thenReturn(mapOf("group1" to listOf(fNotFound)))
+
+    presenter.cleanDuplicateFilters()
+
+    verify(mockFiltersRepository, never()).deleteFilters(anyOrNull(), anyOrNull())
+    verify(view, never()).configureFiltersList(anyOrNull())
+    verify(view, never()).showToast(anyOrNull())
+  }
+
+  @Test
+  fun testFindDuplicateFilterDelegatesToUtils() {
+    val existing = Filter("f1", "p1", Color.RED, LogLevel.DEBUG)
+    val expectedMatch = FilterMatch("group1", existing, 0)
+    val opened = mapOf("group1" to listOf(existing))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(opened)
+    `when`(mockFilterDuplicateUtils.findFirstDuplicate("p1", true, null, opened)).thenReturn(expectedMatch)
+
+    val result = presenter.findDuplicateFilter("p1", true, null)
+
+    assertEquals(expectedMatch, result)
+    verify(mockFilterDuplicateUtils).findFirstDuplicate("p1", true, null, opened)
   }
 
   @Test

@@ -62,7 +62,14 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private JButton regexEditorBtn;
   private JColorChooser colorChooser;
 
+  @FunctionalInterface
+  public interface DuplicateCheckCallback {
+    FilterMatch check(String pattern, boolean isCaseSensitive);
+  }
+
   private Filter filter;
+  private final Filter editingFilter;
+  private final DuplicateCheckCallback duplicateCheckCallback;
   private String previewText;
   private final LogViewerThemeManager themeManager;
 
@@ -83,12 +90,22 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     }
   };
 
-  private EditFilterDialog(Frame owner, Filter editingFilter) {
-    this(owner, editingFilter, null);
+  EditFilterDialog(Frame owner, Filter editingFilter) {
+    this(owner, editingFilter, null, null);
   }
 
-  private EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
+  EditFilterDialog(Frame owner, Filter editingFilter, DuplicateCheckCallback duplicateCheckCallback) {
+    this(owner, editingFilter, null, duplicateCheckCallback);
+  }
+
+  EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText) {
+    this(owner, editingFilter, preDefinedText, null);
+  }
+
+  EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText, DuplicateCheckCallback duplicateCheckCallback) {
     super(owner);
+    this.editingFilter = editingFilter;
+    this.duplicateCheckCallback = duplicateCheckCallback;
     previewText = preDefinedText;
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
     buildUi();
@@ -167,6 +184,28 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     boolean caseSensitive = caseSensitiveCbx.isSelected();
     LogLevel verbosity = (LogLevel) verbosityCombo.getSelectedItem();
 
+    FilterMatch duplicateMatch = checkForDuplicateFilter(pattern, caseSensitive);
+    if (duplicateMatch != null) {
+      String message = String.format(
+          "An identical filter ('%s') already exists in group '%s'.\nDo you still want to proceed?",
+          duplicateMatch.getFilter().getPatternString(),
+          duplicateMatch.getGroup()
+      );
+      int choice = JOptionPane.showOptionDialog(
+          this,
+          message,
+          "Duplicate Filter",
+          JOptionPane.YES_NO_OPTION,
+          JOptionPane.WARNING_MESSAGE,
+          null,
+          new Object[]{"Add Anyway", "Cancel"},
+          "Cancel"
+      );
+      if (choice != JOptionPane.YES_OPTION) {
+        return;
+      }
+    }
+
     try {
       if (filter == null) {
         filter = new Filter(name, pattern, selectedColor, verbosity, caseSensitive);
@@ -180,6 +219,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     }
 
     dispose();
+  }
+
+  FilterMatch checkForDuplicateFilter(String newPattern, boolean caseSensitive) {
+    if (duplicateCheckCallback != null) {
+      return duplicateCheckCallback.check(newPattern, caseSensitive);
+    }
+    return null;
   }
 
   @Override
@@ -215,8 +261,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     return colors[r.nextInt(colors.length)];
   }
 
-  public static Filter showEditFilterDialog(Frame parent, Filter editingFilter) {
-    EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter);
+  public static Filter showEditFilterDialog(Frame parent, Filter editingFilter, DuplicateCheckCallback duplicateCheckCallback) {
+    EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter, duplicateCheckCallback);
     dialog.pack();
     dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
@@ -224,19 +270,31 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     return dialog.filter;
   }
 
+  public static Filter showEditFilterDialog(Frame parent, Filter editingFilter) {
+    return showEditFilterDialog(parent, editingFilter, null);
+  }
+
+  public static Filter showEditFilterDialog(Frame parent, DuplicateCheckCallback duplicateCheckCallback) {
+    return showEditFilterDialog(parent, null, duplicateCheckCallback);
+  }
+
   public static Filter showEditFilterDialog(Frame parent) {
-    return showEditFilterDialog(parent, null);
+    return showEditFilterDialog(parent, null, null);
   }
 
   // This is used to create a Filter from an existing predefined String
   // It will open the Edit Dialog directly on the RegEx Editor
-  public static Filter showEditFilterDialogWithText(Frame parent, String preDefinedText) {
-    EditFilterDialog dialog = new EditFilterDialog(parent, null, preDefinedText);
+  public static Filter showEditFilterDialogWithText(Frame parent, String preDefinedText, DuplicateCheckCallback duplicateCheckCallback) {
+    EditFilterDialog dialog = new EditFilterDialog(parent, null, preDefinedText, duplicateCheckCallback);
     dialog.pack();
     dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
 
     return dialog.filter;
+  }
+
+  public static Filter showEditFilterDialogWithText(Frame parent, String preDefinedText) {
+    return showEditFilterDialogWithText(parent, preDefinedText, null);
   }
 
   private void buildUi() {

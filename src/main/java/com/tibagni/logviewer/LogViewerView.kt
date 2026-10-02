@@ -1,10 +1,14 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.LogViewerPresenter.UserSelection
+import com.tibagni.logviewer.filter.DuplicateCluster
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterDeduplicationDialog
+import com.tibagni.logviewer.filter.FilterDuplicateUtils
 import com.tibagni.logviewer.filter.FiltersList
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
+import com.tibagni.logviewer.filter.SearchFiltersDialog
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
@@ -31,6 +35,9 @@ interface LogViewerView : View {
   fun handleChangeCharsetMenu(charset: Charset)
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
+  fun handleFindFiltersMenu()
+  fun handleCleanDuplicateFilters()
+  fun showSearchFiltersDialog()
   fun handleGoToTimestampMenu()
   fun handleConfigureIgnoredLogs()
   fun onThemeChanged()
@@ -60,6 +67,9 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String)
   fun closeCurrentlyOpenedBugReports()
   fun collapseAllGroups()
+  fun showInfoMessage(title: String, message: String)
+  fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>?
+  fun showToast(message: String)
 }
 
 private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
@@ -112,6 +122,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var addNewFilterGroupBtn: JButton
   private lateinit var moreFilterOptionsBtn: JButton
   private lateinit var collapseExpandAllGroupsBtn: JButton
+  private lateinit var findFiltersBtn: JButton
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
   private lateinit var filtersPane: FiltersList
@@ -153,6 +164,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     myLogsRenderer = LogCellRenderer()
     myLogsRenderer.showLineNumbers(userPrefs.showLineNumbers)
 
+    val showDividers = userPrefs.showLogLineDividers
+    logList.table.showHorizontalLines = showDividers
+    filteredLogList.table.showHorizontalLines = showDividers
+    myLogsList.table.showHorizontalLines = showDividers
+
     // Listen to user preferences changes
     userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
       override fun onShowLineNumbersChanged() {
@@ -163,6 +179,16 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         filteredLogList.table.revalidate()
         filteredLogList.table.repaint()
         myLogsList.table.revalidate()
+        myLogsList.table.repaint()
+      }
+
+      override fun onShowLogLineDividersChanged() {
+        val show = userPrefs.showLogLineDividers
+        logList.table.showHorizontalLines = show
+        filteredLogList.table.showHorizontalLines = show
+        myLogsList.table.showHorizontalLines = show
+        logList.table.repaint()
+        filteredLogList.table.repaint()
         myLogsList.table.repaint()
       }
 
@@ -183,6 +209,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
     })
     collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
+    findFiltersBtn.addActionListener { showSearchFiltersDialog() }
     applyFiltersBtn.addActionListener { applyFilters() }
 
     setupFiltersContextActions()
@@ -222,14 +249,17 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val unApplyAllFilters = popup.add("\"Un-apply\" all filters")
     unApplyAllFilters.toolTipText = "\"Un-apply\" all filters from all groups"
 
+    val cleanDuplicatesItem = popup.add("Find & Clean duplicate filters...")
+    cleanDuplicatesItem.toolTipText = "Find and remove duplicate filters across open groups"
+
     closeAllGroupsItem.addActionListener { closeAllGroups() }
     unApplyAllFilters.addActionListener { clearAllFiltersSelection() }
+    cleanDuplicatesItem.addActionListener { handleCleanDuplicateFilters() }
 
     // If there are no groups, there is no point in closing anything
     closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
+    cleanDuplicatesItem.isEnabled = presenter.groups.isNotEmpty()
 
-    popup.add(closeAllGroupsItem)
-    popup.add(unApplyAllFilters)
     popup.show(e.component, e.x, e.y)
   }
 
@@ -272,7 +302,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun addFilter(group: String) {
-    val newFilter = EditFilterDialog.showEditFilterDialog(mainView.parent)
+    val newFilter = EditFilterDialog.showEditFilterDialog(mainView.parent) { pattern, caseSensitive ->
+      presenter.findDuplicateFilter(pattern, caseSensitive, null)
+    }
     if (newFilter != null) {
       presenter.addFilter(group, newFilter)
     }
@@ -307,7 +339,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       override fun onEditFilter(filter: Filter) {
         // The filter is automatically updated by this dialog. We only check the result
         // to determine if the dialog was canceled or not
-        val edited = EditFilterDialog.showEditFilterDialog(mainView.parent, filter)
+        val edited = EditFilterDialog.showEditFilterDialog(mainView.parent, filter) { pattern, caseSensitive ->
+          presenter.findDuplicateFilter(pattern, caseSensitive, filter)
+        }
         if (edited != null) {
           // Tell the presenter a filter was edited. It will not update the filters
           // as filters are updated by EditFilterDialog itself, it will only determine
@@ -486,7 +520,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun addFilterFromLogLine(logLine: String) {
-    val filter = EditFilterDialog.showEditFilterDialogWithText(mainView.parent, logLine)
+    val filter = EditFilterDialog.showEditFilterDialogWithText(mainView.parent, logLine) { pattern, caseSensitive ->
+      presenter.findDuplicateFilter(pattern, caseSensitive, null)
+    }
     if (filter != null) {
       val groups = presenter.groups
       var group = if (groups.size == 1) groups[0] else null
@@ -635,6 +671,48 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
       presenter.loadFilters(filterFiles, keepCurrentFilters)
     }
+  }
+
+  override fun handleFindFiltersMenu() {
+    showSearchFiltersDialog()
+  }
+
+  override fun showSearchFiltersDialog() {
+    if (filtersPane.isEmpty) {
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        "There are no filters to search",
+        "No filters",
+        JOptionPane.INFORMATION_MESSAGE
+      )
+      return
+    }
+
+    SearchFiltersDialog.show(
+      mainView.parent,
+      presenter,
+      ServiceLocator.filtersRepository
+    ) { group, filter ->
+      filtersPane.selectFilter(group, filter)
+    }
+
+    filtersPane.updateUI()
+  }
+
+  override fun handleCleanDuplicateFilters() {
+    presenter.cleanDuplicateFilters()
+  }
+
+  override fun showInfoMessage(title: String, message: String) {
+    JOptionPane.showMessageDialog(mainView.parent, message, title, JOptionPane.INFORMATION_MESSAGE)
+  }
+
+  override fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>? {
+    return FilterDeduplicationDialog.showDialog(mainView.parent, clusters)
+  }
+
+  override fun showToast(message: String) {
+    Toast.showToast(mainView.parent, message, Toast.LENGTH_SHORT)
   }
 
   override fun handleGoToTimestampMenu() {
@@ -991,8 +1069,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     applyFiltersBtn.actionCommand = "Apply"
     applyFiltersBtn.text = "Apply"
     applyFiltersBtn.toolTipText = "Apply all selected filters"
+    findFiltersBtn = JButton()
+    findFiltersBtn.actionCommand = "Find"
+    findFiltersBtn.text = "Find"
+    findFiltersBtn.toolTipText = "Find filters"
 
     filterActionButtonsPane.add(applyFiltersBtn)
+    filterActionButtonsPane.add(findFiltersBtn)
     filterActionButtonsPane.add(addNewFilterGroupBtn)
     filterActionButtonsPane.add(moreFilterOptionsBtn)
 

@@ -65,9 +65,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
   override fun showBugReport(bugReport: BugReport) {
     sectionsListModel.clear()
-    sectionsListModel.addAll(
-      bugReport.sections.map { it.sectionName }
-    )
+    bugReport.sections.forEach { sectionsListModel.addElement(it.sectionName) }
     this.bugReport = bugReport
     sectionsList.selectedIndex = 0
   }

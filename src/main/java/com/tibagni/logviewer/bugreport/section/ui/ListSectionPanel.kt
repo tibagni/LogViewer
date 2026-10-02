@@ -30,7 +30,7 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
 
   protected fun updateListData(listItems: List<String>) {
     listModel.removeAllElements()
-    listModel.addAll(listItems)
+    listItems.forEach { listModel.addElement(it) }
     list.invalidate()
   }
 

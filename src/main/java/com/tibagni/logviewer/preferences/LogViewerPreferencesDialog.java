@@ -28,6 +28,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private static final String PREFERRED_TEXT_EDITOR_ID = "preferred_text_editor";
   private static final String COLLAPSE_ALL_GROUPS_STARTUP_ID = "collapse_all_groups_startup";
   private static final String SHOW_LINE_NUMBERS_ID = "show_line_numbers";
+  private static final String SHOW_LOG_DIVIDERS_ID = "show_log_dividers";
   private static final String APPLY_FILTER_CHECK_ID = "apply_filter_check";
 
   private ButtonsPane buttonsPane;
@@ -42,6 +43,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JCheckBox rememberAppliedFiltersChbx;
   private JCheckBox collapseAllGroupsStartup;
   private JCheckBox showLineNumbersChbx;
+  private JCheckBox showLogDividersChbx;
   private JTextField preferredEditorPathTxt;
   private JButton preferredEditorPathBtn;
   private JCheckBox applyFiltersOnCheckChbx;
@@ -104,6 +106,9 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
 
     showLineNumbersChbx.addActionListener(e -> onShowLineNumbersChanged());
     showLineNumbersChbx.setSelected(userPrefs.getShowLineNumbers());
+
+    showLogDividersChbx.addActionListener(e -> onShowLogDividersChanged());
+    showLogDividersChbx.setSelected(userPrefs.getShowLogLineDividers());
 
     applyFiltersOnCheckChbx.addActionListener(e -> onApplyFiltersOnCheckChanged());
     applyFiltersOnCheckChbx.setSelected(userPrefs.getApplyFilterOnCheck());
@@ -201,6 +206,11 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     saveActions.put(SHOW_LINE_NUMBERS_ID, () -> userPrefs.setShowLineNumbers(isChecked));
   }
 
+  private void onShowLogDividersChanged() {
+    boolean isChecked = showLogDividersChbx.getModel().isSelected();
+    saveActions.put(SHOW_LOG_DIVIDERS_ID, () -> userPrefs.setShowLogLineDividers(isChecked));
+  }
+
   private void onSelectPreferredEditorPath() {
     if (preferredEditorFileChooser == null) {
       preferredEditorFileChooser = new JFileChooserExt(userPrefs.getPreferredTextEditor());
@@ -264,7 +274,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:d:grow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:d:grow",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -339,25 +349,32 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     showLineNumbersChbx.setText("");
     formPane.add(showLineNumbersChbx, cc.xy(3, 21));
 
+    final JLabel showLogDividersLbl = new JLabel();
+    showLogDividersLbl.setText("Show log line dividers");
+    formPane.add(showLogDividersLbl, cc.xy(1, 23));
+    showLogDividersChbx = new JCheckBox();
+    showLogDividersChbx.setText("");
+    formPane.add(showLogDividersChbx, cc.xy(3, 23));
+
     final JLabel applyFiltersOnChangeLbl = new JLabel();
     applyFiltersOnChangeLbl.setText("Apply filters on check");
-    formPane.add(applyFiltersOnChangeLbl, cc.xy(1, 23));
+    formPane.add(applyFiltersOnChangeLbl, cc.xy(1, 25));
     applyFiltersOnCheckChbx = new JCheckBox();
     applyFiltersOnCheckChbx.setText("");
-    formPane.add(applyFiltersOnCheckChbx, cc.xy(3, 23));
+    formPane.add(applyFiltersOnCheckChbx, cc.xy(3, 25));
 
     final JSeparator sep4 = new JSeparator();
-    formPane.add(sep4, cc.xyw(1, 24, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(sep4, cc.xyw(1, 27, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel preferredEditorLbl = new JLabel();
     preferredEditorLbl.setText("Preferred text Editor");
-    formPane.add(preferredEditorLbl, cc.xy(1, 25));
+    formPane.add(preferredEditorLbl, cc.xy(1, 29));
     preferredEditorPathTxt = new JTextField();
     preferredEditorPathTxt.setEditable(false);
-    formPane.add(preferredEditorPathTxt, cc.xy(3, 25, CellConstraints.FILL, CellConstraints.DEFAULT));
+    formPane.add(preferredEditorPathTxt, cc.xy(3, 29, CellConstraints.FILL, CellConstraints.DEFAULT));
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
-    formPane.add(preferredEditorPathBtn, cc.xy(5, 25));
+    formPane.add(preferredEditorPathBtn, cc.xy(5, 29));
 
     return formPane;
   }
