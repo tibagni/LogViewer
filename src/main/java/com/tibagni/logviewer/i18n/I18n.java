@@ -39,6 +39,45 @@ public final class I18n {
   public static final String PREF_APPLY_FILTERS_ON_CHECK = "pref.apply_filters_on_check";
   public static final String PREF_PREFERRED_TEXT_EDITOR = "pref.preferred_text_editor";
 
+  // Main View & File Choosers
+  public static final String MAIN_FILECHOOSER_OPEN_LOGS = "main.filechooser.open.logs";
+  public static final String MAIN_FILECHOOSER_OPEN_LOG = "main.filechooser.open.log";
+  public static final String MAIN_FILECHOOSER_SAVE_FILTERED_LOGS = "main.filechooser.save.filtered.logs";
+  public static final String MAIN_FILECHOOSER_SAVE_FILTER = "main.filechooser.save.filter";
+  public static final String MAIN_FILECHOOSER_OPEN_FILTERS = "main.filechooser.open.filters";
+  public static final String MAIN_FILECHOOSER_FILTER_FILES = "main.filechooser.filter.files";
+
+  // Menus
+  public static final String MENU_FILE = "main.menu.file";
+  public static final String MENU_ITEM_SETTINGS = "main.menu.file.settings";
+  public static final String MENU_LOGS = "main.menu.logs";
+  public static final String MENU_ITEM_OPEN_LOGS = "main.menu.logs.open";
+  public static final String MENU_ITEM_REFRESH = "main.menu.logs.refresh";
+  public static final String MENU_ENCODING = "main.menu.logs.encoding";
+  public static final String MENU_ITEM_SAVE_FILTERED_LOGS = "main.menu.logs.save.filtered";
+  public static final String MENU_ITEM_GO_TO_TIMESTAMP = "main.menu.logs.goto.timestamp";
+  public static final String MENU_ITEM_VISIBLE_LOGS = "main.menu.logs.visible";
+  public static final String MENU_FILTERS = "main.menu.filters";
+  public static final String MENU_ITEM_OPEN_FILTERS = "main.menu.filters.open";
+  public static final String MENU_ITEM_FIND_FILTERS = "main.menu.filters.find";
+  public static final String MENU_ITEM_CLEAN_DUPLICATE_FILTERS = "main.menu.filters.clean.duplicates";
+  public static final String MENU_STREAMS = "main.menu.streams";
+  public static final String MENU_HELP = "main.menu.help";
+  public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
+  public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
+
+  // Encoding Submenu
+  public static final String MENU_ITEM_ENCODING_ASCII = "main.menu.encoding.ascii";
+  public static final String MENU_ITEM_ENCODING_LATIN = "main.menu.encoding.latin";
+  public static final String MENU_ITEM_ENCODING_UTF8 = "main.menu.encoding.utf8";
+  public static final String MENU_ITEM_ENCODING_UTF16_BE = "main.menu.encoding.utf16.be";
+  public static final String MENU_ITEM_ENCODING_UTF16_LE = "main.menu.encoding.utf16.le";
+  public static final String MENU_ITEM_ENCODING_UTF16 = "main.menu.encoding.utf16";
+
+  // Main Tabs
+  public static final String MAIN_TAB_LOGS = "main.tab.logs";
+  public static final String MAIN_TAB_BUG_REPORT = "main.tab.bugreport";
+
   private I18n() {}
 
   public static synchronized void setLocale(Locale locale) {

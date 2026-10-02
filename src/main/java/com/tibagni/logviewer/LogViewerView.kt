@@ -7,6 +7,7 @@ import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FilterDeduplicationDialog
 import com.tibagni.logviewer.filter.FilterDuplicateUtils
 import com.tibagni.logviewer.filter.FiltersList
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.filter.SearchFiltersDialog
 import com.tibagni.logviewer.log.*
@@ -635,7 +636,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun buildStreamsMenu(): JMenu? {
     if (logStreams.isEmpty()) return null
 
-    val streamsMenu = JMenu("Streams")
+    val streamsMenu = JMenu(I18n.get(I18n.MENU_STREAMS))
     for (stream in logStreams) {
       val item = JCheckBoxMenuItem(stream.toString())
       item.state = presenter.isStreamAllowed(stream)

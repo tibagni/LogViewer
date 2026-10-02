@@ -27,10 +27,17 @@ UI_PATTERNS = [
     re.compile(r'\.setTitle\s*\(\s*"([^"]+)"\s*\)'),
     # dialogTitle = "..." (Kotlin property)
     re.compile(r'dialogTitle\s*=\s*"([^"]+)"'),
-    # new JLabel("..."), new JButton("..."), new JMenuItem("..."), etc.
-    re.compile(r'new\s+(?:JLabel|JButton|JMenuItem|JCheckBox|JRadioButton|JMenu|JTabbedPane)\s*\(\s*"([^"]+)"'),
+    # Java: new JLabel("..."), Kotlin: JLabel("...")
+    re.compile(r'(?:new\s+)?(?:JLabel|JButton|JMenuItem|JCheckBox|JRadioButton|JMenu|JTabbedPane)\s*\(\s*"([^"]+)"'),
+    # Tooltips: setToolTipText("...") or toolTipText = "..."
+    re.compile(r'\.setToolTipText\s*\(\s*"([^"]+)"\s*\)'),
+    re.compile(r'toolTipText\s*=\s*"([^"]+)"'),
+    # TabbedPane: addTab("...")
+    re.compile(r'\.addTab\s*\(\s*"([^"]+)"'),
+    # Popup menus: popup.add("...")
+    re.compile(r'popup\.add\s*\(\s*"([^"]+)"\s*\)'),
     # new TitledBorder("...") or new TitledBorder(..., "...")
-    re.compile(r'new\s+TitledBorder\s*\([^)]*?"([^"]+)"'),
+    re.compile(r'(?:new\s+)?TitledBorder\s*\([^)]*?"([^"]+)"'),
     # JOptionPane.show*(..., "...")
     re.compile(r'JOptionPane\.(?:showMessageDialog|showConfirmDialog|showInputDialog|showOptionDialog)\s*\([^)]*?"([^"]+)"'),
     # ProgressDialog.showProgressDialog(..., "...")
