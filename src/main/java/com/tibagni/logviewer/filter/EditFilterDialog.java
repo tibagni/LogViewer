@@ -4,6 +4,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
@@ -108,6 +109,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     this.duplicateCheckCallback = duplicateCheckCallback;
     previewText = preDefinedText;
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
+    setTitle(I18n.get(editingFilter != null ? I18n.FILTER_DIALOG_EDIT_TITLE : I18n.FILTER_DIALOG_NEW_TITLE));
     buildUi();
 
     setContentPane(contentPane);
@@ -186,20 +188,20 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
     FilterMatch duplicateMatch = checkForDuplicateFilter(pattern, caseSensitive);
     if (duplicateMatch != null) {
-      String message = String.format(
-          "An identical filter ('%s') already exists in group '%s'.\nDo you still want to proceed?",
+      String message = I18n.format(
+          I18n.FILTER_DUPLICATE_WARNING_MSG,
           duplicateMatch.getFilter().getPatternString(),
           duplicateMatch.getGroup()
       );
       int choice = JOptionPane.showOptionDialog(
           this,
           message,
-          "Duplicate Filter",
+          I18n.get(I18n.FILTER_DUPLICATE_WARNING_TITLE),
           JOptionPane.YES_NO_OPTION,
           JOptionPane.WARNING_MESSAGE,
           null,
-          new Object[]{"Add Anyway", "Cancel"},
-          "Cancel"
+          new Object[]{I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY), I18n.get(I18n.COMMON_CANCEL)},
+          I18n.get(I18n.COMMON_CANCEL)
       );
       if (choice != JOptionPane.YES_OPTION) {
         return;
@@ -213,7 +215,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
         filter.updateFilter(name, pattern, selectedColor, verbosity, caseSensitive);
       }
     } catch (FilterException e) {
-      JOptionPane.showConfirmDialog(this, e.getMessage(), "Error...",
+      JOptionPane.showConfirmDialog(this, e.getMessage(), I18n.get(I18n.COMMON_ERROR),
           JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
       return;
     }
@@ -331,8 +333,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
         "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow"));
 
     nameLbl = new JLabel();
-    nameLbl.setText("Filter name:");
-    nameLbl.setToolTipText("Give a name to your filter to appear on the filters list");
+    nameLbl.setText(I18n.get(I18n.FILTER_LABEL_NAME));
+    nameLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_NAME));
     CellConstraints cc = new CellConstraints();
     editPane.add(nameLbl, cc.xy(1, 1));
     nameTxt = new JTextField();
@@ -340,25 +342,25 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     editPane.add(nameTxt, cc.xy(3, 1, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     regexLbl = new JLabel();
-    regexLbl.setText("Regex:");
-    regexLbl.setToolTipText("The regular expression of your filter");
+    regexLbl.setText(I18n.get(I18n.FILTER_LABEL_REGEX));
+    regexLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX));
     editPane.add(regexLbl, cc.xy(1, 3));
     regexTxt = new JTextField();
     editPane.add(regexTxt, cc.xy(3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
     regexEditorBtn = new JButton();
-    regexEditorBtn.setText("Editor");
-    regexEditorBtn.setToolTipText("Open the regex editor window");
+    regexEditorBtn.setText(I18n.get(I18n.FILTER_BTN_REGEX_EDITOR));
+    regexEditorBtn.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX_EDITOR));
     editPane.add(regexEditorBtn, cc.xy(5, 3));
 
     caseSensitiveLbl = new JLabel();
-    caseSensitiveLbl.setText("Case sensitive:");
+    caseSensitiveLbl.setText(I18n.get(I18n.FILTER_LABEL_CASE_SENSITIVE));
     editPane.add(caseSensitiveLbl, cc.xy(1, 5));
     caseSensitiveCbx = new JCheckBox();
-    caseSensitiveCbx.setText("Enable case sensitive for this filter");
+    caseSensitiveCbx.setText(I18n.get(I18n.FILTER_LABEL_ENABLE_CASE_SENSITIVE));
     editPane.add(caseSensitiveCbx, cc.xy(3, 5));
 
     verbosityLbl = new JLabel();
-    verbosityLbl.setText("Verbosity");
+    verbosityLbl.setText(I18n.get(I18n.FILTER_LABEL_VERBOSITY));
     editPane.add(verbosityLbl, cc.xy(1, 7));
     verbosityCombo = new JComboBox<>();
     for (LogLevel level : LogLevel.values()) {
@@ -367,13 +369,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     editPane.add(verbosityCombo, cc.xy(3, 7));
 
     colorLbl = new JLabel();
-    colorLbl.setText("Color:");
-    colorLbl.setToolTipText("Choose a color to differentiate your filter");
+    colorLbl.setText(I18n.get(I18n.FILTER_LABEL_COLOR));
+    colorLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_COLOR));
     editPane.add(colorLbl, cc.xy(1, 9));
     colorChooser = new JColorChooser();
 
     // Show a simple text field for preview
-    JTextField preview = new JTextField("Filtered text color preview");
+    JTextField preview = new JTextField(I18n.get(I18n.FILTER_PREVIEW_COLOR));
     preview.setBorder(new EmptyBorder(UIScaleUtils.dip(5),
             UIScaleUtils.dip(15),
             UIScaleUtils.dip(5),

@@ -4,6 +4,7 @@ import com.tibagni.logviewer.about.AboutDialog
 import com.tibagni.logviewer.bugreport.BugReportView
 import com.tibagni.logviewer.bugreport.BugReportViewImpl
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
@@ -148,7 +149,7 @@ class MainViewImpl(
   override fun showOpenMultipleLogsFileChooser(): Array<File>? {
     logOpenFileChooser.resetChoosableFileFilters()
     logOpenFileChooser.isMultiSelectionEnabled = true
-    logOpenFileChooser.dialogTitle = "Open Logs..."
+    logOpenFileChooser.dialogTitle = I18n.get(I18n.MAIN_FILECHOOSER_OPEN_LOGS)
 
     val selectedOption = logOpenFileChooser.showOpenDialog(mainPanel)
     return if (selectedOption == JFileChooser.APPROVE_OPTION) {
@@ -159,7 +160,7 @@ class MainViewImpl(
   override fun showOpenSingleLogFileChooser(): File? {
     logOpenFileChooser.resetChoosableFileFilters()
     logOpenFileChooser.isMultiSelectionEnabled = false
-    logOpenFileChooser.dialogTitle = "Open Log..."
+    logOpenFileChooser.dialogTitle = I18n.get(I18n.MAIN_FILECHOOSER_OPEN_LOG)
 
     val selectedOption = logOpenFileChooser.showOpenDialog(mainPanel)
     return if (selectedOption == JFileChooser.APPROVE_OPTION) {
@@ -170,7 +171,7 @@ class MainViewImpl(
   override fun showSaveLogFileChooser(): File? {
     logSaveFileChooser.resetChoosableFileFilters()
     logSaveFileChooser.isMultiSelectionEnabled = false
-    logSaveFileChooser.dialogTitle = "Save Filtered Logs..."
+    logSaveFileChooser.dialogTitle = I18n.get(I18n.MAIN_FILECHOOSER_SAVE_FILTERED_LOGS)
 
     val selectedOption = logSaveFileChooser.showSaveDialog(mainPanel)
     return if (selectedOption == JFileChooser.APPROVE_OPTION) {
@@ -181,7 +182,7 @@ class MainViewImpl(
   override fun showSaveFilterFileChooser(suggestedFileName: String?): File? {
     filterSaveFileChooser.resetChoosableFileFilters()
     filterSaveFileChooser.isMultiSelectionEnabled = false
-    filterSaveFileChooser.dialogTitle = "Save Filter..."
+    filterSaveFileChooser.dialogTitle = I18n.get(I18n.MAIN_FILECHOOSER_SAVE_FILTER)
     filterSaveFileChooser.setSaveExtension(Filter.FILE_EXTENSION)
     if (!suggestedFileName.isNullOrEmpty()) {
       filterSaveFileChooser.selectedFile = File(suggestedFileName)
@@ -197,9 +198,9 @@ class MainViewImpl(
 
   override fun showOpenMultipleFiltersFileChooser(): Array<File> {
     filterOpenFileChooser.resetChoosableFileFilters()
-    filterOpenFileChooser.fileFilter = FileNameExtensionFilter("Filter files", Filter.FILE_EXTENSION)
+    filterOpenFileChooser.fileFilter = FileNameExtensionFilter(I18n.get(I18n.MAIN_FILECHOOSER_FILTER_FILES), Filter.FILE_EXTENSION)
     filterOpenFileChooser.isMultiSelectionEnabled = true
-    filterOpenFileChooser.dialogTitle = "Open Filters..."
+    filterOpenFileChooser.dialogTitle = I18n.get(I18n.MAIN_FILECHOOSER_OPEN_FILTERS)
 
     val selectedOption = filterOpenFileChooser.showOpenDialog(mainPanel)
     return if (selectedOption == JFileChooser.APPROVE_OPTION) {
@@ -257,60 +258,60 @@ class MainViewImpl(
       Toolkit.getDefaultToolkit().menuShortcutKeyMask
     }
 
-    val fileMenu = JMenu("File")
+    val fileMenu = JMenu(I18n.get(I18n.MENU_FILE))
     fileMenu.setMnemonic('F')
-    val settingsItem = JMenuItem("Settings")
+    val settingsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_SETTINGS))
     settingsItem.accelerator = KeyStroke.getKeyStroke(
       KeyEvent.VK_COMMA, menuShortcutMask
     )
     settingsItem.addActionListener { openUserPreferences() }
     fileMenu.add(settingsItem)
 
-    val logsMenu = JMenu("Logs")
-    val openLogsItem = JMenuItem("Open Logs...")
+    val logsMenu = JMenu(I18n.get(I18n.MENU_LOGS))
+    val openLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_LOGS))
     openLogsItem.addActionListener { logViewerView.handleOpenLogsMenu() }
     logsMenu.add(openLogsItem)
-    val refreshLogsItem = JMenuItem("Refresh...")
+    val refreshLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_REFRESH))
     refreshLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)
     refreshLogsItem.addActionListener { logViewerView.handleRefreshLogsMenu() }
     logsMenu.add(refreshLogsItem)
 
-    val changeEncodingMenu = JMenu("Change encoding")
+    val changeEncodingMenu = JMenu(I18n.get(I18n.MENU_ENCODING))
     configureCharsetsMenu(changeEncodingMenu)
     logsMenu.add(changeEncodingMenu)
 
-    saveFilteredLogs = JMenuItem("Save Filtered Logs")
+    saveFilteredLogs = JMenuItem(I18n.get(I18n.MENU_ITEM_SAVE_FILTERED_LOGS))
     saveFilteredLogs?.addActionListener { logViewerView.handleSaveFilteredLogsMenu() }
     logsMenu.add(saveFilteredLogs)
     logsMenu.addSeparator()
-    val goToTimestampItem = JMenuItem("Go to timestamp")
+    val goToTimestampItem = JMenuItem(I18n.get(I18n.MENU_ITEM_GO_TO_TIMESTAMP))
     goToTimestampItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK)
     goToTimestampItem.addActionListener { logViewerView.handleGoToTimestampMenu() }
     logsMenu.add(goToTimestampItem)
     logsMenu.addSeparator()
-    val configureVisibleLogs = JMenuItem("Visible logs")
+    val configureVisibleLogs = JMenuItem(I18n.get(I18n.MENU_ITEM_VISIBLE_LOGS))
     configureVisibleLogs.addActionListener { logViewerView.handleConfigureIgnoredLogs() }
     logsMenu.add(configureVisibleLogs)
 
 
-    val filtersMenu = JMenu("Filters")
-    val openFilterItem = JMenuItem("Open Filters...")
+    val filtersMenu = JMenu(I18n.get(I18n.MENU_FILTERS))
+    val openFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_FILTERS))
     openFilterItem.addActionListener { logViewerView.handleOpenFiltersMenu() }
     filtersMenu.add(openFilterItem)
-    val findFilterItem = JMenuItem("Find Filters...")
+    val findFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_FIND_FILTERS))
     findFilterItem.accelerator = KeyStroke.getKeyStroke(
       KeyEvent.VK_F,
       menuShortcutMask or InputEvent.SHIFT_DOWN_MASK
     )
     findFilterItem.addActionListener { logViewerView.handleFindFiltersMenu() }
     filtersMenu.add(findFilterItem)
-    val cleanDuplicatesItem = JMenuItem("Find & Clean Duplicate Filters...")
+    val cleanDuplicatesItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLEAN_DUPLICATE_FILTERS))
     cleanDuplicatesItem.addActionListener { logViewerView.handleCleanDuplicateFilters() }
     filtersMenu.add(cleanDuplicatesItem)
 
-    val helpMenu = JMenu("Help")
-    val aboutItem = JMenuItem("About")
-    val onlineHelpItem = JMenuItem("User Guide")
+    val helpMenu = JMenu(I18n.get(I18n.MENU_HELP))
+    val aboutItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ABOUT))
+    val onlineHelpItem = JMenuItem(I18n.get(I18n.MENU_ITEM_USER_GUIDE))
     aboutItem.addActionListener { AboutDialog.showAboutDialog(parent) }
     onlineHelpItem.addActionListener { openUserGuide() }
     helpMenu.add(aboutItem)
@@ -332,17 +333,17 @@ class MainViewImpl(
   }
 
   private fun configureCharsetsMenu(menu: JMenu) {
-    val asciiSubMenuItem = JMenuItem("ASCII")
+    val asciiSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_ASCII))
     asciiSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.US_ASCII) }
-    val latinSubMenuItem = JMenuItem("ISO-LATIN-1")
+    val latinSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_LATIN))
     latinSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.ISO_8859_1) }
-    val utf8SubMenuItem = JMenuItem("UTF-8")
+    val utf8SubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF8))
     utf8SubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_8) }
-    val utf16beSubMenuItem = JMenuItem("UTF-16 Big Endian")
+    val utf16beSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF16_BE))
     utf16beSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16BE) }
-    val utf16leSubMenuItem = JMenuItem("UTF-16 Little Endian")
+    val utf16leSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF16_LE))
     utf16leSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16LE) }
-    val utf16SubMenuItem = JMenuItem("UTF-16")
+    val utf16SubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF16))
     utf16SubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16) }
     menu.add(asciiSubMenuItem)
     menu.add(latinSubMenuItem)
@@ -373,8 +374,8 @@ class MainViewImpl(
     mainPanel.preferredSize = Dimension(UIScaleUtils.dip(1000), UIScaleUtils.dip(500))
     val tabbedPane = JTabbedPane()
 
-    tabbedPane.addTab("Logs", logViewerView.contentPane)
-    tabbedPane.addTab("Bug Report", bugReportView.contentPane)
+    tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LOGS), logViewerView.contentPane)
+    tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_BUG_REPORT), bugReportView.contentPane)
     mainPanel.add(
       tabbedPane, GBConstraintsBuilder()
         .withGridx(1)

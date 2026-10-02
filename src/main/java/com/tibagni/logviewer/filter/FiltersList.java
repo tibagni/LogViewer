@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.CommonUtils;
@@ -307,22 +308,23 @@ public class FiltersList extends JPanel {
       hideGroupBtn = new FlatButton(HIDE);
 
       prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);
-      prevBtn.setToolTipText("Navigate to previous filtered log (,)");
+      prevBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_PREV));
 
       nextBtn = new FlatButton(StringUtils.RIGHT_BLACK_POINTER);
-      nextBtn.setToolTipText("Navigate to next filtered log (.)");
+      nextBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_NEXT));
 
       addBtn = new FlatButton(StringUtils.PLUS);
-      addBtn.setToolTipText("Add a new filter to this group");
+      addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
 
-      saveBtn = new FlatButton("save");
+      saveBtn = new FlatButton(I18n.get(I18n.FILTERS_BTN_SAVE));
+      saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
       saveBtn.setVisible(false);
 
       closeBtn = new FlatButton(StringUtils.DELETE);
-      closeBtn.setToolTipText("Close group");
+      closeBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_GROUP));
 
       selectAllCb = new TriStateCheckbox();
-      selectAllCb.setToolTipText("Apply/Un-Apply all filters from this group");
+      selectAllCb.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SELECT_ALL));
 
       list = new ReorderableCheckBoxList<>();
       list.setCellRenderer(cellRenderer);
@@ -388,10 +390,10 @@ public class FiltersList extends JPanel {
       menuTitle.setBorder(new EmptyBorder(0, UIScaleUtils.dip(10), 0, 0));
       popup.add(menuTitle);
       popup.add(new JPopupMenu.Separator());
-      JMenuItem deleteMenuItem = popup.add("Delete");
-      JMenuItem editMenuItem = popup.add("Edit");
-      JMenuItem duplicateMenuItem = popup.add("Duplicate");
-      JMenuItem moveMenuItem = popup.add("Move");
+      JMenuItem deleteMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_DELETE));
+      JMenuItem editMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_EDIT));
+      JMenuItem duplicateMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_DUPLICATE));
+      JMenuItem moveMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_MOVE));
 
       deleteMenuItem.addActionListener(e -> deleteSelectedFilters());
       editMenuItem.addActionListener(e -> editSelectedFilter());
@@ -406,7 +408,7 @@ public class FiltersList extends JPanel {
             int[] selectedIndices = list.getSelectedIndices();
             if (IntStream.of(selectedIndices).anyMatch(i -> i == indexClicked)) {
               int selectedFilters = selectedIndices.length;
-              menuTitle.setText(selectedFilters + " item(s) selected");
+              menuTitle.setText(I18n.format(I18n.FILTERS_MENU_ITEMS_SELECTED, selectedFilters));
               editMenuItem.setVisible(selectedFilters == 1);
               duplicateMenuItem.setVisible(selectedFilters == 1);
 

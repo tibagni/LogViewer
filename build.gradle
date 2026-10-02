@@ -128,3 +128,10 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-swing:$kotlinx_version"
 }
+
+tasks.register('checkI18nBundle', Exec) {
+    description = 'Validates that I18n constants match strings.properties'
+    group = 'verification'
+    commandLine 'python3', 'scripts/check_i18n.py', '--validate-bundle'
+}
+check.dependsOn checkI18nBundle

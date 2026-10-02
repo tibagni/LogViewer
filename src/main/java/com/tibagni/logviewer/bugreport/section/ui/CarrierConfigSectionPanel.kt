@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.bugreport.section.ui
 
 import com.tibagni.logviewer.bugreport.section.CarrierConfigSection
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.view.SearchableTextArea
@@ -39,7 +40,7 @@ class CarrierConfigSectionPanel(private val section: CarrierConfigSection) : Sec
       container.add(createConfigTable(source, rows))
     }
     container.add(JPanel(FlowLayout(FlowLayout.LEFT)).also {
-      val logsTitle = JLabel("Loading logs")
+      val logsTitle = JLabel(I18n.get(I18n.BUGREPORT_CARRIER_CONFIG_LOADING_LOGS))
       logsTitle.font = Font(Font.DIALOG, Font.BOLD, logsTitle.font.size)
       it.add(logsTitle)
     })

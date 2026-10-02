@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.filter
 
+import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
@@ -50,7 +52,7 @@ class FilterDeduplicationDialog(
 
     private val buttonsPane = ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this)
     private val contentPane = JPanel()
-    val mergeCrossFileCb = JCheckBox("Clean duplicates across different filter files", true)
+    val mergeCrossFileCb = JCheckBox(I18n.get(I18n.FILTER_DEDUP_CLEAN_CROSS_FILE), true)
 
     // Cluster resolution state: cluster index -> (shouldDeduplicate, chosenRetainingGroup)
     val clusterSelections = mutableMapOf<Int, Pair<JCheckBox, JComboBox<String>?>>()
@@ -73,12 +75,12 @@ class FilterDeduplicationDialog(
         }
 
     init {
-        title = "Clean Duplicate Filters"
+        title = I18n.get(I18n.FILTER_DEDUP_DIALOG_TITLE)
         isModal = true
         buildUi()
         setContentPane(contentPane)
-        buttonsPane.setOkText("Clean Duplicates")
-        buttonsPane.setCancelText("Cancel")
+        buttonsPane.setOkText(I18n.get(I18n.FILTER_DEDUP_BTN_CLEAN))
+        buttonsPane.setCancelText(I18n.get(I18n.COMMON_CANCEL))
         buttonsPane.setDefaultButtonOk()
     }
 
@@ -91,9 +93,9 @@ class FilterDeduplicationDialog(
 
         val headerPanel = JPanel()
         headerPanel.layout = BoxLayout(headerPanel, BoxLayout.Y_AXIS)
-        headerPanel.add(JLabel("<html><h3>Duplicate Filters Found</h3></html>"))
+        headerPanel.add(JLabel(StringUtils.wrapHtml("<h3>${I18n.get(I18n.FILTER_DEDUP_HEADER_TITLE)}</h3>")))
         headerPanel.add(Box.createRigidArea(Dimension(0, UIScaleUtils.dip(5))))
-        headerPanel.add(JLabel("<html>Found <b>${clusters.size}</b> group(s) of duplicate filters. Choose which group retains each filter:</html>"))
+        headerPanel.add(JLabel(StringUtils.wrapHtml(I18n.format(I18n.FILTER_DEDUP_HEADER_MSG, clusters.size))))
         headerPanel.add(Box.createRigidArea(Dimension(0, UIScaleUtils.dip(10))))
 
         val hasCrossGroup = clusters.any { it.isCrossGroup }
@@ -122,11 +124,11 @@ class FilterDeduplicationDialog(
         clusters.forEachIndexed { index, cluster ->
             val clusterBox = JPanel(GridBagLayout())
             clusterBox.border = BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Filter: \"${cluster.representative.patternString}\""),
+                BorderFactory.createTitledBorder(I18n.format(I18n.FILTER_DEDUP_CLUSTER_TITLE, cluster.representative.patternString)),
                 BorderFactory.createEmptyBorder(UIScaleUtils.dip(8), UIScaleUtils.dip(8), UIScaleUtils.dip(8), UIScaleUtils.dip(8))
             )
 
-            val enableCb = JCheckBox("Deduplicate this cluster", true)
+            val enableCb = JCheckBox(I18n.get(I18n.FILTER_DEDUP_CLUSTER_ENABLE), true)
             var groupCombo: JComboBox<String>? = null
 
             clusterBox.add(
@@ -141,7 +143,7 @@ class FilterDeduplicationDialog(
             if (cluster.isCrossGroup) {
                 val groupChoicePanel = JPanel()
                 groupChoicePanel.layout = BoxLayout(groupChoicePanel, BoxLayout.X_AXIS)
-                groupChoicePanel.add(JLabel("Keep filter in group/file: "))
+                groupChoicePanel.add(JLabel(I18n.get(I18n.FILTER_DEDUP_KEEP_IN_GROUP)))
                 groupCombo = JComboBox(cluster.affectedGroups.toTypedArray())
                 groupChoicePanel.add(groupCombo)
 
@@ -155,9 +157,9 @@ class FilterDeduplicationDialog(
                 )
 
                 val detailsText = cluster.matches.joinToString("<br>") { match ->
-                    "&bull; Group <b>${match.group}</b>: \"${match.filter.patternString}\""
+                    I18n.format(I18n.FILTER_DEDUP_CROSS_GROUP_ITEM, match.group, match.filter.patternString)
                 }
-                val detailsLabel = JLabel("<html><small>$detailsText</small></html>")
+                val detailsLabel = JLabel(StringUtils.wrapHtml("<small>$detailsText</small>"))
                 clusterBox.add(
                     detailsLabel,
                     GBConstraintsBuilder()
@@ -168,7 +170,7 @@ class FilterDeduplicationDialog(
                 )
             } else {
                 val groupName = cluster.affectedGroups.first()
-                val infoLabel = JLabel("<html>Group: <b>$groupName</b> (${cluster.matches.size} duplicate entries in this group)</html>")
+                val infoLabel = JLabel(StringUtils.wrapHtml(I18n.format(I18n.FILTER_DEDUP_SAME_GROUP_INFO, groupName, cluster.matches.size)))
                 clusterBox.add(
                     infoLabel,
                     GBConstraintsBuilder()

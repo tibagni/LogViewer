@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.ProgressReporter;
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.log.LogEntry;
 
 import java.util.*;
@@ -41,12 +42,12 @@ public class Filters {
       if (progress.logsRead > (progress.logsReadOnProgressPublish + progress.publishThreshold)
               || progress.logsRead >= progress.totalLogs ) {
         progress.logsReadOnProgressPublish = progress.logsRead;
-        pr.onProgress((int)progress.logsRead * 100 / input.size(), "Applying filters...");
+        pr.onProgress((int)progress.logsRead * 100 / input.size(), I18n.get(I18n.FILTERS_PROGRESS_APPLYING));
       }
     });
     Collections.sort(filtered);
 
-    pr.onProgress(100, "Done!");
+    pr.onProgress(100, I18n.get(I18n.COMMON_DONE));
     return filtered;
   }
 

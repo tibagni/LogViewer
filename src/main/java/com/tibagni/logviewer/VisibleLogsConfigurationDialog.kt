@@ -1,5 +1,6 @@
 package com.tibagni.logviewer
 
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
@@ -21,8 +22,8 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
 
   private val startingPointLogText = JTextArea(3, 30)
   private val endingPointLogText = JTextArea(3, 30)
-  private val clearStartingPointBtn = JButton("Clear")
-  private val clearEndingPointBtn = JButton("Clear")
+  private val clearStartingPointBtn = JButton(I18n.get(I18n.COMMON_CLEAR))
+  private val clearEndingPointBtn = JButton(I18n.get(I18n.COMMON_CLEAR))
 
   private var startingLog: LogEntry? = configuration.startingLog
   private var endingLog: LogEntry? = configuration.endingLog
@@ -42,7 +43,7 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   }
 
   init {
-    title = "Visible Logs"
+    title = I18n.get(I18n.VISIBLE_LOGS_TITLE)
     buildUi()
     setContentPane(contentPane)
     isModal = true
@@ -133,7 +134,7 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     )
 
     positionsPane.add(
-      JLabel("First visible Log (all lines before are ignored)"),
+      JLabel(I18n.get(I18n.VISIBLE_LOGS_FIRST_LABEL)),
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(3)
@@ -180,7 +181,7 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     )
 
     positionsPane.add(
-      JLabel("Last visible Log (all lines after are ignored)"),
+      JLabel(I18n.get(I18n.VISIBLE_LOGS_LAST_LABEL)),
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(6)

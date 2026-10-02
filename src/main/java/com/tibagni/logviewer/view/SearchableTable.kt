@@ -4,6 +4,7 @@ import com.jgoodies.forms.builder.PanelBuilder
 import com.jgoodies.forms.factories.CC
 import com.jgoodies.forms.layout.FormLayout
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
@@ -32,12 +33,12 @@ class SearchableTable @JvmOverloads constructor(
 ) : JPanel() {
 
   private val searchOptionPanel = JPanel()
-  private val searchText = HintTextField("Search")
-  private val clearSearchText = JButton("Clear")
+  private val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
+  private val clearSearchText = JButton(I18n.get(I18n.COMMON_CLEAR))
   private val searchLast = JButton(StringUtils.UP_ARROW_HEAD_BIG)
   private val searchNext = JButton(StringUtils.DOWN_ARROW_HEAD_BIG)
   private val searchResult = JLabel()
-  private val matchCaseOption = JCheckBox("Match Case")
+  private val matchCaseOption = JCheckBox(I18n.get(I18n.SEARCH_MATCH_CASE))
   private val close = FlatButton(StringUtils.DELETE)
 
   val table = JTable(dm, cm, sm)
@@ -86,7 +87,7 @@ class SearchableTable @JvmOverloads constructor(
     })
 
     close.addActionListener { hideSearch() }
-    close.toolTipText = "Hide search bar"
+    close.toolTipText = I18n.get(I18n.SEARCH_TOOLTIP_HIDE)
 
     searchText.whenTextChanges { performSearchState.value = Any() }
 
@@ -170,7 +171,8 @@ class SearchableTable @JvmOverloads constructor(
 
       withContext(Dispatchers.Main) {
         searchResult.text =
-          if (filterResult?.isFailure == true) " bad pattern " else "  ${matchedEntries.size} results  "
+          if (filterResult?.isFailure == true) " ${I18n.get(I18n.SEARCH_BAD_PATTERN)} "
+          else "  ${I18n.format(I18n.SEARCH_RESULTS_COUNT, matchedEntries.size)}  "
         updatedRow.forEach {
           (table.model as AbstractTableModel).fireTableCellUpdated(it, 0)
         }

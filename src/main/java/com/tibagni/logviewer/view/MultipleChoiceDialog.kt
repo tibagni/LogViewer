@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.view
 
+import com.tibagni.logviewer.i18n.I18n
 import java.awt.Component
 import javax.swing.*
 
@@ -19,7 +20,7 @@ class MultipleChoiceDialog(
     dialogPanel.add(JLabel(message))
     dialogPanel.add(JLabel(" ")) // For vertical spacing
 
-    selectAllCb = TriStateCheckbox("Select/Unselect all")
+    selectAllCb = TriStateCheckbox(I18n.get(I18n.COMMON_SELECT_UNSELECT_ALL))
     dialogPanel.add(selectAllCb)
     dialogPanel.add(JLabel(" ")) // For vertical spacing
 
