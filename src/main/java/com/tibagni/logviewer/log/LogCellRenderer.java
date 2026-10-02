@@ -3,6 +3,7 @@ package com.tibagni.logviewer.log;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.logger.Logger;
+import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -52,8 +53,6 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(10),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(10)));
-    int fontSize = textView.getFont().getSize();
-    textView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
     add(textView);
 
     // Create the stream indicator component but do not show initially
@@ -63,8 +62,18 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5),
             UIScaleUtils.dip(5)));
-    fontSize = textView.getFont().getSize();
-    streamIndicator.setFont(new Font(Font.MONOSPACED, Font.ITALIC, fontSize));
+
+    LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+    updateFont(prefs.getLogFontSize(), prefs.getLogFontBold());
+  }
+
+  public void updateFont(int fontSize, boolean isBold) {
+    int style = isBold ? Font.BOLD : Font.PLAIN;
+    Font logFont = new Font(Font.MONOSPACED, style, fontSize);
+    textView.setFont(logFont);
+    streamIndicator.setFont(new Font(Font.MONOSPACED, isBold ? (Font.BOLD | Font.ITALIC) : Font.ITALIC, fontSize));
+    lineNumLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
+    setFont(logFont);
   }
 
   public void showLineNumbers(boolean showLineNumbers) {
@@ -95,11 +104,13 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     }
 
     String line = String.valueOf(maxLineNumber + 1);
-    int width = (int) getFont().getStringBounds(line, fontRenderContext).getWidth();
+    Font font = lineNumLabel.getFont() != null ? lineNumLabel.getFont() : getFont();
+    int width = (int) font.getStringBounds(line, fontRenderContext).getWidth();
+    int height = (int) font.getStringBounds(line, fontRenderContext).getHeight();
 
     // size = string width + border size
     lineNumLabel.setPreferredSize(new Dimension(width + UIScaleUtils.dip(15),
-        lineNumLabel.getPreferredSize().height));
+        Math.max(UIScaleUtils.dip(20), height)));
   }
 
   @Override
