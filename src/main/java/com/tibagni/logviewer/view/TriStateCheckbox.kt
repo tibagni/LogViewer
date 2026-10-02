@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.view
 
+import java.awt.Color
 import java.awt.Component
 import java.awt.Graphics
 import java.awt.event.ActionEvent
@@ -32,6 +33,11 @@ class TriStateCheckbox(text: String? = null) : JCheckBox(text) {
     addActionListener(this::actionPerformed)
   }
 
+  override fun updateUI() {
+    super.updateUI()
+    icon = TriStateCheckIcon(this)
+  }
+
   fun addSelectionChangedListener(listener: SelectionChangedListener) {
     selectionChangedListeners.add(listener)
   }
@@ -48,11 +54,15 @@ class TriStateCheckbox(text: String? = null) : JCheckBox(text) {
 }
 
 private class TriStateCheckIcon(private val checkBox: TriStateCheckbox): Icon {
-  private val checkIcon = UIManager.getIcon("CheckBox.icon")
-  private val checkColor = UIManager.getColor("CheckBox.selected")
+  private val checkIcon: Icon?
+    get() = UIManager.getIcon("CheckBox.icon")
+  private val checkColor: Color
+    get() = UIManager.getColor("CheckBox.icon.checkmarkColor")
+      ?: UIManager.getColor("CheckBox.foreground")
+      ?: Color.GRAY
 
   override fun paintIcon(c: Component, g: Graphics, x: Int, y: Int) {
-    checkIcon.paintIcon(c, g, x, y)
+    checkIcon?.paintIcon(c, g, x, y)
     if (checkBox.selectionState != TriStateCheckbox.SelectionState.PARTIALLY_SELECTED) return
 
     // Draw a square to represent the partially selected state
@@ -65,6 +75,6 @@ private class TriStateCheckIcon(private val checkBox: TriStateCheckbox): Icon {
     )
   }
 
-  override fun getIconWidth() = checkIcon.iconWidth
-  override fun getIconHeight() = checkIcon.iconHeight
+  override fun getIconWidth() = checkIcon?.iconWidth ?: 0
+  override fun getIconHeight() = checkIcon?.iconHeight ?: 0
 }

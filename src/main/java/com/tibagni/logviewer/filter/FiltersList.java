@@ -53,6 +53,7 @@ public class FiltersList extends JPanel {
     super.updateUI();
     if (filterUIGroups != null) {
       for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
+        groupEntry.getValue().updateUI();
         groupEntry.getValue().updateActionPaneButtons();
       }
     }
@@ -590,6 +591,11 @@ public class FiltersList extends JPanel {
       super.updateUI();
       if (list != null) {
         list.updateUI();
+        list.revalidate();
+        list.repaint();
+      }
+      if (selectAllCb != null) {
+        selectAllCb.updateUI();
       }
     }
 

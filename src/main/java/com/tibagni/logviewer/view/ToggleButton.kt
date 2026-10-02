@@ -3,19 +3,17 @@ package com.tibagni.logviewer.view
 import com.tibagni.logviewer.util.SwingUtils
 import javax.swing.BorderFactory
 import javax.swing.ImageIcon
+import javax.swing.border.Border
 
 class ToggleButton(imageIcon: ImageIcon, val listener: (Boolean) -> Unit) : FlatButton() {
-  private val originalIcon: ImageIcon
-  private val selectedIcon: ImageIcon
-  private val normalIcon: ImageIcon
+  private val originalIcon: ImageIcon = SwingUtils.resizeImage(imageIcon, 25, 25)
+  private lateinit var selectedIcon: ImageIcon
+  private lateinit var normalIcon: ImageIcon
   private var _isActive = false
   val isActive: Boolean
     get() = _isActive
 
-  private val selectedBorder = BorderFactory.createCompoundBorder(
-      BorderFactory.createMatteBorder(0, 0, 0, 2, rolloverColor),
-      BorderFactory.createEmptyBorder(5, 5, 5, 3))
-
+  private lateinit var selectedBorder: Border
   private val normalBorder = BorderFactory.createEmptyBorder(5, 5, 5, 5)
 
   init {
@@ -24,10 +22,26 @@ class ToggleButton(imageIcon: ImageIcon, val listener: (Boolean) -> Unit) : Flat
     }
 
     isBorderPainted = true
-    originalIcon = SwingUtils.resizeImage(imageIcon, 25, 25)
+    updateIconsAndBorders()
+    updateUiState()
+  }
+
+  override fun updateUI() {
+    super.updateUI()
+    @Suppress("SENSELESS_COMPARISON")
+    if (originalIcon != null) {
+      updateIconsAndBorders()
+      updateUiState()
+    }
+  }
+
+  private fun updateIconsAndBorders() {
     normalIcon = SwingUtils.tintImage(originalIcon, normalColor)
     selectedIcon = SwingUtils.tintImage(originalIcon, rolloverColor)
-    updateUiState()
+    selectedBorder = BorderFactory.createCompoundBorder(
+      BorderFactory.createMatteBorder(0, 0, 0, 2, rolloverColor),
+      BorderFactory.createEmptyBorder(5, 5, 5, 3)
+    )
   }
 
   fun toggle() {
@@ -44,7 +58,7 @@ class ToggleButton(imageIcon: ImageIcon, val listener: (Boolean) -> Unit) : Flat
     } else {
       border = normalBorder
       foreground = normalColor
-      icon = originalIcon
+      icon = normalIcon
     }
   }
 

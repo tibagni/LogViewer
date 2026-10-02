@@ -814,6 +814,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun onThemeChanged() {
     updateLogFont()
+    SwingUtilities.updateComponentTreeUI(filtersPane)
+    SwingUtilities.updateComponentTreeUI(sidePanel)
+    collapseExpandAllGroupsBtn.updateUI()
   }
 
   override fun requestFinish(doFinish: () -> Unit) {

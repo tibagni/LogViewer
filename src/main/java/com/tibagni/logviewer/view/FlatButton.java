@@ -45,8 +45,27 @@ public class FlatButton extends JButton {
             UIScaleUtils.dip(2)));
     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    normalColor = new Color(UIManager.getColor("Button.foreground").getRGB());
-    rolloverColor = new Color(UIManager.getColor("textHighlight").getRGB());
+    updateColors();
+  }
+
+  @Override
+  public void updateUI() {
+    super.updateUI();
+    updateColors();
+  }
+
+  private void updateColors() {
+    Color btnForeground = UIManager.getColor("Button.foreground");
+    if (btnForeground != null) {
+      normalColor = new Color(btnForeground.getRGB());
+    }
+    Color highlight = UIManager.getColor("textHighlight");
+    if (highlight != null) {
+      rolloverColor = new Color(highlight.getRGB());
+    }
+    if (normalColor != null) {
+      setForeground(normalColor);
+    }
   }
 
   @Override
