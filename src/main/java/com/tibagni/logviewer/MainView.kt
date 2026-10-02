@@ -304,6 +304,9 @@ class MainViewImpl(
     )
     findFilterItem.addActionListener { logViewerView.handleFindFiltersMenu() }
     filtersMenu.add(findFilterItem)
+    val cleanDuplicatesItem = JMenuItem("Find & Clean Duplicate Filters...")
+    cleanDuplicatesItem.addActionListener { logViewerView.handleCleanDuplicateFilters() }
+    filtersMenu.add(cleanDuplicatesItem)
 
     val helpMenu = JMenu("Help")
     val aboutItem = JMenuItem("About")

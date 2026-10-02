@@ -1,6 +1,9 @@
 package com.tibagni.logviewer;
 
+import com.tibagni.logviewer.filter.DuplicateCluster;
 import com.tibagni.logviewer.filter.Filter;
+import com.tibagni.logviewer.filter.FilterDuplicateUtils;
+import com.tibagni.logviewer.filter.FilterMatch;
 import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
@@ -34,18 +37,30 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   private final LogsRepository logsRepository;
   private final MyLogsRepository myLogsRepository;
   private final FiltersRepository filtersRepository;
+  private final FilterDuplicateUtils filterDuplicateUtils;
 
   LogViewerPresenterImpl(LogViewerPresenterView view,
                          LogViewerPreferences userPrefs,
                          LogsRepository logsRepository,
                          MyLogsRepository myLogsRepository,
                          FiltersRepository filtersRepository) {
+    this(view, userPrefs, logsRepository, myLogsRepository, filtersRepository,
+        ServiceLocator.INSTANCE.getFilterDuplicateUtils());
+  }
+
+  LogViewerPresenterImpl(LogViewerPresenterView view,
+                         LogViewerPreferences userPrefs,
+                         LogsRepository logsRepository,
+                         MyLogsRepository myLogsRepository,
+                         FiltersRepository filtersRepository,
+                         FilterDuplicateUtils filterDuplicateUtils) {
     super(view);
     this.view = view;
     this.userPrefs = userPrefs;
     this.logsRepository = logsRepository;
     this.myLogsRepository = myLogsRepository;
     this.filtersRepository = filtersRepository;
+    this.filterDuplicateUtils = filterDuplicateUtils;
 
     unsavedFilterGroups = new ArrayList<>();
     cachedAllowedFilteredLogs = new ArrayList<>();
@@ -764,6 +779,80 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     return result;
+  }
+
+  @Override
+  public void cleanDuplicateFilters() {
+    Map<String, List<Filter>> currentFilters = filtersRepository.getCurrentlyOpenedFilters();
+    if (currentFilters.isEmpty()) {
+      view.showInfoMessage("Clean Duplicate Filters", "There are no filters loaded.");
+      return;
+    }
+
+    List<DuplicateCluster> clusters = filterDuplicateUtils.findDuplicateClusters(currentFilters);
+    if (clusters.isEmpty()) {
+      view.showInfoMessage("Clean Duplicate Filters", "No duplicate filters found.");
+      return;
+    }
+
+    Map<String, List<Filter>> removals = view.showDuplicateFiltersDialog(clusters);
+    if (removals == null || removals.isEmpty()) {
+      return;
+    }
+
+    boolean shouldReapply = removals.values().stream()
+        .flatMap(Collection::stream)
+        .anyMatch(Filter::isApplied);
+
+    int totalDeleted = applyDeduplicationResolution(removals);
+    if (totalDeleted > 0) {
+      view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
+
+      if (!filtersRepository.getCurrentlyOpenedFilters().isEmpty()) {
+        checkForUnsavedChanges();
+      }
+
+      if (shouldReapply) {
+        applyFilters();
+      }
+
+      view.showToast(String.format("Cleaned %d duplicate filter(s)", totalDeleted));
+    }
+  }
+
+  @Override
+  public FilterMatch findDuplicateFilter(String pattern, boolean isCaseSensitive, Filter editingFilter) {
+    return filterDuplicateUtils.findFirstDuplicate(
+        pattern,
+        isCaseSensitive,
+        editingFilter,
+        filtersRepository.getCurrentlyOpenedFilters()
+    );
+  }
+
+  private int applyDeduplicationResolution(Map<String, ? extends Collection<Filter>> filtersToRemove) {
+    int totalDeleted = 0;
+    for (Map.Entry<String, ? extends Collection<Filter>> entry : filtersToRemove.entrySet()) {
+      String group = entry.getKey();
+      Collection<Filter> toRemove = entry.getValue();
+      if (toRemove == null || toRemove.isEmpty()) {
+        continue;
+      }
+
+      List<Filter> current = filtersRepository.getCurrentlyOpenedFilters().get(group);
+      if (current != null) {
+        int[] indices = toRemove.stream()
+            .mapToInt(current::indexOf)
+            .filter(i -> i >= 0)
+            .sorted()
+            .toArray();
+        if (indices.length > 0) {
+          filtersRepository.deleteFilters(group, indices);
+          totalDeleted += indices.length;
+        }
+      }
+    }
+    return totalDeleted;
   }
 
   @Override

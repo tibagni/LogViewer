@@ -1,8 +1,11 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.LogViewerPresenter.UserSelection
+import com.tibagni.logviewer.filter.DuplicateCluster
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterDeduplicationDialog
+import com.tibagni.logviewer.filter.FilterDuplicateUtils
 import com.tibagni.logviewer.filter.FiltersList
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.filter.SearchFiltersDialog
@@ -33,6 +36,7 @@ interface LogViewerView : View {
   fun handleSaveFilteredLogsMenu()
   fun handleOpenFiltersMenu()
   fun handleFindFiltersMenu()
+  fun handleCleanDuplicateFilters()
   fun showSearchFiltersDialog()
   fun handleGoToTimestampMenu()
   fun handleConfigureIgnoredLogs()
@@ -63,6 +67,9 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String)
   fun closeCurrentlyOpenedBugReports()
   fun collapseAllGroups()
+  fun showInfoMessage(title: String, message: String)
+  fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>?
+  fun showToast(message: String)
 }
 
 private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
@@ -242,11 +249,16 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val unApplyAllFilters = popup.add("\"Un-apply\" all filters")
     unApplyAllFilters.toolTipText = "\"Un-apply\" all filters from all groups"
 
+    val cleanDuplicatesItem = popup.add("Find & Clean duplicate filters...")
+    cleanDuplicatesItem.toolTipText = "Find and remove duplicate filters across open groups"
+
     closeAllGroupsItem.addActionListener { closeAllGroups() }
     unApplyAllFilters.addActionListener { clearAllFiltersSelection() }
+    cleanDuplicatesItem.addActionListener { handleCleanDuplicateFilters() }
 
     // If there are no groups, there is no point in closing anything
     closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
+    cleanDuplicatesItem.isEnabled = presenter.groups.isNotEmpty()
 
     popup.show(e.component, e.x, e.y)
   }
@@ -290,7 +302,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun addFilter(group: String) {
-    val newFilter = EditFilterDialog.showEditFilterDialog(mainView.parent)
+    val newFilter = EditFilterDialog.showEditFilterDialog(mainView.parent) { pattern, caseSensitive ->
+      presenter.findDuplicateFilter(pattern, caseSensitive, null)
+    }
     if (newFilter != null) {
       presenter.addFilter(group, newFilter)
     }
@@ -325,7 +339,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       override fun onEditFilter(filter: Filter) {
         // The filter is automatically updated by this dialog. We only check the result
         // to determine if the dialog was canceled or not
-        val edited = EditFilterDialog.showEditFilterDialog(mainView.parent, filter)
+        val edited = EditFilterDialog.showEditFilterDialog(mainView.parent, filter) { pattern, caseSensitive ->
+          presenter.findDuplicateFilter(pattern, caseSensitive, filter)
+        }
         if (edited != null) {
           // Tell the presenter a filter was edited. It will not update the filters
           // as filters are updated by EditFilterDialog itself, it will only determine
@@ -504,7 +520,9 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun addFilterFromLogLine(logLine: String) {
-    val filter = EditFilterDialog.showEditFilterDialogWithText(mainView.parent, logLine)
+    val filter = EditFilterDialog.showEditFilterDialogWithText(mainView.parent, logLine) { pattern, caseSensitive ->
+      presenter.findDuplicateFilter(pattern, caseSensitive, null)
+    }
     if (filter != null) {
       val groups = presenter.groups
       var group = if (groups.size == 1) groups[0] else null
@@ -679,6 +697,22 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     }
 
     filtersPane.updateUI()
+  }
+
+  override fun handleCleanDuplicateFilters() {
+    presenter.cleanDuplicateFilters()
+  }
+
+  override fun showInfoMessage(title: String, message: String) {
+    JOptionPane.showMessageDialog(mainView.parent, message, title, JOptionPane.INFORMATION_MESSAGE)
+  }
+
+  override fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>? {
+    return FilterDeduplicationDialog.showDialog(mainView.parent, clusters)
+  }
+
+  override fun showToast(message: String) {
+    Toast.showToast(mainView.parent, message, Toast.LENGTH_SHORT)
   }
 
   override fun handleGoToTimestampMenu() {

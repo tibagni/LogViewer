@@ -302,7 +302,9 @@ class SearchFiltersDialog(
     val row = resultsTable.selectedRow
     val item = getSelectedItem() ?: return
 
-    val edited = EditFilterDialog.showEditFilterDialog(owner, item.filter)
+    val edited = EditFilterDialog.showEditFilterDialog(owner, item.filter) { pattern, caseSensitive ->
+      presenter.findDuplicateFilter(pattern, caseSensitive, item.filter)
+    }
     if (edited != null) {
       presenter.filterEdited(item.filter)
       tableModel.fireTableRowsUpdated(row, row)

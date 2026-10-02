@@ -1,6 +1,7 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.filter.Filter;
+import com.tibagni.logviewer.filter.FilterMatch;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 
@@ -54,6 +55,9 @@ public interface LogViewerPresenter {
 
   void addLogEntriesToMyLogs(List<LogEntry> entries);
   void removeFromMyLog(int[] indices);
+
+  void cleanDuplicateFilters();
+  FilterMatch findDuplicateFilter(String pattern, boolean isCaseSensitive, Filter editingFilter);
 
   void finishing();
 }
