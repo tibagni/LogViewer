@@ -8,6 +8,7 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.ButtonsPane;
 import com.tibagni.logviewer.view.JFileChooserExt;
+import com.tibagni.logviewer.view.LoadingSpinner;
 
 import javax.swing.*;
 import java.awt.*;
@@ -40,6 +41,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private ButtonsPane buttonsPane;
   private JPanel contentPane;
   private JComboBox<String> lookAndFeelCbx;
+  private LoadingSpinner themeLoadingSpinner;
   private JComboBox<Integer> logFontSizeCbx;
   private JCheckBox boldLogTextChbx;
   private JTextField filtersPathTxt;
@@ -170,8 +172,43 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
 
   @Override
   public void onOk() {
-    saveActions.forEach((s, runnable) -> runnable.run());
-    dispose();
+    if (saveActions.isEmpty()) {
+      dispose();
+      return;
+    }
+
+    // Theme change operations can take a little longer (e.g. recreating file choosers so
+    // file dialogs stay instant), so we show a loading spinner and wait cursor to let the
+    // user know that work is in progress.
+    boolean hasThemeChange = saveActions.containsKey(LOOK_FEEL_PREF_ID);
+
+    buttonsPane.enableOkButton(false);
+    buttonsPane.enableCancelButton(false);
+
+    if (hasThemeChange) {
+      setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+      if (themeLoadingSpinner != null) {
+        themeLoadingSpinner.setVisible(true);
+      }
+
+      // Allow the EDT to paint the loading spinner and wait cursor before running theme change
+      Timer timer = new Timer(20, e -> {
+        try {
+          saveActions.forEach((s, runnable) -> runnable.run());
+        } finally {
+          if (themeLoadingSpinner != null) {
+            themeLoadingSpinner.setVisible(false);
+          }
+          setCursor(Cursor.getDefaultCursor());
+          dispose();
+        }
+      });
+      timer.setRepeats(false);
+      timer.start();
+    } else {
+      saveActions.forEach((s, runnable) -> runnable.run());
+      dispose();
+    }
   }
 
   @Override
@@ -312,6 +349,10 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     lookAndFeelCbx = new JComboBox<>();
     lookAndFeelCbx.setMinimumSize(new Dimension());
     formPane.add(lookAndFeelCbx, cc.xy(3, 1));
+
+    themeLoadingSpinner = new LoadingSpinner();
+    themeLoadingSpinner.setVisible(false);
+    formPane.add(themeLoadingSpinner, cc.xy(5, 1, CellConstraints.LEFT, CellConstraints.CENTER));
 
     final JSeparator sep1 = new JSeparator();
     formPane.add(sep1, cc.xyw(1, 3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));

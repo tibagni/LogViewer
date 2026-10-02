@@ -52,6 +52,12 @@ public class ButtonsPane extends JPanel {
     buttonOK.setEnabled(enable);
   }
 
+  public void enableCancelButton(boolean enable) {
+    if (buttonCancel != null) {
+      buttonCancel.setEnabled(enable);
+    }
+  }
+
   public void setOkText(String text) {
     if (buttonOK != null) {
       buttonOK.setText(text);

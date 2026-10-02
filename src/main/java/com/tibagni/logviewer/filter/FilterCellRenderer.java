@@ -30,6 +30,12 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
   }
 
   @Override
+  public void updateUI() {
+    super.updateUI();
+    setBorder(DEFAULT_NO_FOCUS_BORDER);
+  }
+
+  @Override
   public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
                                                 boolean cellHasFocus) {
     Filter filter = (Filter) value;

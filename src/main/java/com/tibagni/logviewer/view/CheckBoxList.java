@@ -22,6 +22,14 @@ public class CheckBoxList<E> extends JList<E> {
     dummyCheckBox = new JCheckBox();
   }
 
+  @Override
+  public void updateUI() {
+    super.updateUI();
+    if (dummyCheckBox != null) {
+      dummyCheckBox.updateUI();
+    }
+  }
+
   public void setItemsCheckListener(ItemsCheckListener listener) {
     this.listener = listener;
   }
