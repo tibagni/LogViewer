@@ -19,6 +19,7 @@ import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
+import javax.swing.event.TableModelEvent
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.TableColumnModel
 import javax.swing.table.TableModel
@@ -89,6 +90,13 @@ class SearchableTable @JvmOverloads constructor(
 
     searchText.whenTextChanges { performSearchState.value = Any() }
 
+    table.model.addTableModelListener {
+      // Re-perform search if the model inserted or deleted items, ignore simple update events
+      if (searchOptionPanel.isVisible && it.type != TableModelEvent.UPDATE) {
+        performSearchState.value = Any()
+      }
+    }
+
     table.selectionModel.addListSelectionListener {
       lastSearchGoToPos = -1
       val renderer = table.getDefaultRenderer(LogEntry::class.java) as LogCellRenderer
@@ -139,7 +147,7 @@ class SearchableTable @JvmOverloads constructor(
           "search",
           pattern,
           Color.RED,
-          LogLevel.DEBUG,
+          LogLevel.VERBOSE,
           matchCaseOption.isSelected
         )
       }.onFailure { Logger.error("create filter error", it) } else null
@@ -163,9 +171,6 @@ class SearchableTable @JvmOverloads constructor(
       withContext(Dispatchers.Main) {
         searchResult.text =
           if (filterResult?.isFailure == true) " bad pattern " else "  ${matchedEntries.size} results  "
-        if (matchedEntries.isNotEmpty()) {
-          SwingUtils.scrollToVisible(table, matchedEntries[0])
-        }
         updatedRow.forEach {
           (table.model as AbstractTableModel).fireTableCellUpdated(it, 0)
         }
@@ -175,7 +180,12 @@ class SearchableTable @JvmOverloads constructor(
   }
 
   private fun showSearch() {
-    if (searchOptionPanel.isVisible) return
+    if (searchOptionPanel.isVisible) {
+      if (!searchText.hasFocus()) {
+        searchText.requestFocus()
+      }
+      return
+    }
 
     searchOptionPanel.isVisible = true
     searchText.requestFocus()
