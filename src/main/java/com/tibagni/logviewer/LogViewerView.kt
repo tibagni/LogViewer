@@ -134,6 +134,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private lateinit var myLogsListTableModel: LogListTableModel
   private val logRenderer: LogCellRenderer
   private val myLogsRenderer: LogCellRenderer
+  private val userPrefs: LogViewerPreferences = ServiceLocator.logViewerPrefs
 
   private lateinit var _contentPane: JPanel
   override val contentPane: JPanel
@@ -144,7 +145,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   init {
     buildUi()
-    val userPrefs = ServiceLocator.logViewerPrefs
 
     presenter = LogViewerPresenterImpl(
       this,
@@ -199,6 +199,14 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         // if the user has the preference to not apply the filter on check, we add the apply button
         applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
       }
+
+      override fun onLogFontSizeChanged() {
+        updateLogFont()
+      }
+
+      override fun onLogFontBoldChanged() {
+        updateLogFont()
+      }
     })
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
@@ -220,6 +228,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     setupLogsContextActions()
     setupFilteredLogsContextActions()
     setupMyLogsContextActions()
+
+    updateLogFont()
 
     // Configure file drop
     FileDrop(Logger.getDebugStream(), logsPane) { presenter.loadLogs(it) }
@@ -777,8 +787,33 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     )
   }
 
+  private fun updateLogFont() {
+    val fontSize = userPrefs.logFontSize
+    val isBold = userPrefs.logFontBold
+    logRenderer.updateFont(fontSize, isBold)
+    myLogsRenderer.updateFont(fontSize, isBold)
+
+    val font = Font(Font.MONOSPACED, if (isBold) Font.BOLD else Font.PLAIN, fontSize)
+    val fontMetrics = logList.table.getFontMetrics(font)
+    val rowHeight = maxOf(UIScaleUtils.dip(22), fontMetrics.height + UIScaleUtils.dip(6))
+
+    logList.table.rowHeight = rowHeight
+    filteredLogList.table.rowHeight = rowHeight
+    myLogsList.table.rowHeight = rowHeight
+
+    logListTableModel.lastEntry?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
+    myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
+
+    logList.table.revalidate()
+    logList.table.repaint()
+    filteredLogList.table.revalidate()
+    filteredLogList.table.repaint()
+    myLogsList.table.revalidate()
+    myLogsList.table.repaint()
+  }
+
   override fun onThemeChanged() {
-    // Do nothing
+    updateLogFont()
   }
 
   override fun requestFinish(doFinish: () -> Unit) {

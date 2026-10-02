@@ -15,6 +15,8 @@ interface LogViewerPreferences {
     var showLineNumbers: Boolean
     var showLogLineDividers: Boolean
     var applyFilterOnCheck: Boolean
+    var logFontSize: Int
+    var logFontBold: Boolean
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
@@ -34,6 +36,8 @@ interface LogViewerPreferences {
         fun onShowLineNumbersChanged()
         fun onShowLogLineDividersChanged() {}
         fun onApplyFiltersOnCheckChanged() {}
+        fun onLogFontSizeChanged() {}
+        fun onLogFontBoldChanged() {}
     }
 
     abstract class Adapter : Listener {
@@ -49,5 +53,7 @@ interface LogViewerPreferences {
         override fun onShowLineNumbersChanged() {}
         override fun onShowLogLineDividersChanged() {}
         override fun onApplyFiltersOnCheckChanged() {}
+        override fun onLogFontSizeChanged() {}
+        override fun onLogFontBoldChanged() {}
     }
 }

@@ -20,6 +20,10 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
     /*Visible for Testing*/ const val SHOW_LOG_LINE_DIVIDERS = "show_log_line_dividers"
     /*Visible for Testing*/ const val REAPPLY_FILTERS_ON_CHANGE = "reapply_filters_on_change"
+    /*Visible for Testing*/ const val LOG_FONT_SIZE = "log_font_size"
+    /*Visible for Testing*/ const val LOG_FONT_BOLD = "log_font_bold"
+    /*Visible for Testing*/ const val DEFAULT_LOG_FONT_SIZE = 12
+    /*Visible for Testing*/ const val DEFAULT_LOG_FONT_BOLD = false
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -131,6 +135,20 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(reApply) {
             preferences.putBoolean(REAPPLY_FILTERS_ON_CHANGE, reApply)
             listeners.forEach { l -> l.onApplyFiltersOnCheckChanged() }
+        }
+
+    override var logFontSize: Int
+        get() = preferences.getInt(LOG_FONT_SIZE, DEFAULT_LOG_FONT_SIZE)
+        set(size) {
+            preferences.putInt(LOG_FONT_SIZE, size)
+            listeners.forEach { l -> l.onLogFontSizeChanged() }
+        }
+
+    override var logFontBold: Boolean
+        get() = preferences.getBoolean(LOG_FONT_BOLD, DEFAULT_LOG_FONT_BOLD)
+        set(bold) {
+            preferences.putBoolean(LOG_FONT_BOLD, bold)
+            listeners.forEach { l -> l.onLogFontBoldChanged() }
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {

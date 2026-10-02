@@ -117,7 +117,7 @@ class MainViewImpl(
 
   fun themeChanged() {
     recreateFileChoosers()
-    bugReportView.onThemeChanged()
+    logViewerView.onThemeChanged()
     bugReportView.onThemeChanged()
   }
 
