@@ -3,6 +3,7 @@ package com.tibagni.logviewer.filter.regex;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
@@ -39,6 +40,7 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
     highlightColor = themeManager.isDark() ? new Color(101, 70, 0) : new Color(255, 233, 152);
     errorRegexEditBg = themeManager.isDark() ? new Color(88, 12, 25) : new Color(235, 77, 103);
 
+    setTitle(I18n.get(I18n.REGEX_EDITOR_DIALOG_TITLE));
     buildUi();
 
     setContentPane(contentPane);
@@ -179,20 +181,20 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
         "center:max(d;4px):noGrow,top:3dlu:noGrow,center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow"));
 
     final JLabel regexLbl = new JLabel();
-    regexLbl.setText("Regex:");
+    regexLbl.setText(I18n.get(I18n.REGEX_EDITOR_LABEL_REGEX));
     CellConstraints cc = new CellConstraints();
     regexPane.add(regexLbl, cc.xy(1, 3));
 
     final JLabel previewLbl = new JLabel();
-    previewLbl.setText("Preview:");
+    previewLbl.setText(I18n.get(I18n.REGEX_EDITOR_LABEL_PREVIEW));
     regexPane.add(previewLbl, cc.xy(1, 5));
 
     final JLabel flagsLbl = new JLabel();
-    flagsLbl.setText("Flags:");
+    flagsLbl.setText(I18n.get(I18n.REGEX_EDITOR_LABEL_FLAGS));
     regexPane.add(flagsLbl, cc.xy(1, 1));
 
     caseSensitive = new JCheckBox();
-    caseSensitive.setText("Case sensitive");
+    caseSensitive.setText(I18n.get(I18n.REGEX_EDITOR_CASE_SENSITIVE));
     regexPane.add(caseSensitive, cc.xy(3, 1));
 
     regexEdit = new JTextArea(3, 50);
@@ -203,14 +205,7 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
 
     regexPreview = new JTextArea(10, 50);
     regexPreview.setLineWrap(true);
-    regexPreview.setText("Sample text for testing: \n" +
-        "abcdefghijklmnopqrstuvwxyz \n" +
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ \n" +
-        "0123456789 _+-.,!@#$%^&*();\\/|<>\"'\n" +
-        "12345 -98.7 3.141 .6180 9,000 \n" +
-        "+42 555.123.4567 +1-(800)-555-2468 \n" +
-        "foo@demo.net bar.ba@test.co.uk \n" +
-        "www.demo.com http://foo.co.uk/");
+    regexPreview.setText(I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT));
     regexPreview.setWrapStyleWord(true);
     regexPane.add(new JScrollPane(regexPreview),
         cc.xy(3, 5, CellConstraints.FILL, CellConstraints.FILL));

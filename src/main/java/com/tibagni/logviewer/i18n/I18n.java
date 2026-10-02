@@ -22,6 +22,11 @@ public final class I18n {
   // Common
   public static final String COMMON_OK = "common.ok";
   public static final String COMMON_CANCEL = "common.cancel";
+  public static final String COMMON_CLOSE = "common.close";
+  public static final String COMMON_CLEAR = "common.clear";
+  public static final String COMMON_DELETE = "common.delete";
+  public static final String COMMON_EDIT = "common.edit";
+  public static final String COMMON_ERROR = "common.error";
 
   // Preferences Dialog
   public static final String PREF_DIALOG_TITLE = "pref.dialog.title";
@@ -77,6 +82,63 @@ public final class I18n {
   // Main Tabs
   public static final String MAIN_TAB_LOGS = "main.tab.logs";
   public static final String MAIN_TAB_BUG_REPORT = "main.tab.bugreport";
+
+  // Edit Filter Dialog
+  public static final String FILTER_DIALOG_EDIT_TITLE = "filter.dialog.edit_title";
+  public static final String FILTER_DIALOG_NEW_TITLE = "filter.dialog.new_title";
+  public static final String FILTER_LABEL_NAME = "filter.dialog.name";
+  public static final String FILTER_TOOLTIP_NAME = "filter.dialog.name.tooltip";
+  public static final String FILTER_LABEL_REGEX = "filter.dialog.regex";
+  public static final String FILTER_TOOLTIP_REGEX = "filter.dialog.regex.tooltip";
+  public static final String FILTER_BTN_REGEX_EDITOR = "filter.dialog.editor";
+  public static final String FILTER_TOOLTIP_REGEX_EDITOR = "filter.dialog.editor.tooltip";
+  public static final String FILTER_LABEL_CASE_SENSITIVE = "filter.dialog.case_sensitive";
+  public static final String FILTER_LABEL_ENABLE_CASE_SENSITIVE = "filter.dialog.enable_case_sensitive";
+  public static final String FILTER_LABEL_VERBOSITY = "filter.dialog.verbosity";
+  public static final String FILTER_LABEL_COLOR = "filter.dialog.color";
+  public static final String FILTER_TOOLTIP_COLOR = "filter.dialog.color.tooltip";
+  public static final String FILTER_PREVIEW_COLOR = "filter.dialog.preview_color";
+  public static final String FILTER_DUPLICATE_WARNING_TITLE = "filter.dialog.duplicate.title";
+  public static final String FILTER_DUPLICATE_WARNING_MSG = "filter.dialog.duplicate.msg";
+  public static final String FILTER_DUPLICATE_ADD_ANYWAY = "filter.dialog.duplicate.add_anyway";
+
+  // Regex Editor Dialog
+  public static final String REGEX_EDITOR_DIALOG_TITLE = "regex.editor.title";
+  public static final String REGEX_EDITOR_LABEL_REGEX = "regex.editor.regex";
+  public static final String REGEX_EDITOR_LABEL_PREVIEW = "regex.editor.preview";
+  public static final String REGEX_EDITOR_LABEL_FLAGS = "regex.editor.flags";
+  public static final String REGEX_EDITOR_CASE_SENSITIVE = "regex.editor.case_sensitive";
+  public static final String REGEX_EDITOR_SAMPLE_TEXT = "regex.editor.sample_text";
+
+  // Search Filters Dialog
+  public static final String SEARCH_FILTERS_DIALOG_TITLE = "filters.search.title";
+  public static final String SEARCH_FILTERS_SEARCH_HINT = "filters.search.search_hint";
+  public static final String SEARCH_FILTERS_TOOLTIP_CLEAR = "filters.search.clear_tooltip";
+  public static final String SEARCH_FILTERS_BTN_JUMP = "filters.search.btn_jump";
+  public static final String SEARCH_FILTERS_HINT_SHORTCUTS = "filters.search.hint_shortcuts";
+  public static final String SEARCH_FILTERS_MENU_JUMP = "filters.search.menu.jump";
+  public static final String SEARCH_FILTERS_MENU_EDIT = "filters.search.menu.edit";
+  public static final String SEARCH_FILTERS_MENU_DELETE = "filters.search.menu.delete";
+  public static final String SEARCH_FILTERS_SHOWING_ALL = "filters.search.showing_all";
+  public static final String SEARCH_FILTERS_SHOWING_MATCHES = "filters.search.showing_matches";
+  public static final String SEARCH_FILTERS_DELETE_CONFIRM_TITLE = "filters.search.delete_confirm_title";
+  public static final String SEARCH_FILTERS_DELETE_CONFIRM_MSG = "filters.search.delete_confirm_msg";
+  public static final String SEARCH_FILTERS_COL_APPLIED = "filters.search.col.applied";
+  public static final String SEARCH_FILTERS_COL_NAME = "filters.search.col.name";
+  public static final String SEARCH_FILTERS_COL_PATTERN = "filters.search.col.pattern";
+  public static final String SEARCH_FILTERS_COL_GROUP = "filters.search.col.group";
+
+  // Filter Deduplication Dialog
+  public static final String FILTER_DEDUP_DIALOG_TITLE = "filters.dedup.title";
+  public static final String FILTER_DEDUP_BTN_CLEAN = "filters.dedup.btn_clean";
+  public static final String FILTER_DEDUP_CLEAN_CROSS_FILE = "filters.dedup.clean_cross_file";
+  public static final String FILTER_DEDUP_HEADER_TITLE = "filters.dedup.header_title";
+  public static final String FILTER_DEDUP_HEADER_MSG = "filters.dedup.header_msg";
+  public static final String FILTER_DEDUP_CLUSTER_TITLE = "filters.dedup.cluster_title";
+  public static final String FILTER_DEDUP_CLUSTER_ENABLE = "filters.dedup.cluster_enable";
+  public static final String FILTER_DEDUP_KEEP_IN_GROUP = "filters.dedup.keep_in_group";
+  public static final String FILTER_DEDUP_SAME_GROUP_INFO = "filters.dedup.same_group_info";
+  public static final String FILTER_DEDUP_CROSS_GROUP_ITEM = "filters.dedup.cross_group_item";
 
   private I18n() {}
 

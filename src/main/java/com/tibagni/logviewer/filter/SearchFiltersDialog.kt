@@ -3,6 +3,7 @@ package com.tibagni.logviewer.filter
 import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.LogViewerPresenter
 import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
@@ -20,18 +21,18 @@ class SearchFiltersDialog(
   private val presenter: LogViewerPresenter,
   private val filtersRepository: FiltersRepository,
   private val onFilterSelected: (group: String, filter: Filter) -> Unit
-) : JDialog(owner, "Find Filters", true) {
+) : JDialog(owner, I18n.get(I18n.SEARCH_FILTERS_DIALOG_TITLE), true) {
 
   private val tableModel = SearchFiltersTableModel(presenter)
   private val resultsTable = JTable(tableModel)
-  private val searchField = HintTextField("Search filters by name or regex pattern...")
-  private val clearBtn = FlatButton("Clear")
+  private val searchField = HintTextField(I18n.get(I18n.SEARCH_FILTERS_SEARCH_HINT))
+  private val clearBtn = FlatButton(I18n.get(I18n.COMMON_CLEAR))
   private val matchesLabel = JLabel("")
 
-  private val jumpBtn = JButton("Jump to Filter")
-  private val editBtn = JButton("Edit...")
-  private val deleteBtn = JButton("Delete")
-  private val closeBtn = JButton("Close")
+  private val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP))
+  private val editBtn = JButton(I18n.get(I18n.COMMON_EDIT))
+  private val deleteBtn = JButton(I18n.get(I18n.COMMON_DELETE))
+  private val closeBtn = JButton(I18n.get(I18n.COMMON_CLOSE))
 
   init {
     layout = BorderLayout()
@@ -62,7 +63,7 @@ class SearchFiltersDialog(
           .build()
       )
 
-      clearBtn.toolTipText = "Clear search query"
+      clearBtn.toolTipText = I18n.get(I18n.SEARCH_FILTERS_TOOLTIP_CLEAR)
       add(
         clearBtn,
         GBConstraintsBuilder()
@@ -121,7 +122,7 @@ class SearchFiltersDialog(
         UIScaleUtils.dip(10), UIScaleUtils.dip(10)
       )
 
-      val hintLabel = JLabel("Space: Toggle applied  |  Enter: Jump to filter  |  Del: Delete")
+      val hintLabel = JLabel(I18n.get(I18n.SEARCH_FILTERS_HINT_SHORTCUTS))
       hintLabel.font = hintLabel.font.deriveFont(UIScaleUtils.scaleFont(11).toFloat())
       hintLabel.foreground = if (ServiceLocator.themeManager.isDark) Color(150, 150, 150) else Color(120, 120, 120)
       add(hintLabel, BorderLayout.WEST)
@@ -236,13 +237,13 @@ class SearchFiltersDialog(
       updateButtonStates()
 
       val popup = JPopupMenu().apply {
-        val jumpItem = JMenuItem("Jump to Filter in Main Window").apply {
+        val jumpItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_JUMP)).apply {
           addActionListener { jumpToSelectedFilter() }
         }
-        val editItem = JMenuItem("Edit Filter...").apply {
+        val editItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_EDIT)).apply {
           addActionListener { editSelectedFilter() }
         }
-        val deleteItem = JMenuItem("Delete Filter").apply {
+        val deleteItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_DELETE)).apply {
           addActionListener { deleteSelectedFilter() }
         }
         add(jumpItem)
@@ -262,9 +263,9 @@ class SearchFiltersDialog(
     tableModel.setItems(matchedResults, query)
 
     if (query.isBlank()) {
-      matchesLabel.text = "Showing all $totalFilters filter(s)"
+      matchesLabel.text = I18n.format(I18n.SEARCH_FILTERS_SHOWING_ALL, totalFilters)
     } else {
-      matchesLabel.text = "Showing ${matchedResults.size} of $totalFilters filter(s)"
+      matchesLabel.text = I18n.format(I18n.SEARCH_FILTERS_SHOWING_MATCHES, matchedResults.size, totalFilters)
     }
 
     if (matchedResults.isNotEmpty()) {
@@ -315,8 +316,8 @@ class SearchFiltersDialog(
     val item = getSelectedItem() ?: return
     val confirm = JOptionPane.showConfirmDialog(
       this,
-      "Are you sure you want to delete filter \"${item.filter.name}\" from group \"${item.group}\"?",
-      "Delete Filter",
+      I18n.format(I18n.SEARCH_FILTERS_DELETE_CONFIRM_MSG, item.filter.name, item.group),
+      I18n.get(I18n.SEARCH_FILTERS_DELETE_CONFIRM_TITLE),
       JOptionPane.YES_NO_OPTION,
       JOptionPane.WARNING_MESSAGE
     )
@@ -363,10 +364,10 @@ class SearchFiltersTableModel(private val presenter: LogViewerPresenter) : Abstr
 
   override fun getColumnName(column: Int): String {
     return when (column) {
-      0 -> "Applied"
-      1 -> "Name"
-      2 -> "Pattern"
-      3 -> "Group"
+      0 -> I18n.get(I18n.SEARCH_FILTERS_COL_APPLIED)
+      1 -> I18n.get(I18n.SEARCH_FILTERS_COL_NAME)
+      2 -> I18n.get(I18n.SEARCH_FILTERS_COL_PATTERN)
+      3 -> I18n.get(I18n.SEARCH_FILTERS_COL_GROUP)
       else -> ""
     }
   }
@@ -427,7 +428,7 @@ class FilterNameCellRenderer(private val tableModel: SearchFiltersTableModel) : 
     val verbosityColor = if (ServiceLocator.themeManager.isDark) "#CCC" else "#555"
 
     comp.text = StringUtils.wrapHtml("<nobr><small color=\"$verbosityColor\">[$verbosity]</small> $truncated</nobr>")
-    comp.toolTipText = "${filter.name} (${filter.patternString})"
+    comp.toolTipText = "${filter.name} (${filter.patternString})" // no-i18n
 
     if (isSelected) {
       comp.foreground = table.selectionForeground
