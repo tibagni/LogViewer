@@ -92,7 +92,7 @@ private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
     }
 
     toggleMyLogs = ToggleButton(ImageIcon(javaClass.getResource("/Images/view_list_icon.png"))) { showPanel(it) }
-    toggleMyLogs.toolTipText = "My Logs"
+    toggleMyLogs.toolTipText = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
 
     add(toggleMyLogs)
   }
@@ -254,14 +254,14 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   private fun showFilterOptionsMenu(e: MouseEvent) {
     val popup = JPopupMenu()
-    val closeAllGroupsItem = popup.add("Close all groups")
-    closeAllGroupsItem.toolTipText = "Close all currently open groups"
+    val closeAllGroupsItem = popup.add(I18n.get(I18n.FILTERS_MENU_CLOSE_ALL_GROUPS))
+    closeAllGroupsItem.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_ALL_GROUPS)
 
-    val unApplyAllFilters = popup.add("\"Un-apply\" all filters")
-    unApplyAllFilters.toolTipText = "\"Un-apply\" all filters from all groups"
+    val unApplyAllFilters = popup.add(I18n.get(I18n.FILTERS_MENU_UNAPPLY_ALL))
+    unApplyAllFilters.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_UNAPPLY_ALL)
 
-    val cleanDuplicatesItem = popup.add("Find & Clean duplicate filters...")
-    cleanDuplicatesItem.toolTipText = "Find and remove duplicate filters across open groups"
+    val cleanDuplicatesItem = popup.add(I18n.get(I18n.FILTERS_MENU_CLEAN_DUPLICATES))
+    cleanDuplicatesItem.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLEAN_DUPLICATES)
 
     closeAllGroupsItem.addActionListener { closeAllGroups() }
     unApplyAllFilters.addActionListener { clearAllFiltersSelection() }
@@ -277,8 +277,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun closeAllGroups() {
     val userChoice = JOptionPane.showConfirmDialog(
       mainView.parent,
-      "Are you sure you want to close all groups?",
-      "Are you sure?",
+      I18n.get(I18n.FILTERS_CONFIRM_CLOSE_ALL_GROUPS_MSG),
+      I18n.get(I18n.COMMON_CONFIRM_TITLE),
       JOptionPane.YES_NO_OPTION,
       JOptionPane.WARNING_MESSAGE
     )
@@ -295,8 +295,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun addGroup(initializeFilter: Boolean = true): String? {
     var newGroupName = JOptionPane.showInputDialog(
       mainView.parent,
-      "What is the name of your new Filters Group?",
-      "New Filters Group",
+      I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
+      I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
       JOptionPane.PLAIN_MESSAGE
     )
 
@@ -328,8 +328,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     if (filtersPane.isEmpty) {
       JOptionPane.showMessageDialog(
         mainView.parent,
-        "There are no filters to apply",
-        "No filters",
+        I18n.get(I18n.FILTERS_NO_FILTERS_APPLY_MSG),
+        I18n.get(I18n.FILTERS_NO_FILTERS_TITLE),
         JOptionPane.INFORMATION_MESSAGE
       )
       return
@@ -377,8 +377,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       override fun onDeleteFilters(group: String, indices: IntArray) {
         val userChoice = JOptionPane.showConfirmDialog(
           mainView.parent,
-          "Are you sure you want to delete the selected filter(s)?",
-          "Are you sure?",
+          I18n.get(I18n.FILTERS_CONFIRM_DELETE_MSG),
+          I18n.get(I18n.COMMON_CONFIRM_TITLE),
           JOptionPane.YES_NO_OPTION,
           JOptionPane.WARNING_MESSAGE
         )
@@ -390,10 +390,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         val groups = presenter.groups
 
         // Do not show the current group to the user. It does not make sense to move a filter to the same group
-        val options = groups.filter { !StringUtils.areEquals(it, group) }.toTypedArray() + arrayOf("Create new")
+        val options = groups.filter { !StringUtils.areEquals(it, group) }.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
         val dialog = SingleChoiceDialog(
-          "Move ${indices.size} filter(s)",
-          "Select the group to move the filters to",
+          I18n.format(I18n.FILTERS_MOVE_DIALOG_TITLE, indices.size),
+          I18n.get(I18n.FILTERS_MOVE_DIALOG_MSG),
           options,
           0
         )
@@ -420,8 +420,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       override fun onCloseGroup(group: String) {
         val userChoice = JOptionPane.showConfirmDialog(
           mainView.parent,
-          "Are you sure you want to close this group?",
-          "Are you sure?",
+          I18n.get(I18n.FILTERS_CONFIRM_CLOSE_GROUP_MSG),
+          I18n.get(I18n.COMMON_CONFIRM_TITLE),
           JOptionPane.YES_NO_OPTION,
           JOptionPane.WARNING_MESSAGE
         )
@@ -462,10 +462,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun updateCollapseExpandButtonState() {
+    val allText = I18n.get(I18n.COMMON_ALL)
     collapseExpandAllGroupsBtn.text = if (filtersPane.hasAtLeastOneGroupVisible()) {
-      "${StringUtils.DOWN_ARROW_HEAD} All"
+      "${StringUtils.DOWN_ARROW_HEAD} $allText"
     } else {
-      "${StringUtils.RIGHT_ARROW_HEAD} All"
+      "${StringUtils.RIGHT_ARROW_HEAD} $allText"
     }
   }
 
@@ -496,12 +497,12 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           addCommonLogsContextActions(popup, logList.table.selectedRows, logListTableModel)
           if (logList.table.selectedRowCount == 1) {
             popup.add(JSeparator())
-            popup.add("Ignore all logs before this point").addActionListener {
+            popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_BEFORE)).addActionListener {
               val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
               presenter.ignoreLogsBefore(entry.index)
             }
 
-            popup.add("Ignore all logs after this point").addActionListener {
+            popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_AFTER)).addActionListener {
               val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
               presenter.ignoreLogsAfter(entry.index)
             }
@@ -515,14 +516,14 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   private fun addCommonLogsContextActions(popup: JPopupMenu, selectedRows: IntArray, model: LogListTableModel) {
     popup
-      .add("Add to 'My Logs'")
+      .add(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS))
       .addActionListener {
         presenter.addLogEntriesToMyLogs(selectedRows.map { model.getValueAt(it, 0) as LogEntry })
       }
 
     if (selectedRows.size == 1) {
       popup.add(JSeparator())
-      popup.add("Create Filter from this line...")
+      popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER))
         .addActionListener {
           val entry = model.getValueAt(selectedRows[0], 0) as LogEntry
           addFilterFromLogLine(entry.logText)
@@ -538,13 +539,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       val groups = presenter.groups
       var group = if (groups.size == 1) groups[0] else null
       if (StringUtils.isEmpty(group)) {
-        val options = groups.toTypedArray() + arrayOf("Create new")
+        val options = groups.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
         val createNewOptionIdx = options.size - 1
 
         val dialog =
           SingleChoiceDialog(
-            "Select Filter group",
-            "Which group do you want to add this filter to?",
+            I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_TITLE),
+            I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_MSG),
             options,
             createNewOptionIdx
           )
@@ -554,8 +555,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           SingleChoiceDialog.DIALOG_CANCELLED -> null
           createNewOptionIdx -> JOptionPane.showInputDialog(
             mainView.parent,
-            "What is the name of your new Filters Group?",
-            "New Filters Group",
+            I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
+            I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
             JOptionPane.PLAIN_MESSAGE
           )
           else -> options[choice]
@@ -615,7 +616,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           }
         } else if (SwingUtilities.isRightMouseButton(e) && myLogsList.table.selectedRow != -1) {
           val popup = JPopupMenu()
-          val removeItem = popup.add("Remove")
+          val removeItem = popup.add(I18n.get(I18n.LOGS_MY_LOGS_REMOVE))
           removeItem.addActionListener {
             presenter.removeFromMyLog(myLogsList.table.selectedRows)
           }
@@ -669,11 +670,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       if (!filtersPane.isEmpty) {
         // Ask the user if we should keep the existing filters
         val dialog = SingleChoiceDialog(
-          "There are currently opened filters already.",
-          "What do you want to do?",
+          I18n.get(I18n.FILTERS_OPEN_EXISTING_TITLE),
+          I18n.get(I18n.FILTERS_OPEN_EXISTING_MSG),
           arrayOf(
-            "Keep existing filters and add the new one(s)",
-            "Open just the new filter(s) and close others"
+            I18n.get(I18n.FILTERS_OPEN_KEEP_EXISTING),
+            I18n.get(I18n.FILTERS_OPEN_REPLACE_EXISTING)
           ),
           0
         )
@@ -697,8 +698,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     if (filtersPane.isEmpty) {
       JOptionPane.showMessageDialog(
         mainView.parent,
-        "There are no filters to search",
-        "No filters",
+        I18n.get(I18n.FILTERS_NO_FILTERS_SEARCH_MSG),
+        I18n.get(I18n.FILTERS_NO_FILTERS_TITLE),
         JOptionPane.INFORMATION_MESSAGE
       )
       return
@@ -749,8 +750,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     val input =
       JOptionPane.showInputDialog(
         contentPane,
-        "If the exact timestamp is not found, it will go to the closest around it...",
-        "Go to timestamp...",
+        I18n.get(I18n.LOGS_GOTO_TIMESTAMP_MSG),
+        I18n.get(I18n.LOGS_GOTO_TIMESTAMP_TITLE),
         JOptionPane.PLAIN_MESSAGE,
         null,
         null,
@@ -830,17 +831,17 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   override fun showErrorMessage(message: String?) {
-    JOptionPane.showMessageDialog(contentPane, message, "Error...", JOptionPane.ERROR_MESSAGE)
+    JOptionPane.showMessageDialog(contentPane, message, I18n.get(I18n.COMMON_ERROR), JOptionPane.ERROR_MESSAGE)
   }
 
   override fun showSkippedLogsMessage(skippedLogs: List<String>) {
-    val message = StringBuilder("There was a problem parsing below files and they were not loaded")
+    val message = StringBuilder(I18n.get(I18n.LOGS_SKIPPED_FILES_MSG))
     message.append("\n\n")
     message.append(skippedLogs.joinToString("\n") { "> $it" })
     JOptionPane.showMessageDialog(
       contentPane,
       message.toString(),
-      "Some files were not opened",
+      I18n.get(I18n.LOGS_SKIPPED_FILES_TITLE),
       JOptionPane.WARNING_MESSAGE
     )
   }
@@ -865,7 +866,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     Logger.debug("showCurrentLogsLocation: $logsPath")
     val text = if (logsPath == null) null else SwingUtils.truncateTextFor(
       currentLogsLbl,
-      "Logs path:",
+      I18n.get(I18n.LOGS_PATH_PREFIX),
       logsPath,
       contentPane.width
     )
@@ -900,9 +901,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun showInvalidTimestampSearchError(failedInput: String?) {
     JOptionPane.showMessageDialog(
       contentPane,
-      "it was not possible to parse \"$failedInput\".\n" +
-          "Please make sure your input is in the correct format\n",
-      "Could not parse input",
+      I18n.format(I18n.LOGS_TIMESTAMP_PARSE_ERROR_MSG, failedInput),
+      I18n.get(I18n.LOGS_TIMESTAMP_PARSE_ERROR_TITLE),
       JOptionPane.ERROR_MESSAGE
     )
   }
@@ -936,8 +936,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun showAskToSaveFilterDialog(group: String?): UserSelection {
     val userChoice = JOptionPane.showConfirmDialog(
       contentPane.parent,
-      "$group has unsaved changes. Do you want to save it?",
-      "Unsaved changes",
+      I18n.format(I18n.FILTERS_SAVE_UNSAVED_MSG, group),
+      I18n.get(I18n.FILTERS_SAVE_UNSAVED_TITLE),
       JOptionPane.YES_NO_CANCEL_OPTION,
       JOptionPane.WARNING_MESSAGE
     )
@@ -947,8 +947,8 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun showAskToSaveMultipleFiltersDialog(groups: Array<String>): Array<Boolean>? {
     val dialog = MultipleChoiceDialog(
-      "Save modified filter groups?",
-      "Select which groups to save",
+      I18n.get(I18n.FILTERS_SAVE_MULTIPLE_TITLE),
+      I18n.get(I18n.FILTERS_SAVE_MULTIPLE_MSG),
       groups,
       true
     )
@@ -1044,15 +1044,15 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     logsPane.orientation = JSplitPane.VERTICAL_SPLIT
     logsPane.resizeWeight = 0.6
 
-    logListTableModel = LogListTableModel("All Logs")
+    logListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_ALL))
     logList = SearchableTable(logListTableModel)
     logsPane.leftComponent = logList // Left or above (above in this case)
 
-    filteredLogListTableModel = LogListTableModel("Filtered Logs")
+    filteredLogListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_FILTERED))
     filteredLogList = SearchableTable(filteredLogListTableModel)
     logsPane.rightComponent = filteredLogList // Right or below (below in this case)
 
-    myLogsListTableModel = LogListTableModel("My Logs")
+    myLogsListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_MY_LOGS))
     myLogsList = SearchableTable(myLogsListTableModel)
 
     mainLogSplit.leftComponent = logsPane
@@ -1075,7 +1075,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     val filtersMainPane = JPanel()
     filtersMainPane.layout = GridBagLayout()
-    filtersMainPane.border = BorderFactory.createTitledBorder("Filters")
+    filtersMainPane.border = BorderFactory.createTitledBorder(I18n.get(I18n.FILTERS_PANEL_TITLE))
     val emptyPane = JPanel()
     emptyPane.layout = FlowLayout(FlowLayout.CENTER, 5, 5)
     filtersMainPane.add(
@@ -1105,18 +1105,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     collapseExpandAllGroupsBtn = FlatButton()
     addNewFilterGroupBtn = JButton()
     addNewFilterGroupBtn.actionCommand = "Add"
-    addNewFilterGroupBtn.text = "New Group"
+    addNewFilterGroupBtn.text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
     moreFilterOptionsBtn = JButton()
-    moreFilterOptionsBtn.toolTipText = "More options"
+    moreFilterOptionsBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_MORE_OPTIONS)
     moreFilterOptionsBtn.text = StringUtils.THREE_LINES
     applyFiltersBtn = JButton()
     applyFiltersBtn.actionCommand = "Apply"
-    applyFiltersBtn.text = "Apply"
-    applyFiltersBtn.toolTipText = "Apply all selected filters"
+    applyFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_APPLY)
+    applyFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
     findFiltersBtn = JButton()
     findFiltersBtn.actionCommand = "Find"
-    findFiltersBtn.text = "Find"
-    findFiltersBtn.toolTipText = "Find filters"
+    findFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_FIND)
+    findFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
 
     filterActionButtonsPane.add(applyFiltersBtn)
     filterActionButtonsPane.add(findFiltersBtn)

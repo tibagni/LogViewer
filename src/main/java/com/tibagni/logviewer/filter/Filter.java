@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter;
 
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.log.LogStream;
@@ -54,7 +55,7 @@ public class Filter {
       throws FilterException {
 
     if (StringUtils.isEmpty(name) || StringUtils.isEmpty(pattern) || color == null) {
-      throw new FilterException("You must provide a name, a regex pattern and a color for the filter");
+      throw new FilterException(I18n.get(I18n.FILTER_ERROR_EMPTY_FIELDS));
     }
 
     if (caseSensitive) {
@@ -80,7 +81,7 @@ public class Filter {
 
       String[] rgb = params[3].split(":");
       if (rgb.length != 3) {
-        throw new IllegalArgumentException("Wrong color format");
+        throw new IllegalArgumentException(I18n.get(I18n.FILTER_ERROR_WRONG_COLOR_FORMAT));
       }
 
       boolean isLegacy = params.length == 4;
@@ -96,7 +97,7 @@ public class Filter {
       filter.wasLoadedFromLegacyFile = isLegacy;
       return filter;
     } catch (Exception e) {
-      throw new FilterException("Wrong filter format: " + filterString, e);
+      throw new FilterException(I18n.format(I18n.FILTER_ERROR_WRONG_FORMAT, filterString), e);
     }
   }
 
@@ -170,7 +171,7 @@ public class Filter {
     try {
       return Pattern.compile(pattern, flags);
     } catch (PatternSyntaxException e) {
-      throw new FilterException("Invalid pattern: " + pattern, e);
+      throw new FilterException(I18n.format(I18n.FILTER_ERROR_INVALID_PATTERN, pattern), e);
     }
   }
 

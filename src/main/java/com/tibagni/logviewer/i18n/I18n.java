@@ -27,6 +27,11 @@ public final class I18n {
   public static final String COMMON_DELETE = "common.delete";
   public static final String COMMON_EDIT = "common.edit";
   public static final String COMMON_ERROR = "common.error";
+  public static final String COMMON_DONE = "common.done";
+  public static final String COMMON_SAVE = "common.save";
+  public static final String COMMON_ALL = "common.all";
+  public static final String COMMON_REMOVE = "common.remove";
+  public static final String COMMON_CONFIRM_TITLE = "common.confirm_title";
 
   // Preferences Dialog
   public static final String PREF_DIALOG_TITLE = "pref.dialog.title";
@@ -139,6 +144,88 @@ public final class I18n {
   public static final String FILTER_DEDUP_KEEP_IN_GROUP = "filters.dedup.keep_in_group";
   public static final String FILTER_DEDUP_SAME_GROUP_INFO = "filters.dedup.same_group_info";
   public static final String FILTER_DEDUP_CROSS_GROUP_ITEM = "filters.dedup.cross_group_item";
+
+  // Filters List & Actions
+  public static final String FILTERS_BTN_SAVE = "filters.btn.save";
+  public static final String FILTERS_TOOLTIP_PREV = "filters.tooltip.prev";
+  public static final String FILTERS_TOOLTIP_NEXT = "filters.tooltip.next";
+  public static final String FILTERS_TOOLTIP_ADD = "filters.tooltip.add";
+  public static final String FILTERS_TOOLTIP_SAVE = "filters.tooltip.save";
+  public static final String FILTERS_TOOLTIP_CLOSE_GROUP = "filters.tooltip.close_group";
+  public static final String FILTERS_TOOLTIP_SELECT_ALL = "filters.tooltip.select_all";
+  public static final String FILTERS_MENU_ITEMS_SELECTED = "filters.menu.items_selected";
+  public static final String FILTERS_MENU_DELETE = "filters.menu.delete";
+  public static final String FILTERS_MENU_EDIT = "filters.menu.edit";
+  public static final String FILTERS_MENU_DUPLICATE = "filters.menu.duplicate";
+  public static final String FILTERS_MENU_MOVE = "filters.menu.move";
+  public static final String FILTERS_PROGRESS_APPLYING = "filters.progress.applying";
+
+  // Filter Model & Validation Errors
+  public static final String FILTER_ERROR_EMPTY_FIELDS = "filter.error.empty_fields";
+  public static final String FILTER_ERROR_WRONG_COLOR_FORMAT = "filter.error.wrong_color_format";
+  public static final String FILTER_ERROR_WRONG_FORMAT = "filter.error.wrong_format";
+  public static final String FILTER_ERROR_INVALID_PATTERN = "filter.error.invalid_pattern";
+
+  // Search in tables (SearchableTable)
+  public static final String SEARCH_HINT = "search.hint";
+  public static final String SEARCH_MATCH_CASE = "search.match_case";
+  public static final String SEARCH_TOOLTIP_HIDE = "search.tooltip.hide";
+  public static final String SEARCH_BAD_PATTERN = "search.bad_pattern";
+  public static final String SEARCH_RESULTS_COUNT = "search.results_count";
+
+  // Filters Panel & Controls (LogViewerView)
+  public static final String FILTERS_PANEL_TITLE = "filters.panel.title";
+  public static final String FILTERS_BTN_NEW_GROUP = "filters.btn.new_group";
+  public static final String FILTERS_BTN_APPLY = "filters.btn.apply";
+  public static final String FILTERS_TOOLTIP_APPLY = "filters.tooltip.apply";
+  public static final String FILTERS_BTN_FIND = "filters.btn.find";
+  public static final String FILTERS_TOOLTIP_FIND = "filters.tooltip.find";
+  public static final String FILTERS_TOOLTIP_MORE_OPTIONS = "filters.tooltip.more_options";
+  public static final String FILTERS_MENU_CLOSE_ALL_GROUPS = "filters.menu.close_all_groups";
+  public static final String FILTERS_TOOLTIP_CLOSE_ALL_GROUPS = "filters.tooltip.close_all_groups";
+  public static final String FILTERS_MENU_UNAPPLY_ALL = "filters.menu.unapply_all";
+  public static final String FILTERS_TOOLTIP_UNAPPLY_ALL = "filters.tooltip.unapply_all";
+  public static final String FILTERS_MENU_CLEAN_DUPLICATES = "filters.menu.clean_duplicates";
+  public static final String FILTERS_TOOLTIP_CLEAN_DUPLICATES = "filters.tooltip.clean_duplicates";
+  public static final String FILTERS_CONFIRM_CLOSE_ALL_GROUPS_MSG = "filters.confirm.close_all_groups";
+  public static final String FILTERS_CONFIRM_CLOSE_GROUP_MSG = "filters.confirm.close_group";
+  public static final String FILTERS_CONFIRM_DELETE_MSG = "filters.confirm.delete_selected";
+  public static final String FILTERS_NEW_GROUP_TITLE = "filters.new_group.title";
+  public static final String FILTERS_NEW_GROUP_MSG = "filters.new_group.msg";
+  public static final String FILTERS_NO_FILTERS_TITLE = "filters.no_filters.title";
+  public static final String FILTERS_NO_FILTERS_APPLY_MSG = "filters.no_filters.apply_msg";
+  public static final String FILTERS_NO_FILTERS_SEARCH_MSG = "filters.no_filters.search_msg";
+  public static final String FILTERS_MOVE_DIALOG_TITLE = "filters.move.dialog_title";
+  public static final String FILTERS_MOVE_DIALOG_MSG = "filters.move.dialog_msg";
+  public static final String FILTERS_MOVE_CREATE_NEW = "filters.move.create_new";
+  public static final String FILTERS_OPEN_EXISTING_TITLE = "filters.open_existing.title";
+  public static final String FILTERS_OPEN_EXISTING_MSG = "filters.open_existing.msg";
+  public static final String FILTERS_OPEN_KEEP_EXISTING = "filters.open_existing.keep";
+  public static final String FILTERS_OPEN_REPLACE_EXISTING = "filters.open_existing.replace";
+  public static final String FILTERS_SAVE_UNSAVED_TITLE = "filters.save_unsaved.title";
+  public static final String FILTERS_SAVE_UNSAVED_MSG = "filters.save_unsaved.msg";
+  public static final String FILTERS_SAVE_MULTIPLE_TITLE = "filters.save_multiple.title";
+  public static final String FILTERS_SAVE_MULTIPLE_MSG = "filters.save_multiple.msg";
+
+  // Logs View & Context Actions (LogViewerView)
+  public static final String LOGS_PATH_PREFIX = "logs.path_prefix";
+  public static final String LOGS_TAB_ALL = "logs.tab.all";
+  public static final String LOGS_TAB_FILTERED = "logs.tab.filtered";
+  public static final String LOGS_TAB_MY_LOGS = "logs.tab.my_logs";
+  public static final String LOGS_MY_LOGS_TOOLTIP = "logs.my_logs.tooltip";
+  public static final String LOGS_MENU_IGNORE_BEFORE = "logs.menu.ignore_before";
+  public static final String LOGS_MENU_IGNORE_AFTER = "logs.menu.ignore_after";
+  public static final String LOGS_MENU_ADD_TO_MY_LOGS = "logs.menu.add_to_my_logs";
+  public static final String LOGS_MENU_CREATE_FILTER = "logs.menu.create_filter";
+  public static final String LOGS_SELECT_FILTER_GROUP_TITLE = "logs.select_group.title";
+  public static final String LOGS_SELECT_FILTER_GROUP_MSG = "logs.select_group.msg";
+  public static final String LOGS_MY_LOGS_REMOVE = "logs.my_logs.remove";
+  public static final String LOGS_GOTO_TIMESTAMP_TITLE = "logs.goto_timestamp.title";
+  public static final String LOGS_GOTO_TIMESTAMP_MSG = "logs.goto_timestamp.msg";
+  public static final String LOGS_SKIPPED_FILES_TITLE = "logs.skipped_files.title";
+  public static final String LOGS_SKIPPED_FILES_MSG = "logs.skipped_files.msg";
+  public static final String LOGS_TIMESTAMP_PARSE_ERROR_TITLE = "logs.timestamp_error.title";
+  public static final String LOGS_TIMESTAMP_PARSE_ERROR_MSG = "logs.timestamp_error.msg";
 
   private I18n() {}
 
