@@ -62,3 +62,8 @@ fabric.properties
 # Deply Script
 deploy/env
 deploy/credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

@@ -3,6 +3,7 @@ package com.tibagni.logviewer.preferences;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
@@ -68,6 +69,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
 
   public LogViewerPreferencesDialog(JFrame owner) {
     super(owner);
+    setTitle(I18n.get(I18n.PREF_DIALOG_TITLE));
     buildUi();
     setContentPane(contentPane);
     setModal(true);
@@ -343,7 +345,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
 
 
     final JLabel lookNFeelLbl = new JLabel();
-    lookNFeelLbl.setText("Look And Feel");
+    lookNFeelLbl.setText(I18n.get(I18n.PREF_LOOK_AND_FEEL));
     CellConstraints cc = new CellConstraints();
     formPane.add(lookNFeelLbl, cc.xy(1, 1));
     lookAndFeelCbx = new JComboBox<>();
@@ -358,14 +360,14 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(sep1, cc.xyw(1, 3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel logFontSizeLbl = new JLabel();
-    logFontSizeLbl.setText("Log font size");
+    logFontSizeLbl.setText(I18n.get(I18n.PREF_LOG_FONT_SIZE));
     formPane.add(logFontSizeLbl, cc.xy(1, 5));
     logFontSizeCbx = new JComboBox<>();
     logFontSizeCbx.setMinimumSize(new Dimension());
     formPane.add(logFontSizeCbx, cc.xy(3, 5));
 
     final JLabel boldLogTextLbl = new JLabel();
-    boldLogTextLbl.setText("Bold log text");
+    boldLogTextLbl.setText(I18n.get(I18n.PREF_LOG_FONT_BOLD));
     formPane.add(boldLogTextLbl, cc.xy(1, 7));
     boldLogTextChbx = new JCheckBox();
     boldLogTextChbx.setText("");
@@ -375,7 +377,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(sepFont, cc.xyw(1, 9, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel defaultLogsLbl = new JLabel();
-    defaultLogsLbl.setText("Default path for log files");
+    defaultLogsLbl.setText(I18n.get(I18n.PREF_DEFAULT_LOGS_PATH));
     formPane.add(defaultLogsLbl, cc.xy(1, 11));
     logsPathTxt = new JTextField();
     logsPathTxt.setEditable(false);
@@ -388,7 +390,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(sep2, cc.xyw(1, 13, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel defaultFiltersLbl = new JLabel();
-    defaultFiltersLbl.setText("Default path for filter files");
+    defaultFiltersLbl.setText(I18n.get(I18n.PREF_DEFAULT_FILTERS_PATH));
     formPane.add(defaultFiltersLbl, cc.xy(1, 15));
     filtersPathTxt = new JTextField();
     filtersPathTxt.setEditable(false);
@@ -398,7 +400,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(filtersPathBtn, cc.xy(5, 15));
 
     final JLabel openLastLbl = new JLabel();
-    openLastLbl.setText("Open last filters on startup");
+    openLastLbl.setText(I18n.get(I18n.PREF_OPEN_LAST_FILTER));
     formPane.add(openLastLbl, cc.xy(1, 17));
     openLastFilterChbx = new JCheckBox();
     openLastFilterChbx.setText("");
@@ -408,42 +410,42 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(sep3, cc.xyw(1, 19, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel applyFiltersLbl = new JLabel();
-    applyFiltersLbl.setText("Apply filters after edit");
+    applyFiltersLbl.setText(I18n.get(I18n.PREF_APPLY_FILTERS_AFTER_EDIT));
     formPane.add(applyFiltersLbl, cc.xy(1, 21));
     applyFiltersAfterEditChbx = new JCheckBox();
     applyFiltersAfterEditChbx.setText("");
     formPane.add(applyFiltersAfterEditChbx, cc.xy(3, 21));
 
     final JLabel rememberFiltersLbl = new JLabel();
-    rememberFiltersLbl.setText("Remember applied filters");
+    rememberFiltersLbl.setText(I18n.get(I18n.PREF_REMEMBER_APPLIED_FILTERS));
     formPane.add(rememberFiltersLbl, cc.xy(1, 23));
     rememberAppliedFiltersChbx = new JCheckBox();
     rememberAppliedFiltersChbx.setText("");
     formPane.add(rememberAppliedFiltersChbx, cc.xy(3, 23));
 
     final JLabel collapseOnStartLbl = new JLabel();
-    collapseOnStartLbl.setText("Collapse all groups on startup");
+    collapseOnStartLbl.setText(I18n.get(I18n.PREF_COLLAPSE_ALL_GROUPS_STARTUP));
     formPane.add(collapseOnStartLbl, cc.xy(1, 25));
     collapseAllGroupsStartup = new JCheckBox();
     collapseAllGroupsStartup.setText("");
     formPane.add(collapseAllGroupsStartup, cc.xy(3, 25));
 
     final JLabel showLineNumberLbl = new JLabel();
-    showLineNumberLbl.setText("Show Line numbers");
+    showLineNumberLbl.setText(I18n.get(I18n.PREF_SHOW_LINE_NUMBERS));
     formPane.add(showLineNumberLbl, cc.xy(1, 27));
     showLineNumbersChbx = new JCheckBox();
     showLineNumbersChbx.setText("");
     formPane.add(showLineNumbersChbx, cc.xy(3, 27));
 
     final JLabel showLogDividersLbl = new JLabel();
-    showLogDividersLbl.setText("Show log line dividers");
+    showLogDividersLbl.setText(I18n.get(I18n.PREF_SHOW_LOG_DIVIDERS));
     formPane.add(showLogDividersLbl, cc.xy(1, 29));
     showLogDividersChbx = new JCheckBox();
     showLogDividersChbx.setText("");
     formPane.add(showLogDividersChbx, cc.xy(3, 29));
 
     final JLabel applyFiltersOnChangeLbl = new JLabel();
-    applyFiltersOnChangeLbl.setText("Apply filters on check");
+    applyFiltersOnChangeLbl.setText(I18n.get(I18n.PREF_APPLY_FILTERS_ON_CHECK));
     formPane.add(applyFiltersOnChangeLbl, cc.xy(1, 31));
     applyFiltersOnCheckChbx = new JCheckBox();
     applyFiltersOnCheckChbx.setText("");
@@ -453,7 +455,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(sep4, cc.xyw(1, 33, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     final JLabel preferredEditorLbl = new JLabel();
-    preferredEditorLbl.setText("Preferred text Editor");
+    preferredEditorLbl.setText(I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR));
     formPane.add(preferredEditorLbl, cc.xy(1, 35));
     preferredEditorPathTxt = new JTextField();
     preferredEditorPathTxt.setEditable(false);
