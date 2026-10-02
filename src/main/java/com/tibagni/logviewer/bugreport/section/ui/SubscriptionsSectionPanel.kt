@@ -2,6 +2,7 @@ package com.tibagni.logviewer.bugreport.section.ui
 
 import com.tibagni.logviewer.bugreport.section.SubscriptionInfo
 import com.tibagni.logviewer.bugreport.section.SubscriptionsSection
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.view.SearchableTextArea
 import com.tibagni.logviewer.view.maxWidthOfColumn
@@ -26,7 +27,7 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
     container.add(buildSubsListsPanel())
     container.add(JSeparator())
     container.add(JPanel(FlowLayout(FlowLayout.LEFT)).also {
-      val logsTitle = JLabel("Dump of service")
+      val logsTitle = JLabel(I18n.get(I18n.BUGREPORT_SUBS_SERVICE_DUMP))
       logsTitle.font = Font(Font.DIALOG, Font.BOLD, logsTitle.font.size)
       it.add(logsTitle)
     })
@@ -82,14 +83,14 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
 
     // Manually add the table headers as we are not using a scroll pane for each table
     container.add(JPanel(FlowLayout(FlowLayout.LEFT)).also {
-      val logsTitle = JLabel("Active subscriptions")
+      val logsTitle = JLabel(I18n.get(I18n.BUGREPORT_SUBS_ACTIVE))
       logsTitle.font = Font(Font.DIALOG, Font.BOLD, logsTitle.font.size)
       it.add(logsTitle)
     })
     container.add(activeSubList.tableHeader)
     container.add(activeSubList)
     container.add(JPanel(FlowLayout(FlowLayout.LEFT)).also {
-      val logsTitle = JLabel("All subscriptions")
+      val logsTitle = JLabel(I18n.get(I18n.BUGREPORT_SUBS_ALL))
       logsTitle.font = Font(Font.DIALOG, Font.BOLD, logsTitle.font.size)
       it.add(logsTitle)
     })

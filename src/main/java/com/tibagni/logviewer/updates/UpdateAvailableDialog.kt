@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.updates
 
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.layout.FontBuilder
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -18,6 +19,7 @@ class UpdateAvailableDialog(private val latestInfo: ReleaseInfo) : JDialog(), Bu
   private val releaseInfo = JTextArea()
 
   init {
+    title = I18n.get(I18n.UPDATES_TITLE)
     buildUi()
     setContentPane(contentPane)
     isModal = true
@@ -42,9 +44,9 @@ class UpdateAvailableDialog(private val latestInfo: ReleaseInfo) : JDialog(), Bu
 
   private fun getLatestReleaseText(releaseInfo: ReleaseInfo): String {
     return """
-New Version: ${releaseInfo.versionName}
+${I18n.format(I18n.UPDATES_NEW_VERSION_LABEL, releaseInfo.versionName)}
 --------------------------------------- 
-Release Notes: 
+${I18n.get(I18n.UPDATES_RELEASE_NOTES_LABEL)} 
 ${releaseInfo.releaseNotes}
     """
   }
@@ -102,7 +104,7 @@ ${releaseInfo.releaseNotes}
     releaseInfoPane.layout = GridBagLayout()
     releaseInfoPane.autoscrolls = false
     val title = JLabel()
-    title.text = "There is a new version of LogViewer available for Download!"
+    title.text = I18n.get(I18n.UPDATES_NEW_VERSION_AVAILABLE)
     title.font = FontBuilder(title).withStyle(Font.BOLD).build()
     releaseInfoPane.add(
       title,

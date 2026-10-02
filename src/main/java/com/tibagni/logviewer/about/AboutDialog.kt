@@ -2,11 +2,13 @@ package com.tibagni.logviewer.about
 
 import com.tibagni.logviewer.AppInfo
 import com.tibagni.logviewer.AppInfo.currentVersion
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.updates.ReleaseInfo
 import com.tibagni.logviewer.updates.UpdateAvailableDialog
 import com.tibagni.logviewer.updates.UpdateManager
 import com.tibagni.logviewer.updates.UpdateManager.UpdateListener
+import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.FontBuilder
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
@@ -38,6 +40,7 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
   }
 
   init {
+    title = I18n.get(I18n.ABOUT_DIALOG_TITLE)
     buildUi()
     setContentPane(contentPane)
     isModal = true
@@ -57,10 +60,9 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
       KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
       JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
     )
-    applicationName.text = AppInfo.APPLICATION_NAME + " - Version: " + currentVersion
-    openSourceInfo.text = "<html>Open Source Software available on " +
-        "<font color=\"#16a1d9\"><u>github</u></font></html>"
-    versionStatus.text = "Checking for updates..."
+    applicationName.text = I18n.format(I18n.ABOUT_VERSION_FORMAT, AppInfo.APPLICATION_NAME, currentVersion)
+    openSourceInfo.text = StringUtils.wrapHtml("${I18n.get(I18n.ABOUT_OPEN_SOURCE_INFO)} <font color=\"#16a1d9\"><u>github</u></font>")
+    versionStatus.text = I18n.get(I18n.ABOUT_CHECKING_UPDATES)
     updateStatusProgress.isVisible = true
     updateBtn.isVisible = false
     openSourceInfo.addMouseListener(object : MouseAdapter() {
@@ -76,21 +78,21 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
     })
     updateManager = UpdateManager(object : UpdateListener {
       override fun onUpdateFound(newRelease: ReleaseInfo) {
-        versionStatus.text = "There is a new version of Log Viewer available!"
+        versionStatus.text = I18n.get(I18n.ABOUT_UPDATE_AVAILABLE)
         updateStatusProgress.isVisible = false
         updateBtn.isVisible = true
-        updateBtn.text = "Update to " + newRelease.versionName
+        updateBtn.text = I18n.format(I18n.ABOUT_UPDATE_TO, newRelease.versionName)
         updateBtn.addActionListener { onUpdate(newRelease) }
       }
 
       override fun onUpToDate() {
-        versionStatus.text = "Log Viewer is already up to date!"
+        versionStatus.text = I18n.get(I18n.ABOUT_UP_TO_DATE)
         updateStatusProgress.isVisible = false
         updateBtn.isVisible = false
       }
 
       override fun onFailedToCheckForUpdate(tr: Throwable) {
-        versionStatus.text = "Not possible to check for updates this time"
+        versionStatus.text = I18n.get(I18n.ABOUT_CHECK_UPDATE_FAILED)
         updateStatusProgress.isVisible = false
         updateBtn.isVisible = false
       }
@@ -158,7 +160,7 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
         .withFill(GridBagConstraints.HORIZONTAL)
         .build()
     )
-    openSourceInfo.text = "Open Source Software available on"
+    openSourceInfo.text = I18n.get(I18n.ABOUT_OPEN_SOURCE_INFO)
     infoPane.add(
       openSourceInfo,
       GBConstraintsBuilder()
@@ -203,7 +205,7 @@ class AboutDialog(owner: JFrame?) : JDialog(owner), ButtonsPane.Listener {
         .withFill(GridBagConstraints.HORIZONTAL)
         .build()
     )
-    updateBtn.text = "Update"
+    updateBtn.text = I18n.get(I18n.ABOUT_UPDATE_BTN)
     val constraints = GBConstraintsBuilder()
       .withGridx(0)
       .withGridy(3)

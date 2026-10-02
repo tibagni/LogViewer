@@ -7,6 +7,8 @@ import com.tibagni.logviewer.View
 import com.tibagni.logviewer.bugreport.section.EmptyBugReportSection
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanel
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanelFactory
+import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
@@ -124,7 +126,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
   }
 
   override fun showErrorMessage(message: String?) {
-    JOptionPane.showMessageDialog(contentPane, message, "Error...", JOptionPane.ERROR_MESSAGE)
+    JOptionPane.showMessageDialog(contentPane, message, I18n.get(I18n.COMMON_ERROR), JOptionPane.ERROR_MESSAGE)
   }
 
   private fun buildUi() {
@@ -151,7 +153,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
     emptyPane.layout = GridBagLayout()
     emptyPane.add(
-      JLabel("<html>To open a bugreport go to '<i><u><b>Logs > Open logs...</b></u></i>'</html>"),
+      JLabel(StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_OPEN_HINT))),
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)

@@ -32,6 +32,7 @@ public final class I18n {
   public static final String COMMON_ALL = "common.all";
   public static final String COMMON_REMOVE = "common.remove";
   public static final String COMMON_CONFIRM_TITLE = "common.confirm_title";
+  public static final String COMMON_SELECT_UNSELECT_ALL = "common.select_unselect_all";
 
   // Preferences Dialog
   public static final String PREF_DIALOG_TITLE = "pref.dialog.title";
@@ -226,6 +227,35 @@ public final class I18n {
   public static final String LOGS_SKIPPED_FILES_MSG = "logs.skipped_files.msg";
   public static final String LOGS_TIMESTAMP_PARSE_ERROR_TITLE = "logs.timestamp_error.title";
   public static final String LOGS_TIMESTAMP_PARSE_ERROR_MSG = "logs.timestamp_error.msg";
+
+  // Visible Logs Configuration (VisibleLogsConfigurationDialog)
+  public static final String VISIBLE_LOGS_TITLE = "visible_logs.title";
+  public static final String VISIBLE_LOGS_FIRST_LABEL = "visible_logs.first_log_label";
+  public static final String VISIBLE_LOGS_LAST_LABEL = "visible_logs.last_log_label";
+
+  // Bugreport View & Sections
+  public static final String BUGREPORT_OPEN_HINT = "bugreport.open_hint";
+  public static final String BUGREPORT_SUBS_SERVICE_DUMP = "bugreport.subs.service_dump";
+  public static final String BUGREPORT_SUBS_ACTIVE = "bugreport.subs.active";
+  public static final String BUGREPORT_SUBS_ALL = "bugreport.subs.all";
+  public static final String BUGREPORT_CARRIER_CONFIG_LOADING_LOGS = "bugreport.carrier_config.loading_logs";
+
+  // About Dialog
+  public static final String ABOUT_DIALOG_TITLE = "about.dialog_title";
+  public static final String ABOUT_VERSION_FORMAT = "about.version_format";
+  public static final String ABOUT_OPEN_SOURCE_INFO = "about.open_source_info";
+  public static final String ABOUT_CHECKING_UPDATES = "about.checking_updates";
+  public static final String ABOUT_UPDATE_AVAILABLE = "about.update_available";
+  public static final String ABOUT_UPDATE_TO = "about.update_to";
+  public static final String ABOUT_UP_TO_DATE = "about.up_to_date";
+  public static final String ABOUT_CHECK_UPDATE_FAILED = "about.check_update_failed";
+  public static final String ABOUT_UPDATE_BTN = "about.update_btn";
+
+  // Updates Dialog
+  public static final String UPDATES_TITLE = "updates.title";
+  public static final String UPDATES_NEW_VERSION_AVAILABLE = "updates.new_version_available";
+  public static final String UPDATES_NEW_VERSION_LABEL = "updates.new_version_label";
+  public static final String UPDATES_RELEASE_NOTES_LABEL = "updates.release_notes_label";
 
   private I18n() {}
 
