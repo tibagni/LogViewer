@@ -23,7 +23,8 @@ public class LogParser {
 
   private static final Pattern LOG_LEVEL_PATTERN =
       Pattern.compile("^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}.*?([VDIWE])");
-  private static final String LOG_START_PATTERN = "^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.*";
+  private static final Pattern LOG_START_PATTERN =
+      Pattern.compile("^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}");
   private static final Pattern LOG_TIMESTAMP_PATTERN =
       Pattern.compile("^(\\d{1,2})-(\\d{1,2})\\s(\\d{1,2}):(\\d{1,2}):(\\d{1,2}).(\\d{3,})");
 
@@ -200,6 +201,38 @@ public class LogParser {
   }
 
   LogTimestamp findTimestamp(String logLine) {
+    // Fast path: standard Android log timestamp "MM-dd HH:mm:ss.SSS"
+    if (logLine.length() >= 18 &&
+        isDigit(logLine.charAt(0)) && isDigit(logLine.charAt(1)) && logLine.charAt(2) == '-' &&
+        isDigit(logLine.charAt(3)) && isDigit(logLine.charAt(4)) &&
+        (logLine.charAt(5) == ' ' || logLine.charAt(5) == '\t') &&
+        isDigit(logLine.charAt(6)) && isDigit(logLine.charAt(7)) && logLine.charAt(8) == ':' &&
+        isDigit(logLine.charAt(9)) && isDigit(logLine.charAt(10)) && logLine.charAt(11) == ':' &&
+        isDigit(logLine.charAt(12)) && isDigit(logLine.charAt(13)) &&
+        (logLine.charAt(14) == '.' || logLine.charAt(14) == ',') &&
+        isDigit(logLine.charAt(15)) && isDigit(logLine.charAt(16)) && isDigit(logLine.charAt(17))) {
+
+      int month = (logLine.charAt(0) - '0') * 10 + (logLine.charAt(1) - '0');
+      int day = (logLine.charAt(3) - '0') * 10 + (logLine.charAt(4) - '0');
+      int hour = (logLine.charAt(6) - '0') * 10 + (logLine.charAt(7) - '0');
+      int minutes = (logLine.charAt(9) - '0') * 10 + (logLine.charAt(10) - '0');
+      int seconds = (logLine.charAt(12) - '0') * 10 + (logLine.charAt(13) - '0');
+
+      // Check subseconds digits (at least 3 digits, up to 9 digits to safely fit in 32-bit int)
+      int subEnd = 18;
+      while (subEnd < logLine.length() && isDigit(logLine.charAt(subEnd))) {
+        subEnd++;
+      }
+      int subLen = subEnd - 15;
+      if (subLen >= 3 && subLen <= 9) {
+        int hundredth = 0;
+        for (int i = 15; i < subEnd; i++) {
+          hundredth = hundredth * 10 + (logLine.charAt(i) - '0');
+        }
+        return new LogTimestamp(month, day, hour, minutes, seconds, hundredth);
+      }
+    }
+
     LogTimestamp timestamp = null;
 
     try {
@@ -221,8 +254,32 @@ public class LogParser {
     return timestamp;
   }
 
-  private boolean isLogLine(String line) {
-    return line.matches(LOG_START_PATTERN);
+  boolean isLogLine(String line) {
+    if (line.length() < 14) return false;
+    // Fast path: direct char check (100% equivalent to ^\d{2}-\d{2} \d{2}:\d{2}:\d{2})
+    if (isDigit(line.charAt(0)) &&
+        isDigit(line.charAt(1)) &&
+        line.charAt(2) == '-' &&
+        isDigit(line.charAt(3)) &&
+        isDigit(line.charAt(4)) &&
+        line.charAt(5) == ' ' &&
+        isDigit(line.charAt(6)) &&
+        isDigit(line.charAt(7)) &&
+        line.charAt(8) == ':' &&
+        isDigit(line.charAt(9)) &&
+        isDigit(line.charAt(10)) &&
+        line.charAt(11) == ':' &&
+        isDigit(line.charAt(12)) &&
+        isDigit(line.charAt(13))) {
+      return true;
+    }
+
+    // Safety fallback: if anything non-standard, use the precompiled pattern
+    return LOG_START_PATTERN.matcher(line).lookingAt();
+  }
+
+  private static boolean isDigit(char c) {
+    return c >= '0' && c <= '9';
   }
 
   private boolean shouldIgnoreLine(String line) {
