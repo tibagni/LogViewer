@@ -8,6 +8,8 @@ import com.tibagni.logviewer.util.StringUtils;
 
 import java.awt.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -23,6 +25,11 @@ public class Filter {
   private ContextInfo temporaryInfo;
   private boolean isSimpleFilter;
 
+  // Cache the pattern string and the case sensitive flag
+  // here for better performance during comparisons
+  private String patternString;
+  private boolean caseSensitive;
+
   public boolean wasLoadedFromLegacyFile = false;
 
   // We intentionally don't copy the temporary info as it is temporary
@@ -36,6 +43,9 @@ public class Filter {
     pattern = getPattern(from.pattern.pattern());
     verbosity = from.verbosity;
     isSimpleFilter = from.isSimpleFilter;
+
+    patternString = from.patternString;
+    caseSensitive = from.caseSensitive;
   }
 
   public Filter(String name, String pattern, Color color, LogLevel verbosity) throws FilterException {
@@ -69,6 +79,9 @@ public class Filter {
     this.pattern = getPattern(pattern);
     this.verbosity = verbosity;
     this.isSimpleFilter = !StringUtils.isPotentialRegex(pattern);
+
+    this.patternString = pattern;
+    this.caseSensitive = caseSensitive;
   }
 
   public static Filter createFromString(String filterString) throws FilterException {
@@ -122,7 +135,7 @@ public class Filter {
   }
 
   public String getPatternString() {
-    return pattern.toString();
+    return patternString;
   }
 
   public ContextInfo getTemporaryInfo() {
@@ -138,8 +151,7 @@ public class Filter {
   }
 
   public boolean isCaseSensitive() {
-    // Check if the CASE_INSENSITIVE is OFF!!
-    return (flags & Pattern.CASE_INSENSITIVE) == 0;
+    return caseSensitive;
   }
 
   /**
@@ -149,18 +161,19 @@ public class Filter {
    * @return true if this filter is applicable to the input line. False otherwise
    */
   public boolean appliesTo(LogEntry entry) {
-    String inputLine = entry.getLogText();
-    boolean foundPattern = isSimpleFilter ? simpleMatch(inputLine) : regexMatch(inputLine);
-    boolean isVerbosityAllowed = verbosity.ordinal() <= entry.logLevel.ordinal();
+    if (verbosity.ordinal() > entry.logLevel.ordinal()) {
+      return false;
+    }
 
-    return foundPattern && isVerbosityAllowed;
+    String inputLine = entry.getLogText();
+    return isSimpleFilter ? simpleMatch(inputLine) : regexMatch(inputLine);
   }
 
   private boolean simpleMatch(String inputLine) {
-    if (isCaseSensitive()) {
-      return inputLine.contains(getPatternString());
+    if (caseSensitive) {
+      return inputLine.contains(patternString);
     }
-    return inputLine.toLowerCase().contains(getPatternString().toLowerCase());
+    return StringUtils.containsIgnoreCase(inputLine, patternString);
   }
 
   private boolean regexMatch(String inputLine) {
@@ -210,11 +223,14 @@ public class Filter {
   }
 
   public static class ContextInfo {
-    private final Map<LogStream, Integer> linesFound;
+    private final ConcurrentHashMap<LogStream, AtomicInteger> linesFound;
     private Set<LogStream> allowedStreams;
 
     private ContextInfo() {
-      linesFound = new HashMap<>();
+      linesFound = new ConcurrentHashMap<>();
+      for (LogStream stream : LogStream.values()) {
+        linesFound.put(stream, new AtomicInteger(0));
+      }
     }
     public void setAllowedStreams(Set<LogStream> allowedStreams) {
       this.allowedStreams = allowedStreams;
@@ -222,23 +238,17 @@ public class Filter {
 
     public int getTotalLinesFound() {
       int totalLinesFound = 0;
-      for (Map.Entry<LogStream, Integer> entry : linesFound.entrySet()) {
+      for (Map.Entry<LogStream, AtomicInteger> entry : linesFound.entrySet()) {
         if (allowedStreams == null || allowedStreams.contains(entry.getKey())) {
-          totalLinesFound += entry.getValue();
+          totalLinesFound += entry.getValue().get();
         }
       }
 
       return totalLinesFound;
     }
 
-    // This method must be synchronized as the filters can be applied in parallel
-    public synchronized void incrementLineCount(LogStream stream) {
-      int currentCount = 0;
-      if (linesFound.containsKey(stream)) {
-        currentCount = linesFound.get(stream);
-      }
-
-      linesFound.put(stream, currentCount + 1);
+    public void incrementLineCount(LogStream stream) {
+      linesFound.get(stream).incrementAndGet();
     }
 
     @Override
@@ -246,12 +256,26 @@ public class Filter {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       ContextInfo that = (ContextInfo) o;
-      return Objects.equals(linesFound, that.linesFound) && Objects.equals(allowedStreams, that.allowedStreams);
+      if (!Objects.equals(allowedStreams, that.allowedStreams)) {
+        return false;
+      }
+      for (LogStream stream : LogStream.values()) {
+        int thisCount = this.linesFound.get(stream).get();
+        int thatCount = that.linesFound.get(stream).get();
+        if (thisCount != thatCount) {
+          return false;
+        }
+      }
+      return true;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(linesFound, allowedStreams);
+      int countsHash = 0;
+      for (LogStream stream : LogStream.values()) {
+        countsHash = 31 * countsHash + linesFound.get(stream).get();
+      }
+      return Objects.hash(countsHash, allowedStreams);
     }
   }
 }
