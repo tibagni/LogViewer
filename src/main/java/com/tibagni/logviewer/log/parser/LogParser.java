@@ -68,19 +68,20 @@ public class LogParser {
       }
     }
 
+    LogEntry[] result = logEntries.toArray(new LogEntry[0]);
+
     if (availableLogs.size() > 1) {
       progressReporter.onProgress(91, "Sorting...");
-      Collections.sort(logEntries);
+      Arrays.parallelSort(result);
     }
 
     progressReporter.onProgress(95, "Setting index...");
-    int index = 0;
-    for (LogEntry entry : logEntries) {
-      entry.setIndex(index++);
+    for (int i = 0; i < result.length; i++) {
+      result[i].setIndex(i);
     }
 
     progressReporter.onProgress(100, "Completed");
-    return logEntries.toArray(new LogEntry[0]);
+    return result;
   }
 
   @NotNull
