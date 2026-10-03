@@ -209,4 +209,26 @@ class SearchableTableTests {
     delay(100)
     assertEquals(40, LogCellRenderer.getHighlightLine(table.table))
   }
+
+  @Test
+  fun testMyLogsTableSearchHighlight() = runBlocking {
+    val model = LogListTableModel("My Logs")
+    val entry = LogEntry("hello world from my logs", LogLevel.VERBOSE, null)
+    model.setLogs(listOf(entry))
+    val table = SearchableTable(model)
+    val myLogsRenderer = LogCellRenderer()
+    table.table.setDefaultRenderer(LogEntry::class.java, myLogsRenderer)
+
+    table.searchContent(SearchableTable.SearchRequest("world")).await()
+
+    val comp = myLogsRenderer.getTableCellRendererComponent(table.table, entry, false, false, 0, 0)
+    val renderer = comp as LogCellRenderer
+    val field = LogCellRenderer::class.java.getDeclaredField("textView")
+    field.isAccessible = true
+    val textView = field.get(renderer) as javax.swing.JTextArea
+    val highlights = textView.highlighter.highlights
+    assertTrue("Highlighter should contain highlights", highlights.isNotEmpty())
+    assertEquals(6, highlights[0].startOffset)
+    assertEquals(11, highlights[0].endOffset)
+  }
 }
