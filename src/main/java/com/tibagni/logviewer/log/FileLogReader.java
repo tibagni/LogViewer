@@ -45,11 +45,23 @@ public class FileLogReader implements LogReader {
     }
   }
 
+  // 64 KB buffer for reading log files. The default BufferedReader buffer size is 8 KB (8192 chars).
+  // A 64 KB buffer reduces the number of underlying I/O read syscalls when reading large log files
+  // (which are typically tens or hundreds of megabytes), improving sequential disk read throughput.
+  private static final int READ_BUFFER_SIZE_BYTES = 64 * 1024;
+
   private String readFile(File file, Charset charset) throws IOException {
     String line;
-    StringBuilder builder = new StringBuilder();
+    // Pre-size the StringBuilder based on the file size on disk.
+    // In typical Android logcat files (mostly 1-byte ASCII characters in UTF-8), file.length() closely
+    // approximates the required character capacity. Pre-sizing avoids the default capacity of 16 characters
+    // repeatedly doubling and copying internal char[] arrays as the file is read, eliminating significant
+    // GC overhead and memory churn. Clamped between 16 and Integer.MAX_VALUE - 8 (safe JVM max array size).
+    int initialCapacity = (int) Math.min(Math.max(file.length(), 16), Integer.MAX_VALUE - 8);
+    StringBuilder builder = new StringBuilder(initialCapacity);
 
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset))) {
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset),
+        READ_BUFFER_SIZE_BYTES)) {
       while ((line = reader.readLine()) != null) {
         builder.append(line);
         builder.append(StringUtils.LINE_SEPARATOR);

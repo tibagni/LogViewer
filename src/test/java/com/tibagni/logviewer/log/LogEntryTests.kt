@@ -85,4 +85,16 @@ class LogEntryTests {
     assertNotEquals(entry1, entry2)
     assertNotEquals(entry1.hashCode(), entry2.hashCode())
   }
+
+  @Test
+  fun testLogEntryWithLogStream() {
+    val entry1 = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), LogStream.MAIN)
+    val entry2 = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), "main.txt")
+    val entryNullStream = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), null as LogStream?)
+
+    assertEquals(LogStream.MAIN, entry1.logStream)
+    assertEquals(LogStream.MAIN, entry2.logStream)
+    assertEquals(entry1, entry2)
+    assertEquals(LogStream.UNKNOWN, entryNullStream.logStream)
+  }
 }
