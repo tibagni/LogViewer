@@ -35,7 +35,7 @@ class SearchableTable @JvmOverloads constructor(
 ) : JPanel() {
 
   private val searchOptionPanel = JPanel()
-  private val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
+  internal val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
   private val clearSearchText = JButton(I18n.get(I18n.COMMON_CLEAR))
   private val searchLast = JButton(StringUtils.UP_ARROW_HEAD_BIG)
   private val searchNext = JButton(StringUtils.DOWN_ARROW_HEAD_BIG)
@@ -97,7 +97,7 @@ class SearchableTable @JvmOverloads constructor(
         if (e.keyCode == KeyEvent.VK_ESCAPE) {
           hideSearch()
         } else if (e.keyCode == KeyEvent.VK_ENTER) {
-          searchInDirection(true)
+          searchInDirection(!e.isShiftDown)
         }
       }
     })
