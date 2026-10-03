@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.view
 
+import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogListTableModel
@@ -90,15 +91,10 @@ class SearchableTableTests {
     assertEquals(10, matches.size)
     assertEquals((0 until 100 step 10).toList(), matches)
 
-    // Verify highlights are set
-    for (i in 0 until 100) {
-      val entry = model.getValueAt(i, 0) as LogEntry
-      if (i % 10 == 0) {
-        assertNotNull("Entry $i should have search filter", entry.searchFilter)
-      } else {
-        assertNull("Entry $i should not have search filter", entry.searchFilter)
-      }
-    }
+    // Verify searchFilter is set on the table, not on LogEntry
+    val filter = LogCellRenderer.getSearchFilter(table.table)
+    assertNotNull("Table should have search filter", filter)
+    assertEquals("Match", filter?.patternString)
   }
 
   @Test
@@ -134,16 +130,46 @@ class SearchableTableTests {
 
     // First search
     table.searchContent(SearchableTable.SearchRequest("Match")).await()
-    assertNotNull((model.getValueAt(0, 0) as LogEntry).searchFilter)
+    assertNotNull(LogCellRenderer.getSearchFilter(table.table))
 
     // Clear search
     val matches = table.searchContent(SearchableTable.SearchRequest("")).await()
     assertTrue(matches.isEmpty())
 
-    // Highlights should now be cleared
-    for (i in 0 until 100) {
-      val entry = model.getValueAt(i, 0) as LogEntry
-      assertNull("Entry $i highlight should be cleared", entry.searchFilter)
-    }
+    // Highlights should now be cleared on the table
+    assertNull("Search filter should be null on table after clear", LogCellRenderer.getSearchFilter(table.table))
+  }
+
+  @Test
+  fun testMultipleTablesSharingSameRendererDoNotCrossContaminate() = runBlocking {
+    val entries = listOf(
+      LogEntry("Common log line with foo", LogLevel.VERBOSE, null),
+      LogEntry("Another line with bar", LogLevel.VERBOSE, null)
+    )
+
+    val model1 = LogListTableModel("Table 1")
+    model1.setLogs(entries)
+    val table1 = SearchableTable(model1)
+
+    val model2 = LogListTableModel("Table 2")
+    model2.setLogs(entries)
+    val table2 = SearchableTable(model2)
+
+    // Both tables share the exact same LogCellRenderer instance
+    val sharedRenderer = LogCellRenderer()
+    table1.table.setDefaultRenderer(LogEntry::class.java, sharedRenderer)
+    table2.table.setDefaultRenderer(LogEntry::class.java, sharedRenderer)
+
+    // Search foo in table 1
+    table1.searchContent(SearchableTable.SearchRequest("foo")).await()
+
+    val filter1 = LogCellRenderer.getSearchFilter(table1.table)
+    val filter2 = LogCellRenderer.getSearchFilter(table2.table)
+
+    assertNotNull("Table 1 should have searchFilter", filter1)
+    assertEquals("foo", filter1?.patternString)
+
+    // Table 2 should have NO searchFilter, despite sharing the exact same renderer instance
+    assertNull("Table 2 should NOT have searchFilter", filter2)
   }
 }

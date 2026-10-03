@@ -2,6 +2,7 @@ package com.tibagni.logviewer.log;
 
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.filter.Filter;
+import org.jetbrains.annotations.Nullable;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
@@ -25,7 +26,9 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   private final JPanel colorIndicator;
   private final JLabel streamIndicator;
   private final LogViewerThemeManager themeManager;
-  private int mHighlightLine = -1;
+  public static final String CLIENT_PROPERTY_SEARCH_FILTER = "LogCellRenderer.searchFilter";
+  public static final String CLIENT_PROPERTY_HIGHLIGHT_LINE = "LogCellRenderer.highlightLine";
+
   private final FontRenderContext fontRenderContext = new FontRenderContext(new AffineTransform(), true, true);
 
   public LogCellRenderer() {
@@ -94,8 +97,23 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     }
   }
 
-  public void highlightLine(int rowIndex) {
-    mHighlightLine = rowIndex;
+  public static void setSearchFilter(JTable table, @Nullable Filter searchFilter) {
+    table.putClientProperty(CLIENT_PROPERTY_SEARCH_FILTER, searchFilter);
+  }
+
+  @Nullable
+  public static Filter getSearchFilter(JTable table) {
+    Object prop = table.getClientProperty(CLIENT_PROPERTY_SEARCH_FILTER);
+    return prop instanceof Filter ? (Filter) prop : null;
+  }
+
+  public static void setHighlightLine(JTable table, int rowIndex) {
+    table.putClientProperty(CLIENT_PROPERTY_HIGHLIGHT_LINE, rowIndex);
+  }
+
+  public static int getHighlightLine(JTable table) {
+    Object prop = table.getClientProperty(CLIENT_PROPERTY_HIGHLIGHT_LINE);
+    return prop instanceof Integer ? (Integer) prop : -1;
   }
 
   public void recalculateLineNumberPreferredSize(int maxLineNumber) {
@@ -126,7 +144,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       }
     }
     // make the highlight line ui same as the select ui
-    isSelected = isSelected || row == mHighlightLine;
+    isSelected = isSelected || row == getHighlightLine(table);
 
     lineNumLabel.setText(String.valueOf(logEntry.getIndex() + 1));
 
@@ -167,14 +185,16 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       textView.setForeground(filteredColor);
     }
     // Apply highlighting if needed
-    highlightMatchedText(highlighter, logEntry, isSelected);
+    highlightMatchedText(highlighter, logEntry, isSelected, getSearchFilter(table));
 
     return this;
   }
 
-  private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry, boolean isSelected) {
+  private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry, boolean isSelected, @Nullable Filter searchFilter) {
     highlightMatchedText(logEntry.getAppliedFilter(), highlighter, logEntry, isSelected, false);
-    highlightMatchedText(logEntry.getSearchFilter(), highlighter, logEntry, isSelected, true);
+    if (searchFilter != null) {
+      highlightMatchedText(searchFilter, highlighter, logEntry, isSelected, true);
+    }
   }
 
   private void highlightMatchedText(Filter filter, Highlighter highlighter, LogEntry logEntry, boolean isSelected, boolean isForSearch) {
