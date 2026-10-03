@@ -65,8 +65,49 @@ class ParserTests {
         val expected2 = LogTimestamp(1, 6, 20, 46, 42, 501)
         val actual2 = logParser.findTimestamp("01-06 20:46:42.501 821-1054/? I/WindowState: WIN DEATH: Window{431586d0 u0 com.voidcorporation.carimbaai/com.voidcorporation.carimbaai.MainActivity}")
 
+        val expectedMicro = LogTimestamp(12, 31, 23, 59, 59, 999999)
+        val actualMicro = logParser.findTimestamp("12-31 23:59:59.999999 1 1 D Test: Microseconds")
+
+        val expectedNano = LogTimestamp(5, 12, 13, 45, 10, 123456789)
+        val actualNano = logParser.findTimestamp("05-12 13:45:10.123456789 1 1 D Test: Nanoseconds")
+
+        val expectedSingleDigit = LogTimestamp(1, 6, 20, 46, 42, 501)
+        val actualSingleDigit = logParser.findTimestamp("1-6 20:46:42.501 821-1054/? I/WindowState: single digit month")
+
+        val expectedComma = LogTimestamp(10, 12, 22, 32, 50, 264)
+        val actualComma = logParser.findTimestamp("10-12 22:32:50,264  2646  2664 I chatty  : comma separator")
+
+        val expectedTab = LogTimestamp(10, 12, 22, 32, 50, 264)
+        val actualTab = logParser.findTimestamp("10-12\t22:32:50.264  2646  2664 I chatty  : tab separator")
+
         assertEquals(expected, actual)
         assertEquals(expected2, actual2)
+        assertEquals(expectedMicro, actualMicro)
+        assertEquals(expectedNano, actualNano)
+        assertEquals(expectedSingleDigit, actualSingleDigit)
+        assertEquals(expectedComma, actualComma)
+        assertEquals(expectedTab, actualTab)
+
+        assertNull(logParser.findTimestamp("05-12 13:45:10.12 1 1 D Test: Invalid short ms"))
+        assertNull(logParser.findTimestamp("Not a log line"))
+        assertNull(logParser.findTimestamp(""))
+    }
+
+    @Test
+    fun testIsLogLine() {
+        assertTrue(logParser.isLogLine("10-12 22:32:50.264  2646  2664 I chatty  : uid=1000(system) batterystats-sy expire 13 lines"))
+        assertTrue(logParser.isLogLine("01-06 20:46:42.501 821-1054/? I/WindowState: WIN DEATH"))
+        assertTrue(logParser.isLogLine("00-00 00:00:00"))
+        assertTrue(logParser.isLogLine("99-99 99:99:99 anything after"))
+
+        assertFalse(logParser.isLogLine("10-12 22:32:5")) // too short (< 14 chars)
+        assertFalse(logParser.isLogLine("10/12 22:32:50")) // wrong separator
+        assertFalse(logParser.isLogLine("10-12-22:32:50")) // missing space
+        assertFalse(logParser.isLogLine("1-12 22:32:50")) // 1-digit month
+        assertFalse(logParser.isLogLine("10-1 22:32:50")) // 1-digit day
+        assertFalse(logParser.isLogLine("\tat com.android.server.am.ActivityManagerService.startProcess(ActivityManagerService.java:123)"))
+        assertFalse(logParser.isLogLine("--------- beginning of main"))
+        assertFalse(logParser.isLogLine(""))
     }
 
     @Test
