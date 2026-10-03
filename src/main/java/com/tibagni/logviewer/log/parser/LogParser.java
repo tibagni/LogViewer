@@ -123,11 +123,26 @@ public class LogParser {
   }
 
   private List<LogEntry> getLogEntries(String logText, String logPath) {
-    String[] lines = logText.split(StringUtils.LINE_SEPARATOR);
-    List<LogEntry> logLines = new ArrayList<>(lines.length);
+    LogStream logStream = LogStream.inferLogStreamFromName(logPath);
+    List<LogEntry> logLines = new ArrayList<>();
 
-    StringBuilder currentLogLine = null;
-    for (String line : lines) {
+    String currentLogLine = null;
+    StringBuilder continuationBuilder = null;
+
+    int textLen = logText.length();
+    int start = 0;
+    while (start < textLen) {
+      int end = logText.indexOf('\n', start);
+      if (end < 0) {
+        end = textLen;
+      }
+      int lineEnd = end;
+      if (lineEnd > start && logText.charAt(lineEnd - 1) == '\r') {
+        lineEnd--;
+      }
+      String line = logText.substring(start, lineEnd);
+      start = end + 1;
+
       // Sometimes a line can contain a lot of NULL chars at the end, making it fail when trying to open the log
       // (as these NULL chars will make the line length too long). So check here if the line has NULL chars
       // and remove them to avoid failing to open valid log files
@@ -136,22 +151,29 @@ public class LogParser {
       }
 
       if (isLogLine(line)) {
-        if (currentLogLine != null) {
-          logLines.add(createLogEntry(currentLogLine.toString(), logPath));
+        if (continuationBuilder != null) {
+          logLines.add(createLogEntry(continuationBuilder.toString(), logStream));
+          continuationBuilder = null;
+        } else if (currentLogLine != null) {
+          logLines.add(createLogEntry(currentLogLine, logStream));
         }
 
-        currentLogLine = new StringBuilder(line);
+        currentLogLine = line;
       } else if (!shouldIgnoreLine(line) && currentLogLine != null) {
         // This is probably a continuation of a already started log line. Append to it
-        if (currentLogLine.length() >= MAX_LOG_LINE_ALLOWED) {
-          currentLogLine.delete(MAX_LOG_LINE_ALLOWED, currentLogLine.length());
+        if (continuationBuilder == null) {
+          continuationBuilder = new StringBuilder(currentLogLine);
+        }
+
+        if (continuationBuilder.length() >= MAX_LOG_LINE_ALLOWED) {
+          continuationBuilder.delete(MAX_LOG_LINE_ALLOWED, continuationBuilder.length());
 
           // First check if we have already considered this as a potential bugreport. If so,
           // don't waste any more time here
           if (!potentialBugReports.containsKey(logPath)) {
-            String incorrectLinePreview = currentLogLine.substring(0, 100) + "...";
+            String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
             Logger.warning(
-                "Incorrect format on following line (too long - " + currentLogLine.length() + " bytes):\n" +
+                "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
                     "\"" + incorrectLinePreview + "\"\n\n" +
                     "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
 
@@ -167,26 +189,29 @@ public class LogParser {
 
           // We are done with this line, add it to the list and clear currentLogLine to avoid
           // executing this same code over and over for invalid lines
-          logLines.add(createLogEntry(currentLogLine.toString(), logPath));
+          logLines.add(createLogEntry(continuationBuilder.toString(), logStream));
+          continuationBuilder = null;
           currentLogLine = null;
 
           // This could simply be a malformed line, just continue parsing other lines
           continue;
         }
-        currentLogLine.append(StringUtils.LINE_SEPARATOR).append(line);
+        continuationBuilder.append(StringUtils.LINE_SEPARATOR).append(line);
       }
     }
 
     // Make sure to add the last log line as well
-    if (currentLogLine != null) {
-      logLines.add(createLogEntry(currentLogLine.toString(), logPath));
+    if (continuationBuilder != null) {
+      logLines.add(createLogEntry(continuationBuilder.toString(), logStream));
+    } else if (currentLogLine != null) {
+      logLines.add(createLogEntry(currentLogLine, logStream));
     }
 
     return logLines;
   }
 
-  private LogEntry createLogEntry(String logLine, String logName) {
-    return new LogEntry(logLine, findLogLevel(logLine), findTimestamp(logLine), logName);
+  private LogEntry createLogEntry(String logLine, LogStream logStream) {
+    return new LogEntry(logLine, findLogLevel(logLine), findTimestamp(logLine), logStream);
   }
 
   LogLevel findLogLevel(String logLine) {

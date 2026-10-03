@@ -151,6 +151,35 @@ class ParserTests {
     }
 
     @Test
+    fun testParseLogsWithContinuationLines() {
+        val multilineLog = "10-12 22:32:50.264  2646  2664 E AndroidRuntime: FATAL EXCEPTION: main\n" +
+                "\tProcess: com.android.settings, PID: 12345\n" +
+                "\tjava.lang.NullPointerException: Null pointer Exception in service\n" +
+                "10-12 22:32:51.100  2646  2664 I ActivityManager: Process died\n" +
+                "10-12 22:32:52.000  2646  2664 D Tag: Single line log"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("main.txt"))
+        `when`(reader.get("main.txt")).thenReturn(multilineLog)
+
+        val entries = logParser.parseLogs(StandardCharsets.UTF_8)
+        assertEquals(3, entries.size)
+        assertEquals(
+            "10-12 22:32:50.264  2646  2664 E AndroidRuntime: FATAL EXCEPTION: main" + System.lineSeparator() +
+                    "\tProcess: com.android.settings, PID: 12345" + System.lineSeparator() +
+                    "\tjava.lang.NullPointerException: Null pointer Exception in service",
+            entries[0].logText
+        )
+        assertEquals(LogLevel.ERROR, entries[0].logLevel)
+        assertEquals(LogStream.MAIN, entries[0].logStream)
+
+        assertEquals("10-12 22:32:51.100  2646  2664 I ActivityManager: Process died", entries[1].logText)
+        assertEquals(LogLevel.INFO, entries[1].logLevel)
+
+        assertEquals("10-12 22:32:52.000  2646  2664 D Tag: Single line log", entries[2].logText)
+        assertEquals(LogLevel.DEBUG, entries[2].logLevel)
+    }
+
+    @Test
     fun testParseInvalidLogs() {
         val testLogLine = buildHugeLogPayload()
         val logNames = setOf("bugreport")

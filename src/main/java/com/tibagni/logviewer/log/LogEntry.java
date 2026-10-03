@@ -21,10 +21,14 @@ public class LogEntry implements Comparable<LogEntry> {
   }
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, String logName) {
+    this(logText, logLevel, timestamp, LogStream.inferLogStreamFromName(logName));
+  }
+
+  public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, LogStream logStream) {
     this.logText = logText;
     this.logLevel = logLevel;
     this.timestamp = timestamp;
-    this.logStream = LogStream.inferLogStreamFromName(logName);
+    this.logStream = logStream != null ? logStream : LogStream.UNKNOWN;
   }
 
   public String getLogText() {
