@@ -138,6 +138,10 @@ public class Filter {
     return patternString;
   }
 
+  public Pattern getPattern() {
+    return pattern;
+  }
+
   public ContextInfo getTemporaryInfo() {
     return temporaryInfo;
   }

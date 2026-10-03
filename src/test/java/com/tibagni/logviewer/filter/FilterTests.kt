@@ -8,6 +8,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.mock
 import java.awt.Color
+import java.util.regex.Pattern
 
 class FilterTests {
   @Test
@@ -404,5 +405,16 @@ class FilterTests {
 
     assertEquals(filter, filterCopy)
     assertNotSame(filter, filterCopy)
+  }
+
+  @Test
+  fun testGetPattern() {
+    val caseSensitiveFilter = Filter("name", "TestPattern", Color.WHITE, LogLevel.VERBOSE, true)
+    assertEquals("TestPattern", caseSensitiveFilter.pattern.pattern())
+    assertEquals(0, caseSensitiveFilter.pattern.flags())
+
+    val caseInsensitiveFilter = Filter("name", "TestPattern", Color.WHITE, LogLevel.VERBOSE, false)
+    assertEquals("TestPattern", caseInsensitiveFilter.pattern.pattern())
+    assertEquals(Pattern.CASE_INSENSITIVE, caseInsensitiveFilter.pattern.flags())
   }
 }
