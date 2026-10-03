@@ -53,6 +53,35 @@ public class StringUtils {
     return (Objects.equals(str1, str2));
   }
 
+  public static boolean containsIgnoreCase(String src, String what) {
+    if (src == null || what == null) {
+      return false;
+    }
+    final int length = what.length();
+    if (length == 0) {
+      return true;
+    }
+    final int max = src.length() - length;
+    if (max < 0) {
+      return false;
+    }
+
+    final char firstChar = what.charAt(0);
+    final char firstCharUpper = Character.toUpperCase(firstChar);
+    final char firstCharLower = Character.toLowerCase(firstChar);
+
+    for (int i = 0; i <= max; i++) {
+      char c = src.charAt(i);
+      if (c != firstChar && c != firstCharUpper && c != firstCharLower) {
+        continue;
+      }
+      if (src.regionMatches(true, i, what, 0, length)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static String htmlHighlightAndEscape(String text, int start, int end) {
     String prefix = escape(text.substring(0, start));
     String highlightedPart = escape(text.substring(start, end));

@@ -32,6 +32,21 @@ class StringUtilsTests {
   }
 
   @Test
+  fun testContainsIgnoreCase() {
+    assertTrue(StringUtils.containsIgnoreCase("Hello World", "world"))
+    assertTrue(StringUtils.containsIgnoreCase("Hello World", "WORLD"))
+    assertTrue(StringUtils.containsIgnoreCase("Hello World", "hello"))
+    assertTrue(StringUtils.containsIgnoreCase("Hello World", "o w"))
+    assertTrue(StringUtils.containsIgnoreCase("Hello World", ""))
+    assertTrue(StringUtils.containsIgnoreCase("Hello World", "Hello World"))
+    assertFalse(StringUtils.containsIgnoreCase("Hello World", "planet"))
+    assertFalse(StringUtils.containsIgnoreCase("Hello World", "Hello World!"))
+    assertFalse(StringUtils.containsIgnoreCase(null, "world"))
+    assertFalse(StringUtils.containsIgnoreCase("Hello World", null))
+    assertFalse(StringUtils.containsIgnoreCase(null, null))
+  }
+
+  @Test
   fun testHtmlHighlightAndEscape() {
     assertEquals("ex<span style=\"background-color:yellow;color:black\">amp</span>le",
       StringUtils.htmlHighlightAndEscape("example", 2, 5))
