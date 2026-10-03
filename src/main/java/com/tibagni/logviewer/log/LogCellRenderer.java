@@ -178,17 +178,17 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   }
 
   private void highlightMatchedText(Filter filter, Highlighter highlighter, LogEntry logEntry, boolean isSelected, boolean isForSearch) {
-    String hlText = filter != null ? filter.getPatternString() : null;
-    if (!StringUtils.isEmpty(hlText)) {
+    if (filter != null) {
       try {
-        int flags = filter.isCaseSensitive() ? 0 : Pattern.CASE_INSENSITIVE;
-        Pattern pattern = Pattern.compile(hlText, flags);
-        Matcher matcher = pattern.matcher(logEntry.getLogText());
-        while (matcher.find()) {
-          int start = matcher.start();
-          int end = matcher.end();
-          highlighter.addHighlight(start, end, new DefaultHighlighter.DefaultHighlightPainter(
-              getColorForHighlightedText(isSelected, isForSearch)));
+        Pattern pattern = filter.getPattern();
+        if (pattern != null) {
+          Matcher matcher = pattern.matcher(logEntry.getLogText());
+          while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+            highlighter.addHighlight(start, end, new DefaultHighlighter.DefaultHighlightPainter(
+                getColorForHighlightedText(isSelected, isForSearch)));
+          }
         }
       } catch (Exception e) {
         // Should not happen

@@ -14,18 +14,20 @@ import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
+import java.util.Collections
 import javax.swing.*
 import javax.swing.event.TableModelEvent
-import javax.swing.table.AbstractTableModel
 import javax.swing.table.TableColumnModel
 import javax.swing.table.TableModel
 
-
+@OptIn(FlowPreview::class)
 class SearchableTable @JvmOverloads constructor(
   dm: TableModel? = null,
   cm: TableColumnModel? = null,
@@ -43,10 +45,21 @@ class SearchableTable @JvmOverloads constructor(
 
   val table = JTable(dm, cm, sm)
 
+  companion object {
+    private const val SEARCH_DEBOUNCE_MS = 250L
+  }
+
+  private data class SearchRequest(
+    val text: String = "",
+    val matchCase: Boolean = false,
+    val revision: Long = 0L
+  )
+
   private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
   private var lastSearchJob: Deferred<List<Int>>? = null
 
-  private val performSearchState = MutableStateFlow(Any())
+  private val searchRequest = MutableStateFlow(SearchRequest())
+  private var lastExecutedRequest: SearchRequest? = null
   private var lastSearchGoToPos = -1
 
   init {
@@ -62,10 +75,12 @@ class SearchableTable @JvmOverloads constructor(
     }
 
     matchCaseOption.addItemListener {
-      matchCaseStateChanged()
+      updateSearchRequest()
     }
 
-    clearSearchText.addActionListener { searchText.text = "" }
+    clearSearchText.addActionListener {
+      searchText.text = ""
+    }
 
     table.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
@@ -89,96 +104,120 @@ class SearchableTable @JvmOverloads constructor(
     close.addActionListener { hideSearch() }
     close.toolTipText = I18n.get(I18n.SEARCH_TOOLTIP_HIDE)
 
-    searchText.whenTextChanges { performSearchState.value = Any() }
+    searchText.whenTextChanges { updateSearchRequest() }
 
     table.model.addTableModelListener {
       // Re-perform search if the model inserted or deleted items, ignore simple update events
       if (searchOptionPanel.isVisible && it.type != TableModelEvent.UPDATE) {
-        performSearchState.value = Any()
+        updateSearchRequest(revisionDelta = 1L)
       }
     }
 
     table.selectionModel.addListSelectionListener {
       lastSearchGoToPos = -1
-      val renderer = table.getDefaultRenderer(LogEntry::class.java) as LogCellRenderer
-      renderer.highlightLine(-1)
-      table.revalidate()
+      val renderer = table.getDefaultRenderer(LogEntry::class.java) as? LogCellRenderer
+      renderer?.highlightLine(-1)
       table.repaint()
     }
 
-    performSearchState
-      .onEach { searchContent() }
+    searchRequest
+      .debounce { request ->
+        if (request.text.isBlank()) 0L else SEARCH_DEBOUNCE_MS
+      }
+      .distinctUntilChanged()
+      .onEach { request ->
+        if (request != lastExecutedRequest) {
+          searchContent(request)
+        }
+      }
       .launchIn(scope)
+  }
+
+  private fun updateSearchRequest(revisionDelta: Long = 0L) {
+    searchRequest.value = SearchRequest(
+      text = searchText.text,
+      matchCase = matchCaseOption.isSelected,
+      revision = searchRequest.value.revision + revisionDelta
+    )
+  }
+
+  internal fun findNextMatchIndex(matchedIndexList: List<Int>, lastPos: Int, searchDown: Boolean): Int {
+    val idx = Collections.binarySearch(matchedIndexList, lastPos)
+    val insertionPoint = if (idx >= 0) idx else -(idx + 1)
+    return if (searchDown) {
+      val next = if (idx >= 0) idx + 1 else insertionPoint
+      if (next in matchedIndexList.indices) next else 0
+    } else {
+      val prev = if (idx >= 0) idx - 1 else insertionPoint - 1
+      if (prev in matchedIndexList.indices) prev else matchedIndexList.lastIndex
+    }
   }
 
   private fun searchInDirection(searchDown: Boolean) {
     scope.launch {
-      val matchedIndexList = lastSearchJob?.await() ?: emptyList()
+      val currentRequest = searchRequest.value
+      val job = if (lastExecutedRequest != currentRequest) {
+        searchContent(currentRequest)
+      } else {
+        lastSearchJob
+      }
+      val matchedIndexList = job?.await() ?: emptyList()
       if (matchedIndexList.isEmpty()) return@launch
 
       val lastPos = if (lastSearchGoToPos != -1) lastSearchGoToPos else table.selectedRow
-      // find the nearest matched item index
-      val itemIndex = if (searchDown) {
-        matchedIndexList.indexOfFirst { it > lastPos }.takeIf { it != -1 } ?: 0
-      } else {
-        matchedIndexList.indexOfLast { it < lastPos }.takeIf { it != -1 } ?: matchedIndexList.lastIndex
-      }
+      val itemIndex = findNextMatchIndex(matchedIndexList, lastPos, searchDown)
       searchResult.text = " ${itemIndex + 1}/${matchedIndexList.size} "
       val targetCellPos = matchedIndexList[itemIndex]
       SwingUtils.scrollToVisible(table, targetCellPos)
-      val renderer = table.getDefaultRenderer(LogEntry::class.java) as LogCellRenderer
-      renderer.highlightLine(targetCellPos)
-      table.revalidate()
+      val renderer = table.getDefaultRenderer(LogEntry::class.java) as? LogCellRenderer
+      renderer?.highlightLine(targetCellPos)
       table.repaint()
       lastSearchGoToPos = targetCellPos
     }
   }
 
-  private fun matchCaseStateChanged() {
-    performSearchState.value = Any()
-  }
-
-  private fun searchContent() {
+  private fun searchContent(request: SearchRequest): Deferred<List<Int>> {
+    lastExecutedRequest = request
     lastSearchJob?.cancel()
     lastSearchGoToPos = -1
-    lastSearchJob = scope.async(Dispatchers.Default) {
-      val pattern = searchText.text
+
+    val job = scope.async(Dispatchers.Default) {
+      val pattern = request.text
       val filterResult = if (pattern.isNotBlank()) runCatching {
         Filter(
           "search",
           pattern,
           Color.RED,
           LogLevel.VERBOSE,
-          matchCaseOption.isSelected
+          request.matchCase
         )
       }.onFailure { Logger.error("create filter error", it) } else null
 
       val matchedEntries = mutableListOf<Int>()
-      val updatedRow = mutableListOf<Int>()
       for (index in 0 until table.model.rowCount) {
         val entry = table.model.getValueAt(index, 0) as LogEntry
         if (filterResult?.getOrNull()?.appliesTo(entry) == true) {
           matchedEntries += index
-          updatedRow += index
           entry.searchFilter = filterResult.getOrNull()
         } else {
           if (entry.searchFilter != null) {
-            updatedRow += index
             entry.searchFilter = null
           }
         }
       }
 
       withContext(Dispatchers.Main) {
-        searchResult.text =
-          if (filterResult?.isFailure == true) " ${I18n.get(I18n.SEARCH_BAD_PATTERN)} "
-          else "  ${I18n.format(I18n.SEARCH_RESULTS_COUNT, matchedEntries.size)}  "
-        updatedRow.forEach {
-          (table.model as AbstractTableModel).fireTableCellUpdated(it, 0)
+        searchResult.text = when {
+          filterResult?.isFailure == true -> " ${I18n.get(I18n.SEARCH_BAD_PATTERN)} "
+          pattern.isBlank() -> ""
+          else -> "  ${I18n.format(I18n.SEARCH_RESULTS_COUNT, matchedEntries.size)}  "
         }
+        table.repaint()
       }
       matchedEntries
     }
+    lastSearchJob = job
+    return job
   }
 
   private fun showSearch() {
