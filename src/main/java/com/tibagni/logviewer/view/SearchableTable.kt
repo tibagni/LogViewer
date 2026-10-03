@@ -63,6 +63,7 @@ class SearchableTable @JvmOverloads constructor(
   private var lastSearchGoToPos = -1
 
   init {
+    table.setDefaultRenderer(LogEntry::class.java, LogCellRenderer())
     buildUi()
     searchOptionPanel.isVisible = false
 
@@ -115,8 +116,7 @@ class SearchableTable @JvmOverloads constructor(
 
     table.selectionModel.addListSelectionListener {
       lastSearchGoToPos = -1
-      val renderer = table.getDefaultRenderer(LogEntry::class.java) as? LogCellRenderer
-      renderer?.highlightLine(-1)
+      LogCellRenderer.setHighlightLine(table, -1)
       table.repaint()
     }
 
@@ -171,8 +171,7 @@ class SearchableTable @JvmOverloads constructor(
       searchResult.text = " ${itemIndex + 1}/${matchedIndexList.size} "
       val targetCellPos = matchedIndexList[itemIndex]
       SwingUtils.scrollToVisible(table, targetCellPos)
-      val renderer = table.getDefaultRenderer(LogEntry::class.java) as? LogCellRenderer
-      renderer?.highlightLine(targetCellPos)
+      LogCellRenderer.setHighlightLine(table, targetCellPos)
       table.repaint()
       lastSearchGoToPos = targetCellPos
     }
@@ -200,18 +199,18 @@ class SearchableTable @JvmOverloads constructor(
       val totalRows = table.model.rowCount
       val matchedEntries = mutableListOf<Int>()
 
-      for (index in 0 until totalRows) {
-        if (!isActive) break
-        val entry = table.model.getValueAt(index, 0) as LogEntry
-        if (filter?.appliesTo(entry) == true) {
-          matchedEntries.add(index)
-          entry.searchFilter = filter
-        } else if (entry.searchFilter != null) {
-          entry.searchFilter = null
+      if (filter != null) {
+        for (index in 0 until totalRows) {
+          if (!isActive) break
+          val entry = table.model.getValueAt(index, 0) as LogEntry
+          if (filter.appliesTo(entry)) {
+            matchedEntries.add(index)
+          }
         }
       }
 
       withContext(Dispatchers.Main) {
+        LogCellRenderer.setSearchFilter(table, filter)
         searchResult.text = when {
           filterResult?.isFailure == true -> " ${I18n.get(I18n.SEARCH_BAD_PATTERN)} "
           pattern.isBlank() -> ""
@@ -244,6 +243,9 @@ class SearchableTable @JvmOverloads constructor(
     searchOptionPanel.isVisible = false
     searchText.text = ""
     matchCaseOption.isSelected = false
+    LogCellRenderer.setHighlightLine(table, -1)
+    LogCellRenderer.setSearchFilter(table, null)
+    table.repaint()
     table.requestFocus()
     revalidate()
   }
