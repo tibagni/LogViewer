@@ -4,9 +4,11 @@ import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogListTableModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
+import java.awt.event.KeyEvent
 import javax.swing.table.DefaultTableModel
 
 class SearchableTableTests {
@@ -171,5 +173,40 @@ class SearchableTableTests {
 
     // Table 2 should have NO searchFilter, despite sharing the exact same renderer instance
     assertNull("Table 2 should NOT have searchFilter", filter2)
+  }
+
+  @Test
+  fun testEnterAndShiftEnterNavigation() = runBlocking {
+    val model = LogListTableModel("Test")
+    val entries = (0 until 50).map { i ->
+      LogEntry(if (i % 10 == 0) "Target line $i" else "Line $i", LogLevel.VERBOSE, null)
+    }
+    model.setLogs(entries)
+    val table = SearchableTable(model)
+
+    // Execute search for "Target" (matches at 0, 10, 20, 30, 40)
+    table.searchContent(SearchableTable.SearchRequest("Target")).await()
+
+    // Send Enter (search down/next)
+    val enterEvent = KeyEvent(table.searchText, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED)
+    table.searchText.keyListeners.forEach { it.keyPressed(enterEvent) }
+    delay(100)
+    assertEquals(0, LogCellRenderer.getHighlightLine(table.table))
+
+    // Next Enter -> row 10
+    table.searchText.keyListeners.forEach { it.keyPressed(enterEvent) }
+    delay(100)
+    assertEquals(10, LogCellRenderer.getHighlightLine(table.table))
+
+    // Shift + Enter -> row 0
+    val shiftEnterEvent = KeyEvent(table.searchText, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), KeyEvent.SHIFT_DOWN_MASK, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED)
+    table.searchText.keyListeners.forEach { it.keyPressed(shiftEnterEvent) }
+    delay(100)
+    assertEquals(0, LogCellRenderer.getHighlightLine(table.table))
+
+    // Another Shift + Enter -> wraps to row 40
+    table.searchText.keyListeners.forEach { it.keyPressed(shiftEnterEvent) }
+    delay(100)
+    assertEquals(40, LogCellRenderer.getHighlightLine(table.table))
   }
 }
