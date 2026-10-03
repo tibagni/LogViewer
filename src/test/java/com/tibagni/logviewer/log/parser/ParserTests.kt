@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.log.parser
 
 import com.tibagni.logviewer.ProgressReporter
+import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogReader
 import com.tibagni.logviewer.log.LogStream
@@ -13,6 +14,8 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
+import com.tibagni.logviewer.filter.Filter
+import java.awt.Color
 import java.nio.charset.StandardCharsets
 
 class ParserTests {
@@ -108,6 +111,59 @@ class ParserTests {
         assertFalse(logParser.isLogLine("\tat com.android.server.am.ActivityManagerService.startProcess(ActivityManagerService.java:123)"))
         assertFalse(logParser.isLogLine("--------- beginning of main"))
         assertFalse(logParser.isLogLine(""))
+    }
+
+    @Test
+    fun testFindPid() {
+        // Standard threadtime format
+        assertEquals(3172, LogParser.findPid("10-12 22:33:46.839  3172  3172 V KeyguardStatusView: refresh statusview showing:true"))
+        assertEquals(2646, LogParser.findPid("10-12 22:32:50.264  2646  2664 I chatty  : uid=1000(system) batterystats-sy expire 13 lines"))
+        assertEquals(442, LogParser.findPid("10-13 03:00:11.066   442  8037 W vold    : Failed to open none: No such file or directory"))
+        assertEquals(18114, LogParser.findPid("10-13 12:27:59.318 18114 18114 E ActivityThread: Activity leaked"))
+
+        // Threadtime format with UID
+        assertEquals(2071, LogParser.findPid("10-04 15:53:01.303 1000 2071 2136 I ActivityManager: Start proc"))
+        assertEquals(2071, LogParser.findPid("10-04 15:53:01.303  1000  2071  2136 D Tag: Message"))
+
+        // PID-TID format
+        assertEquals(821, LogParser.findPid("01-06 20:46:26.091 821-2168/? V/ThermalMonitor: Foreground Application Changed"))
+        assertEquals(821, LogParser.findPid("01-06 20:46:42.501 821-2810/? I/ActivityManager: Process died"))
+        assertEquals(25175, LogParser.findPid("01-06 20:46:39.481 25175-25175/? E/AndroidRuntime: FATAL EXCEPTION: main"))
+        assertEquals(25175, LogParser.findPid("01-06 20:46:39.481 25175-25175 E/AndroidRuntime: FATAL EXCEPTION: main"))
+
+        // With 4-digit year and comma subseconds
+        assertEquals(2071, LogParser.findPid("2024-10-04 15:53:01.303  2071  2136 I Tag: Message"))
+        assertEquals(2071, LogParser.findPid("10-04 15:53:01,303  2071  2136 I Tag: Message"))
+
+        // Non-matching lines
+        assertEquals(-1, LogParser.findPid("Not a log line"))
+        assertEquals(-1, LogParser.findPid(""))
+        assertEquals(-1, LogParser.findPid(null))
+        assertEquals(-1, LogParser.findPid("\tat com.android.server.am.ActivityManagerService.startProcess(ActivityManagerService.java:123)"))
+        assertEquals(-1, LogParser.findPid("--------- beginning of main"))
+        assertEquals(-1, LogParser.findPid("10-04 15:53:01.303 Some message without pid tid or level"))
+    }
+
+    @Test
+    fun testPidFilterMatching() {
+        val pid = 2071
+        val pattern = LogParser.getFilterPatternForPid(pid)
+        val filter = Filter("PID $pid", pattern, Color.RED, LogLevel.VERBOSE, false)
+
+        fun entry(text: String) = LogEntry(text, LogLevel.DEBUG, null)
+
+        // Positive matches
+        assertTrue(filter.appliesTo(entry("10-04 15:53:01.303  2071  2136 I ActivityManager: Start proc")))
+        assertTrue(filter.appliesTo(entry("10-04 15:53:01.303 1000 2071 2136 I ActivityManager: Start proc")))
+        assertTrue(filter.appliesTo(entry("01-06 20:46:26.091 2071-2168/? V/ThermalMonitor: Message")))
+        assertTrue(filter.appliesTo(entry("2024-10-04 15:53:01.303  2071  2136 I Tag: Message")))
+
+        // Negative matches: PID appearing elsewhere
+        assertFalse(filter.appliesTo(entry("10-04 15:53:01.303  1000  2136 I ActivityManager: packet with 2071 bytes")))
+        assertFalse(filter.appliesTo(entry("10-04 15:53:01.303  1000  2071 I ActivityManager: TID match only")))
+        assertFalse(filter.appliesTo(entry("10-04 15:53:01.303  20710  2136 I ActivityManager: prefix PID")))
+        assertFalse(filter.appliesTo(entry("10-04 15:53:01.303  12071  2136 I ActivityManager: suffix PID")))
+        assertFalse(filter.appliesTo(entry("01-06 20:46:26.091 20710-2168/? V/ThermalMonitor: Message")))
     }
 
     @Test

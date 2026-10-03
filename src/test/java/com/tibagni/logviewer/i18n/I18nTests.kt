@@ -70,6 +70,21 @@ class I18nTests {
   }
 
   @Test
+  fun testFilterByPidFormatting() {
+    val originalLocale = I18n.getLocale()
+    try {
+      // Caller is responsible for passing PID as a string without separators (e.g., pid.toString())
+      I18n.setLocale(Locale.US)
+      assertEquals("Filter by PID 9341", I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, 9341.toString()))
+
+      I18n.setLocale(Locale("pt", "BR"))
+      assertEquals("Filtrar por PID 9341", I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, 9341.toString()))
+    } finally {
+      I18n.setLocale(originalLocale)
+    }
+  }
+
+  @Test
   fun testFallbackToDefaultBundleWhenKeyIsMissingInSpecificLocale() {
     val originalLocale = I18n.getLocale()
     try {
@@ -108,7 +123,7 @@ class I18nTests {
           checkedKeysCount++
         }
       }
-      assertEquals(200, checkedKeysCount)
+      assertEquals(201, checkedKeysCount)
     } finally {
       I18n.setLocale(originalLocale)
     }

@@ -7,10 +7,12 @@ import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FilterDeduplicationDialog
 import com.tibagni.logviewer.filter.FilterDuplicateUtils
 import com.tibagni.logviewer.filter.FiltersList
+import com.tibagni.logviewer.filter.FilterException
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.filter.SearchFiltersDialog
 import com.tibagni.logviewer.log.*
+import com.tibagni.logviewer.log.parser.LogParser
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.StringUtils
@@ -522,13 +524,50 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
 
     if (selectedRows.size == 1) {
+      val entry = model.getValueAt(selectedRows[0], 0) as LogEntry
+      val pid = LogParser.findPid(entry.logText)
       popup.add(JSeparator())
+      if (pid > 0) {
+        popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
+          .addActionListener {
+            addFilterByPid(pid)
+          }
+      }
       popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER))
         .addActionListener {
-          val entry = model.getValueAt(selectedRows[0], 0) as LogEntry
           addFilterFromLogLine(entry.logText)
         }
     }
+  }
+
+  private fun resolveFilterGroup(): String? {
+    val groups = presenter.groups
+    var group = if (groups.size == 1) groups[0] else null
+    if (StringUtils.isEmpty(group)) {
+      val options = groups.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
+      val createNewOptionIdx = options.size - 1
+
+      val dialog =
+        SingleChoiceDialog(
+          I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_TITLE),
+          I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_MSG),
+          options,
+          createNewOptionIdx
+        )
+
+      val choice = dialog.show(mainView.parent)
+      group = when (choice) {
+        SingleChoiceDialog.DIALOG_CANCELLED -> null
+        createNewOptionIdx -> JOptionPane.showInputDialog(
+          mainView.parent,
+          I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
+          I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
+          JOptionPane.PLAIN_MESSAGE
+        )
+        else -> options[choice]
+      }
+    }
+    return group
   }
 
   private fun addFilterFromLogLine(logLine: String) {
@@ -536,34 +575,55 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       presenter.findDuplicateFilter(pattern, caseSensitive, null)
     }
     if (filter != null) {
-      val groups = presenter.groups
-      var group = if (groups.size == 1) groups[0] else null
-      if (StringUtils.isEmpty(group)) {
-        val options = groups.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
-        val createNewOptionIdx = options.size - 1
-
-        val dialog =
-          SingleChoiceDialog(
-            I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_TITLE),
-            I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_MSG),
-            options,
-            createNewOptionIdx
-          )
-
-        val choice = dialog.show(mainView.parent)
-        group = when (choice) {
-          SingleChoiceDialog.DIALOG_CANCELLED -> null
-          createNewOptionIdx -> JOptionPane.showInputDialog(
-            mainView.parent,
-            I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
-            I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
-            JOptionPane.PLAIN_MESSAGE
-          )
-          else -> options[choice]
-        }
-      }
+      val group = resolveFilterGroup()
       if (!StringUtils.isEmpty(group)) {
         presenter.addFilter(group, filter)
+      }
+    }
+  }
+
+  private fun addFilterByPid(pid: Int) {
+    val pattern = LogParser.getFilterPatternForPid(pid)
+    val name = "PID $pid"
+
+    val duplicateMatch = presenter.findDuplicateFilter(pattern, false, null)
+    if (duplicateMatch != null) {
+      val message = I18n.format(
+        I18n.FILTER_DUPLICATE_WARNING_MSG,
+        duplicateMatch.filter.patternString,
+        duplicateMatch.group
+      )
+      val choice = JOptionPane.showOptionDialog(
+        mainView.parent,
+        message,
+        I18n.get(I18n.FILTER_DUPLICATE_WARNING_TITLE),
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.WARNING_MESSAGE,
+        null,
+        arrayOf(I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY), I18n.get(I18n.COMMON_CANCEL)),
+        I18n.get(I18n.COMMON_CANCEL)
+      )
+      if (choice != 0) {
+        if (!duplicateMatch.filter.isApplied) {
+          duplicateMatch.filter.isApplied = true
+          presenter.applyFilters()
+        }
+        return
+      }
+    }
+
+    val group = resolveFilterGroup()
+    if (!StringUtils.isEmpty(group)) {
+      val color = EditFilterDialog.getRandomColor(ServiceLocator.themeManager.isDark)
+      try {
+        val filter = Filter(name, pattern, color, LogLevel.VERBOSE, false)
+        filter.isApplied = true
+        presenter.addFilter(group, filter)
+        if (!userPrefs.reapplyFiltersAfterEdit) {
+          presenter.applyFilters()
+        }
+      } catch (e: FilterException) {
+        Logger.error("Failed to create PID filter", e)
       }
     }
   }
@@ -619,6 +679,17 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           val removeItem = popup.add(I18n.get(I18n.LOGS_MY_LOGS_REMOVE))
           removeItem.addActionListener {
             presenter.removeFromMyLog(myLogsList.table.selectedRows)
+          }
+          if (myLogsList.table.selectedRowCount == 1) {
+            val entry = myLogsListTableModel.getValueAt(myLogsList.table.selectedRow, 0) as LogEntry
+            val pid = LogParser.findPid(entry.logText)
+            if (pid > 0) {
+              popup.add(JSeparator())
+              popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
+                .addActionListener {
+                  addFilterByPid(pid)
+                }
+            }
           }
           popup.show(myLogsList.table, e.x, e.y)
         }

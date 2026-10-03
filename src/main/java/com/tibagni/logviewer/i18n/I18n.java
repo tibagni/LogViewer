@@ -218,6 +218,7 @@ public final class I18n {
   public static final String LOGS_MENU_IGNORE_AFTER = "logs.menu.ignore_after";
   public static final String LOGS_MENU_ADD_TO_MY_LOGS = "logs.menu.add_to_my_logs";
   public static final String LOGS_MENU_CREATE_FILTER = "logs.menu.create_filter";
+  public static final String LOGS_MENU_FILTER_BY_PID = "logs.menu.filter_by_pid";
   public static final String LOGS_SELECT_FILTER_GROUP_TITLE = "logs.select_group.title";
   public static final String LOGS_SELECT_FILTER_GROUP_MSG = "logs.select_group.msg";
   public static final String LOGS_MY_LOGS_REMOVE = "logs.my_logs.remove";
