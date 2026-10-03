@@ -49,7 +49,7 @@ class SearchableTable @JvmOverloads constructor(
     private const val SEARCH_DEBOUNCE_MS = 250L
   }
 
-  private data class SearchRequest(
+  internal data class SearchRequest(
     val text: String = "",
     val matchCase: Boolean = false,
     val revision: Long = 0L
@@ -59,7 +59,7 @@ class SearchableTable @JvmOverloads constructor(
   private var lastSearchJob: Deferred<List<Int>>? = null
 
   private val searchRequest = MutableStateFlow(SearchRequest())
-  private var lastExecutedRequest: SearchRequest? = null
+  private var lastExecutedRequest: SearchRequest? = SearchRequest()
   private var lastSearchGoToPos = -1
 
   init {
@@ -126,7 +126,9 @@ class SearchableTable @JvmOverloads constructor(
       }
       .distinctUntilChanged()
       .onEach { request ->
-        if (request != lastExecutedRequest) {
+        val wasSearching = !lastExecutedRequest?.text.isNullOrBlank()
+        val isSearching = request.text.isNotBlank()
+        if (request != lastExecutedRequest && (isSearching || wasSearching)) {
           searchContent(request)
         }
       }
@@ -176,7 +178,8 @@ class SearchableTable @JvmOverloads constructor(
     }
   }
 
-  private fun searchContent(request: SearchRequest): Deferred<List<Int>> {
+  internal fun searchContent(request: SearchRequest): Deferred<List<Int>> {
+    searchRequest.value = request
     lastExecutedRequest = request
     lastSearchJob?.cancel()
     lastSearchGoToPos = -1
@@ -193,16 +196,18 @@ class SearchableTable @JvmOverloads constructor(
         )
       }.onFailure { Logger.error("create filter error", it) } else null
 
+      val filter = filterResult?.getOrNull()
+      val totalRows = table.model.rowCount
       val matchedEntries = mutableListOf<Int>()
-      for (index in 0 until table.model.rowCount) {
+
+      for (index in 0 until totalRows) {
+        if (!isActive) break
         val entry = table.model.getValueAt(index, 0) as LogEntry
-        if (filterResult?.getOrNull()?.appliesTo(entry) == true) {
-          matchedEntries += index
-          entry.searchFilter = filterResult.getOrNull()
-        } else {
-          if (entry.searchFilter != null) {
-            entry.searchFilter = null
-          }
+        if (filter?.appliesTo(entry) == true) {
+          matchedEntries.add(index)
+          entry.searchFilter = filter
+        } else if (entry.searchFilter != null) {
+          entry.searchFilter = null
         }
       }
 
