@@ -27,6 +27,8 @@ public class LogParser {
       Pattern.compile("^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}");
   private static final Pattern LOG_TIMESTAMP_PATTERN =
       Pattern.compile("^(\\d{1,2})-(\\d{1,2})\\s(\\d{1,2}):(\\d{1,2}):(\\d{1,2}).(\\d{3,})");
+  private static final Pattern LOG_PID_PATTERN =
+      Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+\\d+|(\\d+)-\\d+(?:/\\S*)?)\\s+([VDIWEF])(?:[\\s/:]|$)");
 
   private LogReader logReader;
   private List<LogEntry> logEntries;
@@ -278,6 +280,27 @@ public class LogParser {
     }
 
     return timestamp;
+  }
+
+  public static int findPid(String logLine) {
+    if (StringUtils.isEmpty(logLine)) {
+      return -1;
+    }
+
+    Matcher matcher = LOG_PID_PATTERN.matcher(logLine);
+    if (matcher.find()) {
+      try {
+        String pidStr = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+        if (pidStr != null) {
+          return Integer.parseInt(pidStr);
+        }
+      } catch (NumberFormatException ignored) {}
+    }
+    return -1;
+  }
+
+  public static String getFilterPatternForPid(int pid) {
+    return "^\\s*\\S+\\s+\\S+\\s+(?:(?:\\d+\\s+)?" + pid + "\\s+\\d+\\s+|" + pid + "-)";
   }
 
   boolean isLogLine(String line) {

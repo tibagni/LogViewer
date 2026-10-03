@@ -256,11 +256,14 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     return null;
   }
 
-  private Color getInitialColor() {
-    // Set a random color for the filter initially
-    final Random r = new Random();
-    Color[] colors = themeManager.isDark() ? INITIAL_COLORS_DARK : INITIAL_COLORS_LIGHT;
+  public static Color getRandomColor(boolean isDark) {
+    Random r = new Random();
+    Color[] colors = isDark ? INITIAL_COLORS_DARK : INITIAL_COLORS_LIGHT;
     return colors[r.nextInt(colors.length)];
+  }
+
+  private Color getInitialColor() {
+    return getRandomColor(themeManager.isDark());
   }
 
   public static Filter showEditFilterDialog(Frame parent, Filter editingFilter, DuplicateCheckCallback duplicateCheckCallback) {
