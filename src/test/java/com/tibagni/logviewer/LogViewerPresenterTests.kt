@@ -2946,6 +2946,36 @@ class LogViewerPresenterTests {
     assertTrue(existingFilter.isApplied)
   }
 
+  @Test
+  fun testAddFilterForPidMultipleGroupsCancelled() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf("GroupA" to listOf(), "GroupB" to listOf())
+    )
+    `when`(view.showSelectFilterGroup(listOf("GroupA", "GroupB"))).thenReturn(null)
+    val dummyFilter = Filter("dummy", "dummy", Color.WHITE, LogLevel.VERBOSE)
+
+    presenter.addFilterForPid(1234)
+
+    verify(view).showSelectFilterGroup(listOf("GroupA", "GroupB"))
+    verify(mockFiltersRepository, never()).addFilter(anyNonNull(""), anyNonNull(dummyFilter))
+  }
+
+  @Test
+  fun testAddFilterForPidSingleGroupReapplyDisabled() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf("DefaultGroup" to listOf<Filter>())
+    )
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(emptyList())
+
+    presenter.addFilterForPid(1234)
+
+    val captor = org.mockito.ArgumentCaptor.forClass(Filter::class.java)
+    val dummyFilter = Filter("dummy", "dummy", Color.WHITE, LogLevel.VERBOSE)
+    verify(mockFiltersRepository).addFilter(eqNonNull("DefaultGroup"), captureNonNull(captor, dummyFilter))
+    verify(view).showFilteredLogs(anyNonNull(emptyList()))
+  }
+
   companion object {
     private const val TEST_SERIALIZED_FILTER = "Test,VGVzdA==,2,255:0:0"
     private const val TEST_SERIALIZED_FILTER2 = "Test2,VGVzdA==,2,255:0:0"

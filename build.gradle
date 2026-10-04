@@ -77,6 +77,7 @@ jacocoTestReport {
                     'com/tibagni/logviewer/filter/SearchFiltersTableModel*',
                     'com/tibagni/logviewer/filter/regex/RegexEditorDialog*',
                     'com/tibagni/logviewer/log/LogCellRenderer*',
+                    'com/tibagni/logviewer/log/LogLineDetailsDialog*',
                     'com/tibagni/logviewer/logger/*',
                     'com/tibagni/logviewer/preferences/LogViewerPreferencesDialog*',
                     'com/tibagni/logviewer/theme/*',
