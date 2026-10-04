@@ -476,11 +476,114 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun saveFilter(filtersGroup: String) = presenter.saveFilters(filtersGroup)
 
   private fun setupLogsContextActions() {
+    setupLogTableActions(
+      table = logList.table,
+      model = logListTableModel,
+      onDoubleClick = { _, clickedEntry ->
+        // go back to the filter list pos
+        if (clickedEntry.appliedFilter != null) {
+          var logIndex = -1
+          for (index in 0 until filteredLogList.table.rowCount) {
+            if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
+              logIndex = index
+              break
+            }
+          }
+          if (logIndex != -1) {
+            SwingUtils.scrollToVisible(filteredLogList.table, logIndex)
+            filteredLogList.table.setRowSelectionInterval(logIndex, logIndex)
+          }
+        }
+      },
+      addSelectionActions = { popup, selectedEntries ->
+        popup.add(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).addActionListener {
+          presenter.addLogEntriesToMyLogs(selectedEntries)
+        }
+      },
+      addExtraSingleEntryActions = { popup, singleEntry ->
+        popup.add(JSeparator())
+        popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_BEFORE)).addActionListener {
+          presenter.ignoreLogsBefore(singleEntry.index)
+        }
+        popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_AFTER)).addActionListener {
+          presenter.ignoreLogsAfter(singleEntry.index)
+        }
+      }
+    )
+  }
+
+  private fun setupFilteredLogsContextActions() {
+    setupLogTableActions(
+      table = filteredLogList.table,
+      model = filteredLogListTableModel,
+      onDoubleClick = { _, clickedEntry ->
+        val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
+        SwingUtils.scrollToVisible(logList.table, logIndex)
+        logList.table.setRowSelectionInterval(logIndex, logIndex)
+      },
+      addSelectionActions = { popup, selectedEntries ->
+        popup.add(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).addActionListener {
+          presenter.addLogEntriesToMyLogs(selectedEntries)
+        }
+      }
+    )
+  }
+
+  private fun setupMyLogsContextActions() {
+    setupLogTableActions(
+      table = myLogsList.table,
+      model = myLogsListTableModel,
+      onDoubleClick = { _, clickedEntry ->
+        // if it is filtered, first jump to the filtered log panel
+        var targetTable = logList.table
+        var targetIndex = -1
+        if (clickedEntry.appliedFilter != null) {
+          for (index in 0 until filteredLogList.table.rowCount) {
+            if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
+              targetIndex = index
+              break
+            }
+          }
+          targetTable = filteredLogList.table
+        }
+        if (targetIndex == -1) {
+          // if cannot go to the filtered list (not found or stream not shown), fallback to all logs
+          targetIndex = clickedEntry.index - presenter.visibleLogsOffset // Map to the visible index
+          targetTable = logList.table
+        }
+        if (targetIndex in 0 until targetTable.rowCount) {
+          SwingUtils.scrollToVisible(targetTable, targetIndex)
+          targetTable.setRowSelectionInterval(targetIndex, targetIndex)
+        }
+      },
+      addSelectionActions = { popup, _ ->
+        popup.add(I18n.get(I18n.LOGS_MY_LOGS_REMOVE)).addActionListener {
+          presenter.removeFromMyLog(myLogsList.table.selectedRows)
+        }
+      }
+    )
+
+    myLogsList.table.addKeyListener(object : KeyAdapter() {
+      override fun keyPressed(e: KeyEvent?) {
+        if (myLogsList.table.selectedRow != -1 && (e?.keyCode == KeyEvent.VK_DELETE)) {
+          presenter.removeFromMyLog(myLogsList.table.selectedRows)
+        }
+      }
+    })
+  }
+
+  private fun setupLogTableActions(
+    table: JTable,
+    model: LogListTableModel,
+    onDoubleClick: (selectedIndex: Int, clickedEntry: LogEntry) -> Unit,
+    addSelectionActions: (popup: JPopupMenu, selectedEntries: List<LogEntry>) -> Unit,
+    addExtraSingleEntryActions: ((popup: JPopupMenu, singleEntry: LogEntry) -> Unit)? = null
+  ) {
     val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
-    logList.table.registerKeyboardAction(
+    table.registerKeyboardAction(
       {
-        if (logList.table.selectedRowCount == 1) {
-          val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
+        if (table.selectedRowCount == 1) {
+          val entry = model.getValueAt(table.selectedRow, 0) as LogEntry
           showLogLineDetails(entry)
         }
       },
@@ -488,58 +591,29 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       JComponent.WHEN_FOCUSED
     )
 
-    logList.table.addMouseListener(object : MouseAdapter() {
+    table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
-          val selectedIndex = logList.table.selectedRow
-          val clickedEntry = logListTableModel.getValueAt(selectedIndex, 0) as LogEntry
-          // go back to the filter list pos
-          if (clickedEntry.appliedFilter != null) {
-            var logIndex = -1
-            for (index in 0 until filteredLogList.table.rowCount) {
-              if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
-                logIndex = index
-                break
-              }
-            }
-            if (logIndex != -1) {
-              SwingUtils.scrollToVisible(filteredLogList.table, logIndex)
-              filteredLogList.table.setRowSelectionInterval(logIndex, logIndex)
-            }
+          val selectedIndex = table.selectedRow
+          if (selectedIndex != -1) {
+            val clickedEntry = model.getValueAt(selectedIndex, 0) as LogEntry
+            onDoubleClick(selectedIndex, clickedEntry)
           }
-        } else if (SwingUtilities.isRightMouseButton(e) && logList.table.selectedRow != -1) {
+        } else if (SwingUtilities.isRightMouseButton(e) && table.selectedRow != -1) {
           val popup = JPopupMenu()
-          addCommonLogsContextActions(popup, logList.table.selectedRows, logListTableModel)
-          if (logList.table.selectedRowCount == 1) {
-            popup.add(JSeparator())
-            popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_BEFORE)).addActionListener {
-              val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
-              presenter.ignoreLogsBefore(entry.index)
-            }
+          val selectedEntries = table.selectedRows.map { model.getValueAt(it, 0) as LogEntry }
+          val singleEntry = selectedEntries.singleOrNull()
 
-            popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_AFTER)).addActionListener {
-              val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
-              presenter.ignoreLogsAfter(entry.index)
-            }
+          addSelectionActions(popup, selectedEntries)
+          if (singleEntry != null) {
+            addSingleLogLineContextActions(popup, singleEntry)
+            addExtraSingleEntryActions?.invoke(popup, singleEntry)
           }
 
-          popup.show(logList.table, e.x, e.y)
+          popup.show(table, e.x, e.y)
         }
       }
     })
-  }
-
-  private fun addCommonLogsContextActions(popup: JPopupMenu, selectedRows: IntArray, model: LogListTableModel) {
-    popup
-      .add(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS))
-      .addActionListener {
-        presenter.addLogEntriesToMyLogs(selectedRows.map { model.getValueAt(it, 0) as LogEntry })
-      }
-
-    if (selectedRows.size == 1) {
-      val entry = model.getValueAt(selectedRows[0], 0) as LogEntry
-      addSingleLogLineContextActions(popup, entry)
-    }
   }
 
   private fun addSingleLogLineContextActions(popup: JPopupMenu, entry: LogEntry) {
@@ -689,100 +763,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         }
       }
     }
-  }
-
-  private fun setupFilteredLogsContextActions() {
-    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
-    filteredLogList.table.registerKeyboardAction(
-      {
-        if (filteredLogList.table.selectedRowCount == 1) {
-          val entry = filteredLogListTableModel.getValueAt(filteredLogList.table.selectedRow, 0) as LogEntry
-          showLogLineDetails(entry)
-        }
-      },
-      inspectShortcut,
-      JComponent.WHEN_FOCUSED
-    )
-
-    filteredLogList.table.addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        if (e.clickCount == 2) {
-          val selectedIndex = filteredLogList.table.selectedRow
-          val clickedEntry = filteredLogListTableModel.getValueAt(selectedIndex, 0) as LogEntry
-          val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
-          SwingUtils.scrollToVisible(logList.table, logIndex)
-          logList.table.setRowSelectionInterval(logIndex, logIndex)
-        } else if (SwingUtilities.isRightMouseButton(e) && filteredLogList.table.selectedRow != -1) {
-          val popup = JPopupMenu()
-          addCommonLogsContextActions(popup, filteredLogList.table.selectedRows, filteredLogListTableModel)
-          popup.show(filteredLogList.table, e.x, e.y)
-        }
-      }
-    })
-  }
-
-  private fun setupMyLogsContextActions() {
-    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
-    myLogsList.table.registerKeyboardAction(
-      {
-        if (myLogsList.table.selectedRowCount == 1) {
-          val entry = myLogsListTableModel.getValueAt(myLogsList.table.selectedRow, 0) as LogEntry
-          showLogLineDetails(entry)
-        }
-      },
-      inspectShortcut,
-      JComponent.WHEN_FOCUSED
-    )
-
-    myLogsList.table.addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        if (e.clickCount == 2) {
-          val selectedIndex = myLogsList.table.selectedRow
-          val clickedEntry = myLogsListTableModel.getValueAt(selectedIndex, 0) as LogEntry
-
-          // if it is filtered, first jump to the filtered log panel
-          var targetTable = logList.table
-          var targetIndex = -1
-          if (clickedEntry.appliedFilter != null) {
-            for (index in 0 until filteredLogList.table.rowCount) {
-              if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
-                targetIndex = index
-                break
-              }
-            }
-            targetTable = filteredLogList.table
-          }
-          if (targetIndex == -1) {
-            // if cannot go to the filtered list (not found or stream not shown), fallback to all logs
-            targetIndex = clickedEntry.index - presenter.visibleLogsOffset // Map to the visible index
-            targetTable = logList.table
-          }
-          if (targetIndex in 0 until targetTable.rowCount) {
-            SwingUtils.scrollToVisible(targetTable, targetIndex)
-            targetTable.setRowSelectionInterval(targetIndex, targetIndex)
-          }
-        } else if (SwingUtilities.isRightMouseButton(e) && myLogsList.table.selectedRow != -1) {
-          val popup = JPopupMenu()
-          val removeItem = popup.add(I18n.get(I18n.LOGS_MY_LOGS_REMOVE))
-          removeItem.addActionListener {
-            presenter.removeFromMyLog(myLogsList.table.selectedRows)
-          }
-          if (myLogsList.table.selectedRowCount == 1) {
-            val entry = myLogsListTableModel.getValueAt(myLogsList.table.selectedRow, 0) as LogEntry
-            addSingleLogLineContextActions(popup, entry)
-          }
-          popup.show(myLogsList.table, e.x, e.y)
-        }
-      }
-    })
-
-    myLogsList.table.addKeyListener(object : KeyAdapter() {
-      override fun keyPressed(e: KeyEvent?) {
-        if (myLogsList.table.selectedRow != -1 && (e?.keyCode == KeyEvent.VK_DELETE)) {
-          presenter.removeFromMyLog(myLogsList.table.selectedRows)
-        }
-      }
-    })
   }
 
   override fun buildStreamsMenu(): JMenu? {
