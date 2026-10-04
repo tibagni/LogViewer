@@ -226,7 +226,7 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     }
   }
 
-  private Color getColorForLogLevel(LogLevel level) {
+  public static Color getColorForLogLevel(LogLevel level) {
     Color logColor = Color.LIGHT_GRAY;
     switch (level) {
       case VERBOSE:

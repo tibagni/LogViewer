@@ -6,6 +6,7 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -27,8 +28,6 @@ public class LogParser {
       Pattern.compile("^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}");
   private static final Pattern LOG_TIMESTAMP_PATTERN =
       Pattern.compile("^(\\d{1,2})-(\\d{1,2})\\s(\\d{1,2}):(\\d{1,2}):(\\d{1,2}).(\\d{3,})");
-  private static final Pattern LOG_PID_PATTERN =
-      Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+\\d+|(\\d+)-\\d+(?:/\\S*)?)\\s+([VDIWEF])(?:[\\s/:]|$)");
 
   private LogReader logReader;
   private List<LogEntry> logEntries;
@@ -56,7 +55,8 @@ public class LogParser {
         int progress = logsRead++ * 90 / availableLogs.size();
         progressReporter.onProgress(progress, "Reading " + log + "...");
         String logText = logReader.get(log);
-        List<LogEntry> logEntriesFromFile = getLogEntries(logText, log);
+        File logFile = logReader.getFile(log);
+        List<LogEntry> logEntriesFromFile = getLogEntries(logText, log, logFile);
 
         if (!logEntriesFromFile.isEmpty()) {
           logEntries.addAll(logEntriesFromFile);
@@ -126,15 +126,22 @@ public class LogParser {
   }
 
   private List<LogEntry> getLogEntries(String logText, String logPath) {
+    return getLogEntries(logText, logPath, null);
+  }
+
+  private List<LogEntry> getLogEntries(String logText, String logPath, File logFile) {
     LogStream logStream = LogStream.inferLogStreamFromName(logPath);
     List<LogEntry> logLines = new ArrayList<>();
 
     String currentLogLine = null;
+    int currentLineNumber = 0;
     StringBuilder continuationBuilder = null;
 
     int textLen = logText.length();
     int start = 0;
+    int rawLineNumber = 0;
     while (start < textLen) {
+      rawLineNumber++;
       int end = logText.indexOf('\n', start);
       if (end < 0) {
         end = textLen;
@@ -155,13 +162,14 @@ public class LogParser {
 
       if (isLogLine(line)) {
         if (continuationBuilder != null) {
-          logLines.add(createLogEntry(continuationBuilder.toString(), logStream));
+          logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
           continuationBuilder = null;
         } else if (currentLogLine != null) {
-          logLines.add(createLogEntry(currentLogLine, logStream));
+          logLines.add(createLogEntry(currentLogLine, logStream, logFile, currentLineNumber));
         }
 
         currentLogLine = line;
+        currentLineNumber = rawLineNumber;
       } else if (!shouldIgnoreLine(line) && currentLogLine != null) {
         // This is probably a continuation of a already started log line. Append to it
         if (continuationBuilder == null) {
@@ -192,7 +200,7 @@ public class LogParser {
 
           // We are done with this line, add it to the list and clear currentLogLine to avoid
           // executing this same code over and over for invalid lines
-          logLines.add(createLogEntry(continuationBuilder.toString(), logStream));
+          logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
           continuationBuilder = null;
           currentLogLine = null;
 
@@ -205,16 +213,20 @@ public class LogParser {
 
     // Make sure to add the last log line as well
     if (continuationBuilder != null) {
-      logLines.add(createLogEntry(continuationBuilder.toString(), logStream));
+      logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
     } else if (currentLogLine != null) {
-      logLines.add(createLogEntry(currentLogLine, logStream));
+      logLines.add(createLogEntry(currentLogLine, logStream, logFile, currentLineNumber));
     }
 
     return logLines;
   }
 
   private LogEntry createLogEntry(String logLine, LogStream logStream) {
-    return new LogEntry(logLine, findLogLevel(logLine), findTimestamp(logLine), logStream);
+    return createLogEntry(logLine, logStream, null, 0);
+  }
+
+  private LogEntry createLogEntry(String logLine, LogStream logStream, File sourceFile, int lineNumber) {
+    return new LogEntry(logLine, findLogLevel(logLine), findTimestamp(logLine), logStream, sourceFile, lineNumber);
   }
 
   LogLevel findLogLevel(String logLine) {
@@ -280,27 +292,6 @@ public class LogParser {
     }
 
     return timestamp;
-  }
-
-  public static int findPid(String logLine) {
-    if (StringUtils.isEmpty(logLine)) {
-      return -1;
-    }
-
-    Matcher matcher = LOG_PID_PATTERN.matcher(logLine);
-    if (matcher.find()) {
-      try {
-        String pidStr = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
-        if (pidStr != null) {
-          return Integer.parseInt(pidStr);
-        }
-      } catch (NumberFormatException ignored) {}
-    }
-    return -1;
-  }
-
-  public static String getFilterPatternForPid(int pid) {
-    return "^\\s*\\S+\\s+\\S+\\s+(?:(?:\\d+\\s+)?" + pid + "\\s+\\d+\\s+|" + pid + "-)";
   }
 
   boolean isLogLine(String line) {

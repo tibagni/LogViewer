@@ -12,7 +12,6 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.filter.FiltersList.FiltersListener
 import com.tibagni.logviewer.filter.SearchFiltersDialog
 import com.tibagni.logviewer.log.*
-import com.tibagni.logviewer.log.parser.LogParser
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.StringUtils
@@ -72,6 +71,8 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun collapseAllGroups()
   fun showInfoMessage(title: String, message: String)
   fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>?
+  fun showDuplicateFilterWarning(duplicatePattern: String, duplicateGroup: String): Boolean
+  fun showSelectFilterGroup(groups: List<String>): String?
   fun showToast(message: String)
 }
 
@@ -475,6 +476,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun saveFilter(filtersGroup: String) = presenter.saveFilters(filtersGroup)
 
   private fun setupLogsContextActions() {
+    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
+    logList.table.registerKeyboardAction(
+      {
+        if (logList.table.selectedRowCount == 1) {
+          val entry = logListTableModel.getValueAt(logList.table.selectedRow, 0) as LogEntry
+          showLogLineDetails(entry)
+        }
+      },
+      inspectShortcut,
+      JComponent.WHEN_FOCUSED
+    )
+
     logList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
@@ -525,49 +538,79 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     if (selectedRows.size == 1) {
       val entry = model.getValueAt(selectedRows[0], 0) as LogEntry
-      val pid = LogParser.findPid(entry.logText)
-      popup.add(JSeparator())
-      if (pid > 0) {
-        popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
-          .addActionListener {
-            addFilterByPid(pid)
-          }
-      }
-      popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER))
-        .addActionListener {
-          addFilterFromLogLine(entry.logText)
-        }
+      addSingleLogLineContextActions(popup, entry)
     }
   }
 
-  private fun resolveFilterGroup(): String? {
-    val groups = presenter.groups
-    var group = if (groups.size == 1) groups[0] else null
-    if (StringUtils.isEmpty(group)) {
-      val options = groups.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
-      val createNewOptionIdx = options.size - 1
-
-      val dialog =
-        SingleChoiceDialog(
-          I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_TITLE),
-          I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_MSG),
-          options,
-          createNewOptionIdx
-        )
-
-      val choice = dialog.show(mainView.parent)
-      group = when (choice) {
-        SingleChoiceDialog.DIALOG_CANCELLED -> null
-        createNewOptionIdx -> JOptionPane.showInputDialog(
-          mainView.parent,
-          I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
-          I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
-          JOptionPane.PLAIN_MESSAGE
-        )
-        else -> options[choice]
+  private fun addSingleLogLineContextActions(popup: JPopupMenu, entry: LogEntry) {
+    val info = presenter.getLogLineInfo(entry)
+    popup.add(JSeparator())
+    popup.add(I18n.get(I18n.LOGS_MENU_LOG_DETAILS))
+      .addActionListener {
+        showLogLineDetails(entry)
       }
+    val pid = info?.pid
+    if (pid != null && pid > 0) {
+      popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
+        .addActionListener {
+          presenter.addFilterForPid(pid)
+        }
     }
-    return group
+    val tag = info?.tag
+    if (!tag.isNullOrBlank()) {
+      popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, tag))
+        .addActionListener {
+          presenter.addFilterForTag(tag)
+        }
+    }
+    popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER))
+      .addActionListener {
+        addFilterFromLogLine(entry.logText)
+      }
+  }
+
+  override fun showDuplicateFilterWarning(duplicatePattern: String, duplicateGroup: String): Boolean {
+    val message = I18n.format(
+      I18n.FILTER_DUPLICATE_WARNING_MSG,
+      duplicatePattern,
+      duplicateGroup
+    )
+    val choice = JOptionPane.showOptionDialog(
+      mainView.parent,
+      message,
+      I18n.get(I18n.FILTER_DUPLICATE_WARNING_TITLE),
+      JOptionPane.YES_NO_OPTION,
+      JOptionPane.WARNING_MESSAGE,
+      null,
+      arrayOf(I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY), I18n.get(I18n.COMMON_CANCEL)),
+      I18n.get(I18n.COMMON_CANCEL)
+    )
+    return choice == 0
+  }
+
+  override fun showSelectFilterGroup(groups: List<String>): String? {
+    val options = groups.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
+    val createNewOptionIdx = options.size - 1
+
+    val dialog =
+      SingleChoiceDialog(
+        I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_TITLE),
+        I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_MSG),
+        options,
+        createNewOptionIdx
+      )
+
+    val choice = dialog.show(mainView.parent)
+    return when (choice) {
+      SingleChoiceDialog.DIALOG_CANCELLED -> null
+      createNewOptionIdx -> JOptionPane.showInputDialog(
+        mainView.parent,
+        I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
+        I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
+        JOptionPane.PLAIN_MESSAGE
+      )
+      else -> options[choice]
+    }
   }
 
   private fun addFilterFromLogLine(logLine: String) {
@@ -575,60 +618,92 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       presenter.findDuplicateFilter(pattern, caseSensitive, null)
     }
     if (filter != null) {
-      val group = resolveFilterGroup()
+      val groups = presenter.groups
+      val group = if (groups.size == 1) groups[0] else showSelectFilterGroup(groups)
       if (!StringUtils.isEmpty(group)) {
         presenter.addFilter(group, filter)
       }
     }
   }
 
-  private fun addFilterByPid(pid: Int) {
-    val pattern = LogParser.getFilterPatternForPid(pid)
-    val name = "PID $pid"
-
-    val duplicateMatch = presenter.findDuplicateFilter(pattern, false, null)
-    if (duplicateMatch != null) {
-      val message = I18n.format(
-        I18n.FILTER_DUPLICATE_WARNING_MSG,
-        duplicateMatch.filter.patternString,
-        duplicateMatch.group
+  private fun showLogLineDetails(entry: LogEntry) {
+    try {
+      val info = presenter.getLogLineInfo(entry) ?: return
+      val dialog = LogLineDetailsDialog(
+        owner = mainView.parent,
+        info = info,
+        onFilterByPid = { pid -> presenter.addFilterForPid(pid) },
+        onFilterByTag = { tag -> presenter.addFilterForTag(tag) },
+        onOpenInEditor = { file, line -> openInEditor(file, line) }
       )
-      val choice = JOptionPane.showOptionDialog(
-        mainView.parent,
-        message,
-        I18n.get(I18n.FILTER_DUPLICATE_WARNING_TITLE),
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.WARNING_MESSAGE,
-        null,
-        arrayOf(I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY), I18n.get(I18n.COMMON_CANCEL)),
-        I18n.get(I18n.COMMON_CANCEL)
-      )
-      if (choice != 0) {
-        if (!duplicateMatch.filter.isApplied) {
-          duplicateMatch.filter.isApplied = true
-          presenter.applyFilters()
-        }
-        return
-      }
+      dialog.isVisible = true
+    } catch (e: Exception) {
+      Logger.error("Failed to show log line details dialog", e)
     }
+  }
 
-    val group = resolveFilterGroup()
-    if (!StringUtils.isEmpty(group)) {
-      val color = EditFilterDialog.getRandomColor(ServiceLocator.themeManager.isDark)
+  private fun openInEditor(file: File, @Suppress("UNUSED_PARAMETER") line: Int) {
+    val preferredEditor = ServiceLocator.logViewerPrefs.preferredTextEditor
+    if (preferredEditor != null && preferredEditor.exists()) {
       try {
-        val filter = Filter(name, pattern, color, LogLevel.VERBOSE, false)
-        filter.isApplied = true
-        presenter.addFilter(group, filter)
-        if (!userPrefs.reapplyFiltersAfterEdit) {
-          presenter.applyFilters()
+        val process = ProcessBuilder(preferredEditor.absolutePath, file.absolutePath).start()
+        Logger.debug("Opened $file using $preferredEditor: $process")
+        return
+      } catch (ex: Exception) {
+        Logger.error("Failed to open file using editor $preferredEditor", ex)
+        JOptionPane.showMessageDialog(
+          mainView.parent,
+          I18n.format(I18n.LOG_DETAILS_OPEN_EDITOR_ERROR, preferredEditor.absolutePath),
+          I18n.get(I18n.COMMON_ERROR),
+          JOptionPane.ERROR_MESSAGE
+        )
+      }
+    } else {
+      if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+        try {
+          Desktop.getDesktop().open(file)
+          return
+        } catch (ex: Exception) {
+          Logger.warning("Desktop.open failed for $file", ex)
         }
-      } catch (e: FilterException) {
-        Logger.error("Failed to create PID filter", e)
+      }
+
+      val input = JOptionPane.showConfirmDialog(
+        mainView.parent,
+        I18n.get(I18n.LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG),
+        I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
+        JOptionPane.YES_NO_OPTION
+      )
+
+      if (input == JOptionPane.YES_OPTION) {
+        val fileChooser = JFileChooser()
+        val result = fileChooser.showOpenDialog(mainView.parent)
+        if (result == JFileChooser.APPROVE_OPTION) {
+          val newPreferredEditor = fileChooser.selectedFile
+          ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
+          try {
+            ProcessBuilder(newPreferredEditor.absolutePath, file.absolutePath).start()
+          } catch (ex: Exception) {
+            Logger.error("Failed to open file using newly selected editor $newPreferredEditor", ex)
+          }
+        }
       }
     }
   }
 
   private fun setupFilteredLogsContextActions() {
+    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
+    filteredLogList.table.registerKeyboardAction(
+      {
+        if (filteredLogList.table.selectedRowCount == 1) {
+          val entry = filteredLogListTableModel.getValueAt(filteredLogList.table.selectedRow, 0) as LogEntry
+          showLogLineDetails(entry)
+        }
+      },
+      inspectShortcut,
+      JComponent.WHEN_FOCUSED
+    )
+
     filteredLogList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
@@ -647,6 +722,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun setupMyLogsContextActions() {
+    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
+    myLogsList.table.registerKeyboardAction(
+      {
+        if (myLogsList.table.selectedRowCount == 1) {
+          val entry = myLogsListTableModel.getValueAt(myLogsList.table.selectedRow, 0) as LogEntry
+          showLogLineDetails(entry)
+        }
+      },
+      inspectShortcut,
+      JComponent.WHEN_FOCUSED
+    )
+
     myLogsList.table.addMouseListener(object : MouseAdapter() {
       override fun mouseClicked(e: MouseEvent) {
         if (e.clickCount == 2) {
@@ -682,14 +769,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
           }
           if (myLogsList.table.selectedRowCount == 1) {
             val entry = myLogsListTableModel.getValueAt(myLogsList.table.selectedRow, 0) as LogEntry
-            val pid = LogParser.findPid(entry.logText)
-            if (pid > 0) {
-              popup.add(JSeparator())
-              popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
-                .addActionListener {
-                  addFilterByPid(pid)
-                }
-            }
+            addSingleLogLineContextActions(popup, entry)
           }
           popup.show(myLogsList.table, e.x, e.y)
         }

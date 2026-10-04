@@ -15,12 +15,32 @@ import java.util.Set;
 public class FileLogReader implements LogReader {
   private File[] logFiles;
   private Map<String, String> logStrings;
+  private Map<String, File> logFilesMap;
 
   private boolean isClosed;
 
   public FileLogReader(File[] logFiles) {
     this.logFiles = logFiles;
     this.logStrings = new HashMap<>();
+    this.logFilesMap = new HashMap<>();
+    if (logFiles != null) {
+      for (File file : logFiles) {
+        if (file != null) {
+          logFilesMap.put(file.getPath(), file);
+        }
+      }
+    }
+  }
+
+  @Override
+  public File getFile(String logName) {
+    if (logFilesMap != null) {
+      File f = logFilesMap.get(logName);
+      if (f != null) {
+        return f;
+      }
+    }
+    return new File(logName);
   }
 
   @Override
@@ -92,6 +112,11 @@ public class FileLogReader implements LogReader {
 
     logStrings.clear();
     logStrings = null;
+
+    if (logFilesMap != null) {
+      logFilesMap.clear();
+      logFilesMap = null;
+    }
 
     logFiles = null;
   }

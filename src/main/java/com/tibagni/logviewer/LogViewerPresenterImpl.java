@@ -15,6 +15,13 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
+import com.tibagni.logviewer.filter.EditFilterDialog;
+import com.tibagni.logviewer.filter.FilterException;
+import com.tibagni.logviewer.log.LogLevel;
+import com.tibagni.logviewer.log.LogLineInfo;
+import com.tibagni.logviewer.log.LogLineParser;
+
+import java.awt.Color;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -982,6 +989,62 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     applyFilters();
+  }
+
+  @Override
+  public LogLineInfo getLogLineInfo(LogEntry entry) {
+    return LogLineParser.parseLineInfo(entry);
+  }
+
+  @Override
+  public void addFilterForPid(int pid) {
+    addQuickFilter("PID " + pid, LogLineParser.getFilterPatternForPid(pid));
+  }
+
+  @Override
+  public void addFilterForTag(String tag) {
+    addQuickFilter(tag, LogLineParser.getFilterPatternForTag(tag));
+  }
+
+  private void addQuickFilter(String name, String pattern) {
+    FilterMatch duplicateMatch = findDuplicateFilter(pattern, false, null);
+    if (duplicateMatch != null) {
+      boolean addAnyway = view.showDuplicateFilterWarning(
+          duplicateMatch.getFilter().getPatternString(),
+          duplicateMatch.getGroup()
+      );
+      if (!addAnyway) {
+        if (!duplicateMatch.getFilter().isApplied()) {
+          duplicateMatch.getFilter().setApplied(true);
+          applyFilters();
+        }
+        return;
+      }
+    }
+
+    List<String> groups = getGroups();
+    String group;
+    if (groups.size() == 1) {
+      group = groups.get(0);
+    } else {
+      group = view.showSelectFilterGroup(groups);
+    }
+
+    if (StringUtils.isEmpty(group)) {
+      return;
+    }
+
+    Color color = EditFilterDialog.getRandomColor(ServiceLocator.INSTANCE.getThemeManager().isDark());
+    try {
+      Filter filter = new Filter(name, pattern, color, LogLevel.VERBOSE, false);
+      filter.setApplied(true);
+      addFilter(group, filter);
+      if (!userPrefs.getReapplyFiltersAfterEdit()) {
+        applyFilters();
+      }
+    } catch (FilterException e) {
+      Logger.error("Failed to create quick filter: " + name, e);
+    }
   }
 
   // Test helpers

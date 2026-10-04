@@ -219,6 +219,35 @@ public final class I18n {
   public static final String LOGS_MENU_ADD_TO_MY_LOGS = "logs.menu.add_to_my_logs";
   public static final String LOGS_MENU_CREATE_FILTER = "logs.menu.create_filter";
   public static final String LOGS_MENU_FILTER_BY_PID = "logs.menu.filter_by_pid";
+  public static final String LOGS_MENU_FILTER_BY_TAG = "logs.menu.filter_by_tag";
+  public static final String LOGS_MENU_LOG_DETAILS = "logs.menu.log_details";
+
+  // Log Line Details Dialog
+  public static final String LOG_DETAILS_TITLE = "logs.details.title";
+  public static final String LOG_DETAILS_SOURCE_SECTION = "logs.details.source_section";
+  public static final String LOG_DETAILS_METADATA_SECTION = "logs.details.metadata_section";
+  public static final String LOG_DETAILS_MESSAGE_SECTION = "logs.details.message_section";
+  public static final String LOG_DETAILS_FILE_NAME = "logs.details.file_name";
+  public static final String LOG_DETAILS_FILE_PATH = "logs.details.file_path";
+  public static final String LOG_DETAILS_LINE_NUMBER = "logs.details.line_number";
+  public static final String LOG_DETAILS_LOG_INDEX = "logs.details.log_index";
+  public static final String LOG_DETAILS_STREAM = "logs.details.stream";
+  public static final String LOG_DETAILS_TIMESTAMP = "logs.details.timestamp";
+  public static final String LOG_DETAILS_LEVEL = "logs.details.level";
+  public static final String LOG_DETAILS_PID = "logs.details.pid";
+  public static final String LOG_DETAILS_TID = "logs.details.tid";
+  public static final String LOG_DETAILS_TAG = "logs.details.tag";
+  public static final String LOG_DETAILS_FILTER = "logs.details.filter";
+  public static final String LOG_DETAILS_COPY_PATH = "logs.details.copy_path";
+  public static final String LOG_DETAILS_COPY_LINE = "logs.details.copy_line";
+  public static final String LOG_DETAILS_COPY_MESSAGE = "logs.details.copy_message";
+  public static final String LOG_DETAILS_COPY_TAG = "logs.details.copy_tag";
+  public static final String LOG_DETAILS_OPEN_EDITOR = "logs.details.open_editor";
+  public static final String LOG_DETAILS_BTN_FILTER_PID = "logs.details.btn_filter_pid";
+  public static final String LOG_DETAILS_BTN_FILTER_TAG = "logs.details.btn_filter_tag";
+  public static final String LOG_DETAILS_OPEN_EDITOR_ERROR = "logs.details.open_editor_error";
+  public static final String LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG = "logs.details.no_editor_msg";
+  public static final String LOG_DETAILS_COPIED_NOTIFICATION = "logs.details.copied_notification";
   public static final String LOGS_SELECT_FILTER_GROUP_TITLE = "logs.select_group.title";
   public static final String LOGS_SELECT_FILTER_GROUP_MSG = "logs.select_group.msg";
   public static final String LOGS_MY_LOGS_REMOVE = "logs.my_logs.remove";

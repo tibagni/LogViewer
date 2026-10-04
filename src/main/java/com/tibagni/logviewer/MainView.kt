@@ -8,6 +8,7 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
+import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.JFileChooserExt
@@ -246,17 +247,7 @@ class MainViewImpl(
   private fun configureMenuBar() {
     val menuBar = JMenuBar()
 
-    // Toolkit.getMenuShortcutKeyMaskEx() was introduced in Java 10. To maintain backwards compatibility
-    // with Java 8 runtimes without throwing NoSuchMethodError or triggering compile-time deprecation
-    // warnings on modern JDKs, use reflection to invoke getMenuShortcutKeyMaskEx() if available and
-    // fall back to getMenuShortcutKeyMask() on Java 8.
-    val menuShortcutMask = try {
-      val method = Toolkit::class.java.getMethod("getMenuShortcutKeyMaskEx")
-      method.invoke(Toolkit.getDefaultToolkit()) as Int
-    } catch (e: Exception) {
-      @Suppress("DEPRECATION")
-      Toolkit.getDefaultToolkit().menuShortcutKeyMask
-    }
+    val menuShortcutMask = SwingUtils.getMenuShortcutKeyMask()
 
     val fileMenu = JMenu(I18n.get(I18n.MENU_FILE))
     fileMenu.setMnemonic('F')

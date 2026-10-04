@@ -38,4 +38,24 @@ class ButtonsPaneTests {
     pane.enableCancelButton(false) // Safe when buttonCancel is null
     assertNotNull(pane)
   }
+
+  @Test
+  fun testSetDefaultButtonWhenUnattachedDoesNotThrow() {
+    val listener = mock(ButtonsPane.Listener::class.java)
+    val pane = ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, listener)
+    // Should not throw NPE when getRootPane() is null
+    pane.setDefaultButtonOk()
+    pane.setDefaultButtonCancel()
+  }
+
+  @Test
+  fun testSetDefaultButtonWhenAttachedToRootPane() {
+    val listener = mock(ButtonsPane.Listener::class.java)
+    val pane = ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, listener)
+    val rootPane = javax.swing.JRootPane()
+    rootPane.contentPane.add(pane)
+
+    pane.setDefaultButtonOk()
+    assertNotNull(rootPane.defaultButton)
+  }
 }

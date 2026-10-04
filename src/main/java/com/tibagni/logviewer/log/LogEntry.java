@@ -4,6 +4,7 @@ import com.tibagni.logviewer.filter.Filter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.Objects;
 
 public class LogEntry implements Comparable<LogEntry> {
@@ -13,6 +14,9 @@ public class LogEntry implements Comparable<LogEntry> {
   public final String logText;
   public final LogLevel logLevel;
   public final LogStream logStream;
+  @Nullable
+  private final File sourceFile;
+  private final int lineNumber;
 
   private Filter appliedFilter;
 
@@ -21,14 +25,21 @@ public class LogEntry implements Comparable<LogEntry> {
   }
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, String logName) {
-    this(logText, logLevel, timestamp, LogStream.inferLogStreamFromName(logName));
+    this(logText, logLevel, timestamp, LogStream.inferLogStreamFromName(logName), null, 0);
   }
 
   public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, LogStream logStream) {
+    this(logText, logLevel, timestamp, logStream, null, 0);
+  }
+
+  public LogEntry(String logText, LogLevel logLevel, LogTimestamp timestamp, LogStream logStream,
+                  @Nullable File sourceFile, int lineNumber) {
     this.logText = logText;
     this.logLevel = logLevel;
     this.timestamp = timestamp;
     this.logStream = logStream != null ? logStream : LogStream.UNKNOWN;
+    this.sourceFile = sourceFile;
+    this.lineNumber = lineNumber;
   }
 
   public String getLogText() {
@@ -59,6 +70,15 @@ public class LogEntry implements Comparable<LogEntry> {
     return logStream;
   }
 
+  @Nullable
+  public File getSourceFile() {
+    return sourceFile;
+  }
+
+  public int getLineNumber() {
+    return lineNumber;
+  }
+
   public int getLength() {
     return logText.length();
   }
@@ -85,6 +105,8 @@ public class LogEntry implements Comparable<LogEntry> {
     if (o == null || getClass() != o.getClass()) return false;
     LogEntry logEntry = (LogEntry) o;
     return index == logEntry.index &&
+        lineNumber == logEntry.lineNumber &&
+        Objects.equals(sourceFile, logEntry.sourceFile) &&
         Objects.equals(timestamp, logEntry.timestamp) &&
         Objects.equals(logText, logEntry.logText) &&
         logLevel == logEntry.logLevel &&
@@ -93,6 +115,6 @@ public class LogEntry implements Comparable<LogEntry> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(index, timestamp, logText, logLevel, logStream);
+    return Objects.hash(index, timestamp, logText, logLevel, logStream, sourceFile, lineNumber);
   }
 }

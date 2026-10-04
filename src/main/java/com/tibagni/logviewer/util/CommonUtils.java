@@ -54,4 +54,14 @@ public class CommonUtils {
 
     return "empty";
   }
+
+  public static void copyToClipboard(String text) {
+    if (text == null) return;
+    try {
+      java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(text);
+      java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+    } catch (Exception e) {
+      Logger.error("Failed to copy text to clipboard", e);
+    }
+  }
 }

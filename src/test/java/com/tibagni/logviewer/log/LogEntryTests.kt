@@ -97,4 +97,22 @@ class LogEntryTests {
     assertEquals(entry1, entry2)
     assertEquals(LogStream.UNKNOWN, entryNullStream.logStream)
   }
+
+  @Test
+  fun testLogEntryWithSourceFileAndLineNumber() {
+    val file1 = java.io.File("/path/to/log1.txt")
+    val file2 = java.io.File("/path/to/log2.txt")
+    val entry1 = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), LogStream.MAIN, file1, 42)
+    val entry2 = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), LogStream.MAIN, file1, 42)
+    val entryDifferentLine = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), LogStream.MAIN, file1, 99)
+    val entryDifferentFile = LogEntry("Text1", LogLevel.DEBUG, LogTimestamp(9, 1, 8, 0, 0, 0), LogStream.MAIN, file2, 42)
+
+    assertEquals(file1, entry1.sourceFile)
+    assertEquals(42, entry1.lineNumber)
+    assertEquals(entry1, entry2)
+    assertEquals(entry1.hashCode(), entry2.hashCode())
+
+    assertNotEquals(entry1, entryDifferentLine)
+    assertNotEquals(entry1, entryDifferentFile)
+  }
 }
