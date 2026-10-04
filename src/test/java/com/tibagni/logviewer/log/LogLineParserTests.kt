@@ -181,4 +181,13 @@ class LogLineParserTests {
         assertNotNull(infoWithPid)
         assertEquals(9341, infoWithPid!!.pid)
     }
+
+    @Test
+    fun testParseLineInfoNullAndEmpty() {
+        assertNull(LogLineParser.parseLineInfo(null))
+        val entryNullText = LogEntry(null, LogLevel.DEBUG, null)
+        val infoNullText = LogLineParser.parseLineInfo(entryNullText)
+        assertNotNull(infoNullText)
+        assertEquals("", infoNullText!!.message)
+    }
 }
