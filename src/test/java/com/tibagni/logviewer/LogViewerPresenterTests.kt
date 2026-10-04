@@ -51,6 +51,18 @@ class LogViewerPresenterTests {
    */
   private fun <T> anyOrNull(): T = Mockito.any<T>()
   private fun <T> eqOrNull(value: T): T = eq<T>(value)
+  private fun <T : Any> anyNonNull(default: T): T {
+    Mockito.any<T>()
+    return default
+  }
+  private fun <T : Any> eqNonNull(value: T): T {
+    Mockito.eq(value)
+    return value
+  }
+  private fun <T : Any> captureNonNull(captor: org.mockito.ArgumentCaptor<T>, default: T): T {
+    captor.capture()
+    return default
+  }
 
   @Before
   fun setUp() {
@@ -2838,6 +2850,100 @@ class LogViewerPresenterTests {
     val ret = presenter.updateMyLogs()
     verify(mockMyLogsRepository).reset(anyList())
     assertTrue(ret)
+  }
+
+  @Test
+  fun testGetLogLineInfo() {
+    val entry = LogEntry(
+      "10-12 22:33:46.839  3172  3172 V KeyguardStatusView: refresh statusview showing:true",
+      LogLevel.VERBOSE,
+      null
+    )
+    val info = presenter.getLogLineInfo(entry)
+    assertNotNull(info)
+    assertEquals(3172, info?.pid)
+    assertEquals(3172, info?.tid)
+    assertEquals("KeyguardStatusView", info?.tag)
+    assertEquals("refresh statusview showing:true", info?.message)
+  }
+
+  @Test
+  fun testAddFilterForPidSingleGroup() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf("DefaultGroup" to listOf<Filter>())
+    )
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(emptyList())
+
+    presenter.addFilterForPid(1234)
+
+    val captor = org.mockito.ArgumentCaptor.forClass(Filter::class.java)
+    val dummyFilter = Filter("dummy", "dummy", Color.WHITE, LogLevel.VERBOSE)
+    verify(mockFiltersRepository).addFilter(eqNonNull("DefaultGroup"), captureNonNull(captor, dummyFilter))
+    val added = captor.value
+    assertEquals("PID 1234", added.name)
+    assertTrue(added.isApplied)
+    verify(view, never()).showSelectFilterGroup(anyNonNull(emptyList()))
+  }
+
+  @Test
+  fun testAddFilterForPidMultipleGroups() {
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf("GroupA" to listOf(), "GroupB" to listOf())
+    )
+    `when`(view.showSelectFilterGroup(listOf("GroupA", "GroupB"))).thenReturn("GroupB")
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(emptyList())
+
+    presenter.addFilterForPid(1234)
+
+    val captor = org.mockito.ArgumentCaptor.forClass(Filter::class.java)
+    val dummyFilter = Filter("dummy", "dummy", Color.WHITE, LogLevel.VERBOSE)
+    verify(mockFiltersRepository).addFilter(eqNonNull("GroupB"), captureNonNull(captor, dummyFilter))
+    val added = captor.value
+    assertEquals("PID 1234", added.name)
+    assertTrue(added.isApplied)
+    verify(view).showSelectFilterGroup(listOf("GroupA", "GroupB"))
+  }
+
+  @Test
+  fun testAddFilterForTagDuplicateWarningAccepted() {
+    val existingFilter = Filter("ExistingTag", "pattern", Color.RED, LogLevel.VERBOSE, false)
+    val duplicateMatch = FilterMatch("GroupA", existingFilter, 0)
+    val dummyFilter = Filter("dummy", "dummy", Color.WHITE, LogLevel.VERBOSE)
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf("GroupA" to listOf(existingFilter))
+    )
+    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyOrNull(), anyBoolean(), anyOrNull(), anyOrNull()))
+      .thenReturn(duplicateMatch)
+    `when`(view.showDuplicateFilterWarning(anyNonNull(""), anyNonNull(""))).thenReturn(true)
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(emptyList())
+
+    presenter.addFilterForTag("NewTag")
+
+    verify(view).showDuplicateFilterWarning(existingFilter.patternString, "GroupA")
+    verify(mockFiltersRepository).addFilter(eqNonNull("GroupA"), anyNonNull(dummyFilter))
+  }
+
+  @Test
+  fun testAddFilterForTagDuplicateWarningCancelled() {
+    val existingFilter = Filter("ExistingTag", "pattern", Color.RED, LogLevel.VERBOSE, false)
+    val duplicateMatch = FilterMatch("GroupA", existingFilter, 0)
+    val dummyFilter = Filter("dummy", "dummy", Color.WHITE, LogLevel.VERBOSE)
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      mapOf("GroupA" to listOf(existingFilter))
+    )
+    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyOrNull(), anyBoolean(), anyOrNull(), anyOrNull()))
+      .thenReturn(duplicateMatch)
+    `when`(view.showDuplicateFilterWarning(anyNonNull(""), anyNonNull(""))).thenReturn(false)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(emptyList())
+
+    presenter.addFilterForTag("NewTag")
+
+    verify(view).showDuplicateFilterWarning(existingFilter.patternString, "GroupA")
+    verify(mockFiltersRepository, never()).addFilter(anyNonNull(""), anyNonNull(dummyFilter))
+    assertTrue(existingFilter.isApplied)
   }
 
   companion object {

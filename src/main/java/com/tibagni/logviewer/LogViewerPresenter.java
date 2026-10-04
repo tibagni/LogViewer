@@ -3,6 +3,7 @@ package com.tibagni.logviewer;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.FilterMatch;
 import com.tibagni.logviewer.log.LogEntry;
+import com.tibagni.logviewer.log.LogLineInfo;
 import com.tibagni.logviewer.log.LogStream;
 
 import java.io.File;
@@ -58,6 +59,10 @@ public interface LogViewerPresenter {
 
   void cleanDuplicateFilters();
   FilterMatch findDuplicateFilter(String pattern, boolean isCaseSensitive, Filter editingFilter);
+
+  LogLineInfo getLogLineInfo(LogEntry entry);
+  void addFilterForPid(int pid);
+  void addFilterForTag(String tag);
 
   void finishing();
 }

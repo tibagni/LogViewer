@@ -123,7 +123,21 @@ class I18nTests {
           checkedKeysCount++
         }
       }
-      assertEquals(201, checkedKeysCount)
+      assertEquals(228, checkedKeysCount)
+    } finally {
+      I18n.setLocale(originalLocale)
+    }
+  }
+
+  @Test
+  fun testFilterByTagFormatting() {
+    val originalLocale = I18n.getLocale()
+    try {
+      I18n.setLocale(Locale.US)
+      assertEquals("Filter by Tag ActivityManager", I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, "ActivityManager"))
+
+      I18n.setLocale(Locale("pt", "BR"))
+      assertEquals("Filtrar por Tag ActivityManager", I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, "ActivityManager"))
     } finally {
       I18n.setLocale(originalLocale)
     }

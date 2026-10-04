@@ -43,11 +43,17 @@ public class ButtonsPane extends JPanel {
   }
 
   public void setDefaultButtonOk() {
-    getRootPane().setDefaultButton(buttonOK);
+    JRootPane root = getRootPane();
+    if (root != null) {
+      root.setDefaultButton(buttonOK);
+    }
   }
 
   public void setDefaultButtonCancel() {
-    getRootPane().setDefaultButton(buttonCancel);
+    JRootPane root = getRootPane();
+    if (root != null) {
+      root.setDefaultButton(buttonCancel);
+    }
   }
 
   public void enableOkButton(boolean enable) {

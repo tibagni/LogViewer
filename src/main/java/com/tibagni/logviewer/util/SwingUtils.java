@@ -211,4 +211,15 @@ public final class SwingUtils {
     Image resizedImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
     return new ImageIcon(resizedImage);
   }
+
+  public static int getMenuShortcutKeyMask() {
+    try {
+      java.lang.reflect.Method method = Toolkit.class.getMethod("getMenuShortcutKeyMaskEx");
+      return (Integer) method.invoke(Toolkit.getDefaultToolkit());
+    } catch (Exception e) {
+      @SuppressWarnings("deprecation")
+      int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+      return mask;
+    }
+  }
 }
