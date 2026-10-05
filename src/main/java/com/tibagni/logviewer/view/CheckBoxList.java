@@ -41,8 +41,7 @@ public class CheckBoxList<E> extends JList<E> {
   }
 
   private void notifyItemCheckChanged(int index) {
-    // Using Arrays.asList instead of List.of for Java 8 compatibility
-    java.util.List<E> elements = java.util.Arrays.asList(getModel().getElementAt(index));
+    java.util.List<E> elements = java.util.Collections.singletonList(getModel().getElementAt(index));
     if (listener != null) {
       listener.onItemsCheckChanged(elements);
       repaint(getCellBounds(index, index));
