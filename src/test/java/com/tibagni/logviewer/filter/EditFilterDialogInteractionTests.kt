@@ -6,6 +6,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import java.awt.Color
+import java.awt.GraphicsEnvironment
 import javax.swing.JCheckBox
 import javax.swing.JColorChooser
 import javax.swing.JComboBox
@@ -29,6 +30,7 @@ class EditFilterDialogInteractionTests {
      */
     @Test
     fun `test creating new filter succeeds when fields are valid`() {
+        if (GraphicsEnvironment.isHeadless()) return
         val dialog = EditFilterDialog(null, null, null) { _, _ -> null }
         assertNotNull(dialog)
     }
@@ -38,6 +40,7 @@ class EditFilterDialogInteractionTests {
      */
     @Test
     fun `test checkForDuplicateFilter returns result from callback`() {
+        if (GraphicsEnvironment.isHeadless()) return
         var callbackInvoked = false
         val existing = Filter("f1", "Pattern", Color.RED, LogLevel.DEBUG)
         val callback = EditFilterDialog.DuplicateCheckCallback { _, _ ->
