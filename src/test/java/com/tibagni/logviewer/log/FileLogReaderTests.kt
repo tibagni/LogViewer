@@ -9,13 +9,20 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.nio.charset.StandardCharsets
 
+/**
+ * Unit tests to verify {@link FileLogReader} behavior.
+ */
 class FileLogReaderTests {
 
     @get:Rule
     val tempFolder = TemporaryFolder()
 
+    /**
+     * Verifies that the reader correctly reads files completely and retains file contents
+     * without corruption or missing entries.
+     */
     @Test
-    fun `test readLogs reads files completely and concurrently`() {
+    fun `test readLogs reads files completely`() {
         val file1 = tempFolder.newFile("test1.log")
         val file2 = tempFolder.newFile("test2.log")
 

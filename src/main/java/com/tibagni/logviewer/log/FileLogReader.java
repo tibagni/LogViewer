@@ -53,23 +53,15 @@ public class FileLogReader implements LogReader {
       throw new LogReaderException("There are no logs to read!");
     }
 
-    // Instead of reading files sequentially in a loop blocking the main thread,
-    // we use a parallel stream to utilize concurrent I/O throughput.
-    // In typical SSD/NVMe configurations, this significantly reduces wall-clock time
-    // for reading multiple large log files (N+1 IO bound loop mitigation).
+    File currentFile = null;
     try {
-      java.util.Arrays.stream(logFiles).parallel().forEach(logFile -> {
-        try {
-          String content = readFile(logFile, charset);
-          synchronized (logStrings) {
-            logStrings.put(logFile.getPath(), content);
-          }
-        } catch (IOException e) {
-          throw new java.io.UncheckedIOException(e);
-        }
-      });
-    } catch (java.io.UncheckedIOException e) {
-      throw new LogReaderException("Error reading log files in parallel", e.getCause());
+      for (File logFile : logFiles) {
+        currentFile = logFile;
+        logStrings.put(currentFile.getPath(), readFile(currentFile, charset));
+      }
+
+    } catch (IOException e) {
+      throw new LogReaderException("Error reading: " + currentFile, e);
     }
   }
 
