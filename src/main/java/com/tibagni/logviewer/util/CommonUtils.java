@@ -19,10 +19,6 @@ public class CommonUtils {
     }
   }
 
-  /**
-   * @deprecated Use {@link List#of(Object[])} instead.
-   */
-  @Deprecated
   @SafeVarargs
   public static <E> List<E> listOf(E... elements) {
     List<E> l = new ArrayList<>();
