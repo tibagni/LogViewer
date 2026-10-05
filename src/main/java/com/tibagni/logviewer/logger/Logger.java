@@ -10,6 +10,7 @@ import java.util.ArrayDeque;
 import java.util.Date;
 
 public class Logger {
+  private static final String PID = java.lang.management.ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
   private static final int MAX_LOGS_CACHE = 500;
   private static final ArrayDeque<String> logsCache = new ArrayDeque<>(MAX_LOGS_CACHE);
   private static final Object logsCacheLock = new Object();
@@ -91,7 +92,7 @@ public class Logger {
     String levelIndicator = level.name().substring(0, 1).toUpperCase();
     DecimalFormat tidFormat = new DecimalFormat("000");
     String tid = tidFormat.format(Thread.currentThread().getId());
-    String pid = java.lang.management.ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+    String pid = PID;
 
     String logMessage = date + " " + pid + " " + tid + " " + levelIndicator + " " + getCallingClassName() + ": " + message;
     if (level == LogLevelConfig.Level.WARNING || level == LogLevelConfig.Level.ERROR) {
