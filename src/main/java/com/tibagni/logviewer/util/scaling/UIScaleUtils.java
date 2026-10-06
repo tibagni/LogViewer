@@ -57,20 +57,24 @@ public class UIScaleUtils {
             String key = (String) obj;
             Object value = UIManager.get(key);
 
-            Object modified = null;
-            if (value instanceof Integer) modified = updateInteger(key, (Integer) value);
-            if (value instanceof Icon) modified = updateIcon((Icon) value);
-            if (value instanceof FontUIResource) modified = updateFont((FontUIResource) value);
-            if (value instanceof Dimension) modified = updateDimension((Dimension) value);
-            if (value instanceof Insets) modified = updateInsets((Insets) value);
-            if (value instanceof Border) modified = updateBorder((Border) value);
-            if (value instanceof Painter) modified = updatePainter((Painter) value);
+            Object modified = getScaledUIValue(key, value);
 
             if (modified != null && modified != value) {
                 Logger.verbose("Updating " + key + " from " + value + " to " + modified);
                 defaults.put(key, modified);
             }
         }
+    }
+
+    private static Object getScaledUIValue(String key, Object value) {
+        if (value instanceof Integer) return updateInteger(key, (Integer) value);
+        if (value instanceof Icon) return updateIcon((Icon) value);
+        if (value instanceof FontUIResource) return updateFont((FontUIResource) value);
+        if (value instanceof Dimension) return updateDimension((Dimension) value);
+        if (value instanceof Insets) return updateInsets((Insets) value);
+        if (value instanceof Border) return updateBorder((Border) value);
+        if (value instanceof Painter) return updatePainter((Painter) value);
+        return null;
     }
 
     private static boolean shouldUpdateDefaultSizes() {
