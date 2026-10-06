@@ -58,7 +58,7 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
     String verbosityMarkColor = ServiceLocator.INSTANCE.getThemeManager().isDark() ? "#FFF" : "#000";
     text = "<small color=" + verbosityMarkColor + ">" + filter.getVerbosity().toString().charAt(0) + "</small> " + text;
 
-    Filter.ContextInfo tempInfo = filter.getTemporaryInfo();
+    ContextInfo tempInfo = filter.getTemporaryInfo();
     if (tempInfo != null) {
       int totalLinesFound = tempInfo.getTotalLinesFound();
       text += String.format(" {%d}", totalLinesFound);

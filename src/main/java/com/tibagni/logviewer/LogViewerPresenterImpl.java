@@ -1,5 +1,6 @@
 package com.tibagni.logviewer;
 
+import com.tibagni.logviewer.filter.ContextInfo;
 import com.tibagni.logviewer.filter.DuplicateCluster;
 import com.tibagni.logviewer.filter.Filter;
 import com.tibagni.logviewer.filter.FilterDuplicateUtils;
@@ -593,7 +594,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     forEachFilter(filter -> {
-      Filter.ContextInfo filterTemporaryInfo = filter.getTemporaryInfo();
+      ContextInfo filterTemporaryInfo = filter.getTemporaryInfo();
       if (filterTemporaryInfo != null) {
         filterTemporaryInfo.setAllowedStreams(allowedStreams);
       }
