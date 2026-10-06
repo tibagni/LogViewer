@@ -22,7 +22,7 @@ class FileLogReaderTests {
      * without corruption or missing entries.
      */
     @Test
-    fun `test readLogs reads files completely`() {
+    fun testReadLogsReadsFilesCompletely() {
         val file1 = tempFolder.newFile("test1.log")
         val file2 = tempFolder.newFile("test2.log")
 
