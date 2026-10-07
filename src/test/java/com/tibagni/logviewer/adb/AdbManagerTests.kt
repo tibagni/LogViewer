@@ -279,4 +279,45 @@ class AdbManagerTests {
     assertEquals(listOf("/mock/bin/adb", "kill-server"), commandsRun[0])
     assertEquals(listOf("/mock/bin/adb", "start-server"), commandsRun[1])
   }
+
+  @Test
+  fun testLaunchDeviceTerminalSuccess() {
+    val dummyAdb = File("/mock/bin/adb")
+    val testDevice = AdbDevice("device123", DeviceState.ONLINE, "husky", "Pixel 8 Pro", "husky", "1")
+    var passedAdb: File? = null
+    var passedSerial: String? = null
+
+    val manager = AdbManagerImpl(
+      fileChecker = { it == dummyAdb },
+      terminalLauncher = { adb, serial ->
+        passedAdb = adb
+        passedSerial = serial
+        true
+      }
+    )
+    manager.setCustomAdbPath(dummyAdb)
+
+    val launched = manager.launchDeviceTerminal(testDevice)
+    assertTrue(launched)
+    assertEquals(dummyAdb, passedAdb)
+    assertEquals("device123", passedSerial)
+  }
+
+  @Test
+  fun testLaunchDeviceTerminalWhenAdbNotAvailable() {
+    val testDevice = AdbDevice("device123", DeviceState.ONLINE, "husky", "Pixel 8 Pro", "husky", "1")
+    var launcherCalled = false
+
+    val manager = AdbManagerImpl(
+      fileChecker = { false },
+      terminalLauncher = { _, _ ->
+        launcherCalled = true
+        true
+      }
+    )
+
+    val launched = manager.launchDeviceTerminal(testDevice)
+    assertFalse(launched)
+    assertFalse(launcherCalled)
+  }
 }

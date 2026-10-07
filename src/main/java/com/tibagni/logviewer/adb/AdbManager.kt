@@ -12,13 +12,15 @@ interface AdbManager {
 
   suspend fun getConnectedDevices(): List<AdbDevice>
   suspend fun restartServer(): Boolean
+  fun launchDeviceTerminal(device: AdbDevice): Boolean
 }
 
 class AdbManagerImpl(
   private val commandRunner: CommandRunner = DefaultCommandRunner(),
   private val envProvider: (String) -> String? = System::getenv,
   private val systemPropertyProvider: (String) -> String? = System::getProperty,
-  private val fileChecker: (File) -> Boolean = { it.isFile && (it.canExecute() || isWindowsOS(systemPropertyProvider)) }
+  private val fileChecker: (File) -> Boolean = { it.isFile && (it.canExecute() || isWindowsOS(systemPropertyProvider)) },
+  private val terminalLauncher: (File, String) -> Boolean = AdbTerminalLauncher::launchTerminal
 ) : AdbManager {
 
   private var customAdbPath: File? = null
@@ -31,8 +33,9 @@ class AdbManagerImpl(
     get() = getAdbExecutable() != null
 
   override fun getAdbExecutable(): File? {
-    customAdbPath?.let {
-      if (fileChecker(it)) return it
+    val custom = customAdbPath
+    if (custom != null && fileChecker(custom)) {
+      return custom
     }
 
     val isWindows = isWindowsOS(systemPropertyProvider)
@@ -108,6 +111,11 @@ class AdbManagerImpl(
       Logger.error("Failed to restart adb server", e)
       false
     }
+  }
+
+  override fun launchDeviceTerminal(device: AdbDevice): Boolean {
+    val adb = getAdbExecutable() ?: return false
+    return terminalLauncher(adb, device.serialNumber)
   }
 
   companion object {

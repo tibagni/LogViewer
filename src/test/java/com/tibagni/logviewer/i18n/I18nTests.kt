@@ -123,7 +123,7 @@ class I18nTests {
           checkedKeysCount++
         }
       }
-      assertEquals(229, checkedKeysCount)
+      assertEquals(251, checkedKeysCount)
     } finally {
       I18n.setLocale(originalLocale)
     }

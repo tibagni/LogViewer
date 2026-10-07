@@ -74,9 +74,33 @@ public final class I18n {
   public static final String MENU_ITEM_FIND_FILTERS = "main.menu.filters.find";
   public static final String MENU_ITEM_CLEAN_DUPLICATE_FILTERS = "main.menu.filters.clean.duplicates";
   public static final String MENU_STREAMS = "main.menu.streams";
+  public static final String MENU_ADB = "main.menu.adb";
+  public static final String MENU_ITEM_ADB_DEVICES = "main.menu.adb.devices";
+  public static final String MENU_ITEM_ADB_SHELL = "main.menu.adb.shell";
+  public static final String MENU_ITEM_ADB_RESTART_SERVER = "main.menu.adb.restart_server";
   public static final String MENU_HELP = "main.menu.help";
   public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
   public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
+
+  // ADB Dialogs
+  public static final String ADB_DEVICES_DIALOG_TITLE = "adb.dialog.devices.title";
+  public static final String ADB_DEVICES_COL_STATUS = "adb.dialog.devices.col.status";
+  public static final String ADB_DEVICES_COL_NAME = "adb.dialog.devices.col.name";
+  public static final String ADB_DEVICES_COL_SERIAL = "adb.dialog.devices.col.serial";
+  public static final String ADB_DEVICES_COL_TRANSPORT_ID = "adb.dialog.devices.col.transport_id";
+  public static final String ADB_DEVICES_REFRESH = "adb.dialog.devices.refresh";
+  public static final String ADB_DEVICES_OPEN_TERMINAL = "adb.dialog.devices.open_terminal";
+  public static final String ADB_DEVICES_RESTART_SERVER = "adb.dialog.devices.restart_server";
+  public static final String ADB_DEVICES_NO_DEVICES = "adb.dialog.devices.no_devices";
+  public static final String ADB_DEVICES_UNAUTHORIZED_WARNING = "adb.dialog.devices.unauthorized_warning";
+  public static final String ADB_DEVICES_ADB_NOT_FOUND = "adb.dialog.devices.adb_not_found";
+  public static final String ADB_DEVICES_RESTART_SUCCESS = "adb.dialog.devices.restart_success";
+  public static final String ADB_DEVICES_RESTART_FAILED = "adb.dialog.devices.restart_failed";
+  public static final String ADB_SHELL_SELECT_DEVICE_TITLE = "adb.dialog.shell.select_device_title";
+  public static final String ADB_SHELL_SELECT_DEVICE_MSG = "adb.dialog.shell.select_device_msg";
+  public static final String ADB_SHELL_NO_ONLINE_DEVICES = "adb.dialog.shell.no_online_devices";
+  public static final String ADB_SHELL_TERMINAL_FAILED = "adb.dialog.shell.terminal_failed";
+  public static final String ADB_ERROR_TITLE = "adb.dialog.error.title";
 
   // Encoding Submenu
   public static final String MENU_ITEM_ENCODING_ASCII = "main.menu.encoding.ascii";

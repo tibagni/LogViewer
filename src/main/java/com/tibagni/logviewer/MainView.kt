@@ -23,6 +23,11 @@ import java.io.IOException
 import java.net.URISyntaxException
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import com.tibagni.logviewer.adb.AdbDevice
+import com.tibagni.logviewer.adb.AdbDevicesDialog
+import com.tibagni.logviewer.adb.AdbManager
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import javax.swing.*
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -308,6 +313,25 @@ class MainViewImpl(
     helpMenu.add(aboutItem)
     helpMenu.add(onlineHelpItem)
 
+    val adbMenu = JMenu(I18n.get(I18n.MENU_ADB))
+    val adbDevicesItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ADB_DEVICES))
+    adbDevicesItem.addActionListener {
+      AdbDevicesDialog.show(parent, ServiceLocator.adbManager)
+    }
+    adbMenu.add(adbDevicesItem)
+
+    val adbShellItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ADB_SHELL))
+    adbShellItem.addActionListener {
+      handleOpenAdbShell()
+    }
+    adbMenu.add(adbShellItem)
+
+    val adbRestartServerItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ADB_RESTART_SERVER))
+    adbRestartServerItem.addActionListener {
+      handleRestartAdbServer()
+    }
+    adbMenu.add(adbRestartServerItem)
+
     // Build menus specific to child views
     val streamsMenu = logViewerView.buildStreamsMenu()
 
@@ -316,6 +340,7 @@ class MainViewImpl(
     menuBar.add(logsMenu)
     menuBar.add(filtersMenu)
     streamsMenu?.let { menuBar.add(it) }
+    menuBar.add(adbMenu)
     menuBar.add(helpMenu)
 
     parent.jMenuBar = menuBar
@@ -355,8 +380,92 @@ class MainViewImpl(
     }
   }
 
+  private val mainScope = MainScope()
+
   private fun openUserPreferences() {
     LogViewerPreferencesDialog.showPreferencesDialog(parent)
+  }
+
+  private fun handleOpenAdbShell() {
+    val adbManager = ServiceLocator.adbManager
+    if (!adbManager.isAdbAvailable) {
+      JOptionPane.showMessageDialog(
+        parent,
+        I18n.get(I18n.ADB_DEVICES_ADB_NOT_FOUND),
+        I18n.get(I18n.ADB_ERROR_TITLE),
+        JOptionPane.ERROR_MESSAGE
+      )
+      return
+    }
+
+    mainScope.launch {
+      val devices = adbManager.getConnectedDevices()
+      val onlineDevices = devices.filter { it.isOnline }
+      when {
+        onlineDevices.isEmpty() -> {
+          JOptionPane.showMessageDialog(
+            parent,
+            I18n.get(I18n.ADB_SHELL_NO_ONLINE_DEVICES),
+            I18n.get(I18n.ADB_ERROR_TITLE),
+            JOptionPane.WARNING_MESSAGE
+          )
+        }
+        onlineDevices.size == 1 -> {
+          launchDeviceTerminal(adbManager, onlineDevices.first())
+        }
+        else -> {
+          val choices = onlineDevices.toTypedArray()
+          val selected = JOptionPane.showInputDialog(
+            parent,
+            I18n.get(I18n.ADB_SHELL_SELECT_DEVICE_MSG),
+            I18n.get(I18n.ADB_SHELL_SELECT_DEVICE_TITLE),
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            choices,
+            choices[0]
+          ) as? AdbDevice
+          if (selected != null) {
+            launchDeviceTerminal(adbManager, selected)
+          }
+        }
+      }
+    }
+  }
+
+  private fun launchDeviceTerminal(adbManager: AdbManager, device: AdbDevice) {
+    val launched = adbManager.launchDeviceTerminal(device)
+    if (!launched) {
+      JOptionPane.showMessageDialog(
+        parent,
+        I18n.get(I18n.ADB_SHELL_TERMINAL_FAILED),
+        I18n.get(I18n.ADB_ERROR_TITLE),
+        JOptionPane.WARNING_MESSAGE
+      )
+    }
+  }
+
+  private fun handleRestartAdbServer() {
+    val adbManager = ServiceLocator.adbManager
+    if (!adbManager.isAdbAvailable) {
+      JOptionPane.showMessageDialog(
+        parent,
+        I18n.get(I18n.ADB_DEVICES_ADB_NOT_FOUND),
+        I18n.get(I18n.ADB_ERROR_TITLE),
+        JOptionPane.ERROR_MESSAGE
+      )
+      return
+    }
+
+    mainScope.launch {
+      val success = adbManager.restartServer()
+      val message = if (success) {
+        I18n.get(I18n.ADB_DEVICES_RESTART_SUCCESS)
+      } else {
+        I18n.get(I18n.ADB_DEVICES_RESTART_FAILED)
+      }
+      val messageType = if (success) JOptionPane.INFORMATION_MESSAGE else JOptionPane.ERROR_MESSAGE
+      JOptionPane.showMessageDialog(parent, message, I18n.get(I18n.MENU_ADB), messageType)
+    }
   }
 
   private fun buildUi() {
