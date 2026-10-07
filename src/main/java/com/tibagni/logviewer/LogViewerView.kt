@@ -719,47 +719,78 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun openInEditor(file: File, @Suppress("UNUSED_PARAMETER") line: Int) {
     val preferredEditor = ServiceLocator.logViewerPrefs.preferredTextEditor
     if (preferredEditor != null && preferredEditor.exists()) {
+      openWithPreferredEditor(file, preferredEditor)
+    } else {
+      openWithFallbackEditor(file)
+    }
+  }
+
+  /**
+   * Launches the explicitly configured preferred text editor via ProcessBuilder.
+   * Displays an error dialog to the user if the process fails to start.
+   *
+   * @param file            The target file to open.
+   * @param preferredEditor The executable file of the text editor.
+   */
+  private fun openWithPreferredEditor(file: File, preferredEditor: File) {
+    try {
+      val process = ProcessBuilder(preferredEditor.absolutePath, file.absolutePath).start()
+      Logger.debug("Opened $file using $preferredEditor: $process")
+    } catch (ex: Exception) {
+      Logger.error("Failed to open file using editor $preferredEditor", ex)
+      JOptionPane.showMessageDialog(
+        mainView.parent,
+        I18n.format(I18n.LOG_DETAILS_OPEN_EDITOR_ERROR, preferredEditor.absolutePath),
+        I18n.get(I18n.COMMON_ERROR),
+        JOptionPane.ERROR_MESSAGE
+      )
+    }
+  }
+
+  /**
+   * Attempts to open the file using the system's default desktop editor action.
+   * If the desktop action is unsupported or fails, falls back to prompting the user
+   * to configure a preferred editor.
+   *
+   * @param file The target file to open.
+   */
+  private fun openWithFallbackEditor(file: File) {
+    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
       try {
-        val process = ProcessBuilder(preferredEditor.absolutePath, file.absolutePath).start()
-        Logger.debug("Opened $file using $preferredEditor: $process")
+        Desktop.getDesktop().open(file)
         return
       } catch (ex: Exception) {
-        Logger.error("Failed to open file using editor $preferredEditor", ex)
-        JOptionPane.showMessageDialog(
-          mainView.parent,
-          I18n.format(I18n.LOG_DETAILS_OPEN_EDITOR_ERROR, preferredEditor.absolutePath),
-          I18n.get(I18n.COMMON_ERROR),
-          JOptionPane.ERROR_MESSAGE
-        )
+        Logger.warning("Desktop.open failed for $file", ex)
       }
-    } else {
-      if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+    }
+
+    promptForEditor(file)
+  }
+
+  /**
+   * Displays a dialog asking the user to select an executable text editor.
+   * If selected, saves the preference and attempts to launch the newly configured editor.
+   *
+   * @param file The target file to open once the editor is configured.
+   */
+  private fun promptForEditor(file: File) {
+    val input = JOptionPane.showConfirmDialog(
+      mainView.parent,
+      I18n.get(I18n.LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG),
+      I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
+      JOptionPane.YES_NO_OPTION
+    )
+
+    if (input == JOptionPane.YES_OPTION) {
+      val fileChooser = JFileChooser()
+      val result = fileChooser.showOpenDialog(mainView.parent)
+      if (result == JFileChooser.APPROVE_OPTION) {
+        val newPreferredEditor = fileChooser.selectedFile
+        ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
         try {
-          Desktop.getDesktop().open(file)
-          return
+          ProcessBuilder(newPreferredEditor.absolutePath, file.absolutePath).start()
         } catch (ex: Exception) {
-          Logger.warning("Desktop.open failed for $file", ex)
-        }
-      }
-
-      val input = JOptionPane.showConfirmDialog(
-        mainView.parent,
-        I18n.get(I18n.LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG),
-        I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
-        JOptionPane.YES_NO_OPTION
-      )
-
-      if (input == JOptionPane.YES_OPTION) {
-        val fileChooser = JFileChooser()
-        val result = fileChooser.showOpenDialog(mainView.parent)
-        if (result == JFileChooser.APPROVE_OPTION) {
-          val newPreferredEditor = fileChooser.selectedFile
-          ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
-          try {
-            ProcessBuilder(newPreferredEditor.absolutePath, file.absolutePath).start()
-          } catch (ex: Exception) {
-            Logger.error("Failed to open file using newly selected editor $newPreferredEditor", ex)
-          }
+          Logger.error("Failed to open file using newly selected editor $newPreferredEditor", ex)
         }
       }
     }
