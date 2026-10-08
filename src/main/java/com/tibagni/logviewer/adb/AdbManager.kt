@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.adb
 
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -17,9 +18,7 @@ interface AdbManager {
 
 class AdbManagerImpl(
   private val commandRunner: CommandRunner = DefaultCommandRunner(),
-  private val envProvider: (String) -> String? = System::getenv,
-  private val systemPropertyProvider: (String) -> String? = System::getProperty,
-  private val fileChecker: (File) -> Boolean = { it.isFile && (it.canExecute() || isWindowsOS(systemPropertyProvider)) },
+  private val fileChecker: (File) -> Boolean = { it.isFile && (it.canExecute() || PlatformUtils.isWindows) },
   private val terminalLauncher: (File, String) -> Boolean = AdbTerminalLauncher::launchTerminal
 ) : AdbManager {
 
@@ -38,18 +37,18 @@ class AdbManagerImpl(
       return custom
     }
 
-    val isWindows = isWindowsOS(systemPropertyProvider)
+    val isWindows = PlatformUtils.isWindows
     val adbBinaryName = if (isWindows) "adb.exe" else "adb"
 
     // 1. Check ANDROID_HOME or ANDROID_SDK_ROOT
-    val androidHome = envProvider("ANDROID_HOME") ?: envProvider("ANDROID_SDK_ROOT")
+    val androidHome = PlatformUtils.getEnv("ANDROID_HOME") ?: PlatformUtils.getEnv("ANDROID_SDK_ROOT")
     if (!androidHome.isNullOrBlank()) {
       val candidate = File(androidHome, "platform-tools/$adbBinaryName")
       if (fileChecker(candidate)) return candidate
     }
 
     // 2. Check PATH environment variable
-    val pathEnv = envProvider("PATH")
+    val pathEnv = PlatformUtils.getEnv("PATH")
     if (!pathEnv.isNullOrBlank()) {
       val paths = pathEnv.split(File.pathSeparatorChar)
       for (pathDir in paths) {
@@ -59,13 +58,13 @@ class AdbManagerImpl(
     }
 
     // 3. Check well-known default locations
-    val userHome = systemPropertyProvider("user.home") ?: ""
+    val userHome = PlatformUtils.userHome
     val defaultLocations = when {
       isWindows -> listOf(
-        "${envProvider("LOCALAPPDATA")}\\Android\\Sdk\\platform-tools\\$adbBinaryName",
-        "${envProvider("PROGRAMFILES")}\\Android\\android-sdk\\platform-tools\\$adbBinaryName"
+        "${PlatformUtils.getEnv("LOCALAPPDATA")}\\Android\\Sdk\\platform-tools\\$adbBinaryName",
+        "${PlatformUtils.getEnv("PROGRAMFILES")}\\Android\\android-sdk\\platform-tools\\$adbBinaryName"
       )
-      isMacOS(systemPropertyProvider) -> listOf(
+      PlatformUtils.isMac -> listOf(
         "$userHome/Library/Android/sdk/platform-tools/$adbBinaryName",
         "/usr/local/bin/$adbBinaryName",
         "/opt/homebrew/bin/$adbBinaryName"
@@ -119,16 +118,6 @@ class AdbManagerImpl(
   }
 
   companion object {
-    private fun isWindowsOS(propertyProvider: (String) -> String?): Boolean {
-      val os = propertyProvider("os.name")?.lowercase() ?: ""
-      return os.contains("win")
-    }
-
-    private fun isMacOS(propertyProvider: (String) -> String?): Boolean {
-      val os = propertyProvider("os.name")?.lowercase() ?: ""
-      return os.contains("mac")
-    }
-
     internal fun parseDevicesOutput(output: String): List<AdbDevice> {
       val devices = mutableListOf<AdbDevice>()
       var headerFound = false

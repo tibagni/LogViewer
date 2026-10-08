@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.adb
 
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.util.PlatformUtils
 import java.io.File
 import java.io.IOException
 
@@ -9,10 +10,9 @@ internal object AdbTerminalLauncher {
   var processLauncher: (List<String>) -> Process = { cmd -> ProcessBuilder(cmd).start() }
 
   fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
-    val os = System.getProperty("os.name")?.lowercase() ?: ""
     return when {
-      os.contains("win") -> launchWindows(adbExecutable, serialNumber)
-      os.contains("mac") -> launchMac(adbExecutable, serialNumber)
+      PlatformUtils.isWindows -> launchWindows(adbExecutable, serialNumber)
+      PlatformUtils.isMac -> launchMac(adbExecutable, serialNumber)
       else -> launchLinux(adbExecutable, serialNumber)
     }
   }

@@ -1,12 +1,19 @@
 package com.tibagni.logviewer.adb
 
+import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
 import java.io.IOException
 
 class AdbManagerTests {
+
+  @After
+  fun tearDown() {
+    PlatformUtils.reset()
+  }
 
   @Test
   fun testDeviceStateParsing() {
@@ -129,8 +136,8 @@ class AdbManagerTests {
     val androidHome = "/sdk/android"
     val expectedAdb = File("/sdk/android/platform-tools/adb")
 
+    PlatformUtils.envProvider = { if (it == "ANDROID_HOME") androidHome else null }
     val manager = AdbManagerImpl(
-      envProvider = { if (it == "ANDROID_HOME") androidHome else null },
       fileChecker = { it == expectedAdb }
     )
 
@@ -143,8 +150,8 @@ class AdbManagerTests {
     val expectedAdb = File("/usr/local/bin/adb")
     val pathEnv = "/usr/bin${File.pathSeparator}/usr/local/bin${File.pathSeparator}/bin"
 
+    PlatformUtils.envProvider = { if (it == "PATH") pathEnv else null }
     val manager = AdbManagerImpl(
-      envProvider = { if (it == "PATH") pathEnv else null },
       fileChecker = { it == expectedAdb }
     )
 
@@ -157,9 +164,9 @@ class AdbManagerTests {
     val localAppData = "C:\\Users\\TestUser\\AppData\\Local"
     val expectedAdb = File("$localAppData\\Android\\Sdk\\platform-tools\\adb.exe")
 
+    PlatformUtils.propertyProvider = { if (it == "os.name") "Windows 11" else null }
+    PlatformUtils.envProvider = { if (it == "LOCALAPPDATA") localAppData else null }
     val manager = AdbManagerImpl(
-      envProvider = { if (it == "LOCALAPPDATA") localAppData else null },
-      systemPropertyProvider = { if (it == "os.name") "Windows 11" else null },
       fileChecker = { it == expectedAdb }
     )
 
@@ -169,9 +176,9 @@ class AdbManagerTests {
 
   @Test
   fun testFindAdbNotFound() {
+    PlatformUtils.propertyProvider = { null }
+    PlatformUtils.envProvider = { null }
     val manager = AdbManagerImpl(
-      envProvider = { null },
-      systemPropertyProvider = { null },
       fileChecker = { false }
     )
 
