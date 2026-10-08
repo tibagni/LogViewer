@@ -28,7 +28,7 @@ class AdbDevicesDialogTests {
   }
 
   @Test
-  fun testDialogsInstantiation() {
+  fun testDialogInstantiation() {
     if (GraphicsEnvironment.isHeadless()) {
       return
     }

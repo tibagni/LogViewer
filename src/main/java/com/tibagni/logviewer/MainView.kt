@@ -27,6 +27,7 @@ import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.AdbDevicesDialog
 import com.tibagni.logviewer.adb.AdbManager
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.swing.*
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -85,6 +86,7 @@ class MainViewImpl(
 
   private val finishChain: List<View>
   private var finishChainPosition = 0
+  private val mainScope = MainScope()
 
   val contentPane: JPanel
     get() = mainPanel
@@ -138,6 +140,7 @@ class MainViewImpl(
   private fun handleClose() {
     if (finishChainPosition > finishChain.lastIndex) {
       // We wen through all views, we can close the app now
+      mainScope.cancel()
       parent.dispose()
       return
     }
@@ -379,8 +382,6 @@ class MainViewImpl(
       Logger.error("Failed to open online help", e)
     }
   }
-
-  private val mainScope = MainScope()
 
   private fun openUserPreferences() {
     LogViewerPreferencesDialog.showPreferencesDialog(parent)

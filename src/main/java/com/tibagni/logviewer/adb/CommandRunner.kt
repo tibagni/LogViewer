@@ -1,6 +1,5 @@
 package com.tibagni.logviewer.adb
 
-import java.io.File
 import java.io.IOException
 
 data class CommandResult(
