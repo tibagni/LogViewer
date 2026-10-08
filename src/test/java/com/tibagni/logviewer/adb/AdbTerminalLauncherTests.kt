@@ -3,39 +3,43 @@ package com.tibagni.logviewer.adb
 import com.tibagni.logviewer.util.PlatformUtils
 import org.junit.After
 import org.junit.Assert.*
-import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.io.IOException
 
 class AdbTerminalLauncherTests {
 
-  private var originalLauncher: ((List<String>) -> Process)? = null
-
-  @Before
-  fun setUp() {
-    originalLauncher = AdbTerminalLauncher.processLauncher
-  }
-
   @After
   fun tearDown() {
-    originalLauncher?.let { AdbTerminalLauncher.processLauncher = it }
     PlatformUtils.reset()
   }
 
   @Test
-  fun testLaunchTerminalWindows() {
+  fun testFactoryCreatesCorrectLauncherPerPlatform() {
     PlatformUtils.propertyProvider = { if (it == "os.name") "Windows 11" else null }
+    assertTrue(AdbTerminalLauncher.create() is WindowsAdbTerminalLauncher)
+
+    PlatformUtils.propertyProvider = { if (it == "os.name") "Mac OS X" else null }
+    assertTrue(AdbTerminalLauncher.create() is MacAdbTerminalLauncher)
+
+    PlatformUtils.propertyProvider = { if (it == "os.name") "Linux" else null }
+    assertTrue(AdbTerminalLauncher.create() is LinuxAdbTerminalLauncher)
+  }
+
+  @Test
+  fun testWindowsTerminalLauncher() {
     val launchedCommands = mutableListOf<List<String>>()
-    AdbTerminalLauncher.processLauncher = { cmd ->
-      launchedCommands.add(cmd)
-      ProcessBuilder("echo").start()
-    }
+    val launcher = WindowsAdbTerminalLauncher(
+      processLauncher = { cmd ->
+        launchedCommands.add(cmd)
+        ProcessBuilder("echo").start()
+      }
+    )
 
     val adb = File("C:\\dummy\\adb.exe")
     val serial = "TEST_SERIAL_WIN"
 
-    val result = AdbTerminalLauncher.launchTerminal(adb, serial)
+    val result = launcher.launchTerminal(adb, serial)
     assertTrue(result)
     assertEquals(1, launchedCommands.size)
     assertEquals("cmd.exe", launchedCommands[0][0])
@@ -43,52 +47,98 @@ class AdbTerminalLauncherTests {
   }
 
   @Test
-  fun testLaunchTerminalMac() {
-    PlatformUtils.propertyProvider = { if (it == "os.name") "Mac OS X" else null }
+  fun testWindowsTerminalLauncherHandlesFailure() {
+    val launcher = WindowsAdbTerminalLauncher(
+      processLauncher = { throw IOException("Failed to start cmd") }
+    )
+
+    val adb = File("C:\\dummy\\adb.exe")
+    assertFalse(launcher.launchTerminal(adb, "SERIAL1"))
+  }
+
+  @Test
+  fun testMacTerminalLauncher() {
     val launchedCommands = mutableListOf<List<String>>()
-    AdbTerminalLauncher.processLauncher = { cmd ->
-      launchedCommands.add(cmd)
-      ProcessBuilder("echo").start()
-    }
+    val launcher = MacAdbTerminalLauncher(
+      processLauncher = { cmd ->
+        launchedCommands.add(cmd)
+        ProcessBuilder("echo").start()
+      }
+    )
 
     val adb = File("/dummy/adb")
     val serial = "TEST_SERIAL_MAC"
 
-    val result = AdbTerminalLauncher.launchTerminal(adb, serial)
+    val result = launcher.launchTerminal(adb, serial)
     assertTrue(result)
     assertEquals(2, launchedCommands.size)
     assertEquals("osascript", launchedCommands[0][0])
   }
 
   @Test
-  fun testLaunchTerminalLinux() {
-    PlatformUtils.propertyProvider = { if (it == "os.name") "Linux" else null }
+  fun testMacTerminalLauncherHandlesFailure() {
+    val launcher = MacAdbTerminalLauncher(
+      processLauncher = { throw IOException("Failed to start osascript") }
+    )
+
+    val adb = File("/dummy/adb")
+    assertFalse(launcher.launchTerminal(adb, "SERIAL1"))
+  }
+
+  @Test
+  fun testLinuxTerminalLauncher() {
     val launchedCommands = mutableListOf<List<String>>()
-    AdbTerminalLauncher.processLauncher = { cmd ->
-      launchedCommands.add(cmd)
-      ProcessBuilder("echo").start()
-    }
+    val launcher = LinuxAdbTerminalLauncher(
+      processLauncher = { cmd ->
+        launchedCommands.add(cmd)
+        ProcessBuilder("echo").start()
+      }
+    )
 
     val adb = File("/dummy/adb")
     val serial = "TEST_SERIAL_LINUX"
 
-    val result = AdbTerminalLauncher.launchTerminal(adb, serial)
+    val result = launcher.launchTerminal(adb, serial)
     assertTrue(result)
-    assertTrue(launchedCommands.isNotEmpty())
+    assertEquals(1, launchedCommands.size)
     val cmdStr = launchedCommands.first().joinToString(" ")
     assertTrue(cmdStr.contains(serial))
   }
 
   @Test
-  fun testLaunchTerminalHandlesAllCandidateFailures() {
-    AdbTerminalLauncher.processLauncher = {
-      throw IOException("Simulated terminal launch failure")
-    }
+  fun testLinuxTerminalLauncherFallsBackOnCandidateFailure() {
+    val launchedCommands = mutableListOf<List<String>>()
+    var callCount = 0
+    val launcher = LinuxAdbTerminalLauncher(
+      processLauncher = { cmd ->
+        callCount++
+        if (callCount < 3) {
+          throw IOException("Binary not found: ${cmd.first()}")
+        }
+        launchedCommands.add(cmd)
+        ProcessBuilder("echo").start()
+      }
+    )
+
+    val adb = File("/dummy/adb")
+    val serial = "TEST_SERIAL_LINUX"
+
+    val result = launcher.launchTerminal(adb, serial)
+    assertTrue(result)
+    assertEquals(3, callCount)
+    assertEquals(1, launchedCommands.size)
+  }
+
+  @Test
+  fun testLinuxTerminalLauncherHandlesAllCandidateFailures() {
+    val launcher = LinuxAdbTerminalLauncher(
+      processLauncher = { throw IOException("Simulated terminal launch failure") }
+    )
 
     val adb = File("/dummy/adb")
     val serial = "TEST_SERIAL_123"
 
-    val result = AdbTerminalLauncher.launchTerminal(adb, serial)
+    val result = launcher.launchTerminal(adb, serial)
     assertFalse(result)
   }
 }

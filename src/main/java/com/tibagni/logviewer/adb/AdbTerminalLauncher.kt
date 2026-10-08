@@ -5,21 +5,24 @@ import com.tibagni.logviewer.util.PlatformUtils
 import java.io.File
 import java.io.IOException
 
-internal object AdbTerminalLauncher {
+interface AdbTerminalLauncher {
+  fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean
 
-  var processLauncher: (List<String>) -> Process = { cmd -> ProcessBuilder(cmd).start() }
-
-  fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
-    return when {
-      PlatformUtils.isWindows -> launchWindows(adbExecutable, serialNumber)
-      PlatformUtils.isMac -> launchMac(adbExecutable, serialNumber)
-      else -> launchLinux(adbExecutable, serialNumber)
+  companion object {
+    fun create(): AdbTerminalLauncher = when {
+      PlatformUtils.isWindows -> WindowsAdbTerminalLauncher()
+      PlatformUtils.isMac -> MacAdbTerminalLauncher()
+      else -> LinuxAdbTerminalLauncher()
     }
   }
+}
 
-  private fun launchWindows(adb: File, serial: String): Boolean {
+class WindowsAdbTerminalLauncher(
+  private val processLauncher: (List<String>) -> Process = { cmd -> ProcessBuilder(cmd).start() }
+) : AdbTerminalLauncher {
+  override fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
     return try {
-      val cmd = listOf("cmd.exe", "/c", "start", "cmd.exe", "/k", "\"${adb.absolutePath}\" -s $serial shell")
+      val cmd = listOf("cmd.exe", "/c", "start", "cmd.exe", "/k", "\"${adbExecutable.absolutePath}\" -s $serialNumber shell")
       processLauncher(cmd)
       true
     } catch (e: Exception) {
@@ -27,10 +30,14 @@ internal object AdbTerminalLauncher {
       false
     }
   }
+}
 
-  private fun launchMac(adb: File, serial: String): Boolean {
+class MacAdbTerminalLauncher(
+  private val processLauncher: (List<String>) -> Process = { cmd -> ProcessBuilder(cmd).start() }
+) : AdbTerminalLauncher {
+  override fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
     return try {
-      val script = "tell application \"Terminal\" to do script \"\\\"${adb.absolutePath}\\\" -s $serial shell\""
+      val script = "tell application \"Terminal\" to do script \"\\\"${adbExecutable.absolutePath}\\\" -s $serialNumber shell\""
       processLauncher(listOf("osascript", "-e", script))
       processLauncher(listOf("osascript", "-e", "tell application \"Terminal\" to activate"))
       true
@@ -39,16 +46,20 @@ internal object AdbTerminalLauncher {
       false
     }
   }
+}
 
-  private fun launchLinux(adb: File, serial: String): Boolean {
-    val shellCommand = "\"${adb.absolutePath}\" -s $serial shell"
+class LinuxAdbTerminalLauncher(
+  private val processLauncher: (List<String>) -> Process = { cmd -> ProcessBuilder(cmd).start() }
+) : AdbTerminalLauncher {
+  override fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
+    val shellCommand = "\"${adbExecutable.absolutePath}\" -s $serialNumber shell"
     val terminalCandidates = listOf(
       listOf("x-terminal-emulator", "-e", shellCommand),
-      listOf("gnome-terminal", "--", adb.absolutePath, "-s", serial, "shell"),
-      listOf("konsole", "-e", adb.absolutePath, "-s", serial, "shell"),
+      listOf("gnome-terminal", "--", adbExecutable.absolutePath, "-s", serialNumber, "shell"),
+      listOf("konsole", "-e", adbExecutable.absolutePath, "-s", serialNumber, "shell"),
       listOf("xfce4-terminal", "-e", shellCommand),
-      listOf("kitty", adb.absolutePath, "-s", serial, "shell"),
-      listOf("alacritty", "-e", adb.absolutePath, "-s", serial, "shell"),
+      listOf("kitty", adbExecutable.absolutePath, "-s", serialNumber, "shell"),
+      listOf("alacritty", "-e", adbExecutable.absolutePath, "-s", serialNumber, "shell"),
       listOf("xterm", "-e", shellCommand)
     )
 

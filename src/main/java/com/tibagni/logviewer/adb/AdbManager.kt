@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.adb
 
+import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,7 @@ interface AdbManager {
 class AdbManagerImpl(
   private val commandRunner: CommandRunner = DefaultCommandRunner(),
   private val fileChecker: (File) -> Boolean = { it.isFile && (it.canExecute() || PlatformUtils.isWindows) },
-  private val terminalLauncher: (File, String) -> Boolean = AdbTerminalLauncher::launchTerminal
+  private val terminalLauncher: AdbTerminalLauncher = ServiceLocator.adbTerminalLauncher
 ) : AdbManager {
 
   private var customAdbPath: File? = null
@@ -114,7 +115,7 @@ class AdbManagerImpl(
 
   override fun launchDeviceTerminal(device: AdbDevice): Boolean {
     val adb = getAdbExecutable() ?: return false
-    return terminalLauncher(adb, device.serialNumber)
+    return terminalLauncher.launchTerminal(adb, device.serialNumber)
   }
 
   companion object {

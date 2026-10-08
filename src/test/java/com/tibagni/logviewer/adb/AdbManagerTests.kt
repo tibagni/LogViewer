@@ -294,13 +294,17 @@ class AdbManagerTests {
     var passedAdb: File? = null
     var passedSerial: String? = null
 
+    val mockLauncher = object : AdbTerminalLauncher {
+      override fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
+        passedAdb = adbExecutable
+        passedSerial = serialNumber
+        return true
+      }
+    }
+
     val manager = AdbManagerImpl(
       fileChecker = { it == dummyAdb },
-      terminalLauncher = { adb, serial ->
-        passedAdb = adb
-        passedSerial = serial
-        true
-      }
+      terminalLauncher = mockLauncher
     )
     manager.setCustomAdbPath(dummyAdb)
 
@@ -315,12 +319,16 @@ class AdbManagerTests {
     val testDevice = AdbDevice("device123", DeviceState.ONLINE, "husky", "Pixel 8 Pro", "husky", "1")
     var launcherCalled = false
 
+    val mockLauncher = object : AdbTerminalLauncher {
+      override fun launchTerminal(adbExecutable: File, serialNumber: String): Boolean {
+        launcherCalled = true
+        return true
+      }
+    }
+
     val manager = AdbManagerImpl(
       fileChecker = { false },
-      terminalLauncher = { _, _ ->
-        launcherCalled = true
-        true
-      }
+      terminalLauncher = mockLauncher
     )
 
     val launched = manager.launchDeviceTerminal(testDevice)
