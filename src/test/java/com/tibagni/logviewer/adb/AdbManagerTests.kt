@@ -187,6 +187,66 @@ class AdbManagerTests {
   }
 
   @Test
+  fun testAdbExecutableIsCached() {
+    val dummyAdb = File("/usr/local/bin/adb")
+    val pathEnv = "/usr/local/bin"
+    PlatformUtils.envProvider = { if (it == "PATH") pathEnv else null }
+
+    var checkCount = 0
+    val manager = AdbManagerImpl(
+      fileChecker = { file ->
+        checkCount++
+        file == dummyAdb
+      }
+    )
+
+    val first = manager.getAdbExecutable()
+    assertEquals(dummyAdb, first)
+    val checkCountAfterFirst = checkCount
+
+    val second = manager.getAdbExecutable()
+    assertEquals(dummyAdb, second)
+    // Only 1 extra check directly against the cached file, without re-scanning PATH
+    assertEquals(checkCountAfterFirst + 1, checkCount)
+  }
+
+  @Test
+  fun testCacheInvalidatedOnCustomPathChange() {
+    val defaultAdb = File("/usr/local/bin/adb")
+    val customAdb = File("/custom/adb")
+    PlatformUtils.envProvider = { if (it == "PATH") "/usr/local/bin" else null }
+
+    val manager = AdbManagerImpl(
+      fileChecker = { it == defaultAdb || it == customAdb }
+    )
+
+    assertEquals(defaultAdb, manager.getAdbExecutable())
+
+    manager.setCustomAdbPath(customAdb)
+    assertEquals(customAdb, manager.getAdbExecutable())
+
+    manager.setCustomAdbPath(null)
+    assertEquals(defaultAdb, manager.getAdbExecutable())
+  }
+
+  @Test
+  fun testCacheInvalidatedWhenFileDeleted() {
+    val defaultAdb = File("/usr/local/bin/adb")
+    PlatformUtils.envProvider = { if (it == "PATH") "/usr/local/bin" else null }
+    var fileExists = true
+
+    val manager = AdbManagerImpl(
+      fileChecker = { fileExists && it == defaultAdb }
+    )
+
+    assertEquals(defaultAdb, manager.getAdbExecutable())
+
+    // Simulate file being deleted
+    fileExists = false
+    assertNull(manager.getAdbExecutable())
+  }
+
+  @Test
   fun testGetConnectedDevices() = runBlocking {
     val dummyAdb = File("/mock/bin/adb")
     val mockRunner = object : CommandRunner {

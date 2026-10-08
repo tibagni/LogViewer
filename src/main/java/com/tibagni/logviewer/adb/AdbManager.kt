@@ -24,66 +24,78 @@ class AdbManagerImpl(
 ) : AdbManager {
 
   private var customAdbPath: File? = null
+  private var cachedAdbPath: File? = null
 
   override fun setCustomAdbPath(path: File?) {
     customAdbPath = path
+    cachedAdbPath = null
   }
 
   override val isAdbAvailable: Boolean
     get() = getAdbExecutable() != null
 
   override fun getAdbExecutable(): File? {
+    val cached = cachedAdbPath
+    if (cached != null && fileChecker(cached)) {
+      return cached
+    }
+
+    val resolved = resolveCustomPath()
+      ?: resolveFromAndroidSdkHome()
+      ?: resolveFromPathEnv()
+      ?: resolveFromDefaultLocations()
+
+    cachedAdbPath = resolved
+    return resolved
+  }
+
+  private val adbBinaryName: String
+    get() = if (PlatformUtils.isWindows) "adb.exe" else "adb"
+
+  private fun resolveCustomPath(): File? {
     val custom = customAdbPath
-    if (custom != null && fileChecker(custom)) {
-      return custom
-    }
+    return if (custom != null && fileChecker(custom)) custom else null
+  }
 
-    val isWindows = PlatformUtils.isWindows
-    val adbBinaryName = if (isWindows) "adb.exe" else "adb"
-
-    // 1. Check ANDROID_HOME or ANDROID_SDK_ROOT
+  private fun resolveFromAndroidSdkHome(): File? {
     val androidHome = PlatformUtils.getEnv("ANDROID_HOME") ?: PlatformUtils.getEnv("ANDROID_SDK_ROOT")
-    if (!androidHome.isNullOrBlank()) {
-      val candidate = File(androidHome, "platform-tools/$adbBinaryName")
-      if (fileChecker(candidate)) return candidate
-    }
+    if (androidHome.isNullOrBlank()) return null
+    val candidate = File(androidHome, "platform-tools/$adbBinaryName")
+    return if (fileChecker(candidate)) candidate else null
+  }
 
-    // 2. Check PATH environment variable
-    val pathEnv = PlatformUtils.getEnv("PATH")
-    if (!pathEnv.isNullOrBlank()) {
-      val paths = pathEnv.split(File.pathSeparatorChar)
-      for (pathDir in paths) {
-        val candidate = File(pathDir, adbBinaryName)
-        if (fileChecker(candidate)) return candidate
-      }
-    }
+  private fun resolveFromPathEnv(): File? {
+    val pathEnv = PlatformUtils.getEnv("PATH") ?: return null
+    return pathEnv.split(File.pathSeparatorChar)
+      .asSequence()
+      .map { File(it, adbBinaryName) }
+      .firstOrNull { fileChecker(it) }
+  }
 
-    // 3. Check well-known default locations
-    val userHome = PlatformUtils.userHome
-    val defaultLocations = when {
-      isWindows -> listOf(
+  private fun resolveFromDefaultLocations(): File? {
+    return defaultSearchLocations
+      .asSequence()
+      .map { File(it) }
+      .firstOrNull { fileChecker(it) }
+  }
+
+  private val defaultSearchLocations: List<String>
+    get() = when {
+      PlatformUtils.isWindows -> listOf(
         "${PlatformUtils.getEnv("LOCALAPPDATA")}\\Android\\Sdk\\platform-tools\\$adbBinaryName",
         "${PlatformUtils.getEnv("PROGRAMFILES")}\\Android\\android-sdk\\platform-tools\\$adbBinaryName"
       )
       PlatformUtils.isMac -> listOf(
-        "$userHome/Library/Android/sdk/platform-tools/$adbBinaryName",
+        "${PlatformUtils.userHome}/Library/Android/sdk/platform-tools/$adbBinaryName",
         "/usr/local/bin/$adbBinaryName",
         "/opt/homebrew/bin/$adbBinaryName"
       )
       else -> listOf(
-        "$userHome/Android/Sdk/platform-tools/$adbBinaryName",
+        "${PlatformUtils.userHome}/Android/Sdk/platform-tools/$adbBinaryName",
         "/usr/bin/$adbBinaryName",
         "/usr/local/bin/$adbBinaryName"
       )
     }
-
-    for (location in defaultLocations) {
-      val candidate = File(location)
-      if (fileChecker(candidate)) return candidate
-    }
-
-    return null
-  }
 
   override suspend fun getConnectedDevices(): List<AdbDevice> = withContext(Dispatchers.IO) {
     val adb = getAdbExecutable() ?: return@withContext emptyList()
