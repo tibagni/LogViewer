@@ -1,5 +1,7 @@
 package com.tibagni.logviewer
 
+import com.tibagni.logviewer.adb.AdbLogStreamer
+import com.tibagni.logviewer.adb.AdbLogStreamerImpl
 import com.tibagni.logviewer.adb.AdbManager
 import com.tibagni.logviewer.adb.AdbManagerImpl
 import com.tibagni.logviewer.adb.AdbTerminalLauncher
@@ -21,6 +23,7 @@ object ServiceLocator {
   val filterDuplicateUtils: FilterDuplicateUtils by lazy { FilterDuplicateUtilsImpl() }
   val adbTerminalLauncher: AdbTerminalLauncher by lazy { AdbTerminalLauncher.create() }
   val adbManager: AdbManager by lazy { AdbManagerImpl() }
+  val adbLogStreamer: AdbLogStreamer by lazy { AdbLogStreamerImpl() }
   val bugReportRepository: BugReportRepository by lazy {
     BugReportRepositoryImpl(
       BugReportParserImpl(
