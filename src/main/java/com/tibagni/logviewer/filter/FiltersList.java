@@ -14,6 +14,7 @@ import com.tibagni.logviewer.view.TriStateCheckbox;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import com.tibagni.logviewer.util.LogFontManager;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
@@ -280,7 +281,9 @@ public class FiltersList extends JPanel {
           searchHint.setBorder(BorderFactory.createLineBorder(Color.GRAY));
           searchHint.setOpaque(true);
           searchHint.setBackground(themeManager.isDark() ? Color.BLACK : Color.LIGHT_GRAY);
-          searchHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIScaleUtils.scaleFont(24)));
+          searchHint.setFont(LogFontManager.getFont(
+              ServiceLocator.INSTANCE.getLogViewerPrefs().getLogFontFamily(),
+              Font.PLAIN, UIScaleUtils.scaleFont(24)));
           Point targetListLocation = targetList.getRootPane().getLocationOnScreen();
           int popupX = targetListLocation.x + UIScaleUtils.dip(50);
           int popupY = targetListLocation.y + UIScaleUtils.dip(50);

@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Set;
+import com.tibagni.logviewer.util.LogFontManager;
 import java.util.stream.Collectors;
 
 public class LogViewerApplication implements UpdateManager.UpdateListener {
@@ -32,6 +33,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
   private LogViewerApplication() { }
 
   public static void main(String[] args) {
+    LogFontManager.init();
     RuntimeConfiguration.initialize();
     UIScaleUtils.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.UI_SCALE, UIScaleConfig.class));
     Logger.initialize(RuntimeConfiguration.getConfig(RuntimeConfiguration.LOG_LEVEL, LogLevelConfig.class));

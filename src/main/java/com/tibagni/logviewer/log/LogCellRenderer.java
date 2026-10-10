@@ -15,6 +15,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 import java.awt.*;
+import com.tibagni.logviewer.util.LogFontManager;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.util.regex.Matcher;
@@ -67,15 +68,46 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
             UIScaleUtils.dip(5)));
 
     LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
-    updateFont(prefs.getLogFontSize(), prefs.getLogFontBold());
+    String fontFamily = "Monospaced";
+    try {
+      if (prefs.getLogFontFamily() != null) {
+        fontFamily = prefs.getLogFontFamily();
+      }
+    } catch (Exception ignored) {}
+    updateFont(prefs.getLogFontSize(), prefs.getLogFontBold(), fontFamily);
   }
 
+  /**
+   * Updates the UI font of this renderer pulling the family from active preferences.
+   *
+   * @param fontSize The size of the font in points.
+   * @param isBold true if the font should be rendered in bold style.
+   */
   public void updateFont(int fontSize, boolean isBold) {
+    LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+    String fontFamily = "Monospaced";
+    try {
+      if (prefs.getLogFontFamily() != null) {
+        fontFamily = prefs.getLogFontFamily();
+      }
+    } catch (Exception ignored) {}
+    updateFont(fontSize, isBold, fontFamily);
+  }
+
+  /**
+   * Updates the UI components to use the specific font family, style and size.
+   *
+   * @param fontSize The size of the font in points.
+   * @param isBold true if the font should be rendered in bold style.
+   * @param fontFamily The family name of the font to use.
+   */
+  public void updateFont(int fontSize, boolean isBold, String fontFamily) {
     int style = isBold ? Font.BOLD : Font.PLAIN;
-    Font logFont = new Font(Font.MONOSPACED, style, fontSize);
+    Font logFont = LogFontManager.getFont(fontFamily, style, fontSize);
     textView.setFont(logFont);
-    streamIndicator.setFont(new Font(Font.MONOSPACED, isBold ? (Font.BOLD | Font.ITALIC) : Font.ITALIC, fontSize));
-    lineNumLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
+    streamIndicator.setFont(LogFontManager.getFont(
+        fontFamily, isBold ? (Font.BOLD | Font.ITALIC) : Font.ITALIC, fontSize));
+    lineNumLabel.setFont(LogFontManager.getFont(fontFamily, Font.PLAIN, fontSize));
     setFont(logFont);
   }
 
