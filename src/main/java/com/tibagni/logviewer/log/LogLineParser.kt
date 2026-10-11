@@ -14,20 +14,20 @@ object LogLineParser {
   private val LINE_INFO_PID_TID_SPACE =
     Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
 
+  /**
+   * Finds the process ID (PID) from a log line string, or returns -1 if not found.
+   *
+   * @param logLine the raw log line text.
+   * @return the integer process ID, or -1 if parsing fails or line is invalid.
+   */
   @JvmStatic
   fun findPid(logLine: String?): Int {
-    if (logLine == null || logLine.isEmpty()) return -1
+    if (logLine.isNullOrEmpty()) return -1
     val m = LOG_PID_PATTERN.matcher(logLine)
-    if (m.find()) {
-      val pidGroup = if (m.group(1) != null) m.group(1) else m.group(2)
-      if (pidGroup != null) {
-        try {
-          return pidGroup.toInt()
-        } catch (ignored: NumberFormatException) {
-        }
-      }
-    }
-    return -1
+    if (!m.find()) return -1
+
+    val pidGroup = m.group(1) ?: m.group(2) ?: return -1
+    return pidGroup.toIntOrNull() ?: -1
   }
 
   @JvmStatic
@@ -40,6 +40,12 @@ object LogLineParser {
     return "^\\s*\\S+\\s+\\S+[^:]*?\\s[VDIWEF](?:/" + Pattern.quote(tag) + "|\\s+" + Pattern.quote(tag) + ")(?:\\s*\\([^)]*\\))?\\s*:"
   }
 
+  /**
+   * Parses complete information from a LogEntry object into a structured LogLineInfo.
+   *
+   * @param entry the raw LogEntry containing the text and metadata.
+   * @return the structured LogLineInfo, or null if the input entry is null.
+   */
   @JvmStatic
   fun parseLineInfo(entry: LogEntry?): LogLineInfo? {
     if (entry == null) return null
@@ -51,33 +57,15 @@ object LogLineParser {
     var message = logText ?: ""
 
     if (logText != null) {
-      var m: Matcher? = LINE_INFO_THREADTIME.matcher(logText)
-      if (!m!!.find()) {
-        m = LINE_INFO_PID_TID_SLASH.matcher(logText)
-        if (!m.find()) {
-          m = LINE_INFO_PID_TID_SPACE.matcher(logText)
-          if (!m.find()) {
-            m = null
-          }
-        }
-      }
-
+      val m = findLineInfoMatcher(logText)
       if (m != null) {
-        try {
-          pid = m.group(1).toInt()
-        } catch (ignored: NumberFormatException) {
-        }
-        try {
-          tid = m.group(2).toInt()
-        } catch (ignored: NumberFormatException) {
-        }
+        pid = m.group(1).toIntOrNull()
+        tid = m.group(2).toIntOrNull()
         tag = m.group(4)?.trim()
         message = m.group(5) ?: ""
       } else {
         val foundPid = findPid(logText)
-        if (foundPid > 0) {
-          pid = foundPid
-        }
+        if (foundPid > 0) pid = foundPid
       }
     }
 
@@ -95,5 +83,18 @@ object LogLineParser {
       appliedFilter = entry.appliedFilter,
       index = entry.index
     )
+  }
+
+  private fun findLineInfoMatcher(logText: String): Matcher? {
+    var m = LINE_INFO_THREADTIME.matcher(logText)
+    if (m.find()) return m
+
+    m = LINE_INFO_PID_TID_SLASH.matcher(logText)
+    if (m.find()) return m
+
+    m = LINE_INFO_PID_TID_SPACE.matcher(logText)
+    if (m.find()) return m
+
+    return null
   }
 }
