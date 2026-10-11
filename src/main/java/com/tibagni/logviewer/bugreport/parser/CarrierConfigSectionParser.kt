@@ -4,14 +4,17 @@ import com.tibagni.logviewer.bugreport.section.BugReportSection
 import com.tibagni.logviewer.bugreport.section.CarrierConfigSection
 
 class CarrierConfigSectionParser : BugReportSectionParser {
+  companion object {
+    private val LOADING_LOGS_REGEX = "^[\\d:A-Z.-]+ - .*".toRegex()
+    private val CC_SECTION_START_REGEX = "\\n+DUMP OF SERVICE carrier_config:\\n+".toRegex()
+    private val CC_SECTION_END_REGEX = "\\n--------- .*carrier_config.*\\n".toRegex()
+  }
+
   override val name = "Carrier Config"
 
   override fun parse(bugreportPath: String, bugReportText: String): BugReportSection? {
-    val ccSectionStart = "\\nDUMP OF SERVICE carrier_config:\\n"
-    val ccSectionEnd = "\\n--------- .*carrier_config.*\\n"
-
-    val ccStartMatch = ccSectionStart.toRegex().find(bugReportText) ?: return null
-    val ccEndMatch = ccSectionEnd.toRegex().find(bugReportText, ccStartMatch.range.last) ?: return null
+    val ccStartMatch = CC_SECTION_START_REGEX.find(bugReportText) ?: return null
+    val ccEndMatch = CC_SECTION_END_REGEX.find(bugReportText, ccStartMatch.range.last) ?: return null
 
     val carrierConfigSection = bugReportText.substring(ccStartMatch.range.first, ccEndMatch.range.last)
     val lines = carrierConfigSection.lines()
@@ -39,7 +42,7 @@ class CarrierConfigSectionParser : BugReportSectionParser {
           addConfig(ccData, key, configParts[0].trim(), configParts[1].trim())
         }
       }
-      if (line.matches("^[\\d:A-Z.-]+ - .*".toRegex())) {
+      if (line.matches(LOADING_LOGS_REGEX)) {
         loadingLogs.append(line + "\n")
       }
     }

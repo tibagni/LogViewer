@@ -10,6 +10,11 @@ abstract class PackagesSectionParser(private val sectionName: String, private va
   BugReportSectionParser {
   companion object {
     private const val NOT_FOUND = "Not Found"
+    private val PACKAGES_SPLIT_REGEX = "Package \\[.+]".toRegex()
+    private val PACKAGE_NAME_REGEX = "Package \\[(.+)]".toRegex()
+    private val VERSION_CODE_REGEX = "versionCode=(\\d+) ".toRegex()
+    private val VERSION_NAME_REGEX = "versionName=([\\d\\.\\w-]+)".toRegex()
+    private val DATA_DIR_REGEX = "dataDir=([\\d\\w/\\.]+)".toRegex()
   }
 
   override fun parse(bugreportPath: String, bugReportText: String): BugReportSection? {
@@ -17,7 +22,7 @@ abstract class PackagesSectionParser(private val sectionName: String, private va
     val nextBlankLineMatch = "\\n\\n".toRegex().find(bugReportText, packagesMatch.range.last) ?: return null
 
     val packages = bugReportText.stringView(packagesMatch.range.last, nextBlankLineMatch.range.first)
-    val seq = "Package \\[.+]".toRegex().findAll(packages)
+    val seq = PACKAGES_SPLIT_REGEX.findAll(packages)
 
     val rawPackages = ArrayList<StringView>()
     var prev: MatchResult? = null
@@ -36,10 +41,10 @@ abstract class PackagesSectionParser(private val sectionName: String, private va
     }
 
     val contentPackages = rawPackages.map {
-      val packageName = "Package \\[(.+)]".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
-      val versionCode = "versionCode=(\\d+) ".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
-      val versionName = "versionName=([\\d\\\\.\\w-]+)".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
-      val dataDir = "dataDir=([\\d\\w/\\\\.]+)".toRegex().find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
+      val packageName = PACKAGE_NAME_REGEX.find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
+      val versionCode = VERSION_CODE_REGEX.find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
+      val versionName = VERSION_NAME_REGEX.find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
+      val dataDir = DATA_DIR_REGEX.find(it)?.groupValues?.getOrNull(1) ?: NOT_FOUND
       AppPackage(
         packageName,
         versionCode,
