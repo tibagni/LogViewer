@@ -71,7 +71,6 @@ public class FileLogReader implements LogReader {
   private static final int READ_BUFFER_SIZE_BYTES = 64 * 1024;
 
   private String readFile(File file, Charset charset) throws IOException {
-    String line;
     // Pre-size the StringBuilder based on the file size on disk.
     // In typical Android logcat files (mostly 1-byte ASCII characters in UTF-8), file.length() closely
     // approximates the required character capacity. Pre-sizing avoids the default capacity of 16 characters
@@ -80,11 +79,13 @@ public class FileLogReader implements LogReader {
     int initialCapacity = (int) Math.min(Math.max(file.length(), 16), Integer.MAX_VALUE - 8);
     StringBuilder builder = new StringBuilder(initialCapacity);
 
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset),
-        READ_BUFFER_SIZE_BYTES)) {
-      while ((line = reader.readLine()) != null) {
-        builder.append(line);
-        builder.append(StringUtils.LINE_SEPARATOR);
+    // Buffer output processing directly into a char array chunk reader instead of per-line 
+    // to significantly reduce memory allocation overhead for I/O in the tight loop.
+    try (InputStreamReader reader = new InputStreamReader(new FileInputStream(file), charset)) {
+      char[] buffer = new char[READ_BUFFER_SIZE_BYTES];
+      int read;
+      while ((read = reader.read(buffer, 0, buffer.length)) != -1) {
+        builder.append(buffer, 0, read);
       }
     }
 

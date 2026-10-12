@@ -182,19 +182,19 @@ public class LogParser {
           // First check if we have already considered this as a potential bugreport. If so,
           // don't waste any more time here
           if (!potentialBugReports.containsKey(logPath)) {
-            String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
-            Logger.warning(
-                "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
-                    "\"" + incorrectLinePreview + "\"\n\n" +
-                    "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
-
             // This could be a bugreport. If this is the case, keep track of it
             if (isPotentialBugReport(logText)) {
               Logger.info("Found a potential bugreport: " + logPath);
 
               // Make sure to remove all '\r' so it does not get in the way of the parsers
-              String bugReportText = logText.replaceAll("\r", "");
+              String bugReportText = logText.replace("\r", "");
               potentialBugReports.put(logPath, bugReportText);
+            } else {
+              String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
+              Logger.warning(
+                  "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
+                      "\"" + incorrectLinePreview + "\"\n\n" +
+                      "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
             }
           }
 
