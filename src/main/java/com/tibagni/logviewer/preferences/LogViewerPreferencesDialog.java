@@ -411,13 +411,13 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(logFontSizeCbx, cc.xy(3, 5));
 
     final JLabel logFontFamilyLbl = new JLabel();
-    logFontFamilyLbl.setText(I18n.get("pref.log_font_family"));
+    logFontFamilyLbl.setText(I18n.get(I18n.PREF_LOG_FONT_FAMILY));
     formPane.add(logFontFamilyLbl, cc.xy(1, 7));
     logFontFamilyCbx = new JComboBox<>();
     logFontFamilyCbx.setMinimumSize(new Dimension());
     formPane.add(logFontFamilyCbx, cc.xy(3, 7));
 
-    fontPreviewTxt = new JTextField("Preview: 0123456789 ABCabc");
+    fontPreviewTxt = new JTextField("Preview: 0123456789 ABCabc"); // no-i18n
     fontPreviewTxt.setEditable(false);
     formPane.add(fontPreviewTxt, cc.xyw(3, 9, 3));
 
