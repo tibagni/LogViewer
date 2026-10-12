@@ -1,7 +1,6 @@
 package com.tibagni.logviewer.filter
 
 import com.tibagni.logviewer.FiltersRepository
-import com.tibagni.logviewer.LogViewerPresenter
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.StringUtils
@@ -18,7 +17,7 @@ import javax.swing.table.DefaultTableCellRenderer
 
 class SearchFiltersDialog(
   private val owner: Frame,
-  private val presenter: LogViewerPresenter,
+  private val presenter: FiltersPresenter,
   private val filtersRepository: FiltersRepository,
   private val onFilterSelected: (group: String, filter: Filter) -> Unit
 ) : JDialog(owner, I18n.get(I18n.SEARCH_FILTERS_DIALOG_TITLE), true) {
@@ -334,7 +333,7 @@ class SearchFiltersDialog(
   companion object {
     fun show(
       owner: Frame,
-      presenter: LogViewerPresenter,
+      presenter: FiltersPresenter,
       filtersRepository: FiltersRepository,
       onFilterSelected: (group: String, filter: Filter) -> Unit
     ) {
@@ -344,7 +343,7 @@ class SearchFiltersDialog(
   }
 }
 
-class SearchFiltersTableModel(private val presenter: LogViewerPresenter) : AbstractTableModel() {
+class SearchFiltersTableModel(private val presenter: FiltersPresenter) : AbstractTableModel() {
   private val items = mutableListOf<FilterSearchResult>()
   var currentQuery: String = ""
 

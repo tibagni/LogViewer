@@ -26,9 +26,6 @@ interface LiveLogsRepository {
   val filteredLogsCount: Int
   val availableStreams: Set<LogStream>
 
-  val appliedFilters: List<Filter>
-  val isPaused: Boolean
-
   /**
    * Relative offset of the first entry currently retained in [allLogs] relative to the
    * total logs received (equal to [droppedLogsCount]).
@@ -45,8 +42,7 @@ interface LiveLogsRepository {
   fun addLogEntry(entry: LogEntry): LiveLogBatch
   fun addLogEntries(entries: Collection<LogEntry>): LiveLogBatch
 
-  fun setAppliedFilters(filters: Collection<Filter>)
-  fun setPause(paused: Boolean)
+  fun setLiveFilters(filters: Collection<Filter>)
   fun clear()
 
   fun getEntryAt(index: Int): LogEntry?
@@ -63,15 +59,12 @@ class LiveLogsRepositoryImpl(
   private val _allLogs = ArrayDeque<LogEntry>()
   private val _filteredLogs = ArrayDeque<LogEntry>()
   private val _availableStreams = hashSetOf<LogStream>()
-  private val _appliedFilters = mutableListOf<Filter>()
+  private val liveFilters = mutableListOf<Filter>()
 
   override var totalLogsReceived: Long = 0L
     private set
 
   override var droppedLogsCount: Long = 0L
-    private set
-
-  override var isPaused: Boolean = false
     private set
 
   override val allLogs: List<LogEntry>
@@ -89,9 +82,6 @@ class LiveLogsRepositoryImpl(
   override val availableStreams: Set<LogStream>
     get() = synchronized(lock) { _availableStreams.toSet() }
 
-  override val appliedFilters: List<Filter>
-    get() = synchronized(lock) { _appliedFilters.toList() }
-
   override val visibleLogsOffset: Int
     get() = synchronized(lock) { droppedLogsCount.toInt() }
 
@@ -100,7 +90,7 @@ class LiveLogsRepositoryImpl(
   }
 
   override fun addLogEntries(entries: Collection<LogEntry>): LiveLogBatch = synchronized(lock) {
-    if (isPaused || entries.isEmpty()) {
+    if (entries.isEmpty()) {
       return LiveLogBatch(emptyList(), emptyList(), 0, 0)
     }
 
@@ -115,7 +105,7 @@ class LiveLogsRepositoryImpl(
       _availableStreams.add(entry.logStream)
 
       var firstMatchedFilter: Filter? = null
-      for (filter in _appliedFilters) {
+      for (filter in liveFilters) {
         if (filter.appliesTo(entry)) {
           if (firstMatchedFilter == null) {
             firstMatchedFilter = filter
@@ -138,7 +128,7 @@ class LiveLogsRepositoryImpl(
         droppedLogsCount++
         evictedAll++
 
-        for (filter in _appliedFilters) {
+        for (filter in liveFilters) {
           if (filter.appliesTo(removed)) {
             filter.temporaryInfo?.decrementLineCount(removed.logStream)
           }
@@ -159,11 +149,11 @@ class LiveLogsRepositoryImpl(
     )
   }
 
-  override fun setAppliedFilters(filters: Collection<Filter>) = synchronized(lock) {
-    _appliedFilters.clear()
-    _appliedFilters.addAll(filters)
+  override fun setLiveFilters(filters: Collection<Filter>) = synchronized(lock) {
+    liveFilters.clear()
+    liveFilters.addAll(filters)
 
-    for (filter in _appliedFilters) {
+    for (filter in liveFilters) {
       filter.initTemporaryInfo()
     }
 
@@ -171,7 +161,7 @@ class LiveLogsRepositoryImpl(
 
     for (entry in _allLogs) {
       var firstMatchedFilter: Filter? = null
-      for (filter in _appliedFilters) {
+      for (filter in liveFilters) {
         if (filter.appliesTo(entry)) {
           if (firstMatchedFilter == null) {
             firstMatchedFilter = filter
@@ -186,17 +176,13 @@ class LiveLogsRepositoryImpl(
     }
   }
 
-  override fun setPause(paused: Boolean) = synchronized(lock) {
-    isPaused = paused
-  }
-
   override fun clear() = synchronized(lock) {
     _allLogs.clear()
     _filteredLogs.clear()
     _availableStreams.clear()
     totalLogsReceived = 0L
     droppedLogsCount = 0L
-    for (filter in _appliedFilters) {
+    for (filter in liveFilters) {
       filter.initTemporaryInfo()
     }
   }

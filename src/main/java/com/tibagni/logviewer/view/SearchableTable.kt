@@ -44,6 +44,7 @@ class SearchableTable @JvmOverloads constructor(
   private val close = FlatButton(StringUtils.DELETE)
 
   val table = JTable(dm, cm, sm)
+  val scrollPane = JScrollPane(table)
 
   companion object {
     private const val SEARCH_DEBOUNCE_MS = 250L
@@ -278,7 +279,7 @@ class SearchableTable @JvmOverloads constructor(
     )
 
     add(
-      JScrollPane(table),
+      scrollPane,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(2)

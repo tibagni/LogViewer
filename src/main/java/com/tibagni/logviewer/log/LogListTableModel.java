@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class LogListTableModel extends AbstractTableModel {
@@ -40,6 +41,17 @@ public class LogListTableModel extends AbstractTableModel {
     return entries.get(rowIndex);
   }
 
+  public List<LogEntry> getEntries() {
+    return Collections.unmodifiableList(entries);
+  }
+
+  public @Nullable LogEntry getEntry(int index) {
+    if (index < 0 || index >= entries.size()) {
+      return null;
+    }
+    return entries.get(index);
+  }
+
   public @Nullable LogEntry getLastEntry() {
     if (entries.isEmpty()) {
       return null;
@@ -52,6 +64,20 @@ public class LogListTableModel extends AbstractTableModel {
     this.entries.clear();
     this.entries.addAll(entries);
     fireTableRowsInserted(0, this.entries.size() - 1);
+  }
+
+  public void addLogs(List<LogEntry> newEntries) {
+    if (newEntries == null || newEntries.isEmpty()) return;
+    int firstRow = entries.size();
+    entries.addAll(newEntries);
+    fireTableRowsInserted(firstRow, entries.size() - 1);
+  }
+
+  public void removeFirstLogs(int count) {
+    if (count <= 0 || entries.isEmpty()) return;
+    int removeCount = Math.min(count, entries.size());
+    entries.subList(0, removeCount).clear();
+    fireTableRowsDeleted(0, removeCount - 1);
   }
 
   public void clear() {

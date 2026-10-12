@@ -1,10 +1,7 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.filter.ContextInfo;
-import com.tibagni.logviewer.filter.DuplicateCluster;
 import com.tibagni.logviewer.filter.Filter;
-import com.tibagni.logviewer.filter.FilterDuplicateUtils;
-import com.tibagni.logviewer.filter.FilterMatch;
 import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
@@ -13,16 +10,11 @@ import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
-import com.tibagni.logviewer.filter.EditFilterDialog;
-import com.tibagni.logviewer.filter.FilterException;
-import com.tibagni.logviewer.log.LogLevel;
 import com.tibagni.logviewer.log.LogLineInfo;
 import com.tibagni.logviewer.log.LogLineParser;
 
-import java.awt.Color;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -32,45 +24,31 @@ import java.util.function.Predicate;
 
 import static com.tibagni.logviewer.logger.ProfilerKt.wrapProfiler;
 
-public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerPresenter {
+public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerPresenter, FiltersRepository.Listener {
   private final LogViewerPresenterView view;
 
   private final List<LogEntry> filteredLogs;
   private final List<LogEntry> cachedAllowedFilteredLogs;
 
-  private final List<String> unsavedFilterGroups;
   private final Map<LogStream, Boolean> allowedStreamsMap;
   private final LogViewerPreferences userPrefs;
 
   private final LogsRepository logsRepository;
   private final MyLogsRepository myLogsRepository;
   private final FiltersRepository filtersRepository;
-  private final FilterDuplicateUtils filterDuplicateUtils;
 
   LogViewerPresenterImpl(LogViewerPresenterView view,
                          LogViewerPreferences userPrefs,
                          LogsRepository logsRepository,
                          MyLogsRepository myLogsRepository,
                          FiltersRepository filtersRepository) {
-    this(view, userPrefs, logsRepository, myLogsRepository, filtersRepository,
-        ServiceLocator.INSTANCE.getFilterDuplicateUtils());
-  }
-
-  LogViewerPresenterImpl(LogViewerPresenterView view,
-                         LogViewerPreferences userPrefs,
-                         LogsRepository logsRepository,
-                         MyLogsRepository myLogsRepository,
-                         FiltersRepository filtersRepository,
-                         FilterDuplicateUtils filterDuplicateUtils) {
     super(view);
     this.view = view;
     this.userPrefs = userPrefs;
     this.logsRepository = logsRepository;
     this.myLogsRepository = myLogsRepository;
     this.filtersRepository = filtersRepository;
-    this.filterDuplicateUtils = filterDuplicateUtils;
 
-    unsavedFilterGroups = new ArrayList<>();
     cachedAllowedFilteredLogs = new ArrayList<>();
     filteredLogs = new ArrayList<>();
     allowedStreamsMap = new HashMap<>();
@@ -78,144 +56,12 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
   @Override
   public void init() {
-    // Check if we need to open the last opened filter
-    if (userPrefs.getOpenLastFilter()) {
-      File[] lastFilters = userPrefs.getLastFilterPaths();
-      if (lastFilters.length > 0) {
-        loadFilters(lastFilters, false);
-      }
-    }
-
-    // Check if we need to collapse all groups on startup
-    if (userPrefs.getCollapseAllGroupsStartup()) {
-      view.collapseAllGroups();
-    }
+    filtersRepository.addListener(this);
   }
 
   @Override
-  public void addFilter(String group, Filter newFilter) {
-    addFilter(group, newFilter, false);
-  }
-
-  @Override
-  public void addFilter(String group, Filter newFilter, boolean ignoreReapply) {
-    if (!StringUtils.isEmpty(group) && newFilter != null) {
-      filtersRepository.addFilter(group, newFilter);
-      view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-      checkForUnsavedChanges();
-
-      if (!ignoreReapply && userPrefs.getReapplyFiltersAfterEdit()) {
-        // Make sure to add the new filter to the 'applied' list
-        // so it gets applied now (We always add to the end, so
-        // just add the last index as well)
-        newFilter.setApplied(true);
-        applyFilters();
-      }
-    }
-  }
-
-  @Override
-  public String addGroup(String group) {
-    if (!StringUtils.isEmpty(group)) {
-      String addedGroup = filtersRepository.addGroup(group);
-      view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-      return addedGroup;
-    }
-
-    return null;
-  }
-
-  @Override
-  public List<String> getGroups() {
-    return new ArrayList<>(filtersRepository.getCurrentlyOpenedFilters().keySet());
-  }
-
-  @Override
-  public void removeFilters(String group, int[] indices) {
-    List<Filter> deletedFilters = filtersRepository.deleteFilters(group, indices);
-    boolean shouldReapply = deletedFilters.stream().anyMatch(Filter::isApplied);
-    view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-
-    // Do not mark as unsaved changes if all filters were removed.
-    // User will not save an empty filter set
-    if (!filtersRepository.getCurrentlyOpenedFilters().isEmpty()) {
-      checkForUnsavedChanges();
-    }
-
-    // Only re-apply the filters if the at least one of the removed filters was applied
-    if (shouldReapply) {
-      applyFilters();
-    }
-  }
-
-  @Override
-  public void moveFilters(String origGroup, String destGroup, int[] indices) {
-    if (StringUtils.areEquals(origGroup, destGroup)) {
-      return;
-    }
-
-    List<Filter> movingFilters = filtersRepository.deleteFilters(origGroup, indices);
-    filtersRepository.addFilters(destGroup, movingFilters);
-
-    boolean shouldReapply = movingFilters.stream().anyMatch(Filter::isApplied);
-    view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-    checkForUnsavedChanges();
-
-    // Only re-apply the filters if the at least one of the moved filters was applied
-    if (shouldReapply) {
-      applyFilters();
-    }
-  }
-
-  @Override
-  public void removeGroup(String group) {
-    if (!StringUtils.isEmpty(group)) {
-      boolean unsavedChange = unsavedFilterGroups.contains(group);
-
-      if (unsavedChange) {
-        UserSelection userSelection = view.showAskToSaveFilterDialog(group);
-        if (userSelection == UserSelection.CONFIRMED) {
-          saveFilters(group);
-        } else if (userSelection == UserSelection.CANCELLED) {
-          // User canceled. Abort!
-          return;
-        }
-      }
-
-      List<Filter> filtersFromGroup = filtersRepository.getCurrentlyOpenedFilters().get(group);
-      File groupFile = filtersRepository.getCurrentlyOpenedFilterFiles().get(group);
-      if (filtersFromGroup != null) {
-        filtersRepository.deleteGroup(group);
-        view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-        checkForUnsavedChanges();
-
-        boolean shouldReapply = filtersFromGroup.stream().anyMatch(Filter::isApplied);
-        if (shouldReapply) {
-          applyFilters();
-        }
-      }
-
-      // Remove this group from the last filters path config
-      if (groupFile != null) {
-        File[] currentSavedPaths = userPrefs.getLastFilterPaths();
-        if (currentSavedPaths.length > 0) {
-          int i = ArrayUtils.indexOf(currentSavedPaths, groupFile);
-          if (i >= 0) {
-            currentSavedPaths = ArrayUtils.remove(currentSavedPaths, i);
-            userPrefs.setLastFilterPaths(currentSavedPaths);
-          }
-        }
-      }
-    }
-  }
-
-  @Override
-  public void reorderFilters(String group, int orig, int dest) {
-    if (orig == dest) return;
-
-    filtersRepository.reorderFilters(group, orig, dest);
-    view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-    checkForUnsavedChanges();
+  public void onFiltersApplied(@NotNull List<Filter> appliedFilters) {
+    applyFilters();
   }
 
   @Override
@@ -343,80 +189,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     return index;
   }
 
-  @Override
-  public void saveFilters(String group) {
-    File saveFile = filtersRepository.getCurrentlyOpenedFilterFiles().get(group);
-    if (saveFile == null) {
-      saveFile = view.showSaveFilters(group);
-    }
 
-    if (saveFile != null) {
-      saveFilters(saveFile, group);
-    }
-  }
-
-  private void saveFilters(File filterFile, String group) {
-    try {
-      filtersRepository.persistGroup(filterFile, group);
-      // Call checkForUnsavedChanges to clear the 'unsaved changes' state
-      checkForUnsavedChanges();
-    } catch (PersistFiltersException e) {
-      view.showErrorMessage(e.getMessage());
-    }
-  }
-
-  @Override
-  public void loadFilters(File[] filtersFiles, boolean keepCurrentFilters) {
-    if (userPrefs.getRememberAppliedFilters()) {
-      // First remember which filters are applied for the current files
-      // So the next time these files are opened, we can re-apply the same filters
-      rememberAppliedFilters();
-    }
-
-    if (!keepCurrentFilters) {
-      // Do not keep current filters, clear everything before loading the new ones
-      if (!filtersRepository.getCurrentlyOpenedFilters().isEmpty()) {
-        boolean shouldAbort = !requestSaveUnsavedGroups();
-        if (shouldAbort) {
-          return;
-        }
-      }
-      filtersRepository.closeAllFilters();
-    }
-
-    try {
-      filtersRepository.openFilterFiles(filtersFiles);
-    } catch (OpenFiltersException e) {
-      view.showErrorMessage(e.getMessage());
-    }
-
-    Map<String, List<Filter>> currentlyOpenedFilters = filtersRepository.getCurrentlyOpenedFilters();
-    // Check if we need to re-save the recently opened filters (in case they were converted to the new format)
-    for (File filterFile : filtersFiles) {
-      String group = filterFile.getName();
-      List<Filter> filters = currentlyOpenedFilters.getOrDefault(group, new ArrayList<>());
-      boolean isLegacy = filters.stream().anyMatch(filter -> filter.wasLoadedFromLegacyFile);
-      if (isLegacy) {
-        Logger.info("Filter Group: " + group + " is using old file format. Re-save it");
-        // Now that we checked, clear the legacy flag
-        filters.forEach(filter -> filter.wasLoadedFromLegacyFile = false);
-        // ... and save it
-        saveFilters(group);
-      }
-    }
-
-    view.configureFiltersList(currentlyOpenedFilters);
-    // Call checkForUnsavedChanges to clear the 'unsaved changes' state
-    checkForUnsavedChanges();
-
-    // Set all the currently opened filters as the latest
-    File[] lastFilterPaths = filtersRepository.getCurrentlyOpenedFilterFiles().values().toArray(new File[0]);
-    userPrefs.setLastFilterPaths(lastFilterPaths);
-    if (userPrefs.getRememberAppliedFilters()) {
-      reapplyRememberedFilters();
-      view.onAppliedFiltersRemembered();
-    }
-  }
 
   @Override
   public void  loadLogs(File[] logFiles) {
@@ -450,7 +223,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
           if (logsRepository.getCurrentlyOpenedLogs().size() > 0) {
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getAbsolutePath());
             view.showCurrentLogsLocation(logsPath);
-            long appliedFiltersCount = getFiltersThat(Filter::isApplied).size();
+            long appliedFiltersCount = filtersRepository.getAppliedFilters().size();
             if (appliedFiltersCount > 0) {
               applyFilters();
             }
@@ -523,8 +296,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
   }
 
-  @Override
-  public void applyFilters() {
+  private void applyFilters() {
     testStats.applyFiltersCallCount++;
     if (logsRepository.getCurrentlyOpenedLogs().isEmpty()) {
       doOnUiThread(() -> view.showFilteredLogs(cachedAllowedFilteredLogs));
@@ -536,7 +308,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     cleanUpFilterInfoFromLogEntries();
     cleanUpFilterTempInfo();
 
-    List<Filter> toApply = getFiltersThat(Filter::isApplied);
+    List<Filter> toApply = filtersRepository.getAppliedFilters();
     doAsync(() -> {
       filteredLogs.clear();
       filteredLogs.addAll(Filters.applyMultipleFilters(
@@ -548,29 +320,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     });
   }
 
-  @Override
-  public void filterEdited(Filter filter) {
-    checkForUnsavedChanges();
 
-    if (userPrefs.getReapplyFiltersAfterEdit()) {
-      // Make sure the edited filter will also be re-applied.
-      // If it was not previously applied, apply now
-      filter.setApplied(true);
-      applyFilters();
-    }
-  }
-
-  @Override
-  public void setAllFiltersApplied(String group, boolean isApplied) {
-    forEachFilterInGroup(group, filter -> filter.setApplied(isApplied));
-    applyFilters();
-  }
-
-  @Override
-  public void setAllFiltersApplied(boolean isApplied) {
-    forEachFilter(filter -> filter.setApplied(isApplied));
-    applyFilters();
-  }
 
   @Override
   public void setStreamAllowed(LogStream stream, boolean allowed) {
@@ -790,115 +540,9 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   @Override
-  public void cleanDuplicateFilters() {
-    Map<String, List<Filter>> currentFilters = filtersRepository.getCurrentlyOpenedFilters();
-    if (currentFilters.isEmpty()) {
-      view.showInfoMessage("Clean Duplicate Filters", "There are no filters loaded.");
-      return;
-    }
-
-    List<DuplicateCluster> clusters = filterDuplicateUtils.findDuplicateClusters(currentFilters);
-    if (clusters.isEmpty()) {
-      view.showInfoMessage("Clean Duplicate Filters", "No duplicate filters found.");
-      return;
-    }
-
-    Map<String, List<Filter>> removals = view.showDuplicateFiltersDialog(clusters);
-    if (removals == null || removals.isEmpty()) {
-      return;
-    }
-
-    boolean shouldReapply = removals.values().stream()
-        .flatMap(Collection::stream)
-        .anyMatch(Filter::isApplied);
-
-    int totalDeleted = applyDeduplicationResolution(removals);
-    if (totalDeleted > 0) {
-      view.configureFiltersList(filtersRepository.getCurrentlyOpenedFilters());
-
-      if (!filtersRepository.getCurrentlyOpenedFilters().isEmpty()) {
-        checkForUnsavedChanges();
-      }
-
-      if (shouldReapply) {
-        applyFilters();
-      }
-
-      view.showToast(String.format("Cleaned %d duplicate filter(s)", totalDeleted));
-    }
-  }
-
-  @Override
-  public FilterMatch findDuplicateFilter(String pattern, boolean isCaseSensitive, Filter editingFilter) {
-    return filterDuplicateUtils.findFirstDuplicate(
-        pattern,
-        isCaseSensitive,
-        editingFilter,
-        filtersRepository.getCurrentlyOpenedFilters()
-    );
-  }
-
-  private int applyDeduplicationResolution(Map<String, ? extends Collection<Filter>> filtersToRemove) {
-    int totalDeleted = 0;
-    for (Map.Entry<String, ? extends Collection<Filter>> entry : filtersToRemove.entrySet()) {
-      String group = entry.getKey();
-      Collection<Filter> toRemove = entry.getValue();
-      if (toRemove == null || toRemove.isEmpty()) {
-        continue;
-      }
-
-      List<Filter> current = filtersRepository.getCurrentlyOpenedFilters().get(group);
-      if (current != null) {
-        int[] indices = toRemove.stream()
-            .mapToInt(current::indexOf)
-            .filter(i -> i >= 0)
-            .sorted()
-            .toArray();
-        if (indices.length > 0) {
-          filtersRepository.deleteFilters(group, indices);
-          totalDeleted += indices.length;
-        }
-      }
-    }
-    return totalDeleted;
-  }
-
-  @Override
   public void finishing() {
-    boolean shouldFinish = requestSaveUnsavedGroups();
-    if (shouldFinish) {
-      if (userPrefs.getRememberAppliedFilters()) {
-        // Remember which filters are applied for the current files, so the next
-        // time these files are opened, we can re-apply the same filters
-        rememberAppliedFilters();
-      }
-
-      view.finish();
-      release();
-    }
-  }
-
-  private boolean requestSaveUnsavedGroups() {
-    // 'unsavedFilterGroups' can be changed while we are iterating over it
-    // create an array with its elements to be safe instead
-    String[] unsavedGroups = unsavedFilterGroups.toArray(new String[0]);
-    if (unsavedGroups.length == 0) {
-      // There is no unsaved groups, return early. don't bother showing anything to the user
-      return true;
-    }
-
-    Boolean[] groupsSelection = view.showAskToSaveMultipleFiltersDialog(unsavedGroups);
-    if (groupsSelection != null) {
-      for (int i = 0; i < unsavedGroups.length; i++) {
-        // Check each group if user selected to save
-        if (groupsSelection[i]) {
-          saveFilters(unsavedGroups[i]);
-        }
-      }
-      return true;
-    }
-
-    return false;
+    view.finish();
+    release();
   }
 
   private void cleanUpFilterInfoFromLogEntries() {
@@ -913,30 +557,6 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     forEachFilter(Filter::resetTemporaryInfo);
   }
 
-  private void checkForUnsavedChanges() {
-    unsavedFilterGroups.clear();
-    List<String> changedGroups = filtersRepository.getChangedGroupsSinceLastOpened();
-    Set<String> allGroups = filtersRepository.getCurrentlyOpenedFilters().keySet();
-
-    for (String group : allGroups) {
-      if (changedGroups.contains(group)) {
-        view.showUnsavedFilterIndication(group);
-        unsavedFilterGroups.add(group);
-      } else {
-        view.hideUnsavedFilterIndication(group);
-      }
-    }
-  }
-
-  private void forEachFilterInGroup(String group, Consumer<Filter> consumer) {
-    List<Filter> filtersFromGroup = filtersRepository.getCurrentlyOpenedFilters().get(group);
-    if (filtersFromGroup != null) {
-      for (Filter f : filtersFromGroup) {
-        consumer.accept(f);
-      }
-    }
-  }
-
   private void forEachFilter(Consumer<Filter> consumer) {
     for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
       List<Filter> filtersFromGroup = entry.getValue();
@@ -946,113 +566,14 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
   }
 
-  private List<Filter> getFiltersThat(Predicate<Filter> condition) {
-    List<Filter> resultFilters = new ArrayList<>();
-    for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
-      List<Filter> filtersFromGroup = entry.getValue();
-      for (Filter f : filtersFromGroup) {
-        if (condition.test(f)) {
-          resultFilters.add(f);
-        }
-      }
-    }
-
-    return resultFilters;
-  }
-
-  private void rememberAppliedFilters() {
-    testStats.rememberAppliedFiltersCallCount++;
-    for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
-      List<Filter> filtersFromGroup = entry.getValue();
-      List<Integer> appliedIndices = new ArrayList<>();
-      for (int i = 0; i < filtersFromGroup.size(); i++) {
-        if (filtersFromGroup.get(i).isApplied()) {
-          appliedIndices.add(i);
-        }
-        userPrefs.setAppliedFiltersIndices(entry.getKey(), appliedIndices);
-      }
-    }
-  }
-
-  private void reapplyRememberedFilters() {
-    testStats.reapplyRememberedFiltersCallCount++;
-    for (Map.Entry<String, List<Filter>> entry : filtersRepository.getCurrentlyOpenedFilters().entrySet()) {
-      List<Integer> appliedIndices = userPrefs.getAppliedFiltersIndices(entry.getKey());
-
-      if (!appliedIndices.isEmpty()) {
-        List<Filter> filtersFromGroup = entry.getValue();
-        for (int i = 0; i < filtersFromGroup.size(); i++) {
-          if (appliedIndices.contains(i)) {
-            filtersFromGroup.get(i).setApplied(true);
-          }
-        }
-      }
-    }
-
-    applyFilters();
-  }
-
   @Override
   public LogLineInfo getLogLineInfo(LogEntry entry) {
     return LogLineParser.parseLineInfo(entry);
   }
 
-  @Override
-  public void addFilterForPid(int pid) {
-    addQuickFilter("PID " + pid, LogLineParser.getFilterPatternForPid(pid));
-  }
-
-  @Override
-  public void addFilterForTag(String tag) {
-    addQuickFilter(tag, LogLineParser.getFilterPatternForTag(tag));
-  }
-
-  private void addQuickFilter(String name, String pattern) {
-    FilterMatch duplicateMatch = findDuplicateFilter(pattern, false, null);
-    if (duplicateMatch != null) {
-      boolean addAnyway = view.showDuplicateFilterWarning(
-          duplicateMatch.getFilter().getPatternString(),
-          duplicateMatch.getGroup()
-      );
-      if (!addAnyway) {
-        if (!duplicateMatch.getFilter().isApplied()) {
-          duplicateMatch.getFilter().setApplied(true);
-          applyFilters();
-        }
-        return;
-      }
-    }
-
-    List<String> groups = getGroups();
-    String group;
-    if (groups.size() == 1) {
-      group = groups.get(0);
-    } else {
-      group = view.showSelectFilterGroup(groups);
-    }
-
-    if (StringUtils.isEmpty(group)) {
-      return;
-    }
-
-    Color color = EditFilterDialog.getRandomColor(ServiceLocator.INSTANCE.getThemeManager().isDark());
-    try {
-      Filter filter = new Filter(name, pattern, color, LogLevel.VERBOSE, false);
-      filter.setApplied(true);
-      addFilter(group, filter);
-      if (!userPrefs.getReapplyFiltersAfterEdit()) {
-        applyFilters();
-      }
-    } catch (FilterException e) {
-      Logger.error("Failed to create quick filter: " + name, e);
-    }
-  }
-
   // Test helpers
   static class Stats {
     int applyFiltersCallCount;
-    int rememberAppliedFiltersCallCount;
-    int reapplyRememberedFiltersCallCount;
   }
 
   private final Stats testStats = new Stats();
@@ -1082,9 +603,5 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
 
   void setAvailableStreamsForTesting(Set<LogStream> streams) {
     setAvailableStreamsForTesting(streams, false);
-  }
-
-  void setUnsavedGroupForTesting(String group) {
-    unsavedFilterGroups.add(group);
   }
 }

@@ -78,6 +78,7 @@ public final class I18n {
   public static final String MENU_ITEM_ADB_DEVICES = "main.menu.adb.devices";
   public static final String MENU_ITEM_ADB_SHELL = "main.menu.adb.shell";
   public static final String MENU_ITEM_ADB_RESTART_SERVER = "main.menu.adb.restart_server";
+  public static final String MENU_ITEM_ADB_LIVE_LOGCAT = "main.menu.adb.live_logcat";
   public static final String MENU_HELP = "main.menu.help";
   public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
   public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
@@ -113,6 +114,17 @@ public final class I18n {
   // Main Tabs
   public static final String MAIN_TAB_LOGS = "main.tab.logs";
   public static final String MAIN_TAB_BUG_REPORT = "main.tab.bugreport";
+  public static final String MAIN_TAB_LIVE_LOGS = "main.tab.live_logs";
+
+  // Live Logs
+  public static final String LIVE_LOGS_STOP = "live.logs.stop";
+  public static final String LIVE_LOGS_CLEAR = "live.logs.clear";
+  public static final String LIVE_LOGS_AUTOSCROLL = "live.logs.autoscroll";
+  public static final String LIVE_LOGS_STATUS_STREAMING = "live.logs.status.streaming";
+  public static final String LIVE_LOGS_STATUS_STOPPED = "live.logs.status.stopped";
+  public static final String LIVE_LOGS_STATUS_SUMMARY = "live.logs.status.summary";
+  public static final String LIVE_LOGS_LABEL_DEVICE = "live.logs.label.device";
+  public static final String LIVE_LOGS_LABEL_STATUS = "live.logs.label.status";
 
   // Edit Filter Dialog
   public static final String FILTER_DIALOG_EDIT_TITLE = "filter.dialog.edit_title";

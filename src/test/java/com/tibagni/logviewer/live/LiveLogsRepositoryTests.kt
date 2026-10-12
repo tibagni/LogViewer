@@ -47,7 +47,7 @@ class LiveLogsRepositoryTests {
   fun testIncrementalFilterEvaluation() {
     val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
     val filter = createFilter("ErrorFilter", "FATAL")
-    repo.setAppliedFilters(listOf(filter))
+    repo.setLiveFilters(listOf(filter))
 
     val entry1 = createEntry("Normal line")
     val entry2 = createEntry("FATAL EXCEPTION occurred")
@@ -68,7 +68,7 @@ class LiveLogsRepositoryTests {
     val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
     val filter1 = createFilter("Filter1", "Network")
     val filter2 = createFilter("Filter2", "Error")
-    repo.setAppliedFilters(listOf(filter1, filter2))
+    repo.setLiveFilters(listOf(filter1, filter2))
 
     val entry = createEntry("Network Error occurred")
     repo.addLogEntry(entry)
@@ -115,7 +115,7 @@ class LiveLogsRepositoryTests {
   fun testBufferEvictionRemovesFromFilteredLogsAndDecrementsCount() {
     val repo = LiveLogsRepositoryImpl(maxCapacity = 2)
     val filter = createFilter("ErrorFilter", "Error")
-    repo.setAppliedFilters(listOf(filter))
+    repo.setLiveFilters(listOf(filter))
 
     val e1 = createEntry("Error: first")
     val e2 = createEntry("Info: second")
@@ -150,7 +150,7 @@ class LiveLogsRepositoryTests {
     assertEquals(0, repo.filteredLogsCount)
 
     val filter = createFilter("ConnectError", "Error")
-    repo.setAppliedFilters(listOf(filter))
+    repo.setLiveFilters(listOf(filter))
 
     assertEquals(1, repo.filteredLogsCount)
     assertEquals(e2, repo.filteredLogs[0])
@@ -161,33 +161,10 @@ class LiveLogsRepositoryTests {
   }
 
   @Test
-  fun testPauseDropsNewEntries() {
-    val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
-
-    repo.addLogEntry(createEntry("Line 1"))
-    assertEquals(1, repo.allLogsCount)
-
-    repo.setPause(true)
-    assertTrue(repo.isPaused)
-
-    val droppedBatch = repo.addLogEntry(createEntry("Line 2"))
-    assertEquals(0, droppedBatch.newAllLogs.size)
-    assertEquals(1, repo.allLogsCount)
-    assertEquals(1, repo.totalLogsReceived)
-
-    repo.setPause(false)
-    assertFalse(repo.isPaused)
-
-    repo.addLogEntry(createEntry("Line 3"))
-    assertEquals(2, repo.allLogsCount)
-    assertEquals(2, repo.totalLogsReceived)
-  }
-
-  @Test
   fun testClearResetsState() {
     val repo = LiveLogsRepositoryImpl(maxCapacity = 2)
     val filter = createFilter("ErrorFilter", "Error")
-    repo.setAppliedFilters(listOf(filter))
+    repo.setLiveFilters(listOf(filter))
 
     repo.addLogEntry(createEntry("Error 1"))
     repo.addLogEntry(createEntry("Error 2"))
@@ -213,7 +190,7 @@ class LiveLogsRepositoryTests {
   fun testBatchAdditionPerformanceAndAccounting() {
     val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
     val filter = createFilter("EvenFilter", "Line 2")
-    repo.setAppliedFilters(listOf(filter))
+    repo.setLiveFilters(listOf(filter))
 
     val entries = (1..150).map { createEntry("Line $it") }
     val batch = repo.addLogEntries(entries)
