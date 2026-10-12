@@ -6,17 +6,21 @@ import com.tibagni.logviewer.stringView
 
 class SystemPropertiesSectionParser : BugReportSectionParser {
 
+  companion object {
+    private val SYS_PROP_SECTION_START_REGEX = "\\n-+ SYSTEM PROPERTIES.* -+\\n".toRegex()
+    private val SYS_PROP_SECTION_END_REGEX = "\\n-+ .*SYSTEM PROPERTIES.* -+\\n".toRegex()
+    private val SYS_PROP_LINE_REGEX = Regex("\\[.+]: ?\\[.+]")
+  }
+
   override val name = "SystemProperties"
   override fun parse(bugreportPath: String, bugReportText: String): BugReportSection? {
 
-    val sysPropSectionStart = "\\n-+ SYSTEM PROPERTIES.* -+\\n"
-    val sysPropSectionEnd = "\\n-+ .*SYSTEM PROPERTIES.* -+\\n"
-    val sysPropStartMatch = sysPropSectionStart.toRegex().find(bugReportText) ?: return null
-    val sysPropEndMatch = sysPropSectionEnd.toRegex().find(bugReportText, sysPropStartMatch.range.last) ?: return null
+    val sysPropStartMatch = SYS_PROP_SECTION_START_REGEX.find(bugReportText) ?: return null
+    val sysPropEndMatch = SYS_PROP_SECTION_END_REGEX.find(bugReportText, sysPropStartMatch.range.last) ?: return null
     val sysPropSection = bugReportText.stringView(sysPropStartMatch.range.first + 1, sysPropEndMatch.range.last)
 
     return SystemPropertiesSection(sysPropSection.lines()
-      .filter { line -> line.matches(Regex("\\[.+]: ?\\[.+]")) }
+      .filter { line -> line.matches(SYS_PROP_LINE_REGEX) }
       .associate { line ->
         val (key, value) = line.split(":").map { it.trim() }
         key to value
