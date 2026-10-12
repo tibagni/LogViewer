@@ -24,6 +24,8 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val LOG_FONT_BOLD = "log_font_bold"
     /*Visible for Testing*/ const val DEFAULT_LOG_FONT_SIZE = 12
     /*Visible for Testing*/ const val DEFAULT_LOG_FONT_BOLD = false
+    /*Visible for Testing*/ const val LOG_FONT_FAMILY = "log_font_family"
+    /*Visible for Testing*/ const val DEFAULT_LOG_FONT_FAMILY = "Monospaced"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -142,6 +144,13 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(size) {
             preferences.putInt(LOG_FONT_SIZE, size)
             listeners.forEach { l -> l.onLogFontSizeChanged() }
+        }
+
+    override var logFontFamily: String
+        get() = preferences.get(LOG_FONT_FAMILY, DEFAULT_LOG_FONT_FAMILY) ?: DEFAULT_LOG_FONT_FAMILY
+        set(family) {
+            preferences.put(LOG_FONT_FAMILY, family)
+            listeners.forEach { l -> l.onLogFontFamilyChanged() }
         }
 
     override var logFontBold: Boolean

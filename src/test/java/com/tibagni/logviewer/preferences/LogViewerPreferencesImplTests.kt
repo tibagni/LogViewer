@@ -557,6 +557,44 @@ class LogViewerPreferencesImplTests {
     }
 
     @Test
+    fun testSettingLogFontFamily() {
+        LogViewerPreferencesImpl.logFontFamily = "JetBrains Mono"
+
+        verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.LOG_FONT_FAMILY, "JetBrains Mono")
+        verify(mockListener, only()).onLogFontFamilyChanged()
+    }
+
+    @Test
+    fun testGettingLogFontFamily() {
+        `when`(mockPrefs.get(
+                LogViewerPreferencesImpl.LOG_FONT_FAMILY,
+                LogViewerPreferencesImpl.DEFAULT_LOG_FONT_FAMILY))
+            .thenReturn("Fira Code")
+        val returnedVal = LogViewerPreferencesImpl.logFontFamily
+
+        verify(mockPrefs, times(1)).get(
+                LogViewerPreferencesImpl.LOG_FONT_FAMILY,
+                LogViewerPreferencesImpl.DEFAULT_LOG_FONT_FAMILY)
+        verify(mockListener, never()).onLogFontFamilyChanged()
+        assertEquals("Fira Code", returnedVal)
+    }
+
+    @Test
+    fun testGettingLogFontFamilyUnset() {
+        `when`(mockPrefs.get(
+                LogViewerPreferencesImpl.LOG_FONT_FAMILY,
+                LogViewerPreferencesImpl.DEFAULT_LOG_FONT_FAMILY))
+            .thenReturn(LogViewerPreferencesImpl.DEFAULT_LOG_FONT_FAMILY)
+        val returnedVal = LogViewerPreferencesImpl.logFontFamily
+
+        verify(mockPrefs, times(1)).get(
+            LogViewerPreferencesImpl.LOG_FONT_FAMILY,
+            LogViewerPreferencesImpl.DEFAULT_LOG_FONT_FAMILY)
+        verify(mockListener, never()).onLogFontFamilyChanged()
+        assertEquals(LogViewerPreferencesImpl.DEFAULT_LOG_FONT_FAMILY, returnedVal)
+    }
+
+    @Test
     fun testSettingLogFontBold() {
         LogViewerPreferencesImpl.logFontBold = true
 
@@ -566,7 +604,9 @@ class LogViewerPreferencesImplTests {
 
     @Test
     fun testGettingLogFontBold() {
-        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.LOG_FONT_BOLD), anyBoolean())).thenReturn(true)
+        `when`(mockPrefs.getBoolean(
+                eq(LogViewerPreferencesImpl.LOG_FONT_BOLD), anyBoolean()))
+            .thenReturn(true)
         val returnedVal = LogViewerPreferencesImpl.logFontBold
 
         verify(mockPrefs, never()).putBoolean(any(), anyBoolean())
@@ -576,7 +616,9 @@ class LogViewerPreferencesImplTests {
 
     @Test
     fun testGettingLogFontBoldUnset() {
-        `when`(mockPrefs.getBoolean(eq(LogViewerPreferencesImpl.LOG_FONT_BOLD), eq(LogViewerPreferencesImpl.DEFAULT_LOG_FONT_BOLD)))
+        `when`(mockPrefs.getBoolean(
+                eq(LogViewerPreferencesImpl.LOG_FONT_BOLD),
+                eq(LogViewerPreferencesImpl.DEFAULT_LOG_FONT_BOLD)))
             .thenReturn(LogViewerPreferencesImpl.DEFAULT_LOG_FONT_BOLD)
         val returnedVal = LogViewerPreferencesImpl.logFontBold
 

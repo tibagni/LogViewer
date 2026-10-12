@@ -19,6 +19,7 @@ import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.*
+import com.tibagni.logviewer.util.LogFontManager
 import java.awt.*
 import java.awt.event.*
 import java.io.File
@@ -205,6 +206,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       }
 
       override fun onLogFontSizeChanged() {
+        updateLogFont()
+      }
+
+      override fun onLogFontFamilyChanged() {
         updateLogFont()
       }
 
@@ -954,10 +959,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private fun updateLogFont() {
     val fontSize = userPrefs.logFontSize
     val isBold = userPrefs.logFontBold
-    logRenderer.updateFont(fontSize, isBold)
-    myLogsRenderer.updateFont(fontSize, isBold)
+    val fontFamilyStr = try { userPrefs.logFontFamily } catch (e: Exception) { "Monospaced" }
+    logRenderer.updateFont(fontSize, isBold, fontFamilyStr)
+    myLogsRenderer.updateFont(fontSize, isBold, fontFamilyStr)
 
-    val font = Font(Font.MONOSPACED, if (isBold) Font.BOLD else Font.PLAIN, fontSize)
+    val font = LogFontManager.getFont(fontFamilyStr, if (isBold) Font.BOLD else Font.PLAIN, fontSize)
     val fontMetrics = logList.table.getFontMetrics(font)
     val rowHeight = maxOf(UIScaleUtils.dip(22), fontMetrics.height + UIScaleUtils.dip(6))
 

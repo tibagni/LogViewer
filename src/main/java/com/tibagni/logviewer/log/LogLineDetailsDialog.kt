@@ -6,6 +6,7 @@ import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
 import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.util.LogFontManager
 import java.awt.*
 import java.awt.event.KeyEvent
 import java.io.File
@@ -322,7 +323,10 @@ class LogLineDetailsDialog(
       isEditable = false
       lineWrap = true
       wrapStyleWord = true
-      font = Font("Monospaced", Font.PLAIN, ServiceLocator.logViewerPrefs.logFontSize)
+      font = LogFontManager.getFont(
+          ServiceLocator.logViewerPrefs.logFontFamily,
+          Font.PLAIN,
+          ServiceLocator.logViewerPrefs.logFontSize)
       caretPosition = 0
     }
 

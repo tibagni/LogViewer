@@ -15,7 +15,17 @@ interface LogViewerPreferences {
     var showLineNumbers: Boolean
     var showLogLineDividers: Boolean
     var applyFilterOnCheck: Boolean
+    /**
+     * The font size used for log text and filter lines.
+     */
     var logFontSize: Int
+    /**
+     * The font family used for log text (e.g., "Monospaced", "JetBrains Mono").
+     */
+    var logFontFamily: String
+    /**
+     * Whether the log text should be bold.
+     */
     var logFontBold: Boolean
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
@@ -37,6 +47,7 @@ interface LogViewerPreferences {
         fun onShowLogLineDividersChanged() {}
         fun onApplyFiltersOnCheckChanged() {}
         fun onLogFontSizeChanged() {}
+        fun onLogFontFamilyChanged() {}
         fun onLogFontBoldChanged() {}
     }
 
@@ -54,6 +65,7 @@ interface LogViewerPreferences {
         override fun onShowLogLineDividersChanged() {}
         override fun onApplyFiltersOnCheckChanged() {}
         override fun onLogFontSizeChanged() {}
+        override fun onLogFontFamilyChanged() {}
         override fun onLogFontBoldChanged() {}
     }
 }
