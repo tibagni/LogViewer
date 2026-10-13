@@ -1,5 +1,7 @@
+[![Release](https://img.shields.io/github/v/release/tibagni/LogViewer?color=blue)](https://github.com/tibagni/LogViewer/releases/latest)
 [![CI](https://github.com/tibagni/LogViewer/actions/workflows/main.yml/badge.svg)](https://github.com/tibagni/LogViewer/actions/workflows/main.yml)
 [![Coverage Status](https://coveralls.io/repos/github/tibagni/LogViewer/badge.svg?branch=master)](https://coveralls.io/github/tibagni/LogViewer?branch=master)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 # LogViewer 💻📝🔍
 LogViewer is a simple tool to help you analyze Android logs. It allows you to analyze multiple log files at once and create (and apply) different filters on this set of log files showing a single filtered output differentiating each filter by a different color (defined by you).
 
@@ -14,6 +16,17 @@ Check out more details on [https://tibagni.github.io/LogViewer/](https://tibagni
 * 📝 Note the important log entries in my log view
 * ⏱️ Limit all logs by ignoring everything before or after a selected timestamp
 * 🛠️ Adjust the log viewer preferences to match your workflow
+* 🔠 Customize log presentation with multi-font selection, font size, and boldness adjustments
+* 🌐 Internationalization support (English and Portuguese pt-BR)
+* ⚡ Optimized for massive bugreports and large file analysis (parallel sorting, memory streaming, fast indexing)
+* 👆 Quick filter right-click actions ("Filter by PID", detailed log line view)
+* 🔍 Advanced table search with highlight tracking, Shift+Enter reverse navigation, and smooth debouncing
+
+
+## 🛠️ Tech Stack
+* **Language**: Kotlin/Java
+* **UI**: Swing
+* **Build System**: Gradle
 
 ## 📚 Requirements
 * Java 8 or later (tested on Java 8, 11, 17, and 21)
@@ -61,26 +74,5 @@ Deployments are handled via the [Release Deploy GitHub Action](https://github.co
 3. Click **Run workflow**, enter the tag name (e.g., `2.8`), and submit. The workflow will automatically build the standalone fat JAR, generate release notes, and publish the GitHub Release with the binary attached.
 
 ## 📄 License
-```
-MIT License
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-Copyright (c) 2018 Tiago Bagni
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
