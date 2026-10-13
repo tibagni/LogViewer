@@ -5,6 +5,7 @@ import com.tibagni.logviewer.logger.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -216,10 +217,14 @@ public final class SwingUtils {
     try {
       java.lang.reflect.Method method = Toolkit.class.getMethod("getMenuShortcutKeyMaskEx");
       return (Integer) method.invoke(Toolkit.getDefaultToolkit());
-    } catch (Exception e) {
-      @SuppressWarnings("deprecation")
-      int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-      return mask;
+    } catch (Throwable e) {
+      try {
+        @SuppressWarnings("deprecation")
+        int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+        return mask;
+      } catch (Throwable ex) {
+        return KeyEvent.CTRL_DOWN_MASK;
+      }
     }
   }
 }

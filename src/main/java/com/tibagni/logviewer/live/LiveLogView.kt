@@ -8,6 +8,7 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogListTableModel
+import com.tibagni.logviewer.log.setupLogTableActions
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -244,23 +245,7 @@ class LiveLogViewImpl(
     logsSplitPane.topComponent = logList
     logsSplitPane.bottomComponent = filteredLogList
 
-    // Double-click navigation from filtered log list to all logs list
-    filteredLogList.table.addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        if (e.clickCount == 2) {
-          autoScrollCb.isSelected = false
-          val selectedRow = filteredLogList.table.selectedRow
-          val entry = filteredLogListTableModel.getEntry(selectedRow)
-          if (entry != null) {
-            val targetIndex = entry.index - presenter.visibleLogsOffset
-            if (targetIndex in 0 until logListTableModel.rowCount) {
-              logList.table.setRowSelectionInterval(targetIndex, targetIndex)
-              SwingUtils.scrollToVisible(logList.table, targetIndex)
-            }
-          }
-        }
-      }
-    })
+    setupLogsContextActions()
 
     val mainSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
     mainSplitPane.dividerSize = UIScaleUtils.dip(5)
@@ -440,6 +425,37 @@ class LiveLogViewImpl(
     }
     logList.table.addMouseListener(tableMouseListener)
     filteredLogList.table.addMouseListener(tableMouseListener)
+  }
+
+  private fun setupLogsContextActions() {
+    logList.table.setupLogTableActions(
+      model = logListTableModel,
+      filtersPanelProvider = { filtersPanel },
+      onDoubleClick = { _, clickedEntry ->
+        if (clickedEntry.appliedFilter != null) {
+          for (index in 0 until filteredLogList.table.rowCount) {
+            if (filteredLogListTableModel.getEntry(index) == clickedEntry) {
+              SwingUtils.scrollToVisible(filteredLogList.table, index)
+              filteredLogList.table.setRowSelectionInterval(index, index)
+              break
+            }
+          }
+        }
+      }
+    )
+
+    filteredLogList.table.setupLogTableActions(
+      model = filteredLogListTableModel,
+      filtersPanelProvider = { filtersPanel },
+      onDoubleClick = { _, clickedEntry ->
+        autoScrollCb.isSelected = false
+        val targetIndex = clickedEntry.index - presenter.visibleLogsOffset
+        if (targetIndex in 0 until logListTableModel.rowCount) {
+          logList.table.setRowSelectionInterval(targetIndex, targetIndex)
+          SwingUtils.scrollToVisible(logList.table, targetIndex)
+        }
+      }
+    )
   }
 
   private fun scrollToBottom() {

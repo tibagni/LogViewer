@@ -201,4 +201,68 @@ class LiveLogViewTests {
     assertFalse(liveLogView.filteringProgressBar.isIndeterminate)
     assertEquals(0, liveLogView.filteringProgressBar.value)
   }
+
+  @Test
+  fun testDoubleClickFilteredLogNavigatesToAllLogsAndDisablesAutoScroll() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    val entry1 = LogEntry("Line 1", LogLevel.DEBUG, null, LogStream.MAIN)
+    val entry2 = LogEntry("Line 2", LogLevel.ERROR, null, LogStream.MAIN)
+    entry0.index = 0
+    entry1.index = 1
+    entry2.index = 2
+
+    liveLogView.showAllLogs(listOf(entry0, entry1, entry2), listOf(entry1))
+    liveLogView.autoScrollCb.isSelected = true
+
+    // Double click the only entry in filteredLogList (index 0 which is entry1 with index 1)
+    liveLogView.filteredLogList.table.setRowSelectionInterval(0, 0)
+    val event = MouseEvent(
+      liveLogView.filteredLogList.table,
+      MouseEvent.MOUSE_CLICKED,
+      System.currentTimeMillis(),
+      0,
+      10,
+      10,
+      2,
+      false,
+      MouseEvent.BUTTON1
+    )
+    liveLogView.filteredLogList.table.mouseListeners.forEach { it.mouseClicked(event) }
+
+    assertFalse("Auto scroll should be disabled on double click", liveLogView.autoScrollCb.isSelected)
+    assertEquals(1, liveLogView.logList.table.selectedRow)
+  }
+
+  @Test
+  fun testDoubleClickLogWithFilterNavigatesToFilteredLog() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val filter = Filter("Test", "Line 1", Color.RED, LogLevel.DEBUG)
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    val entry1 = LogEntry("Line 1", LogLevel.DEBUG, null, LogStream.MAIN)
+    val entry2 = LogEntry("Line 2", LogLevel.ERROR, null, LogStream.MAIN)
+    entry0.index = 0
+    entry1.index = 1
+    entry2.index = 2
+    entry1.appliedFilter = filter
+
+    liveLogView.showAllLogs(listOf(entry0, entry1, entry2), listOf(entry1))
+
+    // Double click entry1 in logList
+    liveLogView.logList.table.setRowSelectionInterval(1, 1)
+    val event = MouseEvent(
+      liveLogView.logList.table,
+      MouseEvent.MOUSE_CLICKED,
+      System.currentTimeMillis(),
+      0,
+      10,
+      10,
+      2,
+      false,
+      MouseEvent.BUTTON1
+    )
+    liveLogView.logList.table.mouseListeners.forEach { it.mouseClicked(event) }
+
+    assertEquals(0, liveLogView.filteredLogList.table.selectedRow)
+  }
 }

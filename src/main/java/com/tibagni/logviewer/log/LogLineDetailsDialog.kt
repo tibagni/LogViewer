@@ -16,12 +16,12 @@ import javax.swing.border.EmptyBorder
 import javax.swing.border.TitledBorder
 
 class LogLineDetailsDialog(
-  owner: Frame?,
+  owner: Window?,
   val info: LogLineInfo,
   private val onFilterByPid: ((Int) -> Unit)? = null,
   private val onFilterByTag: ((String) -> Unit)? = null,
   private val onOpenInEditor: ((File, Int) -> Unit)? = null
-) : JDialog(owner, I18n.get(I18n.LOG_DETAILS_TITLE), true), ButtonsPane.Listener {
+) : JDialog(owner, I18n.get(I18n.LOG_DETAILS_TITLE), ModalityType.APPLICATION_MODAL), ButtonsPane.Listener {
 
   private val buttonsPane = ButtonsPane(ButtonsPane.ButtonsMode.OK_ONLY, this)
 

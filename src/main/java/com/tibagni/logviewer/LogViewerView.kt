@@ -245,9 +245,10 @@ class LogViewerViewImpl(
 
 
   private fun setupLogsContextActions() {
-    setupLogTableActions(
-      table = logList.table,
+    logList.table.setupLogTableActions(
       model = logListTableModel,
+      parentWindow = mainView.parent,
+      filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
         // go back to the filter list pos
         if (clickedEntry.appliedFilter != null) {
@@ -282,9 +283,10 @@ class LogViewerViewImpl(
   }
 
   private fun setupFilteredLogsContextActions() {
-    setupLogTableActions(
-      table = filteredLogList.table,
+    filteredLogList.table.setupLogTableActions(
       model = filteredLogListTableModel,
+      parentWindow = mainView.parent,
+      filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
         val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
         SwingUtils.scrollToVisible(logList.table, logIndex)
@@ -299,9 +301,10 @@ class LogViewerViewImpl(
   }
 
   private fun setupMyLogsContextActions() {
-    setupLogTableActions(
-      table = myLogsList.table,
+    myLogsList.table.setupLogTableActions(
       model = myLogsListTableModel,
+      parentWindow = mainView.parent,
+      filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
         // if it is filtered, first jump to the filtered log panel
         var targetTable = logList.table
@@ -339,177 +342,6 @@ class LogViewerViewImpl(
         }
       }
     })
-  }
-
-  private fun setupLogTableActions(
-    table: JTable,
-    model: LogListTableModel,
-    onDoubleClick: (selectedIndex: Int, clickedEntry: LogEntry) -> Unit,
-    addSelectionActions: (popup: JPopupMenu, selectedEntries: List<LogEntry>) -> Unit,
-    addExtraSingleEntryActions: ((popup: JPopupMenu, singleEntry: LogEntry) -> Unit)? = null
-  ) {
-    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
-    table.registerKeyboardAction(
-      {
-        if (table.selectedRowCount == 1) {
-          val entry = model.getValueAt(table.selectedRow, 0) as LogEntry
-          showLogLineDetails(entry)
-        }
-      },
-      inspectShortcut,
-      JComponent.WHEN_FOCUSED
-    )
-
-    table.addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        if (e.clickCount == 2) {
-          val selectedIndex = table.selectedRow
-          if (selectedIndex != -1) {
-            val clickedEntry = model.getValueAt(selectedIndex, 0) as LogEntry
-            onDoubleClick(selectedIndex, clickedEntry)
-          }
-        } else if (SwingUtilities.isRightMouseButton(e) && table.selectedRow != -1) {
-          val popup = JPopupMenu()
-          val selectedEntries = table.selectedRows.map { model.getValueAt(it, 0) as LogEntry }
-          val singleEntry = selectedEntries.singleOrNull()
-
-          addSelectionActions(popup, selectedEntries)
-          if (singleEntry != null) {
-            addSingleLogLineContextActions(popup, singleEntry)
-            addExtraSingleEntryActions?.invoke(popup, singleEntry)
-          }
-
-          popup.show(table, e.x, e.y)
-        }
-      }
-    })
-  }
-
-  private fun addSingleLogLineContextActions(popup: JPopupMenu, entry: LogEntry) {
-    val info = presenter.getLogLineInfo(entry)
-    popup.add(JSeparator())
-    popup.add(I18n.get(I18n.LOGS_MENU_LOG_DETAILS))
-      .addActionListener {
-        showLogLineDetails(entry)
-      }
-    val pid = info?.pid
-    if (pid != null && pid > 0) {
-      popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
-        .addActionListener {
-          filtersPanel.addFilterForPid(pid)
-        }
-    }
-    val tag = info?.tag
-    if (!tag.isNullOrBlank()) {
-      popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, tag))
-        .addActionListener {
-          filtersPanel.addFilterForTag(tag)
-        }
-    }
-    popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER))
-      .addActionListener {
-        addFilterFromLogLine(entry.logText)
-      }
-  }
-
-  private fun addFilterFromLogLine(logLine: String) {
-    filtersPanel.createFilterFromText(logLine)
-  }
-
-  private fun showLogLineDetails(entry: LogEntry) {
-    try {
-      val info = presenter.getLogLineInfo(entry) ?: return
-      val dialog = LogLineDetailsDialog(
-        owner = mainView.parent,
-        info = info,
-        onFilterByPid = { pid -> filtersPanel.addFilterForPid(pid) },
-        onFilterByTag = { tag -> filtersPanel.addFilterForTag(tag) },
-        onOpenInEditor = { file, line -> openInEditor(file, line) }
-      )
-      dialog.isVisible = true
-    } catch (e: Exception) {
-      Logger.error("Failed to show log line details dialog", e)
-    }
-  }
-
-  private fun openInEditor(file: File, @Suppress("UNUSED_PARAMETER") line: Int) {
-    val preferredEditor = ServiceLocator.logViewerPrefs.preferredTextEditor
-    if (preferredEditor != null && preferredEditor.exists()) {
-      openWithPreferredEditor(file, preferredEditor)
-    } else {
-      openWithFallbackEditor(file)
-    }
-  }
-
-  /**
-   * Launches the explicitly configured preferred text editor via ProcessBuilder.
-   * Displays an error dialog to the user if the process fails to start.
-   *
-   * @param file            The target file to open.
-   * @param preferredEditor The executable file of the text editor.
-   */
-  private fun openWithPreferredEditor(file: File, preferredEditor: File) {
-    try {
-      val process = ProcessBuilder(preferredEditor.absolutePath, file.absolutePath).start()
-      Logger.debug("Opened $file using $preferredEditor: $process")
-    } catch (ex: Exception) {
-      Logger.error("Failed to open file using editor $preferredEditor", ex)
-      JOptionPane.showMessageDialog(
-        mainView.parent,
-        I18n.format(I18n.LOG_DETAILS_OPEN_EDITOR_ERROR, preferredEditor.absolutePath),
-        I18n.get(I18n.COMMON_ERROR),
-        JOptionPane.ERROR_MESSAGE
-      )
-    }
-  }
-
-  /**
-   * Attempts to open the file using the system's default desktop editor action.
-   * If the desktop action is unsupported or fails, falls back to prompting the user
-   * to configure a preferred editor.
-   *
-   * @param file The target file to open.
-   */
-  private fun openWithFallbackEditor(file: File) {
-    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-      try {
-        Desktop.getDesktop().open(file)
-        return
-      } catch (ex: Exception) {
-        Logger.warning("Desktop.open failed for $file", ex)
-      }
-    }
-
-    promptForEditor(file)
-  }
-
-  /**
-   * Displays a dialog asking the user to select an executable text editor.
-   * If selected, saves the preference and attempts to launch the newly configured editor.
-   *
-   * @param file The target file to open once the editor is configured.
-   */
-  private fun promptForEditor(file: File) {
-    val input = JOptionPane.showConfirmDialog(
-      mainView.parent,
-      I18n.get(I18n.LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG),
-      I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
-      JOptionPane.YES_NO_OPTION
-    )
-
-    if (input == JOptionPane.YES_OPTION) {
-      val fileChooser = JFileChooser()
-      val result = fileChooser.showOpenDialog(mainView.parent)
-      if (result == JFileChooser.APPROVE_OPTION) {
-        val newPreferredEditor = fileChooser.selectedFile
-        ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
-        try {
-          ProcessBuilder(newPreferredEditor.absolutePath, file.absolutePath).start()
-        } catch (ex: Exception) {
-          Logger.error("Failed to open file using newly selected editor $newPreferredEditor", ex)
-        }
-      }
-    }
   }
 
   override fun buildStreamsMenu(): JMenu? {
