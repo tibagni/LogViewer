@@ -62,8 +62,10 @@ public class LogListTableModel extends AbstractTableModel {
 
   public void setLogs(List<LogEntry> entries) {
     this.entries.clear();
-    this.entries.addAll(entries);
-    fireTableRowsInserted(0, this.entries.size() - 1);
+    if (entries != null) {
+      this.entries.addAll(entries);
+    }
+    fireTableDataChanged();
   }
 
   public void addLogs(List<LogEntry> newEntries) {

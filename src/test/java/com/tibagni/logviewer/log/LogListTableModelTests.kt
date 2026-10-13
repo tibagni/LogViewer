@@ -74,4 +74,20 @@ class LogListTableModelTests {
     assertEquals(0, model.rowCount)
     assertNull(model.lastEntry)
   }
+
+  @Test
+  fun testSetLogsFiresTableDataChanged() {
+    val model = LogListTableModel("Test")
+    val events = mutableListOf<TableModelEvent>()
+    model.addTableModelListener { events.add(it) }
+
+    val entries = listOf(LogEntry("Line 1", LogLevel.INFO, null, LogStream.MAIN))
+    model.setLogs(entries)
+
+    assertEquals(1, model.rowCount)
+    assertEquals(1, events.size)
+    assertEquals(TableModelEvent.UPDATE, events[0].type)
+    assertEquals(0, events[0].firstRow)
+    assertEquals(Int.MAX_VALUE, events[0].lastRow)
+  }
 }

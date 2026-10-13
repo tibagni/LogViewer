@@ -24,6 +24,8 @@ import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.Point
+import java.awt.event.AdjustmentListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -57,17 +59,17 @@ class LiveLogViewImpl(
 
   private lateinit var mainSplitPane: JSplitPane
   private var filtersPanel: FiltersPanel? = null
-  private lateinit var deviceLabel: JLabel
-  private lateinit var statusLabel: JLabel
-  private lateinit var statsLabel: JLabel
-  private lateinit var autoScrollCb: JCheckBox
-  private lateinit var clearBtn: JButton
-  private lateinit var stopBtn: JButton
+  @VisibleForTesting internal lateinit var deviceLabel: JLabel
+  @VisibleForTesting internal lateinit var statusLabel: JLabel
+  @VisibleForTesting internal lateinit var statsLabel: JLabel
+  @VisibleForTesting internal lateinit var autoScrollCb: JCheckBox
+  @VisibleForTesting internal lateinit var clearBtn: JButton
+  @VisibleForTesting internal lateinit var stopBtn: JButton
 
-  private lateinit var logList: SearchableTable
-  private lateinit var filteredLogList: SearchableTable
-  private lateinit var logListTableModel: LogListTableModel
-  private lateinit var filteredLogListTableModel: LogListTableModel
+  @VisibleForTesting internal lateinit var logList: SearchableTable
+  @VisibleForTesting internal lateinit var filteredLogList: SearchableTable
+  @VisibleForTesting internal lateinit var logListTableModel: LogListTableModel
+  @VisibleForTesting internal lateinit var filteredLogListTableModel: LogListTableModel
   private val logRenderer: LogCellRenderer = LogCellRenderer()
 
   private val userPrefs: LogViewerPreferences = ServiceLocator.logViewerPrefs
@@ -292,7 +294,19 @@ class LiveLogViewImpl(
 
   override fun showLogsBatch(batch: LiveLogBatch) {
     if (batch.evictedAllCount > 0) {
+      val viewPositionBeforeEviction = logList.scrollPane.viewport.viewPosition
+      val evictedHeight = batch.evictedAllCount * logList.table.rowHeight
       logListTableModel.removeFirstLogs(batch.evictedAllCount)
+
+      // When rows are removed from the top, all remaining rows shift up by
+      // `evictedHeight` pixels in the table coordinate space. If auto-scroll is disabled,
+      // JViewport.viewPosition remains unchanged by default, causing visible rows to jump
+      // upward. We need to compensate by adjusting viewPosition.y upward by the
+      // same amount so the currently visible log lines remain visually in the same place.
+      if (!autoScrollCb.isSelected) {
+        val newY = maxOf(0, viewPositionBeforeEviction.y - evictedHeight)
+        logList.scrollPane.viewport.viewPosition = Point(viewPositionBeforeEviction.x, newY)
+      }
     }
     if (batch.newAllLogs.isNotEmpty()) {
       logListTableModel.addLogs(batch.newAllLogs)
@@ -303,7 +317,15 @@ class LiveLogViewImpl(
     }
 
     if (batch.evictedFilteredCount > 0) {
+      val viewPositionBeforeEviction = filteredLogList.scrollPane.viewport.viewPosition
+      val evictedHeight = batch.evictedFilteredCount * filteredLogList.table.rowHeight
       filteredLogListTableModel.removeFirstLogs(batch.evictedFilteredCount)
+
+      // Same compensation for filtered logs when oldest matching entries are evicted
+      if (!autoScrollCb.isSelected) {
+        val newY = maxOf(0, viewPositionBeforeEviction.y - evictedHeight)
+        filteredLogList.scrollPane.viewport.viewPosition = Point(viewPositionBeforeEviction.x, newY)
+      }
     }
     if (batch.newFilteredLogs.isNotEmpty()) {
       filteredLogListTableModel.addLogs(batch.newFilteredLogs)
@@ -332,23 +354,23 @@ class LiveLogViewImpl(
       }
     }
 
-    // Disable auto-scroll when user scrolls UP with mouse wheel
+    // Disable auto-scroll when user scrolls UP with mouse wheel or trackpad
     val mouseWheelListener = MouseWheelListener { e ->
-      if (e.wheelRotation < 0 && autoScrollCb.isSelected) {
+      if ((e.wheelRotation < 0 || e.preciseWheelRotation < 0.0) && autoScrollCb.isSelected) {
         autoScrollCb.isSelected = false
       }
     }
-    logList.table.addMouseWheelListener(mouseWheelListener)
     logList.scrollPane.addMouseWheelListener(mouseWheelListener)
-    filteredLogList.table.addMouseWheelListener(mouseWheelListener)
     filteredLogList.scrollPane.addMouseWheelListener(mouseWheelListener)
 
-    // Disable auto-scroll when user navigates UP with keyboard
+    // Disable auto-scroll when user navigates with keyboard
     val keyListener = object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
         if (autoScrollCb.isSelected) {
           when (e.keyCode) {
-            KeyEvent.VK_PAGE_UP, KeyEvent.VK_UP, KeyEvent.VK_HOME -> {
+            KeyEvent.VK_PAGE_UP, KeyEvent.VK_PAGE_DOWN,
+            KeyEvent.VK_UP, KeyEvent.VK_DOWN,
+            KeyEvent.VK_HOME, KeyEvent.VK_END -> {
               autoScrollCb.isSelected = false
             }
           }
@@ -359,6 +381,14 @@ class LiveLogViewImpl(
     filteredLogList.table.addKeyListener(keyListener)
 
     // Disable auto-scroll when user interacts with the vertical scrollbar
+    val adjustmentListener = AdjustmentListener { e ->
+      if (e.valueIsAdjusting && autoScrollCb.isSelected) {
+        autoScrollCb.isSelected = false
+      }
+    }
+    logList.scrollPane.verticalScrollBar.addAdjustmentListener(adjustmentListener)
+    filteredLogList.scrollPane.verticalScrollBar.addAdjustmentListener(adjustmentListener)
+
     val scrollBarMouseListener = object : MouseAdapter() {
       override fun mousePressed(e: MouseEvent) {
         if (autoScrollCb.isSelected) {
@@ -369,15 +399,11 @@ class LiveLogViewImpl(
     logList.scrollPane.verticalScrollBar.addMouseListener(scrollBarMouseListener)
     filteredLogList.scrollPane.verticalScrollBar.addMouseListener(scrollBarMouseListener)
 
-    // Disable auto-scroll when user clicks on a log entry to inspect/select it
+    // Disable auto-scroll when user clicks on a log entry or anywhere in the table/viewport to inspect it
     val tableMouseListener = object : MouseAdapter() {
       override fun mousePressed(e: MouseEvent) {
         if (autoScrollCb.isSelected) {
-          val table = e.component as? JTable ?: return
-          val clickedRow = table.rowAtPoint(e.point)
-          if (clickedRow in 0 until table.rowCount - 1) {
-            autoScrollCb.isSelected = false
-          }
+          autoScrollCb.isSelected = false
         }
       }
     }

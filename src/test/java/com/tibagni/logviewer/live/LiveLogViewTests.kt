@@ -13,7 +13,14 @@ import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import java.awt.Color
 import com.tibagni.logviewer.filter.FiltersPresenter
+import com.tibagni.logviewer.log.LogEntry
+import com.tibagni.logviewer.log.LogLevel
+import com.tibagni.logviewer.log.LogStream
 import java.awt.Frame
+import java.awt.Point
+import java.awt.event.KeyEvent
+import java.awt.event.MouseEvent
+import java.awt.event.MouseWheelEvent
 import java.io.File
 import javax.swing.JFrame
 import javax.swing.JSplitPane
@@ -62,5 +69,113 @@ class LiveLogViewTests {
 
     liveLogView.stopStreaming()
     verify(mockPresenter).stopStreaming()
+  }
+
+  @Test
+  fun testAutoScrollDisabledOnMouseClick() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    assertTrue(liveLogView.autoScrollCb.isSelected)
+
+    val mouseEvent = MouseEvent(
+      liveLogView.logList.table,
+      MouseEvent.MOUSE_PRESSED,
+      System.currentTimeMillis(),
+      0,
+      10, 10,
+      1, false
+    )
+    for (listener in liveLogView.logList.table.mouseListeners) {
+      listener.mousePressed(mouseEvent)
+    }
+
+    assertFalse(liveLogView.autoScrollCb.isSelected)
+  }
+
+  @Test
+  fun testAutoScrollDisabledOnMouseWheel() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    assertTrue(liveLogView.autoScrollCb.isSelected)
+
+    val wheelDownEvent = MouseWheelEvent(
+      liveLogView.logList.scrollPane,
+      MouseEvent.MOUSE_WHEEL,
+      System.currentTimeMillis(),
+      0,
+      10, 10,
+      0, false,
+      MouseWheelEvent.WHEEL_UNIT_SCROLL,
+      3, 1
+    )
+    for (listener in liveLogView.logList.scrollPane.mouseWheelListeners) {
+      listener.mouseWheelMoved(wheelDownEvent)
+    }
+    // Scrolling DOWN should NOT disable auto-scroll
+    assertTrue(liveLogView.autoScrollCb.isSelected)
+
+    val wheelUpEvent = MouseWheelEvent(
+      liveLogView.logList.scrollPane,
+      MouseEvent.MOUSE_WHEEL,
+      System.currentTimeMillis(),
+      0,
+      10, 10,
+      0, false,
+      MouseWheelEvent.WHEEL_UNIT_SCROLL,
+      3, -1
+    )
+    for (listener in liveLogView.logList.scrollPane.mouseWheelListeners) {
+      listener.mouseWheelMoved(wheelUpEvent)
+    }
+
+    // Scrolling UP should disable auto-scroll
+    assertFalse(liveLogView.autoScrollCb.isSelected)
+  }
+
+  @Test
+  fun testAutoScrollDisabledOnKeyboardNavigation() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    assertTrue(liveLogView.autoScrollCb.isSelected)
+
+    val keyEvent = KeyEvent(
+      liveLogView.logList.table,
+      KeyEvent.KEY_PRESSED,
+      System.currentTimeMillis(),
+      0,
+      KeyEvent.VK_PAGE_UP,
+      KeyEvent.CHAR_UNDEFINED
+    )
+    for (listener in liveLogView.logList.table.keyListeners) {
+      listener.keyPressed(keyEvent)
+    }
+
+    assertFalse(liveLogView.autoScrollCb.isSelected)
+  }
+
+  @Test
+  fun testViewportPositionCompensatedWhenLogsEvictedWithAutoScrollDisabled() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val panel = liveLogView.contentPane
+    panel.setSize(800, 600)
+    panel.doLayout()
+    liveLogView.logList.setSize(800, 300)
+    liveLogView.logList.doLayout()
+    liveLogView.logList.scrollPane.setSize(800, 300)
+    liveLogView.logList.scrollPane.doLayout()
+
+    val initialLogs = (1..50).map { LogEntry("Line $it", LogLevel.INFO, null, LogStream.MAIN) }
+    liveLogView.showAllLogs(initialLogs, emptyList())
+
+    // Turn auto-scroll OFF and position viewport at y = 200
+    liveLogView.autoScrollCb.isSelected = false
+    val viewport = liveLogView.logList.scrollPane.viewport
+    viewport.viewPosition = Point(0, 200)
+
+    // Evict 5 logs (evictedHeight = 5 * rowHeight)
+    val rowHeight = liveLogView.logList.table.rowHeight
+    val batchLogs = (51..55).map { LogEntry("Line $it", LogLevel.INFO, null, LogStream.MAIN) }
+    liveLogView.showLogsBatch(LiveLogBatch(batchLogs, emptyList(), 5, 0))
+
+    // Viewport position should be compensated: 200 - (5 * rowHeight)
+    val expectedY = maxOf(0, 200 - (5 * rowHeight))
+    assertEquals(expectedY, viewport.viewPosition.y)
   }
 }
