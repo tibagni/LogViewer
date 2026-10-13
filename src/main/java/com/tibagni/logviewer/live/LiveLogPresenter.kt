@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.live
 
+import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.AdbLogStreamer
@@ -17,6 +18,8 @@ interface LiveLogPresenterView {
   fun showStats(totalReceived: Long, droppedCount: Long, allCount: Int, filteredCount: Int)
   fun showLogsBatch(batch: LiveLogBatch)
   fun showAllLogs(allLogs: List<LogEntry>, filteredLogs: List<LogEntry>)
+  fun showFilteringProgress(progress: Int)
+  fun finishFilteringProgress()
 }
 
 interface LiveLogPresenter {
@@ -56,6 +59,7 @@ class LiveLogPresenterImpl(
 ) : LiveLogPresenter {
 
   private var streamingJob: Job? = null
+  private var filteringJob: Job? = null
   private var _connectedDevice: AdbDevice? = null
   override val connectedDevice: AdbDevice?
     get() = _connectedDevice
@@ -69,14 +73,48 @@ class LiveLogPresenterImpl(
 
   private val filtersListener = object : FiltersRepository.Listener {
     override fun onFiltersApplied(appliedFilters: List<Filter>) {
-      liveLogsRepository.setLiveFilters(appliedFilters)
-      view.showAllLogs(liveLogsRepository.allLogs, liveLogsRepository.filteredLogs)
-      view.showStats(
-        totalReceived = liveLogsRepository.totalLogsReceived,
-        droppedCount = liveLogsRepository.droppedLogsCount,
-        allCount = liveLogsRepository.allLogsCount,
-        filteredCount = liveLogsRepository.filteredLogsCount
-      )
+      applyFiltersAsync(appliedFilters)
+    }
+  }
+
+  private fun applyFiltersAsync(appliedFilters: List<Filter>) {
+    filteringJob?.cancel()
+    filteringJob = coroutineScope.launch {
+      val hasLogs = liveLogsRepository.allLogsCount > 0
+      if (hasLogs) {
+        withContext(mainDispatcher) {
+          view.showFilteringProgress(0)
+        }
+      }
+
+      try {
+        withContext(ioDispatcher) {
+          liveLogsRepository.setLiveFilters(appliedFilters, ProgressReporter { progress, _ ->
+            coroutineScope.launch(mainDispatcher) {
+              view.showFilteringProgress(progress)
+            }
+          })
+        }
+      } finally {
+        if (!isActive) {
+          withContext(NonCancellable) {
+            withContext(mainDispatcher) {
+              view.finishFilteringProgress()
+            }
+          }
+        }
+      }
+
+      withContext(mainDispatcher) {
+        view.finishFilteringProgress()
+        view.showAllLogs(liveLogsRepository.allLogs, liveLogsRepository.filteredLogs)
+        view.showStats(
+          totalReceived = liveLogsRepository.totalLogsReceived,
+          droppedCount = liveLogsRepository.droppedLogsCount,
+          allCount = liveLogsRepository.allLogsCount,
+          filteredCount = liveLogsRepository.filteredLogsCount
+        )
+      }
     }
   }
 
@@ -203,7 +241,10 @@ class LiveLogPresenterImpl(
   }
 
   override fun clearLogs() {
+    filteringJob?.cancel()
+    filteringJob = null
     liveLogsRepository.clear()
+    view.finishFilteringProgress()
     view.showAllLogs(emptyList(), emptyList())
     view.showStats(
       totalReceived = 0,
@@ -213,9 +254,10 @@ class LiveLogPresenterImpl(
     )
   }
 
-
   override fun finishing() {
     stopStreaming()
+    filteringJob?.cancel()
+    filtersRepository.removeListener(filtersListener)
     coroutineScope.cancel()
   }
 }

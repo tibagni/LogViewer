@@ -1,6 +1,8 @@
 package com.tibagni.logviewer.live
 
+import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.Filters
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogStream
 
@@ -42,7 +44,7 @@ interface LiveLogsRepository {
   fun addLogEntry(entry: LogEntry): LiveLogBatch
   fun addLogEntries(entries: Collection<LogEntry>): LiveLogBatch
 
-  fun setLiveFilters(filters: Collection<Filter>)
+  fun setLiveFilters(filters: Collection<Filter>, progressReporter: ProgressReporter? = null)
   fun clear()
 
   fun getEntryAt(index: Int): LogEntry?
@@ -149,7 +151,7 @@ class LiveLogsRepositoryImpl(
     )
   }
 
-  override fun setLiveFilters(filters: Collection<Filter>) = synchronized(lock) {
+  override fun setLiveFilters(filters: Collection<Filter>, progressReporter: ProgressReporter?) = synchronized(lock) {
     liveFilters.clear()
     liveFilters.addAll(filters)
 
@@ -157,23 +159,26 @@ class LiveLogsRepositoryImpl(
       filter.initTemporaryInfo()
     }
 
-    _filteredLogs.clear()
+    val pr = progressReporter ?: ProgressReporter { _, _ -> }
 
-    for (entry in _allLogs) {
-      var firstMatchedFilter: Filter? = null
-      for (filter in liveFilters) {
-        if (filter.appliesTo(entry)) {
-          if (firstMatchedFilter == null) {
-            firstMatchedFilter = filter
-          }
-          filter.temporaryInfo?.incrementLineCount(entry.logStream)
-        }
-      }
-      entry.appliedFilter = firstMatchedFilter
-      if (firstMatchedFilter != null) {
-        _filteredLogs.add(entry)
-      }
+    if (_allLogs.isEmpty()) {
+      _filteredLogs.clear()
+      pr.onProgress(100, "")
+      return@synchronized
     }
+
+    if (liveFilters.isEmpty()) {
+      for (entry in _allLogs) {
+        entry.appliedFilter = null
+      }
+      _filteredLogs.clear()
+      pr.onProgress(100, "")
+      return@synchronized
+    }
+
+    val matched = Filters.applyMultipleFilters(_allLogs.toList(), liveFilters.toTypedArray(), pr)
+    _filteredLogs.clear()
+    _filteredLogs.addAll(matched)
   }
 
   override fun clear() = synchronized(lock) {

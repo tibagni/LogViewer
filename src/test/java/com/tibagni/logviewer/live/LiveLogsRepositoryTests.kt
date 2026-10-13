@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.live
 
+import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogEntry
@@ -200,5 +201,41 @@ class LiveLogsRepositoryTests {
     assertEquals(50, repo.droppedLogsCount)
     assertEquals(150, batch.newAllLogs.size)
     assertEquals(50, batch.evictedAllCount)
+  }
+
+  @Test
+  fun testSetLiveFiltersWithProgressReporter() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
+    val entries = (1..20).map { createEntry("Log entry $it") }
+    repo.addLogEntries(entries)
+
+    val filter = createFilter("EntryFilter", "entry 1")
+    val progressUpdates = mutableListOf<Int>()
+    val progressReporter = ProgressReporter { progress, _ ->
+      progressUpdates.add(progress)
+    }
+
+    repo.setLiveFilters(listOf(filter), progressReporter)
+
+    assertTrue(progressUpdates.isNotEmpty())
+    assertEquals(100, progressUpdates.last())
+    assertEquals(11, repo.filteredLogsCount)
+  }
+
+  @Test
+  fun testSetLiveFiltersEmptyClearsAppliedFilters() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
+    val e1 = createEntry("Line with error")
+    val filter = createFilter("ErrorFilter", "error")
+    repo.setLiveFilters(listOf(filter))
+    repo.addLogEntry(e1)
+
+    assertSame(filter, e1.appliedFilter)
+    assertEquals(1, repo.filteredLogsCount)
+
+    repo.setLiveFilters(emptyList())
+
+    assertNull(e1.appliedFilter)
+    assertEquals(0, repo.filteredLogsCount)
   }
 }

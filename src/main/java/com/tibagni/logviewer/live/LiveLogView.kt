@@ -65,6 +65,7 @@ class LiveLogViewImpl(
   @VisibleForTesting internal lateinit var autoScrollCb: JCheckBox
   @VisibleForTesting internal lateinit var clearBtn: JButton
   @VisibleForTesting internal lateinit var stopBtn: JButton
+  @VisibleForTesting internal lateinit var filteringProgressBar: JProgressBar
 
   @VisibleForTesting internal lateinit var logList: SearchableTable
   @VisibleForTesting internal lateinit var filteredLogList: SearchableTable
@@ -215,7 +216,17 @@ class LiveLogViewImpl(
         .build()
     )
 
-    contentPane.add(toolbar, BorderLayout.NORTH)
+    val headerPanel = JPanel(BorderLayout())
+    headerPanel.add(toolbar, BorderLayout.CENTER)
+
+    filteringProgressBar = JProgressBar(0, 100).apply {
+      preferredSize = Dimension(preferredSize.width, UIScaleUtils.dip(4))
+      isStringPainted = false
+      isVisible = false
+    }
+    headerPanel.add(filteringProgressBar, BorderLayout.SOUTH)
+
+    contentPane.add(headerPanel, BorderLayout.NORTH)
 
     // Center split pane with logs
     val logsSplitPane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
@@ -345,6 +356,26 @@ class LiveLogViewImpl(
     if (autoScrollCb.isSelected) {
       scrollToBottom()
     }
+  }
+
+  override fun showFilteringProgress(progress: Int) {
+    if (!filteringProgressBar.isVisible) {
+      filteringProgressBar.isVisible = true
+    }
+    if (progress <= 0) {
+      filteringProgressBar.isIndeterminate = true
+    } else {
+      if (filteringProgressBar.isIndeterminate) {
+        filteringProgressBar.isIndeterminate = false
+      }
+      filteringProgressBar.value = progress
+    }
+  }
+
+  override fun finishFilteringProgress() {
+    filteringProgressBar.isVisible = false
+    filteringProgressBar.isIndeterminate = false
+    filteringProgressBar.value = 0
   }
 
   private fun setupAutoScrollInteractions() {

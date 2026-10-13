@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.live
 
+import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.AdbLogStreamer
 import com.tibagni.logviewer.adb.DeviceState
@@ -224,13 +225,24 @@ class LiveLogPresenterTests {
       val presenter = createPresenter(scope)
       presenter.init()
       verify(mockFiltersRepo).addListener(captureNonNull(captor, dummyFilterListener))
+      clearInvocations(mockRepo)
 
       val listener = captor.value
       assertNotNull(listener)
       val filter = Filter("F1", "matched", Color.RED, LogLevel.INFO).apply { isApplied = true }
       listener.onFiltersApplied(listOf(filter))
 
-      verify(mockRepo).setLiveFilters(listOf(filter))
+      @Suppress("UNCHECKED_CAST")
+      val filtersCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Filter>>
+      val prCaptor: ArgumentCaptor<ProgressReporter> = ArgumentCaptor.forClass(ProgressReporter::class.java)
+      verify(mockRepo).setLiveFilters(captureNonNull(filtersCaptor, emptyList()), prCaptor.capture())
+      assertEquals(listOf(filter), filtersCaptor.value)
+
+      prCaptor.value.onProgress(50, "")
+      verify(mockView).showFilteringProgress(50)
+
+      verify(mockView).showFilteringProgress(0)
+      verify(mockView).finishFilteringProgress()
       verify(mockView).showAllLogs(listOf(entry), listOf(entry))
 
       presenter.finishing()

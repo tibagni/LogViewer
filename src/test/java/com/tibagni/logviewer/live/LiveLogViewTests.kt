@@ -178,4 +178,27 @@ class LiveLogViewTests {
     val expectedY = maxOf(0, 200 - (5 * rowHeight))
     assertEquals(expectedY, viewport.viewPosition.y)
   }
+
+  @Test
+  fun testFilteringProgressDisplay() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    assertFalse(liveLogView.filteringProgressBar.isVisible)
+
+    // Initial progress <= 0 should make bar visible and indeterminate
+    liveLogView.showFilteringProgress(0)
+    assertTrue(liveLogView.filteringProgressBar.isVisible)
+    assertTrue(liveLogView.filteringProgressBar.isIndeterminate)
+
+    // Intermediate progress should set determinate value
+    liveLogView.showFilteringProgress(45)
+    assertTrue(liveLogView.filteringProgressBar.isVisible)
+    assertFalse(liveLogView.filteringProgressBar.isIndeterminate)
+    assertEquals(45, liveLogView.filteringProgressBar.value)
+
+    // Finish progress should hide and reset bar
+    liveLogView.finishFilteringProgress()
+    assertFalse(liveLogView.filteringProgressBar.isVisible)
+    assertFalse(liveLogView.filteringProgressBar.isIndeterminate)
+    assertEquals(0, liveLogView.filteringProgressBar.value)
+  }
 }
