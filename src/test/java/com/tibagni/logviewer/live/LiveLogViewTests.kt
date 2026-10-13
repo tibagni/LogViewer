@@ -22,10 +22,25 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import java.awt.event.MouseWheelEvent
 import java.io.File
+import com.tibagni.logviewer.adb.AdbDevice
+import com.tibagni.logviewer.adb.DeviceState
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import javax.swing.JButton
 import javax.swing.JFrame
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
 import javax.swing.JSplitPane
 
 class LiveLogViewTests {
+
+  private val testDevice = AdbDevice(
+    serialNumber = "device_123",
+    state = DeviceState.ONLINE,
+    product = "pixel",
+    model = "Pixel_7",
+    device = "panther",
+    transportId = "1"
+  )
 
   @Mock
   private lateinit var mockPresenter: LiveLogPresenter
@@ -53,7 +68,7 @@ class LiveLogViewTests {
     liveLogView.attachFiltersPanel(filtersPanel)
 
     // Verify panel parent is inside liveLogView contentPane
-    assertSame(filtersPanel.parent?.parent, liveLogView.contentPane)
+    assertTrue(SwingUtilities.isDescendingFrom(filtersPanel, liveLogView.contentPane))
     assertNotNull(filtersPanel.listener)
   }
 
@@ -74,7 +89,7 @@ class LiveLogViewTests {
   @Test
   fun testAutoScrollDisabledOnMouseClick() {
     val liveLogView = LiveLogViewImpl { mockPresenter }
-    assertTrue(liveLogView.autoScrollCb.isSelected)
+    assertTrue(liveLogView.isAutoScrollActive)
 
     val mouseEvent = MouseEvent(
       liveLogView.logList.table,
@@ -88,13 +103,13 @@ class LiveLogViewTests {
       listener.mousePressed(mouseEvent)
     }
 
-    assertFalse(liveLogView.autoScrollCb.isSelected)
+    assertFalse(liveLogView.isAutoScrollActive)
   }
 
   @Test
   fun testAutoScrollDisabledOnMouseWheel() {
     val liveLogView = LiveLogViewImpl { mockPresenter }
-    assertTrue(liveLogView.autoScrollCb.isSelected)
+    assertTrue(liveLogView.isAutoScrollActive)
 
     val wheelDownEvent = MouseWheelEvent(
       liveLogView.logList.scrollPane,
@@ -110,7 +125,7 @@ class LiveLogViewTests {
       listener.mouseWheelMoved(wheelDownEvent)
     }
     // Scrolling DOWN should NOT disable auto-scroll
-    assertTrue(liveLogView.autoScrollCb.isSelected)
+    assertTrue(liveLogView.isAutoScrollActive)
 
     val wheelUpEvent = MouseWheelEvent(
       liveLogView.logList.scrollPane,
@@ -127,13 +142,13 @@ class LiveLogViewTests {
     }
 
     // Scrolling UP should disable auto-scroll
-    assertFalse(liveLogView.autoScrollCb.isSelected)
+    assertFalse(liveLogView.isAutoScrollActive)
   }
 
   @Test
   fun testAutoScrollDisabledOnKeyboardNavigation() {
     val liveLogView = LiveLogViewImpl { mockPresenter }
-    assertTrue(liveLogView.autoScrollCb.isSelected)
+    assertTrue(liveLogView.isAutoScrollActive)
 
     val keyEvent = KeyEvent(
       liveLogView.logList.table,
@@ -147,7 +162,7 @@ class LiveLogViewTests {
       listener.keyPressed(keyEvent)
     }
 
-    assertFalse(liveLogView.autoScrollCb.isSelected)
+    assertFalse(liveLogView.isAutoScrollActive)
   }
 
   @Test
@@ -165,7 +180,7 @@ class LiveLogViewTests {
     liveLogView.showAllLogs(initialLogs, emptyList())
 
     // Turn auto-scroll OFF and position viewport at y = 200
-    liveLogView.autoScrollCb.isSelected = false
+    liveLogView.isAutoScrollActive = false
     val viewport = liveLogView.logList.scrollPane.viewport
     viewport.viewPosition = Point(0, 200)
 
@@ -213,7 +228,7 @@ class LiveLogViewTests {
     entry2.index = 2
 
     liveLogView.showAllLogs(listOf(entry0, entry1, entry2), listOf(entry1))
-    liveLogView.autoScrollCb.isSelected = true
+    liveLogView.isAutoScrollActive = true
 
     // Double click the only entry in filteredLogList (index 0 which is entry1 with index 1)
     liveLogView.filteredLogList.table.setRowSelectionInterval(0, 0)
@@ -230,7 +245,7 @@ class LiveLogViewTests {
     )
     liveLogView.filteredLogList.table.mouseListeners.forEach { it.mouseClicked(event) }
 
-    assertFalse("Auto scroll should be disabled on double click", liveLogView.autoScrollCb.isSelected)
+    assertFalse("Auto scroll should be disabled on double click", liveLogView.isAutoScrollActive)
     assertEquals(1, liveLogView.logList.table.selectedRow)
   }
 
@@ -264,5 +279,176 @@ class LiveLogViewTests {
     liveLogView.logList.table.mouseListeners.forEach { it.mouseClicked(event) }
 
     assertEquals(0, liveLogView.filteredLogList.table.selectedRow)
+  }
+
+  @Test
+  fun testOnTabSelectedLoadsDevicesWhenNotStreaming() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    `when`(mockPresenter.isStreaming).thenReturn(false)
+
+    liveLogView.onTabSelected()
+
+    verify(mockPresenter).loadDevices()
+  }
+
+  @Test
+  fun testOnTabSelectedDoesNotLoadDevicesWhenStreaming() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    `when`(mockPresenter.isStreaming).thenReturn(true)
+
+    liveLogView.onTabSelected()
+
+    verify(mockPresenter, never()).loadDevices()
+  }
+
+  @Test
+  fun testShowDeviceScanningShowsScanningPanel() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showDeviceScanning()
+
+    assertNotNull(liveLogView.contentPane)
+  }
+
+  @Test
+  fun testShowNoDevicesShowsEmptyState() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showNoDevices()
+
+    assertNotNull(liveLogView.contentPane)
+  }
+
+  @Test
+  fun testShowAdbNotAvailableShowsCard() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showAdbNotAvailable()
+
+    assertNotNull(liveLogView.contentPane)
+  }
+
+  @Test
+  fun testShowDeviceListPopulatesDevices() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showDeviceList(listOf(testDevice))
+
+    assertNotNull(liveLogView.contentPane)
+    assertEquals(1, liveLogView.deviceItemsContainer.componentCount)
+
+    // Verify width is bounded to 700dp
+    val prefSize = liveLogView.deviceItemsContainer.preferredSize
+    assertEquals(UIScaleUtils.dip(700), prefSize.width)
+
+    val itemCard = liveLogView.deviceItemsContainer.getComponent(0) as JPanel
+    val allButtons = (itemCard as java.awt.Container).components
+      .flatMap { (it as? java.awt.Container)?.components?.toList() ?: listOf(it) }
+      .filterIsInstance<JButton>()
+
+    val startBtn = allButtons.first { it.text == "Start" }
+    val termBtn = allButtons.first { it.text == "Terminal" }
+
+    startBtn.doClick()
+    verify(mockPresenter).startStreaming(testDevice)
+
+    termBtn.doClick()
+    verify(mockPresenter).openDeviceTerminal(testDevice)
+
+    // Double-click on card triggers startStreaming
+    val doubleClickEvent = MouseEvent(
+      itemCard,
+      MouseEvent.MOUSE_CLICKED,
+      System.currentTimeMillis(),
+      0,
+      10, 10,
+      2, false,
+      MouseEvent.BUTTON1
+    )
+    for (listener in itemCard.mouseListeners) {
+      listener.mouseClicked(doubleClickEvent)
+    }
+    verify(mockPresenter, times(2)).startStreaming(testDevice)
+
+    // Verify hover border transitions
+    val enterEvent = MouseEvent(itemCard, MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 10, 10, 0, false)
+    for (listener in itemCard.mouseListeners) {
+      listener.mouseEntered(enterEvent)
+    }
+
+    val exitEvent = MouseEvent(itemCard, MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, -10, -10, 0, false)
+    for (listener in itemCard.mouseListeners) {
+      listener.mouseExited(exitEvent)
+    }
+
+    // Verify onThemeChanged refreshes device list
+    liveLogView.onThemeChanged()
+    assertEquals(1, liveLogView.deviceItemsContainer.componentCount)
+  }
+
+  @Test
+  fun testShowLogsViewAndDeviceScanning() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showLogsView(testDevice)
+    liveLogView.showDeviceScanning()
+
+    assertNotNull(liveLogView.contentPane)
+  }
+
+  @Test
+  fun testSidePanelButtonsWiredToPresenter() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    `when`(mockPresenter.connectedDevice).thenReturn(testDevice)
+
+    // Stop/Resume button when streaming
+    `when`(mockPresenter.isStreaming).thenReturn(true)
+    liveLogView.showStreamingStatus("Streaming", true)
+    assertTrue(liveLogView.sidePanel.isItemEnabled(LiveLogViewImpl.ID_STOP_RESUME))
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_STOP_RESUME)
+    verify(mockPresenter).stopStreaming()
+
+    // Stop/Resume button when stopped
+    `when`(mockPresenter.isStreaming).thenReturn(false)
+    liveLogView.showStreamingStatus("Stopped", false)
+    assertTrue(liveLogView.sidePanel.isItemEnabled(LiveLogViewImpl.ID_STOP_RESUME))
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_STOP_RESUME)
+    verify(mockPresenter).startStreaming(testDevice)
+
+    // Clear logs button
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_CLEAR)
+    verify(mockPresenter).clearLogs()
+
+    // Terminal button
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_TERMINAL)
+    verify(mockPresenter).openDeviceTerminal(testDevice)
+
+    // Change device button
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_CHANGE_DEVICE)
+    verify(mockPresenter).disconnectDevice()
+  }
+
+  @Test
+  fun testAutoScrollButtonTogglesState() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    assertTrue(liveLogView.isAutoScrollActive)
+
+    // Toggle off
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_AUTOSCROLL)
+    assertFalse(liveLogView.isAutoScrollActive)
+
+    // Toggle back on
+    liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_AUTOSCROLL)
+    assertTrue(liveLogView.isAutoScrollActive)
+  }
+
+  @Test
+  fun testSidePanelExpandCollapseToggle() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+
+    assertFalse(liveLogView.isSidePanelExpanded)
+
+    // Expand
+    liveLogView.sidePanel.toggleExpandBtn?.doClick()
+    assertTrue(liveLogView.isSidePanelExpanded)
+
+    // Collapse
+    liveLogView.sidePanel.toggleExpandBtn?.doClick()
+    assertFalse(liveLogView.isSidePanelExpanded)
   }
 }

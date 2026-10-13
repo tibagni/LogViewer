@@ -74,11 +74,6 @@ public final class I18n {
   public static final String MENU_ITEM_FIND_FILTERS = "main.menu.filters.find";
   public static final String MENU_ITEM_CLEAN_DUPLICATE_FILTERS = "main.menu.filters.clean.duplicates";
   public static final String MENU_STREAMS = "main.menu.streams";
-  public static final String MENU_ADB = "main.menu.adb";
-  public static final String MENU_ITEM_ADB_DEVICES = "main.menu.adb.devices";
-  public static final String MENU_ITEM_ADB_SHELL = "main.menu.adb.shell";
-  public static final String MENU_ITEM_ADB_RESTART_SERVER = "main.menu.adb.restart_server";
-  public static final String MENU_ITEM_ADB_LIVE_LOGCAT = "main.menu.adb.live_logcat";
   public static final String MENU_HELP = "main.menu.help";
   public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
   public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
@@ -117,14 +112,31 @@ public final class I18n {
   public static final String MAIN_TAB_LIVE_LOGS = "main.tab.live_logs";
 
   // Live Logs
+  public static final String LIVE_LOGS_START = "live.logs.start";
+  public static final String LIVE_LOGS_TERMINAL = "live.logs.terminal";
+  public static final String LIVE_LOGS_CHANGE_DEVICE = "live.logs.change_device";
   public static final String LIVE_LOGS_STOP = "live.logs.stop";
   public static final String LIVE_LOGS_CLEAR = "live.logs.clear";
+  public static final String LIVE_LOGS_REFRESH = "live.logs.refresh";
+  public static final String LIVE_LOGS_RESTART_SERVER = "live.logs.restart_server";
+  public static final String LIVE_LOGS_RESTARTING_SERVER = "live.logs.restarting_server";
   public static final String LIVE_LOGS_AUTOSCROLL = "live.logs.autoscroll";
   public static final String LIVE_LOGS_STATUS_STREAMING = "live.logs.status.streaming";
   public static final String LIVE_LOGS_STATUS_STOPPED = "live.logs.status.stopped";
   public static final String LIVE_LOGS_STATUS_SUMMARY = "live.logs.status.summary";
   public static final String LIVE_LOGS_LABEL_DEVICE = "live.logs.label.device";
   public static final String LIVE_LOGS_LABEL_STATUS = "live.logs.label.status";
+  public static final String LIVE_LOGS_CONNECTED_DEVICES = "live.logs.connected_devices";
+  public static final String LIVE_LOGS_SCANNING = "live.logs.scanning";
+  public static final String LIVE_LOGS_NO_DEVICES_TITLE = "live.logs.no_devices_title";
+  public static final String LIVE_LOGS_NO_DEVICES_MSG = "live.logs.no_devices_msg";
+  public static final String LIVE_LOGS_ADB_NOT_FOUND_TITLE = "live.logs.adb_not_found_title";
+  public static final String LIVE_LOGS_ADB_NOT_FOUND_MSG = "live.logs.adb_not_found_msg";
+  public static final String LIVE_LOGS_CONFIGURE_ADB = "live.logs.configure_adb";
+  public static final String LIVE_LOGS_DEVICE_UNAUTHORIZED = "live.logs.device_unauthorized";
+  public static final String LIVE_LOGS_DEVICE_OFFLINE = "live.logs.device_offline";
+  public static final String LIVE_LOGS_EXPAND_SIDEBAR = "live.logs.expand_sidebar";
+  public static final String LIVE_LOGS_COLLAPSE_SIDEBAR = "live.logs.collapse_sidebar";
 
   // Edit Filter Dialog
   public static final String FILTER_DIALOG_EDIT_TITLE = "filter.dialog.edit_title";

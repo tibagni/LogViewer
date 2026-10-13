@@ -55,46 +55,6 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun closeCurrentlyOpenedBugReports()
 }
 
-private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
-  val toggleMyLogs : ToggleButton
-  private var lastDividerLocation = -1.0
-
-  init {
-    layout = BoxLayout(this, BoxLayout.Y_AXIS)
-    targetSplitPanel.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
-      if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
-        val newDividerLocation = evt.newValue as Int
-
-        // Do not save the divider location when we collapse the panel
-        if (newDividerLocation < targetSplitPanel.maximumDividerLocation) {
-          // Get the divider position as a percentage of the panel
-          lastDividerLocation = newDividerLocation.toDouble() / targetSplitPanel.width
-        }
-      }
-    }
-
-    toggleMyLogs = ToggleButton(ImageIcon(javaClass.getResource("/Images/view_list_icon.png"))) { showPanel(it) }
-    toggleMyLogs.toolTipText = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
-
-    add(toggleMyLogs)
-  }
-
-  private fun showPanel(show: Boolean) {
-    if (show) {
-      targetSplitPanel.rightComponent.isVisible = true
-      val dividerPos = if (lastDividerLocation < 0) 0.7 else lastDividerLocation
-      targetSplitPanel.setDividerLocation(dividerPos)
-    } else {
-      targetSplitPanel.rightComponent.isVisible = false
-    }
-  }
-
-  fun showMyLogsView() {
-    if (toggleMyLogs.isActive) return // Nothing to do here. It is already active
-    toggleMyLogs.toggle()
-  }
-}
-
 class LogViewerViewImpl(
   private val mainView: MainView,
   private var filtersPanel: FiltersPanel,
@@ -103,12 +63,14 @@ class LogViewerViewImpl(
   override val presenter: LogViewerPresenter
 
   private lateinit var mainSplitPane: JSplitPane
+  private lateinit var mainLogSplit: JSplitPane
+  private var myLogsLastDividerLocation = -1.0
   private lateinit var logList: SearchableTable
   private lateinit var filteredLogList: SearchableTable
   private lateinit var myLogsList: SearchableTable
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
-  private lateinit var sidePanel: SidePanel
+  private lateinit var sideButtonsPanel: SideButtonsPanel
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
@@ -459,7 +421,7 @@ class LogViewerViewImpl(
   override fun onThemeChanged() {
     updateLogFont()
     filtersPanel.onThemeChanged()
-    SwingUtilities.updateComponentTreeUI(sidePanel)
+    SwingUtilities.updateComponentTreeUI(sideButtonsPanel)
   }
 
   override fun requestFinish(doFinish: () -> Unit) {
@@ -495,7 +457,18 @@ class LogViewerViewImpl(
     } else {
       myLogsListTableModel.setLogs(logEntries)
       myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
-      sidePanel.showMyLogsView()
+      sideButtonsPanel.setItemActive(MY_LOGS_BUTTON_ID, true)
+      showMyLogsPanel(true)
+    }
+  }
+
+  private fun showMyLogsPanel(show: Boolean) {
+    if (show) {
+      mainLogSplit.rightComponent.isVisible = true
+      val dividerPos = if (myLogsLastDividerLocation < 0) 0.7 else myLogsLastDividerLocation
+      mainLogSplit.setDividerLocation(dividerPos)
+    } else {
+      mainLogSplit.rightComponent.isVisible = false
     }
   }
 
@@ -621,9 +594,17 @@ class LogViewerViewImpl(
         .build()
     )
 
-    val mainLogSplit = JSplitPane()
+    mainLogSplit = JSplitPane()
     mainLogSplit.dividerSize = UIScaleUtils.dip(5)
     mainLogSplit.resizeWeight = 0.8
+    mainLogSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
+      if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
+        val newDividerLocation = evt.newValue as Int
+        if (newDividerLocation < mainLogSplit.maximumDividerLocation) {
+          myLogsLastDividerLocation = newDividerLocation.toDouble() / mainLogSplit.width
+        }
+      }
+    }
 
     logsPane = JSplitPane()
     logsPane.dividerSize = UIScaleUtils.dip(5)
@@ -647,9 +628,18 @@ class LogViewerViewImpl(
 
     mainSplitPane.rightComponent = mainLogSplit
 
-    sidePanel = SidePanel(mainLogSplit)
+    sideButtonsPanel = SideButtonsPanel(
+      isExpandable = false,
+      entries = listOf(
+        SidePanelEntry.Toggle(
+          id = MY_LOGS_BUTTON_ID,
+          icon = CommonIcons.myLogsIcon(),
+          text = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
+        ) { showMyLogsPanel(it) }
+      )
+    )
     _contentPane.add(
-      sidePanel,
+      sideButtonsPanel,
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
@@ -660,5 +650,9 @@ class LogViewerViewImpl(
     )
 
     mainSplitPane.leftComponent = filtersPanel
+  }
+
+  companion object {
+    private const val MY_LOGS_BUTTON_ID = "my_logs"
   }
 }

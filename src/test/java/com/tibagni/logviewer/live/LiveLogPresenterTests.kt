@@ -3,6 +3,7 @@ package com.tibagni.logviewer.live
 import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.AdbLogStreamer
+import com.tibagni.logviewer.adb.AdbManager
 import com.tibagni.logviewer.adb.DeviceState
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.i18n.I18n
@@ -54,6 +55,9 @@ class LiveLogPresenterTests {
   @Mock
   private lateinit var mockFiltersRepo: com.tibagni.logviewer.FiltersRepository
 
+  @Mock
+  private lateinit var mockAdbManager: AdbManager
+
   private val testDevice = AdbDevice(
     serialNumber = "device_123",
     state = DeviceState.ONLINE,
@@ -69,6 +73,10 @@ class LiveLogPresenterTests {
     `when`(mockFiltersRepo.appliedFilters).thenAnswer {
       mockFiltersRepo.currentlyOpenedFilters?.values?.flatten()?.filter { it.isApplied } ?: emptyList<Filter>()
     }
+    `when`(mockAdbManager.isAdbAvailable).thenReturn(true)
+    runBlocking {
+      `when`(mockAdbManager.getConnectedDevices()).thenReturn(emptyList())
+    }
   }
 
   private fun createPresenter(scope: CoroutineScope): LiveLogPresenterImpl {
@@ -77,6 +85,7 @@ class LiveLogPresenterTests {
       liveLogsRepository = mockRepo,
       adbLogStreamer = mockStreamer,
       filtersRepository = mockFiltersRepo,
+      adbManager = mockAdbManager,
       coroutineScope = scope,
       ioDispatcher = Dispatchers.Unconfined,
       mainDispatcher = Dispatchers.Unconfined
@@ -154,10 +163,14 @@ class LiveLogPresenterTests {
 
       presenter.stopStreaming()
       assertFalse(presenter.isStreaming)
-      assertNull(presenter.connectedDevice)
+      assertEquals(testDevice, presenter.connectedDevice)
 
       verify(mockStreamer).stopStream()
       verify(mockView, atLeastOnce()).showStreamingStatus(I18n.get(I18n.LIVE_LOGS_STATUS_STOPPED), false)
+
+      // When clearing logs after stopping, connectedDevice is reset
+      presenter.clearLogs()
+      assertNull(presenter.connectedDevice)
 
       presenter.finishing()
     }
@@ -245,6 +258,142 @@ class LiveLogPresenterTests {
       verify(mockView).finishFilteringProgress()
       verify(mockView).showAllLogs(listOf(entry), listOf(entry))
 
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testLoadDevicesWhenAdbNotAvailable() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.isAdbAvailable).thenReturn(false)
+      val presenter = createPresenter(scope)
+
+      presenter.loadDevices()
+
+      verify(mockView).showDeviceScanning()
+      verify(mockView).showAdbNotAvailable()
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testLoadDevicesWithNoDevices() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.isAdbAvailable).thenReturn(true)
+      `when`(mockAdbManager.getConnectedDevices()).thenReturn(emptyList())
+      val presenter = createPresenter(scope)
+
+      presenter.loadDevices()
+
+      verify(mockView).showDeviceScanning()
+      verify(mockView).showNoDevices()
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testLoadDevicesWithConnectedDevices() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.isAdbAvailable).thenReturn(true)
+      val devices = listOf(testDevice)
+      `when`(mockAdbManager.getConnectedDevices()).thenReturn(devices)
+      val presenter = createPresenter(scope)
+
+      presenter.loadDevices()
+
+      verify(mockView).showDeviceScanning()
+      verify(mockView).showDeviceList(devices)
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testOpenDeviceTerminalSuccess() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.launchDeviceTerminal(testDevice)).thenReturn(true)
+      val presenter = createPresenter(scope)
+
+      presenter.openDeviceTerminal(testDevice)
+
+      verify(mockAdbManager).launchDeviceTerminal(testDevice)
+      verify(mockView, never()).showOpenTerminalFailed()
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testOpenDeviceTerminalFailed() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.launchDeviceTerminal(testDevice)).thenReturn(false)
+      val presenter = createPresenter(scope)
+
+      presenter.openDeviceTerminal(testDevice)
+
+      verify(mockAdbManager).launchDeviceTerminal(testDevice)
+      verify(mockView).showOpenTerminalFailed()
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testRestartAdbServerSuccess() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.isAdbAvailable).thenReturn(true)
+      `when`(mockAdbManager.restartServer()).thenReturn(true)
+      val presenter = createPresenter(scope)
+
+      presenter.restartAdbServer()
+
+      verify(mockView).showRestartingServer(true)
+      verify(mockAdbManager).restartServer()
+      verify(mockView).showRestartingServer(false)
+      verify(mockView).showRestartServerResult(true)
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testRestartAdbServerFailed() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockAdbManager.isAdbAvailable).thenReturn(true)
+      `when`(mockAdbManager.restartServer()).thenReturn(false)
+      val presenter = createPresenter(scope)
+
+      presenter.restartAdbServer()
+
+      verify(mockView).showRestartingServer(true)
+      verify(mockAdbManager).restartServer()
+      verify(mockView).showRestartingServer(false)
+      verify(mockView).showRestartServerResult(false)
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testDisconnectDeviceReturnsToHub() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      `when`(mockStreamer.startStream(testDevice.serialNumber)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice)
+      assertTrue(presenter.isStreaming)
+      assertEquals(testDevice, presenter.connectedDevice)
+
+      presenter.disconnectDevice()
+
+      assertFalse(presenter.isStreaming)
+      assertNull(presenter.connectedDevice)
+      verify(mockStreamer).stopStream()
+      verify(mockView).showDeviceScanning()
       presenter.finishing()
     }
   }

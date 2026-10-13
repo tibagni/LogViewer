@@ -4,6 +4,7 @@ import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.AdbLogStreamer
+import com.tibagni.logviewer.adb.AdbManager
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.i18n.I18n
@@ -20,6 +21,16 @@ interface LiveLogPresenterView {
   fun showAllLogs(allLogs: List<LogEntry>, filteredLogs: List<LogEntry>)
   fun showFilteringProgress(progress: Int)
   fun finishFilteringProgress()
+
+  fun showDeviceScanning()
+  fun showNoDevices()
+  fun showDeviceList(devices: List<AdbDevice>)
+  fun showAdbNotAvailable()
+  fun showRestartingServer(isRestarting: Boolean)
+  fun showRestartServerResult(success: Boolean)
+  fun showOpenTerminalFailed()
+
+  fun showLogsView(device: AdbDevice)
 }
 
 interface LiveLogPresenter {
@@ -28,9 +39,13 @@ interface LiveLogPresenter {
   val visibleLogsOffset: Int
 
   fun init()
+  fun loadDevices()
   fun startStreaming(device: AdbDevice)
   fun stopStreaming()
   fun clearLogs()
+  fun openDeviceTerminal(device: AdbDevice)
+  fun restartAdbServer()
+  fun disconnectDevice()
   fun finishing()
 }
 
@@ -52,6 +67,7 @@ class LiveLogPresenterImpl(
   private val view: LiveLogPresenterView,
   private val liveLogsRepository: LiveLogsRepository,
   private val adbLogStreamer: AdbLogStreamer,
+  private val adbManager: AdbManager = ServiceLocator.adbManager,
   private val filtersRepository: FiltersRepository = ServiceLocator.filtersRepository,
   private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob()),
   private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
@@ -60,6 +76,7 @@ class LiveLogPresenterImpl(
 
   private var streamingJob: Job? = null
   private var filteringJob: Job? = null
+  private var deviceScanJob: Job? = null
   private var _connectedDevice: AdbDevice? = null
   override val connectedDevice: AdbDevice?
     get() = _connectedDevice
@@ -131,6 +148,32 @@ class LiveLogPresenterImpl(
       allCount = liveLogsRepository.allLogsCount,
       filteredCount = liveLogsRepository.filteredLogsCount
     )
+    val hasLogs = liveLogsRepository.allLogsCount > 0
+    val device = _connectedDevice
+    if (hasLogs && device != null) {
+      view.showLogsView(device)
+    } else {
+      loadDevices()
+    }
+  }
+
+  override fun loadDevices() {
+    deviceScanJob?.cancel()
+    deviceScanJob = coroutineScope.launch {
+      view.showDeviceScanning()
+      val isAvailable = withContext(ioDispatcher) { adbManager.isAdbAvailable }
+      if (!isAvailable) {
+        view.showAdbNotAvailable()
+        return@launch
+      }
+
+      val devices = withContext(ioDispatcher) { adbManager.getConnectedDevices() }
+      if (devices.isEmpty()) {
+        view.showNoDevices()
+      } else {
+        view.showDeviceList(devices)
+      }
+    }
   }
 
   override fun startStreaming(device: AdbDevice) {
@@ -141,6 +184,7 @@ class LiveLogPresenterImpl(
     _connectedDevice = device
     _isStreaming = true
 
+    view.showLogsView(device)
     view.showStreamingStatus(
       statusText = I18n.get(I18n.LIVE_LOGS_STATUS_STREAMING),
       isStreaming = true
@@ -216,7 +260,6 @@ class LiveLogPresenterImpl(
       consumerJob.join()
       if (_isStreaming) {
         _isStreaming = false
-        _connectedDevice = null
         withContext(mainDispatcher) {
           view.showStreamingStatus(
             statusText = I18n.get(I18n.LIVE_LOGS_STATUS_STOPPED),
@@ -230,7 +273,6 @@ class LiveLogPresenterImpl(
   override fun stopStreaming() {
     if (!_isStreaming) return
     _isStreaming = false
-    _connectedDevice = null
     streamingJob?.cancel()
     streamingJob = null
     adbLogStreamer.stopStream()
@@ -252,10 +294,50 @@ class LiveLogPresenterImpl(
       allCount = 0,
       filteredCount = 0
     )
+    if (!_isStreaming) {
+      _connectedDevice = null
+      loadDevices()
+    }
+  }
+
+  override fun disconnectDevice() {
+    stopStreaming()
+    _connectedDevice = null
+    clearLogs()
+  }
+
+  override fun openDeviceTerminal(device: AdbDevice) {
+    coroutineScope.launch {
+      val launched = withContext(ioDispatcher) {
+        adbManager.launchDeviceTerminal(device)
+      }
+      if (!launched) {
+        withContext(mainDispatcher) {
+          view.showOpenTerminalFailed()
+        }
+      }
+    }
+  }
+
+  override fun restartAdbServer() {
+    coroutineScope.launch {
+      withContext(mainDispatcher) {
+        view.showRestartingServer(true)
+      }
+      val success = withContext(ioDispatcher) {
+        adbManager.restartServer()
+      }
+      withContext(mainDispatcher) {
+        view.showRestartingServer(false)
+        view.showRestartServerResult(success)
+      }
+      loadDevices()
+    }
   }
 
   override fun finishing() {
     stopStreaming()
+    deviceScanJob?.cancel()
     filteringJob?.cancel()
     filtersRepository.removeListener(filtersListener)
     coroutineScope.cancel()
