@@ -11,6 +11,7 @@ interface LogViewerPreferences {
     var reapplyFiltersAfterEdit: Boolean
     var rememberAppliedFilters: Boolean
     var preferredTextEditor: File?
+    var adbPath: File?
     var collapseAllGroupsStartup: Boolean
     var showLineNumbers: Boolean
     var showLogLineDividers: Boolean
@@ -42,6 +43,7 @@ interface LogViewerPreferences {
         fun onReapplyFiltersConfigChanged()
         fun onRememberAppliedFiltersConfigChanged()
         fun onPreferredTextEditorChanged()
+        fun onAdbPathChanged() {}
         fun onCollapseAllGroupsStartupChanged()
         fun onShowLineNumbersChanged()
         fun onShowLogLineDividersChanged() {}
@@ -60,6 +62,7 @@ interface LogViewerPreferences {
         override fun onReapplyFiltersConfigChanged() {}
         override fun onRememberAppliedFiltersConfigChanged() {}
         override fun onPreferredTextEditorChanged() {}
+        override fun onAdbPathChanged() {}
         override fun onCollapseAllGroupsStartupChanged() {}
         override fun onShowLineNumbersChanged() {}
         override fun onShowLogLineDividersChanged() {}

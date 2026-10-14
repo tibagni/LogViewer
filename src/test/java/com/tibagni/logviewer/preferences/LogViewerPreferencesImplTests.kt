@@ -488,6 +488,61 @@ class LogViewerPreferencesImplTests {
         verify(mockListener, only()).onPreferredTextEditorChanged()
     }
 
+    @Test
+    fun testSettingAdbPath() {
+        val testFile = File("custom/bin/adb")
+        LogViewerPreferencesImpl.adbPath = testFile
+
+        verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.ADB_PATH, testFile.absolutePath)
+        verify(mockListener, only()).onAdbPathChanged()
+    }
+
+    @Test
+    fun testGettingAdbPath() {
+        val testFile = File("custom/bin/adb")
+
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.ADB_PATH), any())).thenReturn(testFile.absolutePath)
+
+        val returnedFile = LogViewerPreferencesImpl.adbPath
+
+        verify(mockPrefs, never()).put(any(), any())
+        verify(mockListener, never()).onAdbPathChanged()
+
+        assertEquals(testFile.absolutePath, returnedFile?.absolutePath)
+    }
+
+    @Test
+    fun testGettingAdbPathUnset() {
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.ADB_PATH), any())).thenReturn(null)
+
+        val returnedFile = LogViewerPreferencesImpl.adbPath
+
+        verify(mockPrefs, never()).put(any(), any())
+        verify(mockListener, never()).onAdbPathChanged()
+
+        assertNull(returnedFile)
+    }
+
+    @Test
+    fun testGettingAdbPathEmpty() {
+        `when`(mockPrefs.get(eq(LogViewerPreferencesImpl.ADB_PATH), any())).thenReturn("")
+
+        val returnedFile = LogViewerPreferencesImpl.adbPath
+
+        verify(mockPrefs, never()).put(any(), any())
+        verify(mockListener, never()).onAdbPathChanged()
+
+        assertNull(returnedFile)
+    }
+
+    @Test
+    fun testUnSettingAdbPath() {
+        LogViewerPreferencesImpl.adbPath = null
+
+        verify(mockPrefs, times(1)).put(LogViewerPreferencesImpl.ADB_PATH, "")
+        verify(mockListener, only()).onAdbPathChanged()
+    }
+
     /**
      * Tests the applyFilterOnCheck setting
      * This setting is used to determine if the filters should be applied when the user checks a filter checkbox

@@ -2,6 +2,7 @@ package com.tibagni.logviewer.adb
 
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,11 +21,20 @@ interface AdbManager {
 class AdbManagerImpl(
   private val commandRunner: CommandRunner = DefaultCommandRunner(),
   private val fileChecker: (File) -> Boolean = { it.isFile && (it.canExecute() || PlatformUtils.isWindows) },
-  private val terminalLauncher: AdbTerminalLauncher = ServiceLocator.adbTerminalLauncher
+  private val terminalLauncher: AdbTerminalLauncher = ServiceLocator.adbTerminalLauncher,
+  private val userPrefs: LogViewerPreferences? = ServiceLocator.logViewerPrefs
 ) : AdbManager {
 
-  private var customAdbPath: File? = null
+  private var customAdbPath: File? = userPrefs?.adbPath
   private var cachedAdbPath: File? = null
+
+  init {
+    userPrefs?.addPreferenceListener(object : LogViewerPreferences.Adapter() {
+      override fun onAdbPathChanged() {
+        setCustomAdbPath(userPrefs.adbPath)
+      }
+    })
+  }
 
   override fun setCustomAdbPath(path: File?) {
     customAdbPath = path

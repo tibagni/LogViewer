@@ -30,6 +30,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private static final String APPLY_FILTER_EDIT_ID = "apply_filter_edit";
   private static final String REMEMBER_APPLIED_FILTERS_ID = "remember_applied_filters";
   private static final String PREFERRED_TEXT_EDITOR_ID = "preferred_text_editor";
+  private static final String ADB_PATH_PREF_ID = "adb_path";
   private static final String COLLAPSE_ALL_GROUPS_STARTUP_ID = "collapse_all_groups_startup";
   private static final String SHOW_LINE_NUMBERS_ID = "show_line_numbers";
   private static final String SHOW_LOG_DIVIDERS_ID = "show_log_dividers";
@@ -61,12 +62,16 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
   private JCheckBox showLogDividersChbx;
   private JTextField preferredEditorPathTxt;
   private JButton preferredEditorPathBtn;
+  private JTextField adbPathTxt;
+  private JButton adbPathBtn;
+  private JButton adbPathClearBtn;
   private JTextField fontPreviewTxt;
   private JCheckBox applyFiltersOnCheckChbx;
 
   private JFileChooser filterFolderChooser;
   private JFileChooser logsFolderChooser;
   private JFileChooser preferredEditorFileChooser;
+  private JFileChooser adbFileChooser;
   private final LogViewerPreferences userPrefs;
   private final LogViewerThemeManager themeManager;
 
@@ -87,11 +92,12 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     initLookAndFeelPreference();
     initLogFontPreference();
     initPreferredEditorPathPreference();
+    initAdbPathPreference();
 
     // Adjust the size according to the content after everything is populated
     Dimension prefSize = contentPane.getPreferredSize();
     prefSize.width = Math.max(prefSize.width, UIScaleUtils.dip(500));
-    prefSize.height = Math.max(prefSize.height, UIScaleUtils.dip(550));
+    prefSize.height = Math.max(prefSize.height, UIScaleUtils.dip(580));
     contentPane.setPreferredSize(prefSize);
     contentPane.validate();
 
@@ -216,6 +222,17 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     preferredEditorPathTxt.setText(path);
   }
 
+  private void initAdbPathPreference() {
+    adbPathBtn.addActionListener(e -> onSelectAdbPath());
+    adbPathClearBtn.addActionListener(e -> {
+      adbPathTxt.setText(null);
+      saveActions.put(ADB_PATH_PREF_ID, () -> userPrefs.setAdbPath(null));
+    });
+    File adbFile = userPrefs.getAdbPath();
+    String path = adbFile != null ? adbFile.getAbsolutePath() : null;
+    adbPathTxt.setText(path);
+  }
+
   @Override
   public void onOk() {
     if (saveActions.isEmpty()) {
@@ -336,6 +353,23 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     }
   }
 
+  private void onSelectAdbPath() {
+    if (adbFileChooser == null) {
+      File adbFile = userPrefs.getAdbPath();
+      File parentFolder = adbFile != null ? adbFile.getParentFile() : null;
+      adbFileChooser = new JFileChooserExt(parentFolder);
+      adbFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+    }
+
+    int selectedOption = adbFileChooser.showOpenDialog(this);
+    if (selectedOption == JFileChooser.APPROVE_OPTION) {
+      File selectedFile = adbFileChooser.getSelectedFile();
+      adbPathTxt.setText(selectedFile.getAbsolutePath());
+      saveActions.put(ADB_PATH_PREF_ID,
+          () -> userPrefs.setAdbPath(selectedFile));
+    }
+  }
+
   public static void showPreferencesDialog(JFrame parent) {
     LogViewerPreferencesDialog dialog = new LogViewerPreferencesDialog(parent);
 
@@ -385,7 +419,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     final JPanel formPane = new JPanel();
     formPane.setLayout(new FormLayout(
         "fill:pref,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:pref",
-        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
+        "center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow,top:3dlu:noGrow,center:d:grow"));
 
 
     final JLabel lookNFeelLbl = new JLabel();
@@ -518,6 +552,25 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
     formPane.add(preferredEditorPathBtn, cc.xy(5, 39));
+
+    final JSeparator sep5 = new JSeparator();
+    formPane.add(sep5, cc.xyw(1, 41, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+
+    final JLabel adbPathLbl = new JLabel();
+    adbPathLbl.setText(I18n.get(I18n.PREF_ADB_PATH));
+    formPane.add(adbPathLbl, cc.xy(1, 43));
+    adbPathTxt = new JTextField();
+    adbPathTxt.setEditable(false);
+    formPane.add(adbPathTxt, cc.xy(3, 43, CellConstraints.FILL, CellConstraints.DEFAULT));
+    JPanel adbButtonsPane = new JPanel(new FlowLayout(FlowLayout.LEFT, UIScaleUtils.dip(2), 0));
+    adbButtonsPane.setOpaque(false);
+    adbPathBtn = new JButton();
+    adbPathBtn.setText("...");
+    adbPathClearBtn = new JButton();
+    adbPathClearBtn.setText(I18n.get(I18n.COMMON_CLEAR));
+    adbButtonsPane.add(adbPathBtn);
+    adbButtonsPane.add(adbPathClearBtn);
+    formPane.add(adbButtonsPane, cc.xy(5, 43));
 
     return formPane;
   }
