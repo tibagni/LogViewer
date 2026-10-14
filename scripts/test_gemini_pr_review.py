@@ -101,6 +101,19 @@ class TestGeminiPrReview(unittest.TestCase):
         self.assertEqual(found_id, 202)
 
     @patch("subprocess.run")
+    def test_find_existing_comment_slurped_pages(self, mock_subproc):
+        pages = [
+            [{"id": 101, "body": "Standard human comment"}],
+            [{"id": 303, "body": f"{gemini_pr_review.COMMENT_MARKER}\nSlurped review"}]
+        ]
+        mock_subproc.return_value = MagicMock(
+            stdout=json.dumps(pages), returncode=0
+        )
+
+        found_id = gemini_pr_review.find_existing_comment("12", "owner/repo")
+        self.assertEqual(found_id, 303)
+
+    @patch("subprocess.run")
     def test_find_existing_comment_none(self, mock_subproc):
         comments = [
             {"id": 101, "body": "Standard human comment"}
