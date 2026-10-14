@@ -551,6 +551,7 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     formPane.add(preferredEditorPathTxt, cc.xy(3, 39, CellConstraints.FILL, CellConstraints.DEFAULT));
     preferredEditorPathBtn = new JButton();
     preferredEditorPathBtn.setText("...");
+    preferredEditorPathBtn.setToolTipText(I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR));
     formPane.add(preferredEditorPathBtn, cc.xy(5, 39));
 
     final JSeparator sep5 = new JSeparator();
@@ -566,8 +567,10 @@ public class LogViewerPreferencesDialog extends JDialog implements ButtonsPane.L
     adbButtonsPane.setOpaque(false);
     adbPathBtn = new JButton();
     adbPathBtn.setText("...");
+    adbPathBtn.setToolTipText(I18n.get(I18n.PREF_ADB_PATH));
     adbPathClearBtn = new JButton();
     adbPathClearBtn.setText(I18n.get(I18n.COMMON_CLEAR));
+    adbPathClearBtn.setToolTipText(I18n.get(I18n.COMMON_CLEAR));
     adbButtonsPane.add(adbPathBtn);
     adbButtonsPane.add(adbPathClearBtn);
     formPane.add(adbButtonsPane, cc.xy(5, 43));

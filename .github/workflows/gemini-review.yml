@@ -31,4 +31,5 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.base_ref }}
         run: |
+          python3 -m unittest discover -s scripts -p "test_*.py"
           python3 scripts/gemini_pr_review.py

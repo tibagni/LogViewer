@@ -117,18 +117,22 @@ class TestGeminiPrReview(unittest.TestCase):
     def test_post_new_review_comment(self, mock_subproc, mock_find):
         gemini_pr_review.post_or_update_review_comment("12", "owner/repo", "Review body")
         mock_subproc.assert_called_once()
-        args = mock_subproc.call_args[0][0]
-        self.assertIn("POST", args)
-        self.assertIn("repos/owner/repo/issues/12/comments", args)
+        args, kwargs = mock_subproc.call_args
+        self.assertIn("POST", args[0])
+        self.assertIn("repos/owner/repo/issues/12/comments", args[0])
+        self.assertIn("--input", args[0])
+        self.assertIn(b"Review body", kwargs["input"])
 
     @patch("scripts.gemini_pr_review.find_existing_comment", return_value=555)
     @patch("subprocess.run")
     def test_update_existing_review_comment(self, mock_subproc, mock_find):
         gemini_pr_review.post_or_update_review_comment("12", "owner/repo", "Updated body")
         mock_subproc.assert_called_once()
-        args = mock_subproc.call_args[0][0]
-        self.assertIn("PATCH", args)
-        self.assertIn("repos/owner/repo/issues/comments/555", args)
+        args, kwargs = mock_subproc.call_args
+        self.assertIn("PATCH", args[0])
+        self.assertIn("repos/owner/repo/issues/comments/555", args[0])
+        self.assertIn("--input", args[0])
+        self.assertIn(b"Updated body", kwargs["input"])
 
     @patch.dict(os.environ, {}, clear=True)
     def test_main_missing_api_key(self):

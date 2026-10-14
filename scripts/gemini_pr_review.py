@@ -212,15 +212,16 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
             print(f"Warning: Could not write to GITHUB_STEP_SUMMARY: {e}")
 
     existing_id = find_existing_comment(pr_number, repo)
+    payload = json.dumps({"body": full_comment}).encode("utf-8")
     if existing_id:
         print(f"Updating existing Gemini review comment #{existing_id} on PR #{pr_number}...")
         cmd = [
             "gh", "api",
             "--method", "PATCH",
             f"repos/{repo}/issues/comments/{existing_id}",
-            "-f", f"body={full_comment}"
+            "--input", "-"
         ]
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, input=payload, check=True)
         print("Review comment updated successfully.")
     else:
         print(f"Posting new Gemini review comment on PR #{pr_number}...")
@@ -228,9 +229,9 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
             "gh", "api",
             "--method", "POST",
             f"repos/{repo}/issues/{pr_number}/comments",
-            "-f", f"body={full_comment}"
+            "--input", "-"
         ]
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, input=payload, check=True)
         print("Review comment posted successfully.")
 
 
