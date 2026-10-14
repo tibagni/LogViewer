@@ -41,6 +41,10 @@ public class ContextInfo {
     linesFound.get(stream).incrementAndGet();
   }
 
+  public void decrementLineCount(LogStream stream) {
+    linesFound.get(stream).decrementAndGet();
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

@@ -123,7 +123,11 @@ class I18nTests {
           checkedKeysCount++
         }
       }
-      assertEquals(229, checkedKeysCount)
+      val expectedKeysCount = fields.count {
+        Modifier.isPublic(it.modifiers) && Modifier.isStatic(it.modifiers) && Modifier.isFinal(it.modifiers)
+          && it.type == String::class.java
+      }
+      assertEquals(expectedKeysCount, checkedKeysCount)
     } finally {
       I18n.setLocale(originalLocale)
     }

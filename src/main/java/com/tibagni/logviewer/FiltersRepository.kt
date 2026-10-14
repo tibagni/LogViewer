@@ -14,6 +14,17 @@ class PersistFiltersException(message: String?, cause: Throwable) : java.lang.Ex
 interface FiltersRepository {
   val currentlyOpenedFilters: Map<String, List<Filter>>
   val currentlyOpenedFilterFiles: Map<String, File>
+  val appliedFilters: List<Filter>
+    get() = currentlyOpenedFilters.values.flatten().filter { it.isApplied }
+
+  fun notifyFiltersApplied()
+
+  fun addListener(listener: Listener)
+  fun removeListener(listener: Listener)
+
+  interface Listener {
+    fun onFiltersApplied(appliedFilters: List<@JvmSuppressWildcards Filter>)
+  }
 
   @Throws(OpenFiltersException::class)
   fun openFilterFiles(files: Array<File>)
@@ -42,6 +53,28 @@ class FiltersRepositoryImpl: FiltersRepository {
     get() = _currentlyOpenedFilterFiles
 
   private val lastOpenedSerializedFilters = mutableMapOf<String, List<String>>()
+  private val listeners = mutableSetOf<FiltersRepository.Listener>()
+
+  override val appliedFilters: List<Filter>
+    get() = _currentlyOpenedFilters.values.flatten().filter { it.isApplied }
+
+  override fun notifyFiltersApplied() {
+    val listenersCopy = synchronized(listeners) { listeners.toList() }
+    val applied = appliedFilters
+    listenersCopy.forEach { it.onFiltersApplied(applied) }
+  }
+
+  override fun addListener(listener: FiltersRepository.Listener) {
+    synchronized(listeners) {
+      listeners.add(listener)
+    }
+  }
+
+  override fun removeListener(listener: FiltersRepository.Listener) {
+    synchronized(listeners) {
+      listeners.remove(listener)
+    }
+  }
 
   @Throws(OpenFiltersException::class)
   override fun openFilterFiles(files: Array<File>) {

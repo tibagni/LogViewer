@@ -4,6 +4,10 @@ import com.tibagni.logviewer.about.AboutDialog
 import com.tibagni.logviewer.bugreport.BugReportView
 import com.tibagni.logviewer.bugreport.BugReportViewImpl
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FiltersPanel
+import com.tibagni.logviewer.filter.FiltersPanelHost
+import com.tibagni.logviewer.live.LiveLogView
+import com.tibagni.logviewer.live.LiveLogViewImpl
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
@@ -63,7 +67,10 @@ class MainViewImpl(
   override val parent: JFrame,
   private val userPrefs: LogViewerPreferences,
   initialLogFiles: Set<File>
-) : MainView {
+) : MainView, FiltersPanelHost {
+  override val parentWindow: Frame
+    get() = parent
+
   private lateinit var mainPanel: JPanel
 
   private var logSaveFileChooser: JFileChooserExt
@@ -72,8 +79,11 @@ class MainViewImpl(
   private var filterOpenFileChooser: JFileChooserExt
   private val progressDialogs = mutableMapOf<String, ProgressDialog>()
 
+  private val filtersPanel: FiltersPanel
   private val logViewerView: LogViewerView
   private val bugReportView: BugReportView
+  private val liveLogView: LiveLogView
+  private lateinit var tabbedPane: JTabbedPane
 
   // Dynamic Menu items
   private var saveFilteredLogs: JMenuItem? = null
@@ -85,9 +95,11 @@ class MainViewImpl(
     get() = mainPanel
 
   init {
-    logViewerView = LogViewerViewImpl(this, initialLogFiles)
+    liveLogView = LiveLogViewImpl()
+    filtersPanel = FiltersPanel(this)
+    logViewerView = LogViewerViewImpl(this, filtersPanel, initialLogFiles)
     bugReportView = BugReportViewImpl(this)
-    finishChain = listOf(logViewerView, bugReportView)
+    finishChain = listOf(filtersPanel, logViewerView, bugReportView, liveLogView)
 
     buildUi()
     configureMenuBar()
@@ -121,6 +133,7 @@ class MainViewImpl(
     recreateFileChoosers()
     logViewerView.onThemeChanged()
     bugReportView.onThemeChanged()
+    liveLogView.onThemeChanged()
   }
 
   private fun recreateFileChoosers() {
@@ -132,7 +145,7 @@ class MainViewImpl(
 
   private fun handleClose() {
     if (finishChainPosition > finishChain.lastIndex) {
-      // We wen through all views, we can close the app now
+      // We went through all views, we can close the app now
       parent.dispose()
       return
     }
@@ -287,17 +300,17 @@ class MainViewImpl(
 
     val filtersMenu = JMenu(I18n.get(I18n.MENU_FILTERS))
     val openFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_FILTERS))
-    openFilterItem.addActionListener { logViewerView.handleOpenFiltersMenu() }
+    openFilterItem.addActionListener { filtersPanel.handleOpenFiltersMenu() }
     filtersMenu.add(openFilterItem)
     val findFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_FIND_FILTERS))
     findFilterItem.accelerator = KeyStroke.getKeyStroke(
       KeyEvent.VK_F,
       menuShortcutMask or InputEvent.SHIFT_DOWN_MASK
     )
-    findFilterItem.addActionListener { logViewerView.handleFindFiltersMenu() }
+    findFilterItem.addActionListener { filtersPanel.showSearchFiltersDialog() }
     filtersMenu.add(findFilterItem)
     val cleanDuplicatesItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLEAN_DUPLICATE_FILTERS))
-    cleanDuplicatesItem.addActionListener { logViewerView.handleCleanDuplicateFilters() }
+    cleanDuplicatesItem.addActionListener { filtersPanel.handleCleanDuplicateFilters() }
     filtersMenu.add(cleanDuplicatesItem)
 
     val helpMenu = JMenu(I18n.get(I18n.MENU_HELP))
@@ -363,10 +376,24 @@ class MainViewImpl(
     mainPanel = JPanel()
     mainPanel.layout = GridBagLayout()
     mainPanel.preferredSize = Dimension(UIScaleUtils.dip(1000), UIScaleUtils.dip(500))
-    val tabbedPane = JTabbedPane()
+    tabbedPane = JTabbedPane()
 
     tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LOGS), logViewerView.contentPane)
     tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_BUG_REPORT), bugReportView.contentPane)
+    tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LIVE_LOGS), liveLogView.contentPane)
+
+    tabbedPane.addChangeListener {
+      when (tabbedPane.selectedComponent) {
+        logViewerView.contentPane -> {
+          logViewerView.attachFiltersPanel(filtersPanel)
+        }
+        liveLogView.contentPane -> {
+          liveLogView.attachFiltersPanel(filtersPanel)
+          liveLogView.onTabSelected()
+        }
+      }
+    }
+
     mainPanel.add(
       tabbedPane, GBConstraintsBuilder()
         .withGridx(1)

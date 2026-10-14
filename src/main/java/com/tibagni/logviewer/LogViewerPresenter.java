@@ -1,7 +1,6 @@
 package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.filter.Filter;
-import com.tibagni.logviewer.filter.FilterMatch;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLineInfo;
 import com.tibagni.logviewer.log.LogStream;
@@ -12,36 +11,16 @@ import java.util.List;
 
 public interface LogViewerPresenter {
 
-  enum UserSelection {
-    CONFIRMED,
-    REJECTED,
-    CANCELLED
-  }
-
   void init();
-  void addFilter(String group, Filter newFilter);
-  void addFilter(String group, Filter newFilter, boolean ignoreReapply);
-  String addGroup(String group);
-  List<String> getGroups();
-  void removeFilters(String group, int[] indices);
-  void moveFilters(String origGroup, String destGroup, int[] indices);
-  void removeGroup(String group);
-  void reorderFilters(String group, int orig, int dest);
-  int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
-  int getPrevFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
-  void goToTimestamp(String timestamp);
-  void saveFilters(String group);
-  void loadFilters(File[] filtersFile, boolean keepCurrentFilters);
   void loadLogs(File[] logFiles);
   void loadLogs(File[] logFiles, Charset charset);
   void refreshLogs();
   void refreshLogsWithDifferentCharset(Charset charset);
   void saveFilteredLogs(File file);
-  void applyFilters();
-  void filterEdited(Filter filter);
 
-  void setAllFiltersApplied(String group, boolean isApplied);
-  void setAllFiltersApplied(boolean isApplied);
+  int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
+  int getPrevFilteredLogForFilter(Filter filter, int firstLogIndexSearch);
+  void goToTimestamp(String timestamp);
 
   void setStreamAllowed(LogStream stream, boolean allowed);
   boolean isStreamAllowed(LogStream stream);
@@ -57,12 +36,7 @@ public interface LogViewerPresenter {
   void addLogEntriesToMyLogs(List<LogEntry> entries);
   void removeFromMyLog(int[] indices);
 
-  void cleanDuplicateFilters();
-  FilterMatch findDuplicateFilter(String pattern, boolean isCaseSensitive, Filter editingFilter);
-
   LogLineInfo getLogLineInfo(LogEntry entry);
-  void addFilterForPid(int pid);
-  void addFilterForTag(String tag);
 
   void finishing();
 }

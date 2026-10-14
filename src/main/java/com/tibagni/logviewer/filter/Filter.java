@@ -150,7 +150,7 @@ public class Filter {
     this.temporaryInfo = null;
   }
 
-  void initTemporaryInfo() {
+  public void initTemporaryInfo() {
     temporaryInfo = new ContextInfo();
   }
 

@@ -78,6 +78,26 @@ public final class I18n {
   public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
   public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
 
+  // ADB Dialogs
+  public static final String ADB_DEVICES_DIALOG_TITLE = "adb.dialog.devices.title";
+  public static final String ADB_DEVICES_COL_STATUS = "adb.dialog.devices.col.status";
+  public static final String ADB_DEVICES_COL_NAME = "adb.dialog.devices.col.name";
+  public static final String ADB_DEVICES_COL_SERIAL = "adb.dialog.devices.col.serial";
+  public static final String ADB_DEVICES_COL_TRANSPORT_ID = "adb.dialog.devices.col.transport_id";
+  public static final String ADB_DEVICES_REFRESH = "adb.dialog.devices.refresh";
+  public static final String ADB_DEVICES_OPEN_TERMINAL = "adb.dialog.devices.open_terminal";
+  public static final String ADB_DEVICES_RESTART_SERVER = "adb.dialog.devices.restart_server";
+  public static final String ADB_DEVICES_NO_DEVICES = "adb.dialog.devices.no_devices";
+  public static final String ADB_DEVICES_UNAUTHORIZED_WARNING = "adb.dialog.devices.unauthorized_warning";
+  public static final String ADB_DEVICES_ADB_NOT_FOUND = "adb.dialog.devices.adb_not_found";
+  public static final String ADB_DEVICES_RESTART_SUCCESS = "adb.dialog.devices.restart_success";
+  public static final String ADB_DEVICES_RESTART_FAILED = "adb.dialog.devices.restart_failed";
+  public static final String ADB_SHELL_SELECT_DEVICE_TITLE = "adb.dialog.shell.select_device_title";
+  public static final String ADB_SHELL_SELECT_DEVICE_MSG = "adb.dialog.shell.select_device_msg";
+  public static final String ADB_SHELL_NO_ONLINE_DEVICES = "adb.dialog.shell.no_online_devices";
+  public static final String ADB_SHELL_TERMINAL_FAILED = "adb.dialog.shell.terminal_failed";
+  public static final String ADB_ERROR_TITLE = "adb.dialog.error.title";
+
   // Encoding Submenu
   public static final String MENU_ITEM_ENCODING_ASCII = "main.menu.encoding.ascii";
   public static final String MENU_ITEM_ENCODING_LATIN = "main.menu.encoding.latin";
@@ -89,6 +109,34 @@ public final class I18n {
   // Main Tabs
   public static final String MAIN_TAB_LOGS = "main.tab.logs";
   public static final String MAIN_TAB_BUG_REPORT = "main.tab.bugreport";
+  public static final String MAIN_TAB_LIVE_LOGS = "main.tab.live_logs";
+
+  // Live Logs
+  public static final String LIVE_LOGS_START = "live.logs.start";
+  public static final String LIVE_LOGS_TERMINAL = "live.logs.terminal";
+  public static final String LIVE_LOGS_CHANGE_DEVICE = "live.logs.change_device";
+  public static final String LIVE_LOGS_STOP = "live.logs.stop";
+  public static final String LIVE_LOGS_CLEAR = "live.logs.clear";
+  public static final String LIVE_LOGS_REFRESH = "live.logs.refresh";
+  public static final String LIVE_LOGS_RESTART_SERVER = "live.logs.restart_server";
+  public static final String LIVE_LOGS_RESTARTING_SERVER = "live.logs.restarting_server";
+  public static final String LIVE_LOGS_AUTOSCROLL = "live.logs.autoscroll";
+  public static final String LIVE_LOGS_STATUS_STREAMING = "live.logs.status.streaming";
+  public static final String LIVE_LOGS_STATUS_STOPPED = "live.logs.status.stopped";
+  public static final String LIVE_LOGS_STATUS_SUMMARY = "live.logs.status.summary";
+  public static final String LIVE_LOGS_LABEL_DEVICE = "live.logs.label.device";
+  public static final String LIVE_LOGS_LABEL_STATUS = "live.logs.label.status";
+  public static final String LIVE_LOGS_CONNECTED_DEVICES = "live.logs.connected_devices";
+  public static final String LIVE_LOGS_SCANNING = "live.logs.scanning";
+  public static final String LIVE_LOGS_NO_DEVICES_TITLE = "live.logs.no_devices_title";
+  public static final String LIVE_LOGS_NO_DEVICES_MSG = "live.logs.no_devices_msg";
+  public static final String LIVE_LOGS_ADB_NOT_FOUND_TITLE = "live.logs.adb_not_found_title";
+  public static final String LIVE_LOGS_ADB_NOT_FOUND_MSG = "live.logs.adb_not_found_msg";
+  public static final String LIVE_LOGS_CONFIGURE_ADB = "live.logs.configure_adb";
+  public static final String LIVE_LOGS_DEVICE_UNAUTHORIZED = "live.logs.device_unauthorized";
+  public static final String LIVE_LOGS_DEVICE_OFFLINE = "live.logs.device_offline";
+  public static final String LIVE_LOGS_EXPAND_SIDEBAR = "live.logs.expand_sidebar";
+  public static final String LIVE_LOGS_COLLAPSE_SIDEBAR = "live.logs.collapse_sidebar";
 
   // Edit Filter Dialog
   public static final String FILTER_DIALOG_EDIT_TITLE = "filter.dialog.edit_title";

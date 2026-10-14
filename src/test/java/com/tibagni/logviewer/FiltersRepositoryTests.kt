@@ -550,4 +550,84 @@ class FiltersRepositoryTests {
     assertTrue(filtersRepository.currentlyOpenedFilters.isEmpty())
     assertTrue(filtersRepository.currentlyOpenedFilterFiles.isEmpty())
   }
+
+  @Test
+  fun testAppliedFiltersReturnsOnlyApplied() {
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    val f2 = Filter("f2", "p2", java.awt.Color.BLUE, LogLevel.INFO).apply { isApplied = false }
+    val f3 = Filter("f3", "p3", java.awt.Color.GREEN, LogLevel.VERBOSE).apply { isApplied = true }
+
+    filtersRepository.addGroup("Group1")
+    filtersRepository.addGroup("Group2")
+    filtersRepository.addFilters("Group1", listOf(f1, f2))
+    filtersRepository.addFilter("Group2", f3)
+
+    val applied = filtersRepository.appliedFilters
+    assertEquals(2, applied.size)
+    assertTrue(applied.contains(f1))
+    assertTrue(applied.contains(f3))
+    assertFalse(applied.contains(f2))
+  }
+
+  @Test
+  fun testNotifyFiltersAppliedNotifiesListeners() {
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    filtersRepository.addGroup("Group1")
+    filtersRepository.addFilter("Group1", f1)
+
+    var notifiedFilters: List<Filter>? = null
+    val listener = object : FiltersRepository.Listener {
+      override fun onFiltersApplied(appliedFilters: List<Filter>) {
+        notifiedFilters = appliedFilters
+      }
+    }
+
+    filtersRepository.addListener(listener)
+    filtersRepository.notifyFiltersApplied()
+
+    assertNotNull(notifiedFilters)
+    assertEquals(listOf(f1), notifiedFilters)
+  }
+
+  @Test
+  fun testRemoveListenerStopsNotifications() {
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    filtersRepository.addGroup("Group1")
+    filtersRepository.addFilter("Group1", f1)
+
+    var notificationCount = 0
+    val listener = object : FiltersRepository.Listener {
+      override fun onFiltersApplied(appliedFilters: List<Filter>) {
+        notificationCount++
+      }
+    }
+
+    filtersRepository.addListener(listener)
+    filtersRepository.notifyFiltersApplied()
+    assertEquals(1, notificationCount)
+
+    filtersRepository.removeListener(listener)
+    filtersRepository.notifyFiltersApplied()
+    assertEquals(1, notificationCount)
+  }
+
+  @Test
+  fun testAddDuplicateListenerOnlyNotifiedOnce() {
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    filtersRepository.addGroup("Group1")
+    filtersRepository.addFilter("Group1", f1)
+
+    var notificationCount = 0
+    val listener = object : FiltersRepository.Listener {
+      override fun onFiltersApplied(appliedFilters: List<Filter>) {
+        notificationCount++
+      }
+    }
+
+    filtersRepository.addListener(listener)
+    filtersRepository.addListener(listener)
+    filtersRepository.notifyFiltersApplied()
+
+    assertEquals(1, notificationCount)
+  }
 }

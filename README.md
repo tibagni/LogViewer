@@ -9,7 +9,10 @@ Check out more details on [https://tibagni.github.io/LogViewer/](https://tibagni
 
 ## 💻 Features
 * 🔍 Analyze multiple log files at once
-* 🎨 Create and apply different filters on the set of log files, showing a single filtered output differentiating each filter by a different color (defined by you)
+* 📱 Stream real-time Android logcat directly from connected devices via ADB
+* 🎨 Create and apply different filters on the set of log files or live stream, showing a single filtered output differentiating each filter by a different color (defined by you)
+* 🔌 Integrated Device Hub: auto-detects USB/Wi-Fi devices with status badges, one-click terminal launcher, and server controls
+* 🔄 High-throughput live log buffer with continuous background filtering, oldest-log eviction, and smart auto-scroll controls
 * 🔎 Search across all open filter groups with a global Find dialog (`Ctrl+Shift+F`)
 * 🌗 Modern UI with Light and Dark themes
 * 🤖 Read bugreport information such as system properties, application packages, hidden system packages, carrier config, subscriptions etc.
@@ -31,6 +34,7 @@ Check out more details on [https://tibagni.github.io/LogViewer/](https://tibagni
 ## 📚 Requirements
 * Java 8 or later (tested on Java 8, 11, 17, and 21)
 * Gradle (optional, wrapper `./gradlew` is included)
+* [Android Platform Tools (`adb`)](https://developer.android.com/tools/releases/platform-tools) (optional, required for live logcat streaming and device terminal)
 
 ## 🏠 Getting Started
 To get started with LogViewer, follow these steps:

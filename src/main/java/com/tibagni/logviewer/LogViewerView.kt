@@ -1,16 +1,10 @@
 package com.tibagni.logviewer
 
-import com.tibagni.logviewer.LogViewerPresenter.UserSelection
-import com.tibagni.logviewer.filter.DuplicateCluster
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
-import com.tibagni.logviewer.filter.FilterDeduplicationDialog
-import com.tibagni.logviewer.filter.FilterDuplicateUtils
-import com.tibagni.logviewer.filter.FiltersList
-import com.tibagni.logviewer.filter.FilterException
+import com.tibagni.logviewer.filter.FiltersPanel
+import com.tibagni.logviewer.filter.FiltersPanelListener
 import com.tibagni.logviewer.i18n.I18n
-import com.tibagni.logviewer.filter.FiltersList.FiltersListener
-import com.tibagni.logviewer.filter.SearchFiltersDialog
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
@@ -25,22 +19,19 @@ import java.awt.event.*
 import java.io.File
 import java.nio.charset.Charset
 import javax.swing.*
-import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 
 // This is the interface known by other views (MainView)
 interface LogViewerView : View {
   val contentPane: JPanel
+  val presenter: LogViewerPresenter
+  fun attachFiltersPanel(panel: FiltersPanel)
   fun buildStreamsMenu(): JMenu?
   fun handleOpenLogsMenu()
   fun handleRefreshLogsMenu()
   fun handleChangeCharsetMenu(charset: Charset)
   fun handleSaveFilteredLogsMenu()
-  fun handleOpenFiltersMenu()
-  fun handleFindFiltersMenu()
-  fun handleCleanDuplicateFilters()
-  fun showSearchFiltersDialog()
   fun handleGoToTimestampMenu()
   fun handleConfigureIgnoredLogs()
   fun onThemeChanged()
@@ -48,7 +39,6 @@ interface LogViewerView : View {
 
 // This is the interface known by the presenter
 interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
-  fun configureFiltersList(filters: Map<String, List<Filter>>?)
   fun showErrorMessage(message: String?)
   fun showSkippedLogsMessage(skippedLogs: List<String>)
   fun showLogs(logEntries: List<LogEntry>?)
@@ -57,82 +47,30 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showFilteredLogs(logEntries: List<LogEntry>?)
   fun showLogLocationAtSearchedTimestamp(allLogsPosition: Int, filteredLogsPosition: Int)
   fun showInvalidTimestampSearchError(failedInput: String?)
-  fun onAppliedFiltersRemembered()
   fun showAvailableLogStreams(logStreams: Set<LogStream>?)
-  fun showUnsavedFilterIndication(group: String?)
-  fun hideUnsavedFilterIndication(group: String?)
-  fun showAskToSaveFilterDialog(group: String?): UserSelection
-  fun showAskToSaveMultipleFiltersDialog(groups: Array<String>): Array<Boolean>?
-  fun showSaveFilters(group: String?): File?
   fun finish()
   fun showNavigationNextOver()
   fun showNavigationPrevOver()
   fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String)
   fun closeCurrentlyOpenedBugReports()
-  fun collapseAllGroups()
-  fun showInfoMessage(title: String, message: String)
-  fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>?
-  fun showDuplicateFilterWarning(duplicatePattern: String, duplicateGroup: String): Boolean
-  fun showSelectFilterGroup(groups: List<String>): String?
-  fun showToast(message: String)
 }
 
-private class SidePanel(val targetSplitPanel: JSplitPane) : JPanel() {
-  val toggleMyLogs : ToggleButton
-  private var lastDividerLocation = -1.0
+class LogViewerViewImpl(
+  private val mainView: MainView,
+  private var filtersPanel: FiltersPanel,
+  initialLogFiles: Set<File>
+) : LogViewerView, LogViewerPresenterView {
+  override val presenter: LogViewerPresenter
 
-  init {
-    layout = BoxLayout(this, BoxLayout.Y_AXIS)
-    targetSplitPanel.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
-      if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
-        val newDividerLocation = evt.newValue as Int
-
-        // Do not save the divider location when we collapse the panel
-        if (newDividerLocation < targetSplitPanel.maximumDividerLocation) {
-          // Get the divider position as a percentage of the panel
-          lastDividerLocation = newDividerLocation.toDouble() / targetSplitPanel.width
-        }
-      }
-    }
-
-    toggleMyLogs = ToggleButton(ImageIcon(javaClass.getResource("/Images/view_list_icon.png"))) { showPanel(it) }
-    toggleMyLogs.toolTipText = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
-
-    add(toggleMyLogs)
-  }
-
-  private fun showPanel(show: Boolean) {
-    if (show) {
-      targetSplitPanel.rightComponent.isVisible = true
-      val dividerPos = if (lastDividerLocation < 0) 0.7 else lastDividerLocation
-      targetSplitPanel.setDividerLocation(dividerPos)
-    } else {
-      targetSplitPanel.rightComponent.isVisible = false
-    }
-  }
-
-  fun showMyLogsView() {
-    if (toggleMyLogs.isActive) return // Nothing to do here. It is already active
-    toggleMyLogs.toggle()
-  }
-}
-
-class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<File>) : LogViewerView,
-  LogViewerPresenterView {
-  private val presenter: LogViewerPresenter
-
+  private lateinit var mainSplitPane: JSplitPane
+  private lateinit var mainLogSplit: JSplitPane
+  private var myLogsLastDividerLocation = -1.0
   private lateinit var logList: SearchableTable
   private lateinit var filteredLogList: SearchableTable
   private lateinit var myLogsList: SearchableTable
-  private lateinit var addNewFilterGroupBtn: JButton
-  private lateinit var moreFilterOptionsBtn: JButton
-  private lateinit var collapseExpandAllGroupsBtn: JButton
-  private lateinit var findFiltersBtn: JButton
   private lateinit var logsPane: JSplitPane
   private lateinit var currentLogsLbl: JLabel
-  private lateinit var filtersPane: FiltersList
-  private lateinit var sidePanel: SidePanel
-  private lateinit var applyFiltersBtn: JButton
+  private lateinit var sideButtonsPanel: SideButtonsPanel
 
   private lateinit var logListTableModel: LogListTableModel
   private lateinit var filteredLogListTableModel: LogListTableModel
@@ -148,6 +86,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   private val logStreams: HashSet<LogStream> = HashSet()
   private var doFinish: (() -> Unit)? = null
 
+  private val filtersPanelListener: FiltersPanelListener
+
+  override fun attachFiltersPanel(panel: FiltersPanel) {
+    this.filtersPanel = panel
+    val currentDivider = mainSplitPane.dividerLocation
+    mainSplitPane.leftComponent = panel
+    if (currentDivider > 0) {
+      mainSplitPane.dividerLocation = currentDivider
+    }
+    panel.listener = filtersPanelListener
+  }
+
   init {
     buildUi()
 
@@ -159,6 +109,27 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       ServiceLocator.filtersRepository
     )
     presenter.init()
+
+    filtersPanelListener = object : FiltersPanelListener {
+      override fun onNavigateNextFilteredLog(filter: Filter) {
+        val selectedFilteredLog = filteredLogList.table.selectedRow
+        val filteredLogIdx = presenter.getNextFilteredLogForFilter(filter, selectedFilteredLog)
+        if (filteredLogIdx != -1) {
+          SwingUtils.scrollToVisible(filteredLogList.table, filteredLogIdx)
+          filteredLogList.table.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
+        }
+      }
+
+      override fun onNavigatePrevFilteredLog(filter: Filter) {
+        val selectedFilteredLog = filteredLogList.table.selectedRow
+        val filteredLogIdx = presenter.getPrevFilteredLogForFilter(filter, selectedFilteredLog)
+        if (filteredLogIdx != -1) {
+          SwingUtils.scrollToVisible(filteredLogList.table, filteredLogIdx)
+          filteredLogList.table.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
+        }
+      }
+    }
+    filtersPanel.listener = filtersPanelListener
 
     logRenderer = LogCellRenderer()
     logRenderer.showLineNumbers(userPrefs.showLineNumbers)
@@ -197,14 +168,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         myLogsList.table.repaint()
       }
 
-      /*
-       * This is called when the user changes the "Apply filters on check change" preference.
-       */
-      override fun onApplyFiltersOnCheckChanged() {
-        // if the user has the preference to not apply the filter on check, we add the apply button
-        applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
-      }
-
       override fun onLogFontSizeChanged() {
         updateLogFont()
       }
@@ -217,19 +180,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         updateLogFont()
       }
     })
-
-    addNewFilterGroupBtn.addActionListener { addGroup() }
-    // Use Mouse event here to get the position on screen
-    moreFilterOptionsBtn.addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        showFilterOptionsMenu(e)
-      }
-    })
-    collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
-    findFiltersBtn.addActionListener { showSearchFiltersDialog() }
-    applyFiltersBtn.addActionListener { applyFilters() }
-
-    setupFiltersContextActions()
 
     logList.table.setDefaultRenderer(LogEntry::class.java, logRenderer)
     filteredLogList.table.setDefaultRenderer(LogEntry::class.java, logRenderer)
@@ -253,237 +203,14 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         }
       })
     }
-
-    updateCollapseExpandButtonState()
-
-    // if the user has the preference to not apply the filter on check, we add the apply button
-    applyFiltersBtn.setVisible(!userPrefs.applyFilterOnCheck)
   }
 
-  private fun showFilterOptionsMenu(e: MouseEvent) {
-    val popup = JPopupMenu()
-    val closeAllGroupsItem = popup.add(I18n.get(I18n.FILTERS_MENU_CLOSE_ALL_GROUPS))
-    closeAllGroupsItem.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_ALL_GROUPS)
-
-    val unApplyAllFilters = popup.add(I18n.get(I18n.FILTERS_MENU_UNAPPLY_ALL))
-    unApplyAllFilters.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_UNAPPLY_ALL)
-
-    val cleanDuplicatesItem = popup.add(I18n.get(I18n.FILTERS_MENU_CLEAN_DUPLICATES))
-    cleanDuplicatesItem.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLEAN_DUPLICATES)
-
-    closeAllGroupsItem.addActionListener { closeAllGroups() }
-    unApplyAllFilters.addActionListener { clearAllFiltersSelection() }
-    cleanDuplicatesItem.addActionListener { handleCleanDuplicateFilters() }
-
-    // If there are no groups, there is no point in closing anything
-    closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
-    cleanDuplicatesItem.isEnabled = presenter.groups.isNotEmpty()
-
-    popup.show(e.component, e.x, e.y)
-  }
-
-  private fun closeAllGroups() {
-    val userChoice = JOptionPane.showConfirmDialog(
-      mainView.parent,
-      I18n.get(I18n.FILTERS_CONFIRM_CLOSE_ALL_GROUPS_MSG),
-      I18n.get(I18n.COMMON_CONFIRM_TITLE),
-      JOptionPane.YES_NO_OPTION,
-      JOptionPane.WARNING_MESSAGE
-    )
-    if (userChoice == JOptionPane.YES_NO_OPTION) {
-      val openGroups = presenter.groups
-      openGroups.forEach { presenter.removeGroup(it) }
-    }
-  }
-
-  private fun clearAllFiltersSelection() {
-    presenter.setAllFiltersApplied(false)
-  }
-
-  private fun addGroup(initializeFilter: Boolean = true): String? {
-    var newGroupName = JOptionPane.showInputDialog(
-      mainView.parent,
-      I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
-      I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
-      JOptionPane.PLAIN_MESSAGE
-    )
-
-    if (!StringUtils.isEmpty(newGroupName)) {
-      // If this name is already taken, a number will be appended to the end of the name
-      newGroupName = presenter.addGroup(newGroupName)
-      if (initializeFilter) {
-        addFilter(newGroupName)
-      }
-    }
-
-    updateCollapseExpandButtonState()
-    return newGroupName
-  }
-
-  private fun addFilter(group: String) {
-    val newFilter = EditFilterDialog.showEditFilterDialog(mainView.parent) { pattern, caseSensitive ->
-      presenter.findDuplicateFilter(pattern, caseSensitive, null)
-    }
-    if (newFilter != null) {
-      presenter.addFilter(group, newFilter)
-    }
-  }
-
-  /**
-   * Applies the filter changes currently done by the user in the filters pane.
-   */
-  private fun applyFilters() {
-    if (filtersPane.isEmpty) {
-      JOptionPane.showMessageDialog(
-        mainView.parent,
-        I18n.get(I18n.FILTERS_NO_FILTERS_APPLY_MSG),
-        I18n.get(I18n.FILTERS_NO_FILTERS_TITLE),
-        JOptionPane.INFORMATION_MESSAGE
-      )
-      return
-    }
-    presenter.applyFilters()
-  }
-
-  private fun setupFiltersContextActions() {
-    filtersPane.setFiltersListener(object : FiltersListener {
-      override fun onReordered(group: String, orig: Int, dest: Int) {
-        presenter.reorderFilters(group, orig, dest)
-      }
-
-      override fun onFiltersApplied() {
-        presenter.applyFilters()
-      }
-
-      override fun onEditFilter(filter: Filter) {
-        // The filter is automatically updated by this dialog. We only check the result
-        // to determine if the dialog was canceled or not
-        val edited = EditFilterDialog.showEditFilterDialog(mainView.parent, filter) { pattern, caseSensitive ->
-          presenter.findDuplicateFilter(pattern, caseSensitive, filter)
-        }
-        if (edited != null) {
-          // Tell the presenter a filter was edited. It will not update the filters
-          // as filters are updated by EditFilterDialog itself, it will only determine
-          // if the filter was, in fact, updated and mark unsaved changes if necessary.
-          presenter.filterEdited(filter)
-        }
-      }
-
-      override fun onDuplicateFilter(group: String, filter: Filter) {
-        val duplicatedFilter = Filter(filter)
-
-        // It does not make much sense to apply a duplicated filter
-        // 1 - If the original filter is already applied, applying the duplicate filter will bring no value
-        // 2 - If the original filter is not applied, why user would want to apply the duplicate
-        // 3 - Duplicating a filter is useful to create another filter from the original one,
-        //     so it only makes sense to apply it after editing
-        // 4 - Apply a filter is an expensive operation. If it does not bring any value, better not to do it
-        duplicatedFilter.isApplied = false
-        presenter.addFilter(group, duplicatedFilter, true)
-      }
-
-      override fun onDeleteFilters(group: String, indices: IntArray) {
-        val userChoice = JOptionPane.showConfirmDialog(
-          mainView.parent,
-          I18n.get(I18n.FILTERS_CONFIRM_DELETE_MSG),
-          I18n.get(I18n.COMMON_CONFIRM_TITLE),
-          JOptionPane.YES_NO_OPTION,
-          JOptionPane.WARNING_MESSAGE
-        )
-        if (userChoice != JOptionPane.YES_OPTION) return
-        presenter.removeFilters(group, indices)
-      }
-
-      override fun onMoveFilters(group: String, indices: IntArray) {
-        val groups = presenter.groups
-
-        // Do not show the current group to the user. It does not make sense to move a filter to the same group
-        val options = groups.filter { !StringUtils.areEquals(it, group) }.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
-        val dialog = SingleChoiceDialog(
-          I18n.format(I18n.FILTERS_MOVE_DIALOG_TITLE, indices.size),
-          I18n.get(I18n.FILTERS_MOVE_DIALOG_MSG),
-          options,
-          0
-        )
-
-        val choice = dialog.show(mainView.parent)
-        if (choice == SingleChoiceDialog.DIALOG_CANCELLED) {
-          return
-        }
-
-        val destGroup = if (choice == options.lastIndex) {
-          addGroup(false)
-        } else {
-          options[choice]
-        }
-
-        if (StringUtils.isEmpty(destGroup)) {
-          Logger.info("Do not move filter. Selected group is empty")
-          return
-        }
-
-        presenter.moveFilters(group, destGroup, indices)
-      }
-
-      override fun onCloseGroup(group: String) {
-        val userChoice = JOptionPane.showConfirmDialog(
-          mainView.parent,
-          I18n.get(I18n.FILTERS_CONFIRM_CLOSE_GROUP_MSG),
-          I18n.get(I18n.COMMON_CONFIRM_TITLE),
-          JOptionPane.YES_NO_OPTION,
-          JOptionPane.WARNING_MESSAGE
-        )
-        if (userChoice != JOptionPane.YES_NO_OPTION) return
-        presenter.removeGroup(group)
-      }
-
-      override fun onNavigateNextFilteredLog(filter: Filter) {
-        val selectedFilteredLog = filteredLogList.table.selectedRow
-        val filteredLogIdx = presenter.getNextFilteredLogForFilter(filter, selectedFilteredLog)
-        if (filteredLogIdx != -1) {
-          SwingUtils.scrollToVisible(filteredLogList.table, filteredLogIdx)
-          filteredLogList.table.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
-        }
-      }
-
-      override fun onNavigatePrevFilteredLog(filter: Filter) {
-        val selectedFilteredLog = filteredLogList.table.selectedRow
-        val filteredLogIdx = presenter.getPrevFilteredLogForFilter(filter, selectedFilteredLog)
-        if (filteredLogIdx != -1) {
-          SwingUtils.scrollToVisible(filteredLogList.table, filteredLogIdx)
-          filteredLogList.table.setRowSelectionInterval(filteredLogIdx, filteredLogIdx)
-        }
-      }
-
-      override fun onAddFilter(group: String) {
-        addFilter(group)
-      }
-
-      override fun onSaveFilters(group: String) {
-        saveFilter(group)
-      }
-
-      override fun onGroupVisibilityChanged(group: String?) {
-        updateCollapseExpandButtonState()
-      }
-    })
-  }
-
-  private fun updateCollapseExpandButtonState() {
-    val allText = I18n.get(I18n.COMMON_ALL)
-    collapseExpandAllGroupsBtn.text = if (filtersPane.hasAtLeastOneGroupVisible()) {
-      "${StringUtils.DOWN_ARROW_HEAD} $allText"
-    } else {
-      "${StringUtils.RIGHT_ARROW_HEAD} $allText"
-    }
-  }
-
-  private fun saveFilter(filtersGroup: String) = presenter.saveFilters(filtersGroup)
 
   private fun setupLogsContextActions() {
-    setupLogTableActions(
-      table = logList.table,
+    logList.table.setupLogTableActions(
       model = logListTableModel,
+      parentWindow = mainView.parent,
+      filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
         // go back to the filter list pos
         if (clickedEntry.appliedFilter != null) {
@@ -518,9 +245,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun setupFilteredLogsContextActions() {
-    setupLogTableActions(
-      table = filteredLogList.table,
+    filteredLogList.table.setupLogTableActions(
       model = filteredLogListTableModel,
+      parentWindow = mainView.parent,
+      filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
         val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
         SwingUtils.scrollToVisible(logList.table, logIndex)
@@ -535,9 +263,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   }
 
   private fun setupMyLogsContextActions() {
-    setupLogTableActions(
-      table = myLogsList.table,
+    myLogsList.table.setupLogTableActions(
       model = myLogsListTableModel,
+      parentWindow = mainView.parent,
+      filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
         // if it is filtered, first jump to the filtered log panel
         var targetTable = logList.table
@@ -577,230 +306,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     })
   }
 
-  private fun setupLogTableActions(
-    table: JTable,
-    model: LogListTableModel,
-    onDoubleClick: (selectedIndex: Int, clickedEntry: LogEntry) -> Unit,
-    addSelectionActions: (popup: JPopupMenu, selectedEntries: List<LogEntry>) -> Unit,
-    addExtraSingleEntryActions: ((popup: JPopupMenu, singleEntry: LogEntry) -> Unit)? = null
-  ) {
-    val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, SwingUtils.getMenuShortcutKeyMask())
-    table.registerKeyboardAction(
-      {
-        if (table.selectedRowCount == 1) {
-          val entry = model.getValueAt(table.selectedRow, 0) as LogEntry
-          showLogLineDetails(entry)
-        }
-      },
-      inspectShortcut,
-      JComponent.WHEN_FOCUSED
-    )
-
-    table.addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        if (e.clickCount == 2) {
-          val selectedIndex = table.selectedRow
-          if (selectedIndex != -1) {
-            val clickedEntry = model.getValueAt(selectedIndex, 0) as LogEntry
-            onDoubleClick(selectedIndex, clickedEntry)
-          }
-        } else if (SwingUtilities.isRightMouseButton(e) && table.selectedRow != -1) {
-          val popup = JPopupMenu()
-          val selectedEntries = table.selectedRows.map { model.getValueAt(it, 0) as LogEntry }
-          val singleEntry = selectedEntries.singleOrNull()
-
-          addSelectionActions(popup, selectedEntries)
-          if (singleEntry != null) {
-            addSingleLogLineContextActions(popup, singleEntry)
-            addExtraSingleEntryActions?.invoke(popup, singleEntry)
-          }
-
-          popup.show(table, e.x, e.y)
-        }
-      }
-    })
-  }
-
-  private fun addSingleLogLineContextActions(popup: JPopupMenu, entry: LogEntry) {
-    val info = presenter.getLogLineInfo(entry)
-    popup.add(JSeparator())
-    popup.add(I18n.get(I18n.LOGS_MENU_LOG_DETAILS))
-      .addActionListener {
-        showLogLineDetails(entry)
-      }
-    val pid = info?.pid
-    if (pid != null && pid > 0) {
-      popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString()))
-        .addActionListener {
-          presenter.addFilterForPid(pid)
-        }
-    }
-    val tag = info?.tag
-    if (!tag.isNullOrBlank()) {
-      popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, tag))
-        .addActionListener {
-          presenter.addFilterForTag(tag)
-        }
-    }
-    popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER))
-      .addActionListener {
-        addFilterFromLogLine(entry.logText)
-      }
-  }
-
-  override fun showDuplicateFilterWarning(duplicatePattern: String, duplicateGroup: String): Boolean {
-    val message = I18n.format(
-      I18n.FILTER_DUPLICATE_WARNING_MSG,
-      duplicatePattern,
-      duplicateGroup
-    )
-    val choice = JOptionPane.showOptionDialog(
-      mainView.parent,
-      message,
-      I18n.get(I18n.FILTER_DUPLICATE_WARNING_TITLE),
-      JOptionPane.YES_NO_OPTION,
-      JOptionPane.WARNING_MESSAGE,
-      null,
-      arrayOf(I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY), I18n.get(I18n.COMMON_CANCEL)),
-      I18n.get(I18n.COMMON_CANCEL)
-    )
-    return choice == 0
-  }
-
-  override fun showSelectFilterGroup(groups: List<String>): String? {
-    val options = groups.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
-    val createNewOptionIdx = options.size - 1
-
-    val dialog =
-      SingleChoiceDialog(
-        I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_TITLE),
-        I18n.get(I18n.LOGS_SELECT_FILTER_GROUP_MSG),
-        options,
-        createNewOptionIdx
-      )
-
-    val choice = dialog.show(mainView.parent)
-    return when (choice) {
-      SingleChoiceDialog.DIALOG_CANCELLED -> null
-      createNewOptionIdx -> JOptionPane.showInputDialog(
-        mainView.parent,
-        I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
-        I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
-        JOptionPane.PLAIN_MESSAGE
-      )
-      else -> options[choice]
-    }
-  }
-
-  private fun addFilterFromLogLine(logLine: String) {
-    val filter = EditFilterDialog.showEditFilterDialogWithText(mainView.parent, logLine) { pattern, caseSensitive ->
-      presenter.findDuplicateFilter(pattern, caseSensitive, null)
-    }
-    if (filter != null) {
-      val groups = presenter.groups
-      val group = if (groups.size == 1) groups[0] else showSelectFilterGroup(groups)
-      if (!StringUtils.isEmpty(group)) {
-        presenter.addFilter(group, filter)
-      }
-    }
-  }
-
-  private fun showLogLineDetails(entry: LogEntry) {
-    try {
-      val info = presenter.getLogLineInfo(entry) ?: return
-      val dialog = LogLineDetailsDialog(
-        owner = mainView.parent,
-        info = info,
-        onFilterByPid = { pid -> presenter.addFilterForPid(pid) },
-        onFilterByTag = { tag -> presenter.addFilterForTag(tag) },
-        onOpenInEditor = { file, line -> openInEditor(file, line) }
-      )
-      dialog.isVisible = true
-    } catch (e: Exception) {
-      Logger.error("Failed to show log line details dialog", e)
-    }
-  }
-
-  private fun openInEditor(file: File, @Suppress("UNUSED_PARAMETER") line: Int) {
-    val preferredEditor = ServiceLocator.logViewerPrefs.preferredTextEditor
-    if (preferredEditor != null && preferredEditor.exists()) {
-      openWithPreferredEditor(file, preferredEditor)
-    } else {
-      openWithFallbackEditor(file)
-    }
-  }
-
-  /**
-   * Launches the explicitly configured preferred text editor via ProcessBuilder.
-   * Displays an error dialog to the user if the process fails to start.
-   *
-   * @param file            The target file to open.
-   * @param preferredEditor The executable file of the text editor.
-   */
-  private fun openWithPreferredEditor(file: File, preferredEditor: File) {
-    try {
-      val process = ProcessBuilder(preferredEditor.absolutePath, file.absolutePath).start()
-      Logger.debug("Opened $file using $preferredEditor: $process")
-    } catch (ex: Exception) {
-      Logger.error("Failed to open file using editor $preferredEditor", ex)
-      JOptionPane.showMessageDialog(
-        mainView.parent,
-        I18n.format(I18n.LOG_DETAILS_OPEN_EDITOR_ERROR, preferredEditor.absolutePath),
-        I18n.get(I18n.COMMON_ERROR),
-        JOptionPane.ERROR_MESSAGE
-      )
-    }
-  }
-
-  /**
-   * Attempts to open the file using the system's default desktop editor action.
-   * If the desktop action is unsupported or fails, falls back to prompting the user
-   * to configure a preferred editor.
-   *
-   * @param file The target file to open.
-   */
-  private fun openWithFallbackEditor(file: File) {
-    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-      try {
-        Desktop.getDesktop().open(file)
-        return
-      } catch (ex: Exception) {
-        Logger.warning("Desktop.open failed for $file", ex)
-      }
-    }
-
-    promptForEditor(file)
-  }
-
-  /**
-   * Displays a dialog asking the user to select an executable text editor.
-   * If selected, saves the preference and attempts to launch the newly configured editor.
-   *
-   * @param file The target file to open once the editor is configured.
-   */
-  private fun promptForEditor(file: File) {
-    val input = JOptionPane.showConfirmDialog(
-      mainView.parent,
-      I18n.get(I18n.LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG),
-      I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
-      JOptionPane.YES_NO_OPTION
-    )
-
-    if (input == JOptionPane.YES_OPTION) {
-      val fileChooser = JFileChooser()
-      val result = fileChooser.showOpenDialog(mainView.parent)
-      if (result == JFileChooser.APPROVE_OPTION) {
-        val newPreferredEditor = fileChooser.selectedFile
-        ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
-        try {
-          ProcessBuilder(newPreferredEditor.absolutePath, file.absolutePath).start()
-        } catch (ex: Exception) {
-          Logger.error("Failed to open file using newly selected editor $newPreferredEditor", ex)
-        }
-      }
-    }
-  }
-
   override fun buildStreamsMenu(): JMenu? {
     if (logStreams.isEmpty()) return null
 
@@ -828,75 +333,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
   override fun handleSaveFilteredLogsMenu() {
     val file = mainView.showSaveLogFileChooser()
     file?.let { presenter.saveFilteredLogs(it) }
-  }
-
-  override fun handleOpenFiltersMenu() {
-    val filterFiles = mainView.showOpenMultipleFiltersFileChooser()
-    if (filterFiles.isNotEmpty()) {
-      var keepCurrentFilters = false
-      if (!filtersPane.isEmpty) {
-        // Ask the user if we should keep the existing filters
-        val dialog = SingleChoiceDialog(
-          I18n.get(I18n.FILTERS_OPEN_EXISTING_TITLE),
-          I18n.get(I18n.FILTERS_OPEN_EXISTING_MSG),
-          arrayOf(
-            I18n.get(I18n.FILTERS_OPEN_KEEP_EXISTING),
-            I18n.get(I18n.FILTERS_OPEN_REPLACE_EXISTING)
-          ),
-          0
-        )
-
-        val choice = dialog.show(mainView.parent)
-        if (choice == SingleChoiceDialog.DIALOG_CANCELLED) {
-          return
-        }
-        keepCurrentFilters = choice == 0
-      }
-
-      presenter.loadFilters(filterFiles, keepCurrentFilters)
-    }
-  }
-
-  override fun handleFindFiltersMenu() {
-    showSearchFiltersDialog()
-  }
-
-  override fun showSearchFiltersDialog() {
-    if (filtersPane.isEmpty) {
-      JOptionPane.showMessageDialog(
-        mainView.parent,
-        I18n.get(I18n.FILTERS_NO_FILTERS_SEARCH_MSG),
-        I18n.get(I18n.FILTERS_NO_FILTERS_TITLE),
-        JOptionPane.INFORMATION_MESSAGE
-      )
-      return
-    }
-
-    SearchFiltersDialog.show(
-      mainView.parent,
-      presenter,
-      ServiceLocator.filtersRepository
-    ) { group, filter ->
-      filtersPane.selectFilter(group, filter)
-    }
-
-    filtersPane.updateUI()
-  }
-
-  override fun handleCleanDuplicateFilters() {
-    presenter.cleanDuplicateFilters()
-  }
-
-  override fun showInfoMessage(title: String, message: String) {
-    JOptionPane.showMessageDialog(mainView.parent, message, title, JOptionPane.INFORMATION_MESSAGE)
-  }
-
-  override fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>? {
-    return FilterDeduplicationDialog.showDialog(mainView.parent, clusters)
-  }
-
-  override fun showToast(message: String) {
-    Toast.showToast(mainView.parent, message, Toast.LENGTH_SHORT)
   }
 
   override fun handleGoToTimestampMenu() {
@@ -984,18 +420,13 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
   override fun onThemeChanged() {
     updateLogFont()
-    SwingUtilities.updateComponentTreeUI(filtersPane)
-    SwingUtilities.updateComponentTreeUI(sidePanel)
-    collapseExpandAllGroupsBtn.updateUI()
+    filtersPanel.onThemeChanged()
+    SwingUtilities.updateComponentTreeUI(sideButtonsPanel)
   }
 
   override fun requestFinish(doFinish: () -> Unit) {
     this.doFinish = doFinish
     presenter.finishing()
-  }
-
-  override fun configureFiltersList(filters: Map<String, List<Filter>>?) {
-    filtersPane.setFilters(HashMap(filters))
   }
 
   override fun showErrorMessage(message: String?) {
@@ -1026,7 +457,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     } else {
       myLogsListTableModel.setLogs(logEntries)
       myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
-      sidePanel.showMyLogsView()
+      sideButtonsPanel.setItemActive(MY_LOGS_BUTTON_ID, true)
+      showMyLogsPanel(true)
+    }
+  }
+
+  private fun showMyLogsPanel(show: Boolean) {
+    if (show) {
+      mainLogSplit.rightComponent.isVisible = true
+      val dividerPos = if (myLogsLastDividerLocation < 0) 0.7 else myLogsLastDividerLocation
+      mainLogSplit.setDividerLocation(dividerPos)
+    } else {
+      mainLogSplit.rightComponent.isVisible = false
     }
   }
 
@@ -1047,7 +489,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
       filteredLogListTableModel.setLogs(it)
     }
     logList.updateUI()
-    filtersPane.updateUI()
+    filtersPanel.updateFiltersUI()
 
     // Update the save menu option availability
     mainView.enableSaveFilteredLogsMenu(logEntries?.isNotEmpty() ?: false)
@@ -1075,11 +517,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     )
   }
 
-  override fun onAppliedFiltersRemembered() {
-    // Just make sure to keep the filters pane updated when they are loaded (if applied)
-    filtersPane.updateUI()
-  }
-
   override fun showAvailableLogStreams(logStreams: Set<LogStream>?) {
     this.logStreams.reset(logStreams)
 
@@ -1092,39 +529,6 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     // Refresh the menu bar to make sure the streams are shown
     mainView.refreshMenuBar()
   }
-
-  override fun showUnsavedFilterIndication(group: String?) {
-    filtersPane.showUnsavedIndication(group, true)
-  }
-
-  override fun hideUnsavedFilterIndication(group: String?) {
-    filtersPane.showUnsavedIndication(group, false)
-  }
-
-  override fun showAskToSaveFilterDialog(group: String?): UserSelection {
-    val userChoice = JOptionPane.showConfirmDialog(
-      contentPane.parent,
-      I18n.format(I18n.FILTERS_SAVE_UNSAVED_MSG, group),
-      I18n.get(I18n.FILTERS_SAVE_UNSAVED_TITLE),
-      JOptionPane.YES_NO_CANCEL_OPTION,
-      JOptionPane.WARNING_MESSAGE
-    )
-
-    return convertFromSwing(userChoice)
-  }
-
-  override fun showAskToSaveMultipleFiltersDialog(groups: Array<String>): Array<Boolean>? {
-    val dialog = MultipleChoiceDialog(
-      I18n.get(I18n.FILTERS_SAVE_MULTIPLE_TITLE),
-      I18n.get(I18n.FILTERS_SAVE_MULTIPLE_MSG),
-      groups,
-      true
-    )
-
-    return dialog.show(mainView.parent)
-  }
-
-  override fun showSaveFilters(group: String?) = mainView.showSaveFilterFileChooser(group)
 
   override fun finish() {
     // We can now tell the application we can close
@@ -1145,24 +549,11 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
     mainView.onBugReportClosed()
   }
 
-  override fun collapseAllGroups() {
-    filtersPane.setAllGroupsVisibility(false)
-  }
-
   override fun showStartLoading() = mainView.showStartLoading("Logs")
 
   override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress("Logs", progress, note)
 
   override fun finishLoading() = mainView.finishLoading("Logs")
-
-  private fun convertFromSwing(swingOption: Int): UserSelection {
-    when (swingOption) {
-      JOptionPane.YES_OPTION -> return UserSelection.CONFIRMED
-      JOptionPane.NO_OPTION -> return UserSelection.REJECTED
-      JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION -> return UserSelection.CANCELLED
-    }
-    throw IllegalArgumentException("Invalid option: $swingOption")
-  }
 
   private fun buildUi() {
     _contentPane = JPanel()
@@ -1187,7 +578,7 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .build()
     )
 
-    val mainSplitPane = JSplitPane()
+    mainSplitPane = JSplitPane()
     mainSplitPane.dividerSize = UIScaleUtils.dip(5)
     mainSplitPane.isOneTouchExpandable = true
     mainSplitPane.resizeWeight = 0.15
@@ -1203,9 +594,17 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .build()
     )
 
-    val mainLogSplit = JSplitPane()
+    mainLogSplit = JSplitPane()
     mainLogSplit.dividerSize = UIScaleUtils.dip(5)
     mainLogSplit.resizeWeight = 0.8
+    mainLogSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
+      if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
+        val newDividerLocation = evt.newValue as Int
+        if (newDividerLocation < mainLogSplit.maximumDividerLocation) {
+          myLogsLastDividerLocation = newDividerLocation.toDouble() / mainLogSplit.width
+        }
+      }
+    }
 
     logsPane = JSplitPane()
     logsPane.dividerSize = UIScaleUtils.dip(5)
@@ -1229,9 +628,18 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
 
     mainSplitPane.rightComponent = mainLogSplit
 
-    sidePanel = SidePanel(mainLogSplit)
+    sideButtonsPanel = SideButtonsPanel(
+      isExpandable = false,
+      entries = listOf(
+        SidePanelEntry.Toggle(
+          id = MY_LOGS_BUTTON_ID,
+          icon = CommonIcons.myLogsIcon(),
+          text = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
+        ) { showMyLogsPanel(it) }
+      )
+    )
     _contentPane.add(
-      sidePanel,
+      sideButtonsPanel,
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
@@ -1241,76 +649,10 @@ class LogViewerViewImpl(private val mainView: MainView, initialLogFiles: Set<Fil
         .build()
     )
 
-    val filtersMainPane = JPanel()
-    filtersMainPane.layout = GridBagLayout()
-    filtersMainPane.border = BorderFactory.createTitledBorder(I18n.get(I18n.FILTERS_PANEL_TITLE))
-    val emptyPane = JPanel()
-    emptyPane.layout = FlowLayout(FlowLayout.CENTER, 5, 5)
-    filtersMainPane.add(
-      emptyPane,
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(2)
-        .withWeightx(1.0)
-        .withAnchor(GridBagConstraints.SOUTH)
-        .build()
-    )
+    mainSplitPane.leftComponent = filtersPanel
+  }
 
-    filtersPane = FiltersList()
-    filtersMainPane.add(
-      JScrollPane(filtersPane).also { it.verticalScrollBar.unitIncrement = 16 },
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(1)
-        .withWeightx(1.0)
-        .withWeighty(1.0)
-        .withFill(GridBagConstraints.BOTH)
-        .build()
-    )
-
-    val filterButtonsPane = JPanel(BorderLayout())
-    val filterActionButtonsPane = JPanel()
-    collapseExpandAllGroupsBtn = FlatButton()
-    addNewFilterGroupBtn = JButton()
-    addNewFilterGroupBtn.actionCommand = "Add"
-    addNewFilterGroupBtn.text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
-    moreFilterOptionsBtn = JButton()
-    moreFilterOptionsBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_MORE_OPTIONS)
-    moreFilterOptionsBtn.text = StringUtils.THREE_LINES
-    applyFiltersBtn = JButton()
-    applyFiltersBtn.actionCommand = "Apply"
-    applyFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_APPLY)
-    applyFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
-    findFiltersBtn = JButton()
-    findFiltersBtn.actionCommand = "Find"
-    findFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_FIND)
-    findFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
-
-    filterActionButtonsPane.add(applyFiltersBtn)
-    filterActionButtonsPane.add(findFiltersBtn)
-    filterActionButtonsPane.add(addNewFilterGroupBtn)
-    filterActionButtonsPane.add(moreFilterOptionsBtn)
-
-    filterButtonsPane.add(collapseExpandAllGroupsBtn, BorderLayout.WEST)
-    filterButtonsPane.add(filterActionButtonsPane, BorderLayout.EAST)
-
-    filtersMainPane.add(
-      filterButtonsPane,
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(0)
-        .withInsets(
-          Insets(
-            UIScaleUtils.dip(0),
-            UIScaleUtils.dip(0),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(5)
-          )
-        )
-        .withFill(GridBagConstraints.BOTH)
-        .build()
-    )
-
-    mainSplitPane.leftComponent = filtersMainPane
+  companion object {
+    private const val MY_LOGS_BUTTON_ID = "my_logs"
   }
 }
