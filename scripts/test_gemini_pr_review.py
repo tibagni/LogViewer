@@ -38,9 +38,9 @@ class TestGeminiPrReview(unittest.TestCase):
         loaded = gemini_pr_review.load_review_guidelines("/nonexistent/file.md")
         self.assertIn("code review", loaded.lower())
 
-    @patch("scripts.gemini_pr_review.select_best_model", return_value=("v1beta", "gemini-2.0-flash"))
+    @patch("scripts.gemini_pr_review.get_available_models", return_value=("v1beta", ["gemini-3.8-flash"]))
     @patch("urllib.request.urlopen")
-    def test_call_gemini_api_success(self, mock_urlopen, mock_select):
+    def test_call_gemini_api_success(self, mock_urlopen, mock_models):
         mock_response = MagicMock()
         response_body = {
             "candidates": [
@@ -61,12 +61,16 @@ class TestGeminiPrReview(unittest.TestCase):
         self.assertEqual(res, "✅ LGTM. Code looks great!")
 
     @patch("urllib.request.urlopen")
-    def test_select_best_model_discovers_available(self, mock_urlopen):
+    def test_get_available_models_discovers_available(self, mock_urlopen):
         mock_response = MagicMock()
         response_body = {
             "models": [
                 {
                     "name": "models/gemini-2.0-flash",
+                    "supportedGenerationMethods": ["generateContent"]
+                },
+                {
+                    "name": "models/gemini-3.8-flash",
                     "supportedGenerationMethods": ["generateContent"]
                 },
                 {
@@ -79,9 +83,10 @@ class TestGeminiPrReview(unittest.TestCase):
         mock_response.__enter__.return_value = mock_response
         mock_urlopen.return_value = mock_response
 
-        version, model = gemini_pr_review.select_best_model("dummy_key")
+        version, models = gemini_pr_review.get_available_models("dummy_key")
         self.assertEqual(version, "v1beta")
-        self.assertEqual(model, "gemini-2.0-flash")
+        # Flash models sorted descending, so 3.8 before 2.0
+        self.assertEqual(models, ["gemini-3.8-flash", "gemini-2.0-flash"])
 
     @patch("subprocess.run")
     def test_find_existing_comment_found(self, mock_subproc):
