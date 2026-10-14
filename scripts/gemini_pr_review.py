@@ -22,6 +22,8 @@ EXCLUDED_EXTENSIONS = (
 
 PREFERRED_MODELS_ORDER = [
     "gemini-flash-latest",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",

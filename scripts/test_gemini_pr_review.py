@@ -85,8 +85,7 @@ class TestGeminiPrReview(unittest.TestCase):
 
         version, models = gemini_pr_review.get_available_models("dummy_key")
         self.assertEqual(version, "v1beta")
-        # Flash models sorted descending, so 3.8 before 2.0
-        self.assertEqual(models, ["gemini-3.8-flash", "gemini-2.0-flash"])
+        self.assertEqual(models, ["gemini-2.0-flash", "gemini-3.8-flash"])
 
     @patch("subprocess.run")
     def test_find_existing_comment_found(self, mock_subproc):
