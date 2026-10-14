@@ -11,8 +11,6 @@ Check out more details on [https://tibagni.github.io/LogViewer/](https://tibagni
 * 🔍 Analyze multiple log files at once
 * 📱 Stream real-time Android logcat directly from connected devices via ADB
 * 🎨 Create and apply different filters on the set of log files or live stream, showing a single filtered output differentiating each filter by a different color (defined by you)
-* 🔌 Integrated Device Hub: auto-detects USB/Wi-Fi devices with status badges, one-click terminal launcher, and server controls
-* 🔄 High-throughput live log buffer with continuous background filtering, oldest-log eviction, and smart auto-scroll controls
 * 🔎 Search across all open filter groups with a global Find dialog (`Ctrl+Shift+F`)
 * 🌗 Modern UI with Light and Dark themes
 * 🤖 Read bugreport information such as system properties, application packages, hidden system packages, carrier config, subscriptions etc.
