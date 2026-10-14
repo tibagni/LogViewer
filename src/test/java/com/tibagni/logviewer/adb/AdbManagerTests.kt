@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.adb
 
+import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -129,6 +130,59 @@ class AdbManagerTests {
     manager.setCustomAdbPath(File("/non/existent/adb"))
     assertNull(manager.getAdbExecutable())
     assertFalse(manager.isAdbAvailable)
+  }
+
+  @Test
+  fun testAdbPathFromUserPreferences() {
+    val initialAdb = File("/initial/adb")
+    val updatedAdb = File("/updated/adb")
+    val listeners = mutableListOf<LogViewerPreferences.Listener>()
+    var currentPrefAdb: File? = initialAdb
+
+    val fakePrefs = object : LogViewerPreferences {
+      override var defaultFiltersPath: File = File("")
+      override var lastFilterPaths: Array<File> = emptyArray()
+      override var defaultLogsPath: File = File("")
+      override var lookAndFeel: String = ""
+      override var openLastFilter: Boolean = false
+      override var reapplyFiltersAfterEdit: Boolean = false
+      override var rememberAppliedFilters: Boolean = false
+      override var preferredTextEditor: File? = null
+      override var adbPath: File?
+        get() = currentPrefAdb
+        set(value) {
+          currentPrefAdb = value
+          listeners.forEach { it.onAdbPathChanged() }
+        }
+      override var collapseAllGroupsStartup: Boolean = false
+      override var showLineNumbers: Boolean = false
+      override var showLogLineDividers: Boolean = false
+      override var applyFilterOnCheck: Boolean = false
+      override var logFontSize: Int = 12
+      override var logFontFamily: String = "Monospaced"
+      override var logFontBold: Boolean = false
+
+      override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {}
+      override fun getAppliedFiltersIndices(group: String): List<Int> = emptyList()
+      override fun addPreferenceListener(listener: LogViewerPreferences.Listener) {
+        listeners.add(listener)
+      }
+      override fun removePreferenceListener(listener: LogViewerPreferences.Listener) {
+        listeners.remove(listener)
+      }
+    }
+
+    val manager = AdbManagerImpl(
+      fileChecker = { it == initialAdb || it == updatedAdb },
+      userPrefs = fakePrefs
+    )
+
+    assertEquals(initialAdb, manager.getAdbExecutable())
+
+    // Update preferences and verify manager receives update
+    fakePrefs.adbPath = updatedAdb
+
+    assertEquals(updatedAdb, manager.getAdbExecutable())
   }
 
   @Test

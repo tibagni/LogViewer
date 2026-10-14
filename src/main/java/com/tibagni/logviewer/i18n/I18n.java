@@ -49,6 +49,7 @@ public final class I18n {
   public static final String PREF_SHOW_LOG_DIVIDERS = "pref.show_log_dividers";
   public static final String PREF_APPLY_FILTERS_ON_CHECK = "pref.apply_filters_on_check";
   public static final String PREF_PREFERRED_TEXT_EDITOR = "pref.preferred_text_editor";
+  public static final String PREF_ADB_PATH = "pref.adb_path";
   public static final String PREF_LOG_FONT_FAMILY = "pref.log_font_family";
 
   // Main View & File Choosers

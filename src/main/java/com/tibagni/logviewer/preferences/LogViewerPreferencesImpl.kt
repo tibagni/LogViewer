@@ -16,6 +16,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS = "remember_applied_filters"
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS_PREFIX = "applied_for_group_"
     /*Visible for Testing*/ const val PREFERRED_TEXT_EDITOR = "preferred_text_editor"
+    /*Visible for Testing*/ const val ADB_PATH = "adb_path"
     /*Visible for Testing*/ const val COLLAPSE_ALL_GROUPS_STARTUP = "collapse_all_groups_startup"
     /*Visible for Testing*/ const val SHOW_LINE_NUMBERS = "show_line_numbers"
     /*Visible for Testing*/ const val SHOW_LOG_LINE_DIVIDERS = "show_log_line_dividers"
@@ -107,6 +108,15 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(textEditorFile) {
             preferences.put(PREFERRED_TEXT_EDITOR, textEditorFile?.absolutePath ?: "")
             listeners.forEach { l -> l.onPreferredTextEditorChanged() }
+        }
+    override var adbPath: File?
+        get() {
+            val path = preferences.get(ADB_PATH, null)
+            return if (!path.isNullOrEmpty()) File(path) else null
+        }
+        set(adbFile) {
+            preferences.put(ADB_PATH, adbFile?.absolutePath ?: "")
+            listeners.forEach { l -> l.onAdbPathChanged() }
         }
     override var collapseAllGroupsStartup: Boolean
         get() = preferences.getBoolean(COLLAPSE_ALL_GROUPS_STARTUP, false)
