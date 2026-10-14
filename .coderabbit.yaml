@@ -1,5 +1,5 @@
-# .coderabbit.yaml
-version: "2"
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+version: 2
 language: "en-US"
 
 reviews:
