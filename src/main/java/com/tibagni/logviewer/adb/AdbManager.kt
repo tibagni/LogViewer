@@ -25,6 +25,7 @@ class AdbManagerImpl(
   private val userPrefs: LogViewerPreferences? = ServiceLocator.logViewerPrefs
 ) : AdbManager {
 
+  private val adbPathLock = Any()
   private var customAdbPath: File? = userPrefs?.adbPath
   private var cachedAdbPath: File? = null
 
@@ -37,14 +38,16 @@ class AdbManagerImpl(
   }
 
   override fun setCustomAdbPath(path: File?) {
-    customAdbPath = path
-    cachedAdbPath = null
+    synchronized(adbPathLock) {
+      customAdbPath = path
+      cachedAdbPath = null
+    }
   }
 
   override val isAdbAvailable: Boolean
     get() = getAdbExecutable() != null
 
-  override fun getAdbExecutable(): File? {
+  override fun getAdbExecutable(): File? = synchronized(adbPathLock) {
     val cached = cachedAdbPath
     if (cached != null && fileChecker(cached)) {
       return cached
