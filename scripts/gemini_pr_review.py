@@ -77,89 +77,86 @@ def build_prompt(guidelines: str, diff: str) -> str:
 """
 
 
-def select_best_model(api_key: str, preferred: Optional[str] = None) -> Tuple[str, str]:
-    """Queries ModelService.ListModels to automatically discover available models for this API key."""
-    candidate_preferences = [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-pro"
-    ]
-
+def get_available_models(api_key: str) -> Tuple[str, List[str]]:
+    """Discovers available models supporting generateContent, sorted with latest first."""
     for version in ["v1beta", "v1"]:
         url = f"https://generativelanguage.googleapis.com/{version}/models?key={api_key}"
         try:
             req = urllib.request.Request(url)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                available = [
+                models = [
                     m["name"].replace("models/", "")
                     for m in data.get("models", [])
                     if "generateContent" in m.get("supportedGenerationMethods", [])
                 ]
-                if preferred and preferred in available:
-                    return version, preferred
-
-                for candidate in candidate_preferences:
-                    if candidate in available:
-                        return version, candidate
-
-                for m in available:
-                    if "flash" in m:
-                        return version, m
-
-                if available:
-                    return version, available[0]
+                print(f"Discovered models for {version}: {models}")
+                # Prefer flash models, sorted descending so newest comes first
+                flash_models = sorted([m for m in models if "flash" in m], reverse=True)
+                other_models = sorted([m for m in models if "flash" not in m], reverse=True)
+                candidate_list = flash_models + other_models
+                if candidate_list:
+                    return version, candidate_list
         except Exception as e:
             print(f"Notice: Could not list models on {version}: {e}")
 
-    # Fallback default if listing fails
-    return "v1beta", preferred or "gemini-2.0-flash"
+    return "v1beta", ["gemini-3.8-flash", "gemini-2.0-flash"]
 
 
 def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = PREFERRED_MODEL) -> str:
-    """Calls the Google Gemini REST API with the prompt and returns the text response."""
-    version, model = select_best_model(api_key, preferred_model)
-    print(f"Selected Gemini model '{model}' via API version '{version}'...")
+    """Calls the Google Gemini REST API with fallback across available models."""
+    version, models = get_available_models(api_key)
+    if preferred_model:
+        models = [preferred_model] + [m for m in models if m != preferred_model]
 
-    url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": prompt}]
+    last_error = None
+    for model in models:
+        print(f"Attempting review with Gemini model '{model}' ({version})...")
+        url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2
             }
-        ],
-        "generationConfig": {
-            "temperature": 0.2
         }
-    }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
 
-    try:
-        with urllib.request.urlopen(req, timeout=120) as response:
-            body = json.loads(response.read().decode("utf-8"))
-            candidates = body.get("candidates", [])
-            if not candidates:
-                raise ValueError(f"No candidates returned by Gemini: {body}")
-            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            if not text:
-                raise ValueError(f"Empty text in candidate response: {body}")
-            return text
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {e.code} for model {model} ({version}): {err_msg}") from e
-    except Exception as e:
-        raise RuntimeError(f"Error calling Gemini API: {e}") from e
+        try:
+            with urllib.request.urlopen(req, timeout=120) as response:
+                body = json.loads(response.read().decode("utf-8"))
+                candidates = body.get("candidates", [])
+                if not candidates:
+                    raise ValueError(f"No candidates returned by Gemini: {body}")
+                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                if not text:
+                    raise ValueError(f"Empty text in candidate response: {body}")
+                print(f"Successfully generated review with '{model}'!")
+                return text
+        except urllib.error.HTTPError as e:
+            err_msg = e.read().decode("utf-8", errors="replace")
+            last_error = f"HTTP {e.code} for model {model} ({version}): {err_msg}"
+            print(f"Model '{model}' failed: {last_error}")
+            if e.code in (400, 404):
+                continue
+            raise RuntimeError(last_error) from e
+        except Exception as e:
+            last_error = str(e)
+            print(f"Model '{model}' unexpected error: {e}")
+            continue
+
+    raise RuntimeError(f"All available Gemini models failed. Last error: {last_error}")
 
 
 def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
