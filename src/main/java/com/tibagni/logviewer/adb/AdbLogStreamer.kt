@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -126,7 +127,7 @@ class AdbLogStreamerImpl(
       currentProcess?.let { proc ->
         try {
           proc.destroy()
-          if (proc.isAlive) {
+          if (!proc.waitFor(100, TimeUnit.MILLISECONDS)) {
             proc.destroyForcibly()
           }
         } catch (e: Exception) {

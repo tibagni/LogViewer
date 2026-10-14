@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.*
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -16,7 +17,8 @@ class AdbLogStreamerTests {
 
   private class FakeProcess(
     private val inputStreamData: InputStream,
-    private val errorStreamData: InputStream = ByteArrayInputStream(ByteArray(0))
+    private val errorStreamData: InputStream = ByteArrayInputStream(ByteArray(0)),
+    private val waitForResult: Boolean = true
   ) : Process() {
     var isDestroyed = false
       private set
@@ -27,6 +29,7 @@ class AdbLogStreamerTests {
     override fun getInputStream(): InputStream = inputStreamData
     override fun getErrorStream(): InputStream = errorStreamData
     override fun waitFor(): Int = 0
+    override fun waitFor(timeout: Long, unit: TimeUnit): Boolean = waitForResult
     override fun exitValue(): Int = 0
     override fun destroy() {
       isDestroyed = true
@@ -185,7 +188,21 @@ class AdbLogStreamerTests {
     val entries = streamer.startStream("device123").take(1).toList()
 
     assertEquals(1, entries.size)
-    assertTrue(fakeProcess.isDestroyed || fakeProcess.isDestroyedForcibly)
+    assertTrue(fakeProcess.isDestroyed)
+    assertFalse(fakeProcess.isDestroyedForcibly)
+    assertFalse(streamer.isStreaming)
+  }
+
+  @Test
+  fun testStopStreamDestroysForciblyIfProcessDoesNotTerminate() = runBlocking {
+    val unyieldingProcess = FakeProcess(ByteArrayInputStream(ByteArray(0)), waitForResult = false)
+    val runner = FakeCommandRunner { unyieldingProcess }
+    val streamer = AdbLogStreamerImpl(FakeAdbManager(), runner)
+
+    streamer.startStream("device123").take(1).toList()
+
+    assertTrue(unyieldingProcess.isDestroyed)
+    assertTrue(unyieldingProcess.isDestroyedForcibly)
     assertFalse(streamer.isStreaming)
   }
 
