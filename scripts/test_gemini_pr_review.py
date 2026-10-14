@@ -7,8 +7,7 @@ import json
 import os
 import tempfile
 import unittest
-import urllib.error
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 from scripts import gemini_pr_review
 
@@ -39,8 +38,9 @@ class TestGeminiPrReview(unittest.TestCase):
         loaded = gemini_pr_review.load_review_guidelines("/nonexistent/file.md")
         self.assertIn("code review", loaded.lower())
 
+    @patch("scripts.gemini_pr_review.select_best_model", return_value=("v1beta", "gemini-2.0-flash"))
     @patch("urllib.request.urlopen")
-    def test_call_gemini_api_success(self, mock_urlopen):
+    def test_call_gemini_api_success(self, mock_urlopen, mock_select):
         mock_response = MagicMock()
         response_body = {
             "candidates": [
@@ -61,35 +61,27 @@ class TestGeminiPrReview(unittest.TestCase):
         self.assertEqual(res, "✅ LGTM. Code looks great!")
 
     @patch("urllib.request.urlopen")
-    def test_call_gemini_api_404_fallback(self, mock_urlopen):
-        error_404 = urllib.error.HTTPError(
-            url="http://dummy", code=404, msg="Not Found", hdrs={}, fp=MagicMock()
-        )
-        error_404.read = MagicMock(return_value=b"Model not found")
-
-        mock_success = MagicMock()
+    def test_select_best_model_discovers_available(self, mock_urlopen):
+        mock_response = MagicMock()
         response_body = {
-            "candidates": [
+            "models": [
                 {
-                    "content": {
-                        "parts": [
-                            {"text": "Fallback model response"}
-                        ]
-                    }
+                    "name": "models/gemini-2.0-flash",
+                    "supportedGenerationMethods": ["generateContent"]
+                },
+                {
+                    "name": "models/text-embedding-004",
+                    "supportedGenerationMethods": ["embedContent"]
                 }
             ]
         }
-        mock_success.read.return_value = json.dumps(response_body).encode("utf-8")
-        mock_success.__enter__.return_value = mock_success
+        mock_response.read.return_value = json.dumps(response_body).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
 
-        # First call fails with 404, second call succeeds
-        mock_urlopen.side_effect = [error_404, mock_success]
-
-        res = gemini_pr_review.call_gemini_api(
-            "dummy_key", "prompt", model="gemini-2.5-flash"
-        )
-        self.assertEqual(res, "Fallback model response")
-        self.assertEqual(mock_urlopen.call_count, 2)
+        version, model = gemini_pr_review.select_best_model("dummy_key")
+        self.assertEqual(version, "v1beta")
+        self.assertEqual(model, "gemini-2.0-flash")
 
     @patch("subprocess.run")
     def test_find_existing_comment_found(self, mock_subproc):

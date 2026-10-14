@@ -10,11 +10,10 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 COMMENT_MARKER = "<!-- gemini-code-review -->"
-DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-FALLBACK_MODEL = "gemini-1.5-flash"
+PREFERRED_MODEL = os.environ.get("GEMINI_MODEL")
 EXCLUDED_EXTENSIONS = (
     ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg",
     ".jar", ".zip", ".tar", ".gz",
@@ -78,57 +77,89 @@ def build_prompt(guidelines: str, diff: str) -> str:
 """
 
 
-def call_gemini_api(api_key: str, prompt: str, model: str = DEFAULT_MODEL) -> str:
-    """Calls the Google Gemini REST API with the prompt and returns the text response."""
-    models_to_try = [model]
-    if model != FALLBACK_MODEL:
-        models_to_try.append(FALLBACK_MODEL)
+def select_best_model(api_key: str, preferred: Optional[str] = None) -> Tuple[str, str]:
+    """Queries ModelService.ListModels to automatically discover available models for this API key."""
+    candidate_preferences = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-pro"
+    ]
 
-    last_error = None
-    for target_model in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={api_key}"
-        headers = {"Content-Type": "application/json"}
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2
-            }
-        }
-
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST"
-        )
-
+    for version in ["v1beta", "v1"]:
+        url = f"https://generativelanguage.googleapis.com/{version}/models?key={api_key}"
         try:
-            with urllib.request.urlopen(req, timeout=120) as response:
-                body = json.loads(response.read().decode("utf-8"))
-                candidates = body.get("candidates", [])
-                if not candidates:
-                    raise ValueError(f"No candidates returned by Gemini: {body}")
-                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                if not text:
-                    raise ValueError(f"Empty text in candidate response: {body}")
-                return text
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode("utf-8", errors="replace")
-            last_error = f"HTTP {e.code} for model {target_model}: {err_msg}"
-            # If 404 (model not found), try the fallback model
-            if e.code == 404 and target_model != models_to_try[-1]:
-                print(f"Model '{target_model}' returned 404, attempting fallback to '{FALLBACK_MODEL}'...")
-                continue
-            raise RuntimeError(last_error) from e
-        except Exception as e:
-            raise RuntimeError(f"Error calling Gemini API: {e}") from e
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                available = [
+                    m["name"].replace("models/", "")
+                    for m in data.get("models", [])
+                    if "generateContent" in m.get("supportedGenerationMethods", [])
+                ]
+                if preferred and preferred in available:
+                    return version, preferred
 
-    raise RuntimeError(f"All Gemini models failed. Last error: {last_error}")
+                for candidate in candidate_preferences:
+                    if candidate in available:
+                        return version, candidate
+
+                for m in available:
+                    if "flash" in m:
+                        return version, m
+
+                if available:
+                    return version, available[0]
+        except Exception as e:
+            print(f"Notice: Could not list models on {version}: {e}")
+
+    # Fallback default if listing fails
+    return "v1beta", preferred or "gemini-2.0-flash"
+
+
+def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = PREFERRED_MODEL) -> str:
+    """Calls the Google Gemini REST API with the prompt and returns the text response."""
+    version, model = select_best_model(api_key, preferred_model)
+    print(f"Selected Gemini model '{model}' via API version '{version}'...")
+
+    url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": prompt}]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2
+        }
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=120) as response:
+            body = json.loads(response.read().decode("utf-8"))
+            candidates = body.get("candidates", [])
+            if not candidates:
+                raise ValueError(f"No candidates returned by Gemini: {body}")
+            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            if not text:
+                raise ValueError(f"Empty text in candidate response: {body}")
+            return text
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {e.code} for model {model} ({version}): {err_msg}") from e
+    except Exception as e:
+        raise RuntimeError(f"Error calling Gemini API: {e}") from e
 
 
 def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
