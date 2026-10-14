@@ -55,7 +55,7 @@ def get_git_diff(base_ref: str) -> str:
     )
     changed_files = [
         f for f in result.stdout.strip().splitlines()
-        if f and not f.endswith(EXCLUDED_EXTENSIONS)
+        if f and not f.lower().endswith(EXCLUDED_EXTENSIONS)
     ]
 
     if not changed_files:
@@ -91,9 +91,10 @@ def build_prompt(guidelines: str, diff: str) -> str:
 def get_available_models(api_key: str) -> Tuple[str, List[str]]:
     """Discovers available models supporting generateContent, prioritizing stable flash models."""
     for version in ["v1beta", "v1"]:
-        url = f"https://generativelanguage.googleapis.com/{version}/models?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/{version}/models"
+        headers = {"x-goog-api-key": api_key}
         try:
-            req = urllib.request.Request(url)
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 models = [
@@ -139,8 +140,11 @@ def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = 
     last_error = None
     for model in models:
         print(f"Attempting review with Gemini model '{model}' ({version})...")
-        url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}"
-        headers = {"Content-Type": "application/json"}
+        url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        }
         payload = {
             "contents": [
                 {
@@ -186,12 +190,22 @@ def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = 
 
 def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
     """Finds an existing Gemini review comment on the PR by searching for COMMENT_MARKER."""
-    cmd = ["gh", "api", f"repos/{repo}/issues/{pr_number}/comments", "--paginate"]
+    cmd = ["gh", "api", f"repos/{repo}/issues/{pr_number}/comments", "--paginate", "--slurp"]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        comments = json.loads(res.stdout)
+        raw_output = res.stdout.strip()
+        if not raw_output:
+            return None
+        pages = json.loads(raw_output)
+        # --slurp wraps responses in a list of page arrays: [[comment, ...], [comment, ...]]
+        # or a single flat array if only 1 page was returned
+        if pages and isinstance(pages[0], list):
+            comments = [c for page in pages for c in page]
+        else:
+            comments = pages
+
         for comment in comments:
-            if COMMENT_MARKER in comment.get("body", ""):
+            if isinstance(comment, dict) and COMMENT_MARKER in comment.get("body", ""):
                 return comment.get("id")
     except Exception as e:
         print(f"Warning: Could not search existing PR comments: {e}")
