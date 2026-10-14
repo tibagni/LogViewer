@@ -13,12 +13,21 @@ import urllib.request
 from typing import List, Optional, Tuple
 
 COMMENT_MARKER = "<!-- gemini-code-review -->"
-PREFERRED_MODEL = os.environ.get("GEMINI_MODEL")
+USER_PREFERRED_MODEL = os.environ.get("GEMINI_MODEL")
 EXCLUDED_EXTENSIONS = (
     ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg",
     ".jar", ".zip", ".tar", ".gz",
     ".class", ".bin"
 )
+
+PREFERRED_MODELS_ORDER = [
+    "gemini-flash-latest",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-pro-latest",
+]
 
 
 def get_git_diff(base_ref: str) -> str:
@@ -78,7 +87,7 @@ def build_prompt(guidelines: str, diff: str) -> str:
 
 
 def get_available_models(api_key: str) -> Tuple[str, List[str]]:
-    """Discovers available models supporting generateContent, sorted with latest first."""
+    """Discovers available models supporting generateContent, prioritizing stable flash models."""
     for version in ["v1beta", "v1"]:
         url = f"https://generativelanguage.googleapis.com/{version}/models?key={api_key}"
         try:
@@ -90,20 +99,36 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
                     for m in data.get("models", [])
                     if "generateContent" in m.get("supportedGenerationMethods", [])
                 ]
-                print(f"Discovered models for {version}: {models}")
-                # Prefer flash models, sorted descending so newest comes first
-                flash_models = sorted([m for m in models if "flash" in m], reverse=True)
-                other_models = sorted([m for m in models if "flash" not in m], reverse=True)
-                candidate_list = flash_models + other_models
-                if candidate_list:
-                    return version, candidate_list
+                print(f"Discovered {len(models)} models for API version {version}.")
+
+                ordered_candidates = []
+                # First add preferred models in order if available
+                for pref in PREFERRED_MODELS_ORDER:
+                    if pref in models and pref not in ordered_candidates:
+                        ordered_candidates.append(pref)
+
+                # Then add any other standard flash models (avoiding preview/tts/image/omni)
+                remaining_flash = [
+                    m for m in models
+                    if "flash" in m and not any(x in m for x in ["preview", "tts", "image", "omni", "lite"])
+                    and m not in ordered_candidates
+                ]
+                ordered_candidates.extend(sorted(remaining_flash, reverse=True))
+
+                # Then any remaining general models
+                for m in models:
+                    if m not in ordered_candidates and not any(x in m for x in ["tts", "image"]):
+                        ordered_candidates.append(m)
+
+                if ordered_candidates:
+                    return version, ordered_candidates
         except Exception as e:
             print(f"Notice: Could not list models on {version}: {e}")
 
-    return "v1beta", ["gemini-3.8-flash", "gemini-2.0-flash"]
+    return "v1beta", PREFERRED_MODELS_ORDER
 
 
-def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = PREFERRED_MODEL) -> str:
+def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = USER_PREFERRED_MODEL) -> str:
     """Calls the Google Gemini REST API with fallback across available models."""
     version, models = get_available_models(api_key)
     if preferred_model:
@@ -142,15 +167,13 @@ def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = 
                 text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                 if not text:
                     raise ValueError(f"Empty text in candidate response: {body}")
-                print(f"Successfully generated review with '{model}'!")
+                print(f"✅ Successfully generated review with '{model}'!")
                 return text
         except urllib.error.HTTPError as e:
             err_msg = e.read().decode("utf-8", errors="replace")
             last_error = f"HTTP {e.code} for model {model} ({version}): {err_msg}"
             print(f"Model '{model}' failed: {last_error}")
-            if e.code in (400, 404):
-                continue
-            raise RuntimeError(last_error) from e
+            continue
         except Exception as e:
             last_error = str(e)
             print(f"Model '{model}' unexpected error: {e}")
