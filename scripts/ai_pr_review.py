@@ -555,18 +555,16 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
         print("Review comment posted successfully.")
 
 
-def post_review_with_inline_comments(
+def post_inline_review_comments(
     pr_number: str,
     repo: str,
-    review_text: str,
     commit_sha: str,
     inline_comments: List[Dict]
 ) -> bool:
-    """Posts a Pull Request Review containing top-level summary and inline comments."""
-    full_comment = f"{PRIMARY_COMMENT_MARKER}\n{review_text}"
+    """Posts inline comments on the pull request diff via GitHub Reviews API."""
     review_payload = {
         "commit_id": commit_sha,
-        "body": full_comment,
+        "body": "### 🤖 AI Code Review (Inline Feedback)\nSee inline suggestions on modified lines below.",
         "event": "COMMENT",
         "comments": [
             {
@@ -587,10 +585,10 @@ def post_review_with_inline_comments(
     ]
     try:
         subprocess.run(cmd, input=data, check=True)
-        print(f"Successfully posted PR review with {len(inline_comments)} inline comments on commit {commit_sha[:7]}.")
+        print(f"Successfully posted {len(inline_comments)} inline review comments on commit {commit_sha[:7]}.")
         return True
     except Exception as e:
-        print(f"Warning: Failed to post PR review with inline comments: {e}")
+        print(f"Warning: Failed to post inline review comments: {e}")
         return False
 
 
@@ -750,14 +748,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Use --dry-run to test locally without posting comments.")
         return 1
 
-    # Post via Reviews API if we have inline comments and a commit SHA
-    if valid_inline and head_sha:
-        posted = post_review_with_inline_comments(pr_number, repo, formatted_review, head_sha, valid_inline)
-        if posted:
-            return 0
-        print("Falling back to top-level timeline comment...")
-
+    # 1. ALWAYS post or update the single persistent top-level review comment in the conversation timeline
     post_or_update_review_comment(pr_number, repo, formatted_review)
+
+    # 2. If there are valid inline comments and a commit SHA, post inline comments to the diff
+    if valid_inline and head_sha:
+        post_inline_review_comments(pr_number, repo, head_sha, valid_inline)
+
     return 0
 
 

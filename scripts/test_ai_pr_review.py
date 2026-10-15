@@ -269,11 +269,11 @@ Looks great!
         self.assertIn("--input", cmd)
 
     @patch("subprocess.run")
-    def test_post_review_with_inline_comments(self, mock_run):
+    def test_post_inline_review_comments(self, mock_run):
         mock_run.return_value = MagicMock()
         comments = [{"path": "src/Foo.kt", "line": 42, "body": "Fix this"}]
-        success = ai_review.post_review_with_inline_comments(
-            "12", "tibagni/LogViewer", "Review text", "commit_sha_123", comments
+        success = ai_review.post_inline_review_comments(
+            "12", "tibagni/LogViewer", "commit_sha_123", comments
         )
         self.assertTrue(success)
         mock_run.assert_called_once()
@@ -294,6 +294,22 @@ Looks great!
             exit_code = ai_review.main(["--dry-run", "-v", "--pr", "101", "--env-file", "/non/existent/.env"])
             self.assertEqual(exit_code, 0)
             mock_post.assert_not_called()
+
+    @patch("scripts.ai_pr_review.post_inline_review_comments")
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": []})
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="--- a/src/F.kt\n+++ b/src/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n")
+    @patch("scripts.ai_pr_review.call_llm_api", return_value="LGTM\n```inline-comments\n[{\"path\": \"src/F.kt\", \"line\": 1, \"body\": \"Nice\"}]\n```")
+    def test_main_posts_both_top_level_and_inline_comments(
+        self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_top, mock_post_inline
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key"}):
+            exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_post_top.assert_called_once()
+            mock_post_inline.assert_called_once()
 
 
 if __name__ == "__main__":
