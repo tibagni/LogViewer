@@ -240,16 +240,19 @@ class LiveLogsRepositoryTests {
     assertEquals(0, repo.filteredLogsCount)
   }
 
+  companion object {
+    private val OTHER_TAG = FilterContextTag.register("test_repo_static_logs")
+  }
+
   @Test
   fun testLiveLogsRepositoryUsesLiveLogsContextAndPreservesLogsContext() {
     val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
     val filter = createFilter("ErrorFilter", "error")
 
     // Set up other context with existing static file data
-    val otherTag = FilterContextTag.register("test_repo_static_logs")
-    val otherContext = filter.initContext(otherTag)
+    val otherContext = filter.initContext(OTHER_TAG)
     otherContext.incrementLineCount(LogStream.MAIN)
-    assertEquals(1, filter.getContext(otherTag)?.totalLinesFound)
+    assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
 
     // Apply filter in repo (filterContextTag context)
     repo.setLiveFilters(listOf(filter))
@@ -261,11 +264,11 @@ class LiveLogsRepositoryTests {
     assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
 
     // Crucially: other context was NEVER touched or clobbered
-    assertEquals(1, filter.getContext(otherTag)?.totalLinesFound)
+    assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
 
     // Clearing repo clears repo's context, not other
     repo.clear()
     assertEquals(0, filter.getContext(repo.filterContextTag)?.totalLinesFound)
-    assertEquals(1, filter.getContext(otherTag)?.totalLinesFound)
+    assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
   }
 }

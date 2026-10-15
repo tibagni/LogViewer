@@ -34,7 +34,6 @@ public class FiltersList extends JPanel {
 
   public void setActiveFilterContextTag(FilterContextTag activeFilterContextTag) {
     this.activeFilterContextTag = activeFilterContextTag;
-    updateUI();
   }
 
   public FilterContextTag getActiveFilterContextTag() {

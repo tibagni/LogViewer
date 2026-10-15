@@ -13,6 +13,10 @@ import kotlin.system.measureTimeMillis
 
 class FiltersBenchmarkTest {
 
+  companion object {
+    private val BENCHMARK_TAG = FilterContextTag.register("benchmark_tag")
+  }
+
   @Test
   @Ignore("Benchmark test for manual performance evaluation")
   fun benchmarkApplyFilters() {
@@ -52,15 +56,14 @@ class FiltersBenchmarkTest {
     }
 
     val pr = mock(ProgressReporter::class.java)
-    val benchmarkTag = FilterContextTag.register("benchmark_tag")
 
     // Warm-up
-    Filters.applyMultipleFilters(entries.subList(0, 10_000), filters, benchmarkTag, pr)
+    Filters.applyMultipleFilters(entries.subList(0, 10_000), filters, BENCHMARK_TAG, pr)
 
     // Run benchmark 3 times
     val times = (1..3).map {
       measureTimeMillis {
-        val result = Filters.applyMultipleFilters(entries, filters, benchmarkTag, pr)
+        val result = Filters.applyMultipleFilters(entries, filters, BENCHMARK_TAG, pr)
         println("Filtered ${result.size} matches")
       }
     }
