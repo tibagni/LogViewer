@@ -2,6 +2,7 @@ package com.tibagni.logviewer.live
 
 import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.filter.Filters
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogStream
@@ -15,6 +16,7 @@ data class LiveLogBatch(
 
 interface LiveLogsRepository {
   val maxCapacity: Int
+  val filterContextTag: FilterContextTag
   val totalLogsReceived: Long
   /**
    * The total number of logs that were evicted from the beginning of the circular buffer
@@ -53,7 +55,8 @@ interface LiveLogsRepository {
 }
 
 class LiveLogsRepositoryImpl(
-  override val maxCapacity: Int = DEFAULT_MAX_CAPACITY
+  override val maxCapacity: Int = DEFAULT_MAX_CAPACITY,
+  override val filterContextTag: FilterContextTag = FILTER_CONTEXT_TAG
 ) : LiveLogsRepository {
 
   private val lock = Any()
@@ -108,11 +111,14 @@ class LiveLogsRepositoryImpl(
 
       var firstMatchedFilter: Filter? = null
       for (filter in liveFilters) {
+        if (filter.getContext(filterContextTag) == null) {
+          filter.initContext(filterContextTag)
+        }
         if (filter.appliesTo(entry)) {
           if (firstMatchedFilter == null) {
             firstMatchedFilter = filter
           }
-          filter.temporaryInfo?.incrementLineCount(entry.logStream)
+          filter.getContext(filterContextTag)?.incrementLineCount(entry.logStream)
         }
       }
 
@@ -132,7 +138,7 @@ class LiveLogsRepositoryImpl(
 
         for (filter in liveFilters) {
           if (filter.appliesTo(removed)) {
-            filter.temporaryInfo?.decrementLineCount(removed.logStream)
+            filter.getContext(filterContextTag)?.decrementLineCount(removed.logStream)
           }
         }
 
@@ -152,11 +158,14 @@ class LiveLogsRepositoryImpl(
   }
 
   override fun setLiveFilters(filters: Collection<Filter>, progressReporter: ProgressReporter?) = synchronized(lock) {
+    for (filter in liveFilters) {
+      filter.resetContext(filterContextTag)
+    }
     liveFilters.clear()
     liveFilters.addAll(filters)
 
     for (filter in liveFilters) {
-      filter.initTemporaryInfo()
+      filter.initContext(filterContextTag)
     }
 
     val pr = progressReporter ?: ProgressReporter { _, _ -> }
@@ -176,7 +185,7 @@ class LiveLogsRepositoryImpl(
       return@synchronized
     }
 
-    val matched = Filters.applyMultipleFilters(_allLogs.toList(), liveFilters.toTypedArray(), pr)
+    val matched = Filters.applyMultipleFilters(_allLogs.toList(), liveFilters.toTypedArray(), filterContextTag, pr)
     _filteredLogs.clear()
     _filteredLogs.addAll(matched)
   }
@@ -188,7 +197,7 @@ class LiveLogsRepositoryImpl(
     totalLogsReceived = 0L
     droppedLogsCount = 0L
     for (filter in liveFilters) {
-      filter.initTemporaryInfo()
+      filter.initContext(filterContextTag)
     }
   }
 
@@ -207,5 +216,6 @@ class LiveLogsRepositoryImpl(
 
   companion object {
     const val DEFAULT_MAX_CAPACITY = 100_000
+    val FILTER_CONTEXT_TAG = FilterContextTag.register("live_logs")
   }
 }

@@ -10,8 +10,21 @@ import java.util.stream.Collectors;
 
 public class Filters {
 
-  public static List<LogEntry> applyMultipleFilters(List<LogEntry> input, Filter[] filters, ProgressReporter pr) {
-    initializeContextInfo(filters);
+  public static List<LogEntry> applyMultipleFilters(
+      List<LogEntry> input,
+      Filter[] filters,
+      ProgressReporter pr) {
+    return applyMultipleFilters(input, filters, null, pr);
+  }
+
+  public static List<LogEntry> applyMultipleFilters(
+      List<LogEntry> input,
+      Filter[] filters,
+      FilterContextTag contextTag,
+      ProgressReporter pr) {
+    if (contextTag != null) {
+      initializeContext(filters, contextTag);
+    }
     final int totalLogs = input.size();
     if (totalLogs == 0 || filters.length == 0) {
       pr.onProgress(100, I18n.get(I18n.COMMON_DONE));
@@ -31,7 +44,7 @@ public class Filters {
     final AtomicInteger lastReported = new AtomicInteger(0);
 
     List<List<LogEntry>> chunkResults = chunks.parallelStream().map(chunk ->
-      applyFiltersToChunk(chunk, filters, completedLogs, lastReported, publishThreshold, totalLogs, pr)
+      applyFiltersToChunk(chunk, filters, contextTag, completedLogs, lastReported, publishThreshold, totalLogs, pr)
     ).collect(Collectors.toList());
 
     int totalFilteredSize = 0;
@@ -68,6 +81,7 @@ public class Filters {
   private static List<LogEntry> applyFiltersToChunk(
       List<LogEntry> chunk,
       Filter[] filters,
+      FilterContextTag contextTag,
       AtomicInteger completedLogs,
       AtomicInteger lastReported,
       int publishThreshold,
@@ -75,7 +89,7 @@ public class Filters {
       ProgressReporter pr) {
     List<LogEntry> chunkResult = new ArrayList<>();
     for (LogEntry entry : chunk) {
-      Filter appliedFilter = getAppliedFilter(entry, filters);
+      Filter appliedFilter = getAppliedFilter(entry, filters, contextTag);
       if (appliedFilter != null) {
         entry.setAppliedFilter(appliedFilter);
         chunkResult.add(entry);
@@ -95,9 +109,9 @@ public class Filters {
     return chunkResult;
   }
 
-  private static void initializeContextInfo(Filter[] filters) {
+  private static void initializeContext(Filter[] filters, FilterContextTag contextTag) {
     for (Filter filter : filters) {
-      filter.initTemporaryInfo();
+      filter.initContext(contextTag);
     }
   }
 
@@ -105,11 +119,12 @@ public class Filters {
    * Identifies the primary matching filter for the given log entry and increments line counters
    * across all matching filters.
    *
-   * @param entry   the log entry being evaluated.
-   * @param filters the array of candidate filters.
+   * @param entry      the log entry being evaluated.
+   * @param filters    the array of candidate filters.
+   * @param contextTag the filter context tag.
    * @return the first filter that matched the log entry, or null if no filters matched.
    */
-  private static Filter getAppliedFilter(LogEntry entry, Filter[] filters) {
+  private static Filter getAppliedFilter(LogEntry entry, Filter[] filters, FilterContextTag contextTag) {
     Filter firstFound = null;
     for (Filter filter : filters) {
       if (filter.appliesTo(entry)) {
@@ -119,7 +134,12 @@ public class Filters {
 
         // Increment the filter's 'linesFound' so we can show to the user
         // how many times each filter has matched
-        filter.getTemporaryInfo().incrementLineCount(entry.getStream());
+        if (contextTag != null) {
+          ContextInfo contextInfo = filter.getContext(contextTag);
+          if (contextInfo != null) {
+            contextInfo.incrementLineCount(entry.getStream());
+          }
+        }
       }
     }
 

@@ -6,6 +6,7 @@ import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.AdbLogStreamer
 import com.tibagni.logviewer.adb.AdbManager
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogEntry
@@ -34,6 +35,7 @@ interface LiveLogPresenterView {
 }
 
 interface LiveLogPresenter {
+  val filterContextTag: FilterContextTag
   val isStreaming: Boolean
   val connectedDevice: AdbDevice?
   val visibleLogsOffset: Int
@@ -77,6 +79,9 @@ class LiveLogPresenterImpl(
   private var streamingJob: Job? = null
   private var filteringJob: Job? = null
   private var deviceScanJob: Job? = null
+  override val filterContextTag: FilterContextTag
+    get() = liveLogsRepository.filterContextTag
+
   private var _connectedDevice: AdbDevice? = null
   override val connectedDevice: AdbDevice?
     get() = _connectedDevice

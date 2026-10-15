@@ -5,6 +5,8 @@ import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogLineInfo;
 import com.tibagni.logviewer.log.LogStream;
 
+import com.tibagni.logviewer.filter.FilterContextTag;
+
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.List;
 public interface LogViewerPresenter {
 
   void init();
+  FilterContextTag getFilterContextTag();
   void loadLogs(File[] logFiles);
   void loadLogs(File[] logFiles, Charset charset);
   void refreshLogs();

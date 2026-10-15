@@ -561,15 +561,16 @@ class FiltersPresenterTests {
   }
 
   @Test
-  fun testApplyFiltersCleansUpTemporaryInfoAndNotifies() {
+  fun testApplyFiltersCleansUpContextAndNotifies() {
+    val tag = FilterContextTag.register("test_filters_presenter_tag")
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.initTemporaryInfo()
-    assertNotNull(f.temporaryInfo)
+    f.initContext(tag)
+    assertNotNull(f.getContext(tag))
     openedFilters["Group1"] = mutableListOf(f)
 
     presenter.applyFilters()
 
-    assertNull(f.temporaryInfo)
+    assertNull(f.getContext(tag))
     verify(mockFiltersRepository).notifyFiltersApplied()
   }
 }

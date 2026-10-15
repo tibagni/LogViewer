@@ -382,6 +382,9 @@ class MainViewImpl(
     tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_BUG_REPORT), bugReportView.contentPane)
     tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LIVE_LOGS), liveLogView.contentPane)
 
+    // Ensure the initial tab (Logs) has the filters panel properly attached
+    logViewerView.attachFiltersPanel(filtersPanel)
+
     tabbedPane.addChangeListener {
       when (tabbedPane.selectedComponent) {
         logViewerView.contentPane -> {

@@ -90,12 +90,14 @@ class LogViewerViewImpl(
 
   override fun attachFiltersPanel(panel: FiltersPanel) {
     this.filtersPanel = panel
+    panel.activeFilterContextTag = presenter.filterContextTag
     val currentDivider = mainSplitPane.dividerLocation
     mainSplitPane.leftComponent = panel
     if (currentDivider > 0) {
       mainSplitPane.dividerLocation = currentDivider
     }
     panel.listener = filtersPanelListener
+    panel.updateFiltersUI()
   }
 
   init {

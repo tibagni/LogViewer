@@ -131,6 +131,7 @@ class LiveLogViewImpl(
       mainSplitPane.dividerLocation = currentDivider
     }
     panel.listener = filtersPanelListener
+    panel.activeFilterContextTag = presenter.filterContextTag
   }
 
   private fun navigateFilteredLog(filter: Filter, forward: Boolean) {
@@ -783,6 +784,12 @@ class LiveLogViewImpl(
       }
     }
 
+    if ((batch.newFilteredLogs.isNotEmpty() || batch.evictedFilteredCount > 0) &&
+      filtersPanel?.activeFilterContextTag == presenter.filterContextTag
+    ) {
+      filtersPanel?.updateFiltersUI()
+    }
+
     logListTableModel.lastEntry?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
   }
 
@@ -792,6 +799,9 @@ class LiveLogViewImpl(
     allLogs.lastOrNull()?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
     if (isAutoScrollActive) {
       scrollToBottom()
+    }
+    if (filtersPanel?.activeFilterContextTag == presenter.filterContextTag) {
+      filtersPanel?.updateFiltersUI()
     }
   }
 

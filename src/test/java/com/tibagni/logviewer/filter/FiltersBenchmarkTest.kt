@@ -52,14 +52,15 @@ class FiltersBenchmarkTest {
     }
 
     val pr = mock(ProgressReporter::class.java)
+    val benchmarkTag = FilterContextTag.register("benchmark_tag")
 
     // Warm-up
-    Filters.applyMultipleFilters(entries.subList(0, 10_000), filters, pr)
+    Filters.applyMultipleFilters(entries.subList(0, 10_000), filters, benchmarkTag, pr)
 
     // Run benchmark 3 times
     val times = (1..3).map {
       measureTimeMillis {
-        val result = Filters.applyMultipleFilters(entries, filters, pr)
+        val result = Filters.applyMultipleFilters(entries, filters, benchmarkTag, pr)
         println("Filtered ${result.size} matches")
       }
     }
