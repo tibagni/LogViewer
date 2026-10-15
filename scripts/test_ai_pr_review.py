@@ -203,7 +203,7 @@ class TestAiPrReview(unittest.TestCase):
 
     @patch.dict(os.environ, {}, clear=True)
     def test_main_no_api_key(self):
-        exit_code = ai_review.main([])
+        exit_code = ai_review.main(["--env-file", "/non/existent/.env"])
         self.assertEqual(exit_code, 0)
 
     @patch("scripts.ai_pr_review.call_llm_api", return_value="Review output")
@@ -212,7 +212,7 @@ class TestAiPrReview(unittest.TestCase):
     @patch("scripts.ai_pr_review.post_or_update_review_comment")
     def test_main_dry_run_does_not_post(self, mock_post, mock_meta, mock_diff, mock_call):
         with patch.dict(os.environ, {"LLM_API_KEY": "test_key"}):
-            exit_code = ai_review.main(["--dry-run", "-v", "--pr", "101"])
+            exit_code = ai_review.main(["--dry-run", "-v", "--pr", "101", "--env-file", "/non/existent/.env"])
             self.assertEqual(exit_code, 0)
             mock_post.assert_not_called()
 

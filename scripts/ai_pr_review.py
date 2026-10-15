@@ -61,11 +61,39 @@ PREFERRED_MODELS_ORDER = [
 ]
 
 
+def get_project_root() -> str:
+    """Finds the git repository root or the parent directory of this script."""
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        root = res.stdout.strip()
+        if root and os.path.isdir(root):
+            return root
+    except Exception:
+        pass
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def resolve_repo_path(path: str) -> str:
+    """Resolves a file path, checking the current working directory and the repository root."""
+    if os.path.isabs(path) or os.path.exists(path):
+        return path
+    root_relative = os.path.join(get_project_root(), path)
+    if os.path.exists(root_relative):
+        return root_relative
+    return path
+
+
 def load_env_file(env_path: str = ".env") -> None:
     """Loads environment variables from a local .env file without overriding existing env vars."""
-    if os.path.exists(env_path):
+    resolved_path = resolve_repo_path(env_path)
+    if os.path.exists(resolved_path):
         try:
-            with open(env_path, "r", encoding="utf-8") as f:
+            with open(resolved_path, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
@@ -75,7 +103,7 @@ def load_env_file(env_path: str = ".env") -> None:
                         if key and key not in os.environ:
                             os.environ[key] = val
         except Exception as e:
-            print(f"Warning: Could not read env file '{env_path}': {e}")
+            print(f"Warning: Could not read env file '{resolved_path}': {e}")
 
 
 def get_repo_name() -> str:
@@ -205,8 +233,9 @@ def get_local_commit_log(base_ref: str) -> List[str]:
 
 def load_review_guidelines(guidelines_path: str = ".github/review_guidelines.md") -> Tuple[str, str]:
     """Loads review instructions from markdown file if present, returning (content, source_description)."""
-    if os.path.exists(guidelines_path):
-        with open(guidelines_path, "r", encoding="utf-8") as f:
+    resolved_path = resolve_repo_path(guidelines_path)
+    if os.path.exists(resolved_path):
+        with open(resolved_path, "r", encoding="utf-8") as f:
             return f.read(), f"guidelines defined in [`{guidelines_path}`]({guidelines_path})"
     return (
         "Perform a thorough, expert-level code review focusing on concurrency, architecture, and edge cases.",
