@@ -67,3 +67,7 @@ deploy/credentials.json
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Local environment variables
+.env
+.env.local
