@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Automated AI Code Review using Google Gemini API for GitHub Pull Requests.
+Automated AI Code Review for GitHub Pull Requests.
 Zero third-party dependencies - standard library only.
 """
 
@@ -12,8 +12,9 @@ import urllib.error
 import urllib.request
 from typing import List, Optional, Tuple
 
-COMMENT_MARKER = "<!-- gemini-code-review -->"
-USER_PREFERRED_MODEL = os.environ.get("GEMINI_MODEL")
+PRIMARY_COMMENT_MARKER = "<!-- ai-code-review -->"
+RECOGNIZED_COMMENT_MARKERS = ("<!-- ai-code-review -->", "<!-- gemini-code-review -->")
+USER_PREFERRED_MODEL = os.environ.get("LLM_MODEL") or os.environ.get("GEMINI_MODEL")
 EXCLUDED_EXTENSIONS = (
     ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg",
     ".jar", ".zip", ".tar", ".gz",
@@ -67,16 +68,19 @@ def get_git_diff(base_ref: str) -> str:
     return diff_res.stdout
 
 
-def load_review_guidelines(guidelines_path: str = ".github/review_guidelines.md") -> str:
-    """Loads the review instructions from a markdown file if present."""
+def load_review_guidelines(guidelines_path: str = ".github/review_guidelines.md") -> Tuple[str, str]:
+    """Loads review instructions from markdown file if present, returning (content, source_description)."""
     if os.path.exists(guidelines_path):
         with open(guidelines_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "Perform a thorough, expert-level code review focusing on concurrency, architecture, and edge cases."
+            return f.read(), f"guidelines defined in [`{guidelines_path}`]({guidelines_path})"
+    return (
+        "Perform a thorough, expert-level code review focusing on concurrency, architecture, and edge cases.",
+        "default built-in guidelines"
+    )
 
 
 def build_prompt(guidelines: str, diff: str) -> str:
-    """Assembles the system guidelines and PR diff into the Gemini review prompt."""
+    """Assembles the system guidelines and PR diff into the LLM review prompt."""
     return f"""{guidelines}
 
 ---
@@ -131,15 +135,15 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
     return "v1beta", PREFERRED_MODELS_ORDER
 
 
-def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = USER_PREFERRED_MODEL) -> str:
-    """Calls the Google Gemini REST API with fallback across available models."""
+def call_llm_api(api_key: str, prompt: str, preferred_model: Optional[str] = USER_PREFERRED_MODEL) -> str:
+    """Calls the LLM REST API with resilient fallback across available models."""
     version, models = get_available_models(api_key)
     if preferred_model:
         models = [preferred_model] + [m for m in models if m != preferred_model]
 
     last_error = None
     for model in models:
-        print(f"Attempting review with Gemini model '{model}' ({version})...")
+        print(f"Attempting review with LLM model '{model}' ({version})...")
         url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent"
         headers = {
             "Content-Type": "application/json",
@@ -169,7 +173,7 @@ def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = 
                 body = json.loads(response.read().decode("utf-8"))
                 candidates = body.get("candidates", [])
                 if not candidates:
-                    raise ValueError(f"No candidates returned by Gemini: {body}")
+                    raise ValueError(f"No candidates returned by LLM: {body}")
                 text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                 if not text:
                     raise ValueError(f"Empty text in candidate response: {body}")
@@ -185,11 +189,18 @@ def call_gemini_api(api_key: str, prompt: str, preferred_model: Optional[str] = 
             print(f"Model '{model}' unexpected error: {e}")
             continue
 
-    raise RuntimeError(f"All available Gemini models failed. Last error: {last_error}")
+    raise RuntimeError(f"All available LLM models failed. Last error: {last_error}")
 
 
 def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
-    """Finds an existing Gemini review comment on the PR by searching for COMMENT_MARKER."""
+    """Finds an existing AI review comment on the PR by searching for recognized markers.
+
+    Note on GitHub REST API:
+    In GitHub's API data model, Pull Requests inherit from Issues. The main
+    conversation/timeline comments are accessed via:
+        repos/{repo}/issues/{pr_number}/comments
+    (The `repos/{repo}/pulls/{pr_number}/comments` endpoint is strictly for inline diff line comments).
+    """
     cmd = ["gh", "api", f"repos/{repo}/issues/{pr_number}/comments", "--paginate", "--slurp"]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -205,8 +216,10 @@ def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
             comments = pages
 
         for comment in comments:
-            if isinstance(comment, dict) and COMMENT_MARKER in comment.get("body", ""):
-                return comment.get("id")
+            if isinstance(comment, dict):
+                body = comment.get("body", "")
+                if any(marker in body for marker in RECOGNIZED_COMMENT_MARKERS):
+                    return comment.get("id")
     except Exception as e:
         print(f"Warning: Could not search existing PR comments: {e}")
     return None
@@ -214,7 +227,7 @@ def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
 
 def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -> None:
     """Posts or updates the PR review comment, and outputs to GITHUB_STEP_SUMMARY if available."""
-    full_comment = f"{COMMENT_MARKER}\n{review_text}"
+    full_comment = f"{PRIMARY_COMMENT_MARKER}\n{review_text}"
 
     # Also log to GitHub Step Summary
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -228,7 +241,7 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
     existing_id = find_existing_comment(pr_number, repo)
     payload = json.dumps({"body": full_comment}).encode("utf-8")
     if existing_id:
-        print(f"Updating existing Gemini review comment #{existing_id} on PR #{pr_number}...")
+        print(f"Updating existing AI review comment #{existing_id} on PR #{pr_number}...")
         cmd = [
             "gh", "api",
             "--method", "PATCH",
@@ -238,7 +251,7 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
         subprocess.run(cmd, input=payload, check=True)
         print("Review comment updated successfully.")
     else:
-        print(f"Posting new Gemini review comment on PR #{pr_number}...")
+        print(f"Posting new AI review comment on PR #{pr_number}...")
         cmd = [
             "gh", "api",
             "--method", "POST",
@@ -250,9 +263,10 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
 
 
 def main() -> int:
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    api_key = (os.environ.get("LLM_API_KEY", "").strip() or
+               os.environ.get("GEMINI_API_KEY", "").strip())
     if not api_key:
-        print("⚠️ Notice: GEMINI_API_KEY is not set. Skipping Gemini automated code review.")
+        print("⚠️ Notice: Neither LLM_API_KEY nor GEMINI_API_KEY is set. Skipping automated code review.")
         return 0
 
     pr_number = os.environ.get("PR_NUMBER", "").strip()
@@ -267,23 +281,23 @@ def main() -> int:
     diff = get_git_diff(base_ref)
     if not diff.strip():
         print("No reviewable code changes found in this PR.")
-        review_body = "### 🤖 Gemini Code Review\n\nNo code changes requiring review were detected in this pull request."
+        review_body = "### 🤖 AI Code Review\n\nNo code changes requiring review were detected in this pull request."
         post_or_update_review_comment(pr_number, repo, review_body)
         return 0
 
     print(f"Extracted diff ({len(diff)} characters). Loading review guidelines...")
-    guidelines = load_review_guidelines()
+    guidelines, source_description = load_review_guidelines()
     prompt = build_prompt(guidelines, diff)
 
-    print("Requesting code review from Gemini API...")
-    review_output = call_gemini_api(api_key, prompt)
+    print("Requesting code review from LLM API...")
+    review_output = call_llm_api(api_key, prompt)
 
-    formatted_review = f"""### 🤖 Gemini Code Review
+    formatted_review = f"""### 🤖 AI Code Review
 
 {review_output.strip()}
 
 ---
-*Reviewed by Google Gemini using guidelines defined in [`.github/review_guidelines.md`](.github/review_guidelines.md).*
+*Reviewed by AI using {source_description}.*
 """
 
     post_or_update_review_comment(pr_number, repo, formatted_review)
