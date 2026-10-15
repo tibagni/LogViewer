@@ -97,7 +97,6 @@ class LogViewerViewImpl(
       mainSplitPane.dividerLocation = currentDivider
     }
     panel.listener = filtersPanelListener
-    panel.updateFiltersUI()
   }
 
   init {

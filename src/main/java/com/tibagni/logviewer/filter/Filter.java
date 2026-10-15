@@ -227,12 +227,11 @@ public class Filter {
     return flags == filter.flags &&
         Objects.equals(name, filter.name) &&
         Objects.equals(color, filter.color) &&
-        Objects.equals(getPatternString(), filter.getPatternString()) &&
-        Objects.equals(contexts, filter.contexts);
+        Objects.equals(getPatternString(), filter.getPatternString());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, color, pattern, flags, contexts);
+    return Objects.hash(name, color, getPatternString(), flags);
   }
 }

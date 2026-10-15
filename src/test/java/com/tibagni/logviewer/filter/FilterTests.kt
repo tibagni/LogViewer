@@ -403,6 +403,19 @@ class FilterTests {
 
     assertEquals(filter, filter2)
     assertNotSame(filter, filter2)
+    assertEquals(filter.hashCode(), filter2.hashCode())
+  }
+
+  @Test
+  fun testEqualsAndHashCodeIgnoreRuntimeContexts() {
+    val filter1 = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    val filter2 = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+
+    val context = filter1.initContext(TAG_INFO)
+    context.incrementLineCount(LogStream.MAIN)
+
+    assertEquals(filter1, filter2)
+    assertEquals(filter1.hashCode(), filter2.hashCode())
   }
 
   @Test
@@ -412,6 +425,19 @@ class FilterTests {
 
     assertEquals(filter, filterCopy)
     assertNotSame(filter, filterCopy)
+    assertEquals(filter.hashCode(), filterCopy.hashCode())
+  }
+
+  @Test
+  fun testCopyFilterWithContextMaintainsEquality() {
+    val filter = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    val context = filter.initContext(TAG_INFO)
+    context.incrementLineCount(LogStream.MAIN)
+
+    val filterCopy = Filter(filter)
+    assertEquals(filter, filterCopy)
+    assertNotSame(filter, filterCopy)
+    assertEquals(filter.hashCode(), filterCopy.hashCode())
   }
 
   @Test
