@@ -46,15 +46,36 @@ class TestAiPrReview(unittest.TestCase):
         self.assertIn("Perform a thorough, expert-level code review", content)
         self.assertEqual(source, "default built-in guidelines")
 
-    def test_build_prompt(self):
-        prompt = ai_review.build_prompt("Rules here", "+ val x = 1")
+    def test_build_prompt_basic(self):
+        prompt = ai_review.build_prompt(
+            guidelines="Rules here",
+            diff="+ val x = 1"
+        )
         self.assertIn("Rules here", prompt)
         self.assertIn("+ val x = 1", prompt)
+        self.assertNotIn("## Pull Request Context:", prompt)
+        self.assertIn("## Pull Request Code Diff to Review:", prompt)
+
+    def test_build_prompt_with_full_context(self):
+        prompt = ai_review.build_prompt(
+            guidelines="Rules here",
+            diff="+ val x = 1",
+            title="Fix concurrency bug",
+            description="Solves race condition on EDT",
+            commits=["`abc1234`: fix race condition"],
+            comments=[{"author": "tibagni", "body": "Verified on Linux"}]
+        )
+        self.assertIn("## Pull Request Context:", prompt)
+        self.assertIn("- **Title**: Fix concurrency bug", prompt)
+        self.assertIn("- **Description**:\nSolves race condition on EDT", prompt)
+        self.assertIn("### Commits:\n- `abc1234`: fix race condition", prompt)
+        self.assertIn("### Existing Discussion:\n- @tibagni: Verified on Linux", prompt)
         self.assertIn("## Pull Request Code Diff to Review:", prompt)
 
     def test_parse_args(self):
-        args = ai_review.parse_args(["--dry-run", "--pr", "101", "--base", "master"])
+        args = ai_review.parse_args(["--dry-run", "-v", "--pr", "101", "--base", "master"])
         self.assertTrue(args.dry_run)
+        self.assertTrue(args.verbose)
         self.assertEqual(args.pr, "101")
         self.assertEqual(args.base, "master")
 
@@ -67,6 +88,30 @@ class TestAiPrReview(unittest.TestCase):
         diff = ai_review.get_pr_diff("101")
         self.assertEqual(diff, "diff content")
         self.assertEqual(mock_run.call_count, 2)
+
+    @patch("subprocess.run")
+    def test_get_pr_metadata_filters_bot_comments(self, mock_run):
+        raw_json = json.dumps({
+            "title": "My PR Title",
+            "body": "PR description text",
+            "commits": [{"oid": "1234567890", "messageHeadline": "Commit headline"}],
+            "comments": [
+                {"author": {"login": "human_reviewer"}, "body": "Looks good so far!"},
+                {"author": {"login": "bot"}, "body": "<!-- ai-code-review -->\nOld review"},
+                {"author": {"login": "bot"}, "body": "<!-- gemini-code-review -->\nOlder review"},
+                {"author": {"login": "tibagni"}, "body": "Fixed in latest commit"}
+            ]
+        })
+        mock_run.return_value = MagicMock(stdout=raw_json)
+
+        meta = ai_review.get_pr_metadata("103")
+        self.assertEqual(meta["title"], "My PR Title")
+        filtered_comments = meta["filtered_comments"]
+        self.assertEqual(len(filtered_comments), 2)
+        self.assertEqual(filtered_comments[0]["author"], "human_reviewer")
+        self.assertEqual(filtered_comments[0]["body"], "Looks good so far!")
+        self.assertEqual(filtered_comments[1]["author"], "tibagni")
+        self.assertEqual(filtered_comments[1]["body"], "Fixed in latest commit")
 
     @patch("urllib.request.urlopen")
     def test_get_available_models_success(self, mock_urlopen):
@@ -163,10 +208,11 @@ class TestAiPrReview(unittest.TestCase):
 
     @patch("scripts.ai_pr_review.call_llm_api", return_value="Review output")
     @patch("scripts.ai_pr_review.get_pr_diff", return_value="+ some code diff")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": []})
     @patch("scripts.ai_pr_review.post_or_update_review_comment")
-    def test_main_dry_run_does_not_post(self, mock_post, mock_diff, mock_call):
+    def test_main_dry_run_does_not_post(self, mock_post, mock_meta, mock_diff, mock_call):
         with patch.dict(os.environ, {"LLM_API_KEY": "test_key"}):
-            exit_code = ai_review.main(["--dry-run", "--pr", "101"])
+            exit_code = ai_review.main(["--dry-run", "-v", "--pr", "101"])
             self.assertEqual(exit_code, 0)
             mock_post.assert_not_called()
 

@@ -14,15 +14,19 @@ LOCAL TESTING INSTRUCTIONS
 2. Test review on ANY GitHub PR without posting comments (dry-run):
      python3 scripts/ai_pr_review.py --dry-run --pr 101
 
-3. Test review on your current local branch changes against master:
+3. Inspect the full assembled prompt sent to the LLM (-v / --verbose):
+     python3 scripts/ai_pr_review.py --dry-run --pr 101 -v
+
+4. Test review on your current local branch changes against master:
      python3 scripts/ai_pr_review.py --dry-run
 
-4. Run against a different base branch:
+5. Run against a different base branch:
      python3 scripts/ai_pr_review.py --dry-run --base master
 
 Available CLI options:
   --dry-run, -n      Print review to console without posting or updating PR comments
-  --pr <number>      Review a specific GitHub PR by number (uses `gh pr diff`)
+  --verbose, -v      Print the full assembled prompt to stdout before calling the LLM
+  --pr <number>      Review a specific GitHub PR by number (uses `gh pr diff` and `gh pr view`)
   --base <branch>    Base branch to diff against (default: from env or 'master')
   --env-file <path>  Path to local env file (default: '.env')
 ================================================================================
@@ -35,7 +39,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 PRIMARY_COMMENT_MARKER = "<!-- ai-code-review -->"
 RECOGNIZED_COMMENT_MARKERS = ("<!-- ai-code-review -->", "<!-- gemini-code-review -->")
@@ -100,7 +104,6 @@ def get_repo_name() -> str:
 def get_git_diff(base_ref: str) -> str:
     """Extracts git diff against origin/<base_ref>, filtering out binary/asset files."""
     try:
-        # Check if remote base ref exists
         subprocess.run(
             ["git", "rev-parse", "--verify", f"origin/{base_ref}"],
             check=True,
@@ -111,7 +114,6 @@ def get_git_diff(base_ref: str) -> str:
     except subprocess.CalledProcessError:
         target_ref = base_ref
 
-    # Get list of changed files
     result = subprocess.run(
         ["git", "diff", "--name-only", f"{target_ref}...HEAD"],
         capture_output=True,
@@ -126,7 +128,6 @@ def get_git_diff(base_ref: str) -> str:
     if not changed_files:
         return ""
 
-    # Get diff for filtered files
     diff_cmd = ["git", "diff", f"{target_ref}...HEAD", "--"] + changed_files
     diff_res = subprocess.run(diff_cmd, capture_output=True, text=True, check=True)
     return diff_res.stdout
@@ -156,6 +157,52 @@ def get_pr_diff(pr_number: str) -> str:
     return diff_res.stdout
 
 
+def get_pr_metadata(pr_number: str) -> Dict:
+    """Fetches PR metadata (title, body, commits, human discussion) via GitHub CLI."""
+    cmd = ["gh", "pr", "view", str(pr_number), "--json", "title,body,commits,comments"]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(res.stdout)
+
+        # Filter out comments containing our review markers
+        filtered_comments = []
+        for c in data.get("comments", []):
+            body = c.get("body", "")
+            if not any(marker in body for marker in RECOGNIZED_COMMENT_MARKERS):
+                author = c.get("author", {}).get("login", "unknown")
+                filtered_comments.append({"author": author, "body": body})
+        data["filtered_comments"] = filtered_comments
+        return data
+    except Exception as e:
+        print(f"Warning: Could not fetch metadata for PR #{pr_number}: {e}")
+        return {}
+
+
+def get_local_commit_log(base_ref: str) -> List[str]:
+    """Gets commit messages for local branch against base_ref."""
+    target_ref = f"origin/{base_ref}"
+    try:
+        subprocess.run(
+            ["git", "rev-parse", "--verify", target_ref],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+    except Exception:
+        target_ref = base_ref
+
+    try:
+        res = subprocess.run(
+            ["git", "log", f"{target_ref}...HEAD", "--oneline"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return [line.strip() for line in res.stdout.strip().splitlines() if line.strip()]
+    except Exception:
+        return []
+
+
 def load_review_guidelines(guidelines_path: str = ".github/review_guidelines.md") -> Tuple[str, str]:
     """Loads review instructions from markdown file if present, returning (content, source_description)."""
     if os.path.exists(guidelines_path):
@@ -167,17 +214,34 @@ def load_review_guidelines(guidelines_path: str = ".github/review_guidelines.md"
     )
 
 
-def build_prompt(guidelines: str, diff: str) -> str:
-    """Assembles the system guidelines and PR diff into the LLM review prompt."""
-    return f"""{guidelines}
+def build_prompt(
+    guidelines: str,
+    diff: str,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    commits: Optional[List[str]] = None,
+    comments: Optional[List[Dict[str, str]]] = None
+) -> str:
+    """Assembles the system guidelines, PR context, and code diff into the LLM review prompt."""
+    sections = [guidelines.strip(), "\n---"]
 
----
-## Pull Request Code Diff to Review:
+    has_context = bool(title or description or commits or comments)
+    if has_context:
+        sections.append("## Pull Request Context:")
+        if title:
+            sections.append(f"- **Title**: {title.strip()}")
+        if description and description.strip():
+            sections.append(f"- **Description**:\n{description.strip()}")
+        if commits:
+            commits_text = "\n".join(f"- {c}" for c in commits)
+            sections.append(f"### Commits:\n{commits_text}")
+        if comments:
+            comments_text = "\n".join(f"- @{c.get('author', 'user')}: {c.get('body', '').strip()}" for c in comments)
+            sections.append(f"### Existing Discussion:\n{comments_text}")
+        sections.append("\n---")
 
-```diff
-{diff}
-```
-"""
+    sections.append(f"## Pull Request Code Diff to Review:\n\n```diff\n{diff.strip()}\n```")
+    return "\n\n".join(sections)
 
 
 def get_available_models(api_key: str) -> Tuple[str, List[str]]:
@@ -358,6 +422,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Print the review to stdout without posting or updating comments on GitHub."
     )
     parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Print the full assembled prompt sent to the LLM."
+    )
+    parser.add_argument(
         "--pr",
         type=str,
         default=None,
@@ -396,13 +465,27 @@ def main(argv: Optional[List[str]] = None) -> int:
     repo = get_repo_name()
     base_ref = args.base or os.environ.get("BASE_REF", "master").strip()
 
-    # 3. Extract diff
-    if args.pr:
-        print(f"Fetching diff for PR #{args.pr} via `gh pr diff`...")
-        diff = get_pr_diff(args.pr)
+    title = None
+    description = None
+    commits = []
+    comments = []
+
+    # 3. Extract diff and PR context
+    if pr_number:
+        print(f"Fetching diff and context for PR #{pr_number}...")
+        diff = get_pr_diff(pr_number)
+        meta = get_pr_metadata(pr_number)
+        title = meta.get("title")
+        description = meta.get("body")
+        for c in meta.get("commits", []):
+            oid = c.get("oid", "")[:7]
+            headline = c.get("messageHeadline", "")
+            commits.append(f"`{oid}`: {headline}" if oid else headline)
+        comments = meta.get("filtered_comments", [])
     else:
         print(f"Fetching diff against base branch '{base_ref}'...")
         diff = get_git_diff(base_ref)
+        commits = get_local_commit_log(base_ref)
 
     if not diff.strip():
         print("No reviewable code changes found.")
@@ -413,7 +496,21 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     print(f"Extracted diff ({len(diff)} characters). Loading review guidelines...")
     guidelines, source_description = load_review_guidelines()
-    prompt = build_prompt(guidelines, diff)
+    prompt = build_prompt(
+        guidelines=guidelines,
+        diff=diff,
+        title=title,
+        description=description,
+        commits=commits,
+        comments=comments
+    )
+
+    if args.verbose:
+        print("\n" + "=" * 80)
+        print("VERBOSE: Full Prompt Sent to LLM")
+        print("=" * 80)
+        print(prompt)
+        print("=" * 80 + "\n")
 
     print("Requesting code review from LLM API...")
     review_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
