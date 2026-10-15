@@ -35,11 +35,12 @@ Available CLI options:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
 import urllib.request
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 PRIMARY_COMMENT_MARKER = "<!-- ai-code-review -->"
 RECOGNIZED_COMMENT_MARKERS = ("<!-- ai-code-review -->", "<!-- gemini-code-review -->")
@@ -129,6 +130,121 @@ def get_repo_name() -> str:
     return ""
 
 
+def get_head_sha(pr_number: Optional[str] = None) -> str:
+    """Finds the HEAD commit SHA for the PR."""
+    sha = os.environ.get("HEAD_SHA", "").strip()
+    if sha:
+        return sha
+    if pr_number:
+        try:
+            res = subprocess.run(
+                ["gh", "pr", "view", str(pr_number), "--json", "headRefOid", "-q", ".headRefOid"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            val = res.stdout.strip()
+            if val:
+                return val
+        except Exception:
+            pass
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return res.stdout.strip()
+    except Exception:
+        return ""
+
+
+def parse_valid_diff_lines(diff: str) -> Dict[str, Set[int]]:
+    """Parses a unified diff and returns a mapping of file_path -> set of valid line numbers (side RIGHT)."""
+    valid_lines: Dict[str, Set[int]] = {}
+    current_file: Optional[str] = None
+    current_line = 0
+
+    for line in diff.splitlines():
+        if line.startswith("+++ b/"):
+            current_file = line[6:].strip()
+            if current_file not in valid_lines:
+                valid_lines[current_file] = set()
+        elif line.startswith("+++ /dev/null"):
+            current_file = None
+        elif line.startswith("@@ "):
+            # Format: @@ -old_start,old_len +new_start,new_len @@
+            m = re.search(r"\+(\d+)(?:,(\d+))?", line)
+            if m:
+                current_line = int(m.group(1))
+        elif current_file and current_line:
+            if line.startswith("+") or line.startswith(" "):
+                valid_lines[current_file].add(current_line)
+                current_line += 1
+            elif line.startswith("-"):
+                pass  # Deleted line in old file, does not advance current_line in new file
+
+    return valid_lines
+
+
+def normalize_path(path: str) -> str:
+    """Normalizes relative file path from model output."""
+    path = path.strip().lstrip("/")
+    if path.startswith("b/"):
+        path = path[2:]
+    elif path.startswith("./"):
+        path = path[2:]
+    return path
+
+
+def extract_inline_comments(text: str) -> Tuple[str, List[Dict]]:
+    """Extracts and removes ```inline-comments ... ``` JSON block from review text."""
+    pattern = r"```inline-comments\s*([\s\S]*?)\s*```"
+    match = re.search(pattern, text)
+    if not match:
+        return text.strip(), []
+
+    clean_text = re.sub(pattern, "", text).strip()
+    json_payload = match.group(1).strip()
+    try:
+        data = json.loads(json_payload)
+        if isinstance(data, list):
+            valid = []
+            for item in data:
+                if isinstance(item, dict) and "path" in item and "line" in item and "body" in item:
+                    try:
+                        line_num = int(item["line"])
+                        valid.append({
+                            "path": normalize_path(str(item["path"])),
+                            "line": line_num,
+                            "body": str(item["body"]).strip()
+                        })
+                    except (ValueError, TypeError):
+                        continue
+            return clean_text, valid
+    except Exception as e:
+        print(f"Notice: Could not parse inline comments JSON: {e}")
+    return clean_text, []
+
+
+def filter_inline_comments(
+    comments: List[Dict],
+    valid_diff_lines: Dict[str, Set[int]]
+) -> Tuple[List[Dict], List[Dict]]:
+    """Filters comments into (valid_comments, discarded_comments) based on diff hunk lines."""
+    valid = []
+    discarded = []
+    for c in comments:
+        path = c.get("path", "")
+        line = c.get("line")
+        if path in valid_diff_lines and line in valid_diff_lines[path]:
+            valid.append(c)
+        else:
+            discarded.append(c)
+    return valid, discarded
+
+
 def get_git_diff(base_ref: str) -> str:
     """Extracts git diff against origin/<base_ref>, filtering out binary/asset files."""
     try:
@@ -186,8 +302,8 @@ def get_pr_diff(pr_number: str) -> str:
 
 
 def get_pr_metadata(pr_number: str) -> Dict:
-    """Fetches PR metadata (title, body, commits, human discussion) via GitHub CLI."""
-    cmd = ["gh", "pr", "view", str(pr_number), "--json", "title,body,commits,comments"]
+    """Fetches PR metadata (title, body, commits, human discussion, headRefOid) via GitHub CLI."""
+    cmd = ["gh", "pr", "view", str(pr_number), "--json", "title,body,commits,comments,headRefOid"]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         data = json.loads(res.stdout)
@@ -269,6 +385,23 @@ def build_prompt(
             sections.append(f"### Existing Discussion:\n{comments_text}")
         sections.append("\n---")
 
+    inline_instructions = """### 💬 Optional Inline Comments:
+If you have specific line-level recommendations for modified code lines, you may include an optional JSON block at the very end of your review inside a ```inline-comments``` code block:
+```inline-comments
+[
+  {
+    "path": "path/to/File.kt",
+    "line": 42,
+    "body": "Specific recommendation for this line"
+  }
+]
+```
+Rules for inline comments:
+- Only reference files and line numbers that appear within the provided code diff hunks.
+- Keep the comment body concise, polite, and actionable.
+- If there are no specific line-level issues, omit the ```inline-comments``` block completely."""
+
+    sections.append(inline_instructions)
     sections.append(f"## Pull Request Code Diff to Review:\n\n```diff\n{diff.strip()}\n```")
     return "\n\n".join(sections)
 
@@ -371,14 +504,7 @@ def call_llm_api(api_key: str, prompt: str, preferred_model: Optional[str] = Non
 
 
 def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
-    """Finds an existing AI review comment on the PR by searching for recognized markers.
-
-    Note on GitHub REST API:
-    In GitHub's API data model, Pull Requests inherit from Issues. The main
-    conversation/timeline comments are accessed via:
-        repos/{repo}/issues/{pr_number}/comments
-    (The `repos/{repo}/pulls/{pr_number}/comments` endpoint is strictly for inline diff line comments).
-    """
+    """Finds an existing AI review comment on the PR by searching for recognized markers."""
     cmd = ["gh", "api", f"repos/{repo}/issues/{pr_number}/comments", "--paginate", "--slurp"]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -402,17 +528,8 @@ def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
 
 
 def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -> None:
-    """Posts or updates the PR review comment, and outputs to GITHUB_STEP_SUMMARY if available."""
+    """Posts or updates the top-level PR review comment in the issue timeline."""
     full_comment = f"{PRIMARY_COMMENT_MARKER}\n{review_text}"
-
-    # Also log to GitHub Step Summary
-    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary_file:
-        try:
-            with open(summary_file, "a", encoding="utf-8") as f:
-                f.write(f"\n{review_text}\n")
-        except Exception as e:
-            print(f"Warning: Could not write to GITHUB_STEP_SUMMARY: {e}")
 
     existing_id = find_existing_comment(pr_number, repo)
     payload = json.dumps({"body": full_comment}).encode("utf-8")
@@ -436,6 +553,56 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
         ]
         subprocess.run(cmd, input=payload, check=True)
         print("Review comment posted successfully.")
+
+
+def post_review_with_inline_comments(
+    pr_number: str,
+    repo: str,
+    review_text: str,
+    commit_sha: str,
+    inline_comments: List[Dict]
+) -> bool:
+    """Posts a Pull Request Review containing top-level summary and inline comments."""
+    full_comment = f"{PRIMARY_COMMENT_MARKER}\n{review_text}"
+    review_payload = {
+        "commit_id": commit_sha,
+        "body": full_comment,
+        "event": "COMMENT",
+        "comments": [
+            {
+                "path": c["path"],
+                "line": c["line"],
+                "side": "RIGHT",
+                "body": c["body"]
+            }
+            for c in inline_comments
+        ]
+    }
+    data = json.dumps(review_payload).encode("utf-8")
+    cmd = [
+        "gh", "api",
+        "--method", "POST",
+        f"repos/{repo}/pulls/{pr_number}/reviews",
+        "--input", "-"
+    ]
+    try:
+        subprocess.run(cmd, input=data, check=True)
+        print(f"Successfully posted PR review with {len(inline_comments)} inline comments on commit {commit_sha[:7]}.")
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to post PR review with inline comments: {e}")
+        return False
+
+
+def log_to_step_summary(review_text: str) -> None:
+    """Appends the review to GitHub Step Summary if running in GitHub Actions."""
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_file:
+        try:
+            with open(summary_file, "a", encoding="utf-8") as f:
+                f.write(f"\n{review_text}\n")
+        except Exception as e:
+            print(f"Warning: Could not write to GITHUB_STEP_SUMMARY: {e}")
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
@@ -493,6 +660,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     pr_number = args.pr or os.environ.get("PR_NUMBER", "").strip()
     repo = get_repo_name()
     base_ref = args.base or os.environ.get("BASE_REF", "master").strip()
+    head_sha = get_head_sha(pr_number)
 
     title = None
     description = None
@@ -524,6 +692,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     print(f"Extracted diff ({len(diff)} characters). Loading review guidelines...")
+    valid_diff_lines = parse_valid_diff_lines(diff)
     guidelines, source_description = load_review_guidelines()
     prompt = build_prompt(
         guidelines=guidelines,
@@ -542,11 +711,17 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("=" * 80 + "\n")
 
     print("Requesting code review from LLM API...")
-    review_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
+    raw_review_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
+
+    clean_review_text, raw_inline_comments = extract_inline_comments(raw_review_output)
+    valid_inline, discarded_inline = filter_inline_comments(raw_inline_comments, valid_diff_lines)
+
+    if discarded_inline:
+        print(f"Notice: Omitted {len(discarded_inline)} inline comments because target lines were outside diff hunks.")
 
     formatted_review = f"""### 🤖 AI Code Review
 
-{review_output.strip()}
+{clean_review_text.strip()}
 
 ---
 *Reviewed by AI using {source_description}.*
@@ -557,13 +732,30 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("DRY RUN: Generated AI Code Review (Not posted to GitHub)")
         print("=" * 80)
         print(formatted_review)
+        if valid_inline:
+            print(f"\n💬 Inline Comments to Post ({len(valid_inline)}):")
+            for c in valid_inline:
+                print(f"  • {c['path']}:{c['line']} -> {c['body']}")
+        if discarded_inline:
+            print(f"\n⚠️ Discarded Inline Comments (Outside diff hunks - {len(discarded_inline)}):")
+            for c in discarded_inline:
+                print(f"  • {c['path']}:{c['line']} -> {c['body']}")
         print("=" * 80)
         return 0
+
+    log_to_step_summary(formatted_review)
 
     if not pr_number or not repo:
         print("Error: PR_NUMBER and GITHUB_REPOSITORY (or remote.origin.url) are required to post comments.")
         print("Use --dry-run to test locally without posting comments.")
         return 1
+
+    # Post via Reviews API if we have inline comments and a commit SHA
+    if valid_inline and head_sha:
+        posted = post_review_with_inline_comments(pr_number, repo, formatted_review, head_sha, valid_inline)
+        if posted:
+            return 0
+        print("Falling back to top-level timeline comment...")
 
     post_or_update_review_comment(pr_number, repo, formatted_review)
     return 0

@@ -55,6 +55,7 @@ class TestAiPrReview(unittest.TestCase):
         self.assertIn("+ val x = 1", prompt)
         self.assertNotIn("## Pull Request Context:", prompt)
         self.assertIn("## Pull Request Code Diff to Review:", prompt)
+        self.assertIn("Optional Inline Comments:", prompt)
 
     def test_build_prompt_with_full_context(self):
         prompt = ai_review.build_prompt(
@@ -71,6 +72,70 @@ class TestAiPrReview(unittest.TestCase):
         self.assertIn("### Commits:\n- `abc1234`: fix race condition", prompt)
         self.assertIn("### Existing Discussion:\n- @tibagni: Verified on Linux", prompt)
         self.assertIn("## Pull Request Code Diff to Review:", prompt)
+
+    def test_parse_valid_diff_lines(self):
+        diff = """--- a/src/FileA.kt
++++ b/src/FileA.kt
+@@ -10,3 +10,4 @@
+ val a = 1
+-val b = 2
++val b = 20
++val c = 30
+ val d = 4
+--- a/src/FileB.kt
++++ b/src/FileB.kt
+@@ -1,2 +1,2 @@
+-val old = 0
++val new = 1
+"""
+        valid = ai_review.parse_valid_diff_lines(diff)
+        self.assertIn("src/FileA.kt", valid)
+        self.assertIn("src/FileB.kt", valid)
+        # FileA lines: 10 (context), 11 (mod), 12 (add), 13 (context)
+        self.assertEqual(valid["src/FileA.kt"], {10, 11, 12, 13})
+        # FileB lines: 1 (mod)
+        self.assertEqual(valid["src/FileB.kt"], {1})
+
+    def test_normalize_path(self):
+        self.assertEqual(ai_review.normalize_path("b/src/Main.kt"), "src/Main.kt")
+        self.assertEqual(ai_review.normalize_path("./src/Main.kt"), "src/Main.kt")
+        self.assertEqual(ai_review.normalize_path("/src/Main.kt"), "src/Main.kt")
+        self.assertEqual(ai_review.normalize_path("src/Main.kt"), "src/Main.kt")
+
+    def test_extract_inline_comments(self):
+        text = """### 🤖 Review
+Looks great!
+
+```inline-comments
+[
+  {"path": "b/src/Main.kt", "line": 42, "body": "Prefer val over var"}
+]
+```
+"""
+        clean_text, comments = ai_review.extract_inline_comments(text)
+        self.assertEqual(clean_text, "### 🤖 Review\nLooks great!")
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(comments[0]["path"], "src/Main.kt")
+        self.assertEqual(comments[0]["line"], 42)
+        self.assertEqual(comments[0]["body"], "Prefer val over var")
+
+    def test_extract_inline_comments_none(self):
+        text = "### 🤖 Review\nNo inline comments here."
+        clean_text, comments = ai_review.extract_inline_comments(text)
+        self.assertEqual(clean_text, text)
+        self.assertEqual(comments, [])
+
+    def test_filter_inline_comments(self):
+        valid_map = {"src/Main.kt": {10, 11, 12}}
+        raw_comments = [
+            {"path": "src/Main.kt", "line": 11, "body": "Valid line"},
+            {"path": "src/Main.kt", "line": 99, "body": "Outside hunk"},
+            {"path": "src/Other.kt", "line": 5, "body": "Untouched file"}
+        ]
+        valid, discarded = ai_review.filter_inline_comments(raw_comments, valid_map)
+        self.assertEqual(len(valid), 1)
+        self.assertEqual(valid[0]["line"], 11)
+        self.assertEqual(len(discarded), 2)
 
     def test_parse_args(self):
         args = ai_review.parse_args(["--dry-run", "-v", "--pr", "101", "--base", "master"])
@@ -94,6 +159,7 @@ class TestAiPrReview(unittest.TestCase):
         raw_json = json.dumps({
             "title": "My PR Title",
             "body": "PR description text",
+            "headRefOid": "abc12345",
             "commits": [{"oid": "1234567890", "messageHeadline": "Commit headline"}],
             "comments": [
                 {"author": {"login": "human_reviewer"}, "body": "Looks good so far!"},
@@ -106,6 +172,7 @@ class TestAiPrReview(unittest.TestCase):
 
         meta = ai_review.get_pr_metadata("103")
         self.assertEqual(meta["title"], "My PR Title")
+        self.assertEqual(meta["headRefOid"], "abc12345")
         filtered_comments = meta["filtered_comments"]
         self.assertEqual(len(filtered_comments), 2)
         self.assertEqual(filtered_comments[0]["author"], "human_reviewer")
@@ -200,6 +267,18 @@ class TestAiPrReview(unittest.TestCase):
         self.assertIn("PATCH", cmd)
         self.assertIn("repos/tibagni/LogViewer/issues/comments/555", cmd)
         self.assertIn("--input", cmd)
+
+    @patch("subprocess.run")
+    def test_post_review_with_inline_comments(self, mock_run):
+        mock_run.return_value = MagicMock()
+        comments = [{"path": "src/Foo.kt", "line": 42, "body": "Fix this"}]
+        success = ai_review.post_review_with_inline_comments(
+            "12", "tibagni/LogViewer", "Review text", "commit_sha_123", comments
+        )
+        self.assertTrue(success)
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("repos/tibagni/LogViewer/pulls/12/reviews", cmd)
 
     @patch.dict(os.environ, {}, clear=True)
     def test_main_no_api_key(self):
