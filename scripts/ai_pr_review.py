@@ -2,8 +2,33 @@
 """
 Automated AI Code Review for GitHub Pull Requests.
 Zero third-party dependencies - standard library only.
+
+================================================================================
+LOCAL TESTING INSTRUCTIONS
+================================================================================
+1. Create a local `.env` file in the project root (ignored by git):
+     cp .env.example .env
+   Then edit `.env` and set your API key:
+     LLM_API_KEY=your_gemini_api_key_here
+
+2. Test review on ANY GitHub PR without posting comments (dry-run):
+     python3 scripts/ai_pr_review.py --dry-run --pr 101
+
+3. Test review on your current local branch changes against master:
+     python3 scripts/ai_pr_review.py --dry-run
+
+4. Run against a different base branch:
+     python3 scripts/ai_pr_review.py --dry-run --base master
+
+Available CLI options:
+  --dry-run, -n      Print review to console without posting or updating PR comments
+  --pr <number>      Review a specific GitHub PR by number (uses `gh pr diff`)
+  --base <branch>    Base branch to diff against (default: from env or 'master')
+  --env-file <path>  Path to local env file (default: '.env')
+================================================================================
 """
 
+import argparse
 import json
 import os
 import subprocess
@@ -14,7 +39,6 @@ from typing import List, Optional, Tuple
 
 PRIMARY_COMMENT_MARKER = "<!-- ai-code-review -->"
 RECOGNIZED_COMMENT_MARKERS = ("<!-- ai-code-review -->", "<!-- gemini-code-review -->")
-USER_PREFERRED_MODEL = os.environ.get("LLM_MODEL") or os.environ.get("GEMINI_MODEL")
 EXCLUDED_EXTENSIONS = (
     ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg",
     ".jar", ".zip", ".tar", ".gz",
@@ -31,6 +55,46 @@ PREFERRED_MODELS_ORDER = [
     "gemini-3.5-flash",
     "gemini-pro-latest",
 ]
+
+
+def load_env_file(env_path: str = ".env") -> None:
+    """Loads environment variables from a local .env file without overriding existing env vars."""
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, val = line.split("=", 1)
+                        key = key.strip()
+                        val = val.strip().strip("'\"")
+                        if key and key not in os.environ:
+                            os.environ[key] = val
+        except Exception as e:
+            print(f"Warning: Could not read env file '{env_path}': {e}")
+
+
+def get_repo_name() -> str:
+    """Gets repository name from GITHUB_REPOSITORY env var or git remote origin."""
+    repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+    if repo:
+        return repo
+    try:
+        res = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        url = res.stdout.strip()
+        if "github.com" in url:
+            part = url.split("github.com")[-1].lstrip("/:")
+            if part.endswith(".git"):
+                part = part[:-4]
+            return part
+    except Exception:
+        pass
+    return ""
 
 
 def get_git_diff(base_ref: str) -> str:
@@ -65,6 +129,30 @@ def get_git_diff(base_ref: str) -> str:
     # Get diff for filtered files
     diff_cmd = ["git", "diff", f"{target_ref}...HEAD", "--"] + changed_files
     diff_res = subprocess.run(diff_cmd, capture_output=True, text=True, check=True)
+    return diff_res.stdout
+
+
+def get_pr_diff(pr_number: str) -> str:
+    """Fetches diff for a specific PR using GitHub CLI, filtering out excluded file extensions."""
+    res = subprocess.run(
+        ["gh", "pr", "diff", str(pr_number), "--name-only"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    changed_files = [
+        f for f in res.stdout.strip().splitlines()
+        if f and not f.lower().endswith(EXCLUDED_EXTENSIONS)
+    ]
+    if not changed_files:
+        return ""
+
+    diff_res = subprocess.run(
+        ["gh", "pr", "diff", str(pr_number)],
+        capture_output=True,
+        text=True,
+        check=True
+    )
     return diff_res.stdout
 
 
@@ -109,12 +197,10 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
                 print(f"Discovered {len(models)} models for API version {version}.")
 
                 ordered_candidates = []
-                # First add preferred models in order if available
                 for pref in PREFERRED_MODELS_ORDER:
                     if pref in models and pref not in ordered_candidates:
                         ordered_candidates.append(pref)
 
-                # Then add any other standard flash models (avoiding preview/tts/image/omni)
                 remaining_flash = [
                     m for m in models
                     if "flash" in m and not any(x in m for x in ["preview", "tts", "image", "omni", "lite"])
@@ -122,7 +208,6 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
                 ]
                 ordered_candidates.extend(sorted(remaining_flash, reverse=True))
 
-                # Then any remaining general models
                 for m in models:
                     if m not in ordered_candidates and not any(x in m for x in ["tts", "image"]):
                         ordered_candidates.append(m)
@@ -135,7 +220,7 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
     return "v1beta", PREFERRED_MODELS_ORDER
 
 
-def call_llm_api(api_key: str, prompt: str, preferred_model: Optional[str] = USER_PREFERRED_MODEL) -> str:
+def call_llm_api(api_key: str, prompt: str, preferred_model: Optional[str] = None) -> str:
     """Calls the LLM REST API with resilient fallback across available models."""
     version, models = get_available_models(api_key)
     if preferred_model:
@@ -208,8 +293,6 @@ def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
         if not raw_output:
             return None
         pages = json.loads(raw_output)
-        # --slurp wraps responses in a list of page arrays: [[comment, ...], [comment, ...]]
-        # or a single flat array if only 1 page was returned
         if pages and isinstance(pages[0], list):
             comments = [c for page in pages for c in page]
         else:
@@ -262,27 +345,70 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
         print("Review comment posted successfully.")
 
 
-def main() -> int:
+def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+    """Parses command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Automated AI Code Review for GitHub Pull Requests.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__
+    )
+    parser.add_argument(
+        "--dry-run", "-n",
+        action="store_true",
+        help="Print the review to stdout without posting or updating comments on GitHub."
+    )
+    parser.add_argument(
+        "--pr",
+        type=str,
+        default=None,
+        help="Specific GitHub Pull Request number to review (fetches diff via `gh pr diff`)."
+    )
+    parser.add_argument(
+        "--base",
+        type=str,
+        default=None,
+        help="Base branch to diff against when not reviewing a specific PR (default: from env or 'master')."
+    )
+    parser.add_argument(
+        "--env-file",
+        type=str,
+        default=".env",
+        help="Path to local .env file (default: '.env')."
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = parse_args(argv)
+
+    # 1. Load local env file if present
+    load_env_file(args.env_file)
+
+    # 2. Check API key
     api_key = (os.environ.get("LLM_API_KEY", "").strip() or
                os.environ.get("GEMINI_API_KEY", "").strip())
     if not api_key:
         print("⚠️ Notice: Neither LLM_API_KEY nor GEMINI_API_KEY is set. Skipping automated code review.")
         return 0
 
-    pr_number = os.environ.get("PR_NUMBER", "").strip()
-    repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
-    base_ref = os.environ.get("BASE_REF", "master").strip()
+    preferred_model = os.environ.get("LLM_MODEL") or os.environ.get("GEMINI_MODEL")
+    pr_number = args.pr or os.environ.get("PR_NUMBER", "").strip()
+    repo = get_repo_name()
+    base_ref = args.base or os.environ.get("BASE_REF", "master").strip()
 
-    if not pr_number or not repo:
-        print("Error: PR_NUMBER and GITHUB_REPOSITORY environment variables are required.")
-        return 1
+    # 3. Extract diff
+    if args.pr:
+        print(f"Fetching diff for PR #{args.pr} via `gh pr diff`...")
+        diff = get_pr_diff(args.pr)
+    else:
+        print(f"Fetching diff against base branch '{base_ref}'...")
+        diff = get_git_diff(base_ref)
 
-    print(f"Fetching diff against base branch '{base_ref}' for {repo} PR #{pr_number}...")
-    diff = get_git_diff(base_ref)
     if not diff.strip():
-        print("No reviewable code changes found in this PR.")
-        review_body = "### 🤖 AI Code Review\n\nNo code changes requiring review were detected in this pull request."
-        post_or_update_review_comment(pr_number, repo, review_body)
+        print("No reviewable code changes found.")
+        if not args.dry_run and pr_number and repo:
+            review_body = "### 🤖 AI Code Review\n\nNo code changes requiring review were detected in this pull request."
+            post_or_update_review_comment(pr_number, repo, review_body)
         return 0
 
     print(f"Extracted diff ({len(diff)} characters). Loading review guidelines...")
@@ -290,7 +416,7 @@ def main() -> int:
     prompt = build_prompt(guidelines, diff)
 
     print("Requesting code review from LLM API...")
-    review_output = call_llm_api(api_key, prompt)
+    review_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
 
     formatted_review = f"""### 🤖 AI Code Review
 
@@ -299,6 +425,19 @@ def main() -> int:
 ---
 *Reviewed by AI using {source_description}.*
 """
+
+    if args.dry_run:
+        print("\n" + "=" * 80)
+        print("DRY RUN: Generated AI Code Review (Not posted to GitHub)")
+        print("=" * 80)
+        print(formatted_review)
+        print("=" * 80)
+        return 0
+
+    if not pr_number or not repo:
+        print("Error: PR_NUMBER and GITHUB_REPOSITORY (or remote.origin.url) are required to post comments.")
+        print("Use --dry-run to test locally without posting comments.")
+        return 1
 
     post_or_update_review_comment(pr_number, repo, formatted_review)
     return 0

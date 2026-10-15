@@ -14,6 +14,21 @@ import scripts.ai_pr_review as ai_review
 
 class TestAiPrReview(unittest.TestCase):
 
+    def test_load_env_file(self):
+        with tempfile.NamedTemporaryFile("w+", delete=False) as f:
+            f.write("# comment\nTEST_LLM_KEY=secret_123\nANOTHER_KEY=\"val_456\"\n")
+            temp_path = f.name
+
+        try:
+            self.assertNotIn("TEST_LLM_KEY", os.environ)
+            ai_review.load_env_file(temp_path)
+            self.assertEqual(os.environ.get("TEST_LLM_KEY"), "secret_123")
+            self.assertEqual(os.environ.get("ANOTHER_KEY"), "val_456")
+        finally:
+            os.environ.pop("TEST_LLM_KEY", None)
+            os.environ.pop("ANOTHER_KEY", None)
+            os.remove(temp_path)
+
     def test_load_review_guidelines_exists(self):
         with tempfile.NamedTemporaryFile("w+", delete=False) as f:
             f.write("# Custom Guidelines\nCheck EDT rules.")
@@ -36,6 +51,22 @@ class TestAiPrReview(unittest.TestCase):
         self.assertIn("Rules here", prompt)
         self.assertIn("+ val x = 1", prompt)
         self.assertIn("## Pull Request Code Diff to Review:", prompt)
+
+    def test_parse_args(self):
+        args = ai_review.parse_args(["--dry-run", "--pr", "101", "--base", "master"])
+        self.assertTrue(args.dry_run)
+        self.assertEqual(args.pr, "101")
+        self.assertEqual(args.base, "master")
+
+    @patch("subprocess.run")
+    def test_get_pr_diff(self, mock_run):
+        mock_files = MagicMock(stdout="file1.kt\nimage.png\nfile2.java\n")
+        mock_diff = MagicMock(stdout="diff content")
+        mock_run.side_effect = [mock_files, mock_diff]
+
+        diff = ai_review.get_pr_diff("101")
+        self.assertEqual(diff, "diff content")
+        self.assertEqual(mock_run.call_count, 2)
 
     @patch("urllib.request.urlopen")
     def test_get_available_models_success(self, mock_urlopen):
@@ -127,8 +158,17 @@ class TestAiPrReview(unittest.TestCase):
 
     @patch.dict(os.environ, {}, clear=True)
     def test_main_no_api_key(self):
-        exit_code = ai_review.main()
+        exit_code = ai_review.main([])
         self.assertEqual(exit_code, 0)
+
+    @patch("scripts.ai_pr_review.call_llm_api", return_value="Review output")
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="+ some code diff")
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    def test_main_dry_run_does_not_post(self, mock_post, mock_diff, mock_call):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key"}):
+            exit_code = ai_review.main(["--dry-run", "--pr", "101"])
+            self.assertEqual(exit_code, 0)
+            mock_post.assert_not_called()
 
 
 if __name__ == "__main__":
