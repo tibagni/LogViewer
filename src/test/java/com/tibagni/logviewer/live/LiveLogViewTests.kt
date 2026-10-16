@@ -67,6 +67,8 @@ class LiveLogViewTests {
     MockitoAnnotations.initMocks(this)
     `when`(mockHost.parentWindow).thenReturn(mockFrame)
     `when`(mockPresenter.filterContextTag).thenReturn(testTag)
+    `when`(mockPresenter.availableBuffers).thenReturn(listOf("main", "system", "events", "crash", "radio", "kernel"))
+    `when`(mockPresenter.defaultBuffers).thenReturn(listOf("main", "system", "events", "crash"))
   }
 
   @Test
@@ -355,7 +357,7 @@ class LiveLogViewTests {
     val termBtn = allButtons.first { it.text == "Terminal" }
 
     startBtn.doClick()
-    verify(mockPresenter).startStreaming(testDevice)
+    verify(mockPresenter).startStreaming(testDevice, listOf("main", "system", "events", "crash"))
 
     termBtn.doClick()
     verify(mockPresenter).openDeviceTerminal(testDevice)
@@ -373,7 +375,7 @@ class LiveLogViewTests {
     for (listener in itemCard.mouseListeners) {
       listener.mouseClicked(doubleClickEvent)
     }
-    verify(mockPresenter, times(2)).startStreaming(testDevice)
+    verify(mockPresenter, times(2)).startStreaming(testDevice, listOf("main", "system", "events", "crash"))
 
     // Verify hover border transitions
     val enterEvent = MouseEvent(itemCard, MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 10, 10, 0, false)
@@ -522,5 +524,51 @@ class LiveLogViewTests {
     testPanel.updateCount = 0
     liveLogView.showAllLogs(emptyList(), emptyList())
     assertEquals(0, testPanel.updateCount)
+  }
+
+  @Test
+  fun testBufferCheckboxesInitializedAndToggled() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+
+    for (buf in listOf("main", "system", "events", "crash")) {
+      assertTrue("Buffer $buf should be checked by default", liveLogView.bufferCheckboxes[buf]?.isSelected == true)
+    }
+    assertFalse(liveLogView.bufferCheckboxes["radio"]?.isSelected == true)
+    assertFalse(liveLogView.bufferCheckboxes["kernel"]?.isSelected == true)
+    assertEquals(com.tibagni.logviewer.view.TriStateCheckbox.SelectionState.PARTIALLY_SELECTED, liveLogView.selectAllCb.selectionState)
+
+    liveLogView.showDeviceList(listOf(testDevice))
+
+    // Locate start button on card
+    val itemCard = liveLogView.deviceItemsContainer.components.first { it is JPanel }
+    val allButtons = (itemCard as java.awt.Container).components
+      .flatMap { (it as? java.awt.Container)?.components?.toList() ?: listOf(it) }
+      .filterIsInstance<JButton>()
+    val startBtn = allButtons.first { it.text == "Start" }
+    assertTrue(startBtn.isEnabled)
+    assertNull(startBtn.toolTipText)
+
+    // Click selectAllCb from partially selected -> selects all
+    liveLogView.selectAllCb.doClick()
+    assertEquals(com.tibagni.logviewer.view.TriStateCheckbox.SelectionState.SELECTED, liveLogView.selectAllCb.selectionState)
+    assertTrue(liveLogView.bufferCheckboxes.values.all { it.isSelected })
+    assertTrue(startBtn.isEnabled)
+
+    // Click selectAllCb again -> unselects all
+    liveLogView.selectAllCb.doClick()
+    assertEquals(com.tibagni.logviewer.view.TriStateCheckbox.SelectionState.NOT_SELECTED, liveLogView.selectAllCb.selectionState)
+    assertTrue(liveLogView.bufferCheckboxes.values.all { !it.isSelected })
+    assertFalse(startBtn.isEnabled)
+    assertNotNull(startBtn.toolTipText)
+
+    // Recheck one checkbox manually
+    liveLogView.bufferCheckboxes["main"]?.doClick()
+    assertEquals(com.tibagni.logviewer.view.TriStateCheckbox.SelectionState.PARTIALLY_SELECTED, liveLogView.selectAllCb.selectionState)
+    assertTrue(startBtn.isEnabled)
+    assertNull(startBtn.toolTipText)
+
+    // Click Start button and verify presenter called with selected buffer
+    startBtn.doClick()
+    verify(mockPresenter).startStreaming(testDevice, listOf("main"))
   }
 }

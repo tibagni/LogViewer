@@ -39,10 +39,12 @@ interface LiveLogPresenter {
   val isStreaming: Boolean
   val connectedDevice: AdbDevice?
   val visibleLogsOffset: Int
+  val availableBuffers: List<String>
+  val defaultBuffers: List<String>
 
   fun init()
   fun loadDevices()
-  fun startStreaming(device: AdbDevice)
+  fun startStreaming(device: AdbDevice, buffers: List<String>? = null)
   fun stopStreaming()
   fun clearLogs()
   fun openDeviceTerminal(device: AdbDevice)
@@ -79,6 +81,11 @@ class LiveLogPresenterImpl(
   private var streamingJob: Job? = null
   private var filteringJob: Job? = null
   private var deviceScanJob: Job? = null
+
+  override val availableBuffers: List<String> = AdbLogStreamer.ALL_BUFFERS
+  override val defaultBuffers: List<String> = AdbLogStreamer.DEFAULT_BUFFERS
+  private var lastStreamedBuffers: List<String> = defaultBuffers
+
   override val filterContextTag: FilterContextTag
     get() = liveLogsRepository.filterContextTag
 
@@ -181,7 +188,11 @@ class LiveLogPresenterImpl(
     }
   }
 
-  override fun startStreaming(device: AdbDevice) {
+  override fun startStreaming(device: AdbDevice, buffers: List<String>?) {
+    val activeBuffers = buffers ?: lastStreamedBuffers
+    if (activeBuffers.isEmpty()) return
+    lastStreamedBuffers = activeBuffers
+
     if (_isStreaming) {
       stopStreaming()
     }
@@ -199,7 +210,7 @@ class LiveLogPresenterImpl(
 
     val producerJob = coroutineScope.launch(ioDispatcher) {
       try {
-        adbLogStreamer.startStream(device.serialNumber).collect { entry ->
+        adbLogStreamer.startStream(device.serialNumber, activeBuffers).collect { entry ->
           channel.send(entry)
         }
       } catch (e: CancellationException) {

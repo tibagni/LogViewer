@@ -29,6 +29,7 @@ interface AdbLogStreamer {
 
   companion object {
     val DEFAULT_BUFFERS = listOf("main", "system", "crash", "events")
+    val ALL_BUFFERS = listOf("main", "system", "events", "crash", "radio", "kernel")
   }
 }
 
