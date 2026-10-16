@@ -16,6 +16,7 @@ import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.setupLogTableActions
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
+import com.tibagni.logviewer.util.LogFontManager
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -226,6 +227,10 @@ class LiveLogViewImpl(
       }
 
       override fun onLogFontBoldChanged() {
+        updateLogFont()
+      }
+
+      override fun onLogFontFamilyChanged() {
         updateLogFont()
       }
     })
@@ -628,9 +633,10 @@ class LiveLogViewImpl(
   private fun updateLogFont() {
     val fontSize = userPrefs.logFontSize
     val isBold = userPrefs.logFontBold
-    logRenderer.updateFont(fontSize, isBold)
+    val fontFamily = userPrefs.logFontFamily
+    logRenderer.updateFont(fontSize, isBold, fontFamily)
 
-    val font = Font(Font.MONOSPACED, if (isBold) Font.BOLD else Font.PLAIN, fontSize)
+    val font = LogFontManager.getFont(fontFamily, if (isBold) Font.BOLD else Font.PLAIN, fontSize)
     val fontMetrics = logList.table.getFontMetrics(font)
     val rowHeight = maxOf(UIScaleUtils.dip(22), fontMetrics.height + UIScaleUtils.dip(6))
 
