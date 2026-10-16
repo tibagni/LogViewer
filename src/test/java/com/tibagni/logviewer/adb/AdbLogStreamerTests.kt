@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.adb
 
 import com.tibagni.logviewer.log.LogLevel
+import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.LogTimestamp
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
@@ -133,7 +134,34 @@ class AdbLogStreamerTests {
 
     assertEquals(2, entries.size)
     assertEquals("05-12 13:45:26.123  1234  5678 D Tag: Log line", entries[0].logText)
+    assertEquals(LogStream.MAIN, entries[0].logStream)
     assertEquals("05-12 13:45:27.123  1234  5678 I Tag: Another line", entries[1].logText)
+    assertEquals(LogStream.SYSTEM, entries[1].logStream)
+  }
+
+  @Test
+  fun testStreamCapturesEventLogsAndSetsStream() = runBlocking {
+    val logOutput = """
+      --------- beginning of events
+      05-12 13:45:28.123  1234  5678 I am_create_activity: [0,1234,com.example/.MainActivity]
+      05-12 13:45:29.123  1234  5678 I wm_task_created: [100,0]
+      --------- beginning of system
+      05-12 13:45:30.123  1234  5678 D SystemTag: System message
+    """.trimIndent() + "\n"
+
+    val fakeProcess = FakeProcess(logOutput.byteInputStream())
+    val runner = FakeCommandRunner { fakeProcess }
+    val streamer = AdbLogStreamerImpl(FakeAdbManager(), runner, continuationTimeout = 10.milliseconds)
+
+    val entries = streamer.startStream("").toList()
+
+    assertEquals(3, entries.size)
+    assertEquals(LogStream.EVENTS, entries[0].logStream)
+    assertEquals("05-12 13:45:28.123  1234  5678 I am_create_activity: [0,1234,com.example/.MainActivity]", entries[0].logText)
+    assertEquals(LogStream.EVENTS, entries[1].logStream)
+    assertEquals("05-12 13:45:29.123  1234  5678 I wm_task_created: [100,0]", entries[1].logText)
+    assertEquals(LogStream.SYSTEM, entries[2].logStream)
+    assertEquals("05-12 13:45:30.123  1234  5678 D SystemTag: System message", entries[2].logText)
   }
 
   @Test
@@ -146,7 +174,7 @@ class AdbLogStreamerTests {
 
     assertEquals(1, runner.executedCommands.size)
     assertEquals(
-      listOf("/custom/adb", "-s", "deviceXYZ", "logcat", "-v", "threadtime"),
+      listOf("/custom/adb", "-s", "deviceXYZ", "logcat", "-v", "threadtime", "-b", "main,system,crash,events"),
       runner.executedCommands[0]
     )
   }
@@ -161,7 +189,22 @@ class AdbLogStreamerTests {
 
     assertEquals(1, runner.executedCommands.size)
     assertEquals(
-      listOf("/custom/adb", "logcat", "-v", "threadtime"),
+      listOf("/custom/adb", "logcat", "-v", "threadtime", "-b", "main,system,crash,events"),
+      runner.executedCommands[0]
+    )
+  }
+
+  @Test
+  fun testStreamCommandIncludesCustomBuffersWhenProvided() = runBlocking {
+    val fakeProcess = FakeProcess("05-12 13:45:26.123  1234  5678 D Tag: Line\n".byteInputStream())
+    val runner = FakeCommandRunner { fakeProcess }
+    val streamer = AdbLogStreamerImpl(FakeAdbManager(File("/custom/adb")), runner, continuationTimeout = 10.milliseconds)
+
+    streamer.startStream("deviceXYZ", listOf("events", "system")).toList()
+
+    assertEquals(1, runner.executedCommands.size)
+    assertEquals(
+      listOf("/custom/adb", "-s", "deviceXYZ", "logcat", "-v", "threadtime", "-b", "events,system"),
       runner.executedCommands[0]
     )
   }

@@ -3,6 +3,7 @@ package com.tibagni.logviewer.adb
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLineParser
+import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.*
@@ -20,8 +21,15 @@ import kotlin.time.Duration.Companion.milliseconds
 interface AdbLogStreamer {
   val isStreaming: Boolean
   val isStreamingFlow: StateFlow<Boolean>
-  fun startStream(serialNumber: String): Flow<LogEntry>
+  fun startStream(
+    serialNumber: String,
+    buffers: List<String> = DEFAULT_BUFFERS
+  ): Flow<LogEntry>
   fun stopStream()
+
+  companion object {
+    val DEFAULT_BUFFERS = listOf("main", "system", "crash", "events")
+  }
 }
 
 class AdbLogStreamerImpl(
@@ -37,7 +45,10 @@ class AdbLogStreamerImpl(
 
   private var currentProcess: Process? = null
 
-  override fun startStream(serialNumber: String): Flow<LogEntry> = channelFlow {
+  override fun startStream(
+    serialNumber: String,
+    buffers: List<String>
+  ): Flow<LogEntry> = channelFlow {
     stopStream()
 
     val adbExecutable = adbManager.getAdbExecutable()
@@ -48,6 +59,9 @@ class AdbLogStreamerImpl(
       cmd.addAll(listOf("-s", serialNumber))
     }
     cmd.addAll(listOf("logcat", "-v", "threadtime"))
+    if (buffers.isNotEmpty()) {
+      cmd.addAll(listOf("-b", buffers.joinToString(",")))
+    }
 
     val process = commandRunner.startProcess(cmd)
     synchronized(this@AdbLogStreamerImpl) {
@@ -76,12 +90,16 @@ class AdbLogStreamerImpl(
     var currentLine: StringBuilder? = null
     var currentLineNumber = 0
     var rawLineNumber = 0
+    var currentStream: LogStream = LogStream.UNKNOWN
+    var lineStream: LogStream? = null
 
     suspend fun flushCurrent() {
       val pending = currentLine?.toString()
       if (pending != null) {
-        send(LogLineParser.createLogEntry(pending, currentLineNumber))
+        val stream = lineStream ?: currentStream
+        send(LogLineParser.createLogEntry(pending, currentLineNumber, stream))
         currentLine = null
+        lineStream = null
       }
     }
 
@@ -106,12 +124,22 @@ class AdbLogStreamerImpl(
         }
 
         val nextLine = result.getOrThrow()
+        if (LogLineParser.shouldIgnoreLine(nextLine)) {
+          flushCurrent()
+          val beginningStream = LogLineParser.extractLogStreamFromBeginningOfLine(nextLine)
+          if (beginningStream != null) {
+            currentStream = beginningStream
+          }
+          continue
+        }
+
         rawLineNumber++
         if (LogLineParser.isLogLine(nextLine)) {
           flushCurrent()
           currentLine = StringBuilder(nextLine)
           currentLineNumber = rawLineNumber
-        } else if (!LogLineParser.shouldIgnoreLine(nextLine)) {
+          lineStream = currentStream
+        } else {
           currentLine?.append(PlatformUtils.lineSeparator)?.append(nextLine)
         }
       }
