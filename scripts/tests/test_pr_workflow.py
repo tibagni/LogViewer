@@ -29,6 +29,12 @@ class TestPrWorkflowScript(unittest.TestCase):
             f.write("  echo ''\n")
             f.write("elif [ \"$1\" = \"pr\" ] && [ \"$2\" = \"create\" ]; then\n")
             f.write("  echo 'https://github.com/tibagni/LogViewer/pull/999'\n")
+            f.write("elif [ \"$1\" = \"pr\" ] && [ \"$2\" = \"checks\" ]; then\n")
+            f.write("  if [[ \"$*\" =~ \"--json\" ]]; then\n")
+            f.write("    echo '2'\n")
+            f.write("  else\n")
+            f.write("    echo 'All checks passed'\n")
+            f.write("  fi\n")
             f.write("fi\n")
             f.write("exit 0\n")
         os.chmod(mock_gh, 0o755)
@@ -213,6 +219,32 @@ class TestPrWorkflowScript(unittest.TestCase):
             capture_output=True, text=True, check=True
         ).stdout.strip()
         self.assertEqual(current_branch, "master")
+
+
+    def test_watch_flag(self):
+        repo_path = os.path.join(self.test_dir, "repo7")
+        self._init_repo(repo_path)
+        bare_remote = os.path.join(self.test_dir, "remote7.git")
+        subprocess.run(["git", "init", "--bare", bare_remote], check=True)
+        subprocess.run(["git", "-C", repo_path, "remote", "add", "origin", bare_remote], check=True)
+        subprocess.run(["git", "-C", repo_path, "push", "origin", "master"], check=True)
+
+        with open(os.path.join(repo_path, "change.txt"), "w") as f:
+            f.write("New change\n")
+        subprocess.run(["git", "-C", repo_path, "add", "."], check=True)
+        subprocess.run(["git", "-C", repo_path, "commit", "-m", "Commit on master"], check=True)
+
+        res = subprocess.run(
+            [str(SCRIPT_PATH), "-w", "feat/watch-test"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            env=self.env
+        )
+        self.assertEqual(res.returncode, 0)
+        self.assertIn("Watching GitHub Actions checks...", res.stdout)
+        self.assertIn("All checks passed", res.stdout)
 
 
 if __name__ == "__main__":

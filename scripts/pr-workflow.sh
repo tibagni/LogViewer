@@ -211,16 +211,25 @@ fi
 # Watch checks if requested
 if [ "$WATCH_CHECKS" = true ]; then
   echo ""
-  echo "Waiting for GitHub Actions checks to start..."
-  for i in {1..8}; do
-    STATUS=$(gh pr checks "$PR_URL" 2>&1 || true)
-    if [[ ! "$STATUS" =~ "no checks reported" ]]; then
+  echo "Watching GitHub Actions checks..."
+  CHECKS_REGISTERED=false
+  for attempt in {1..20}; do
+    CHECK_COUNT=$(gh pr checks "$PR_URL" --json name --jq 'length' 2>/dev/null || echo 0)
+    if [ "$CHECK_COUNT" -gt 0 ] 2>/dev/null; then
+      CHECKS_REGISTERED=true
       break
     fi
-    sleep 2
+    if [ "$attempt" -eq 1 ]; then
+      echo "Waiting for GitHub Actions to register workflow checks..."
+    fi
+    sleep 3
   done
-  echo "Watching GitHub Actions checks..."
-  gh pr checks "$PR_URL" --watch || true
+
+  if [ "$CHECKS_REGISTERED" = true ]; then
+    gh pr checks "$PR_URL" --watch || true
+  else
+    echo "Notice: No checks were reported by GitHub Actions within 60 seconds."
+  fi
 fi
 
 # Cleanup (Quick mode vs Default mode)
