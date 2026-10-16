@@ -432,7 +432,7 @@ Looks great!
     def test_main_submits_approval_when_author_matches_and_lgtm(
         self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
     ):
-        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni", "PR_AUTHOR": ""}):
             exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
             self.assertEqual(exit_code, 0)
             mock_post_comment.assert_called_once()
@@ -451,7 +451,7 @@ Looks great!
     def test_main_does_not_approve_when_verdict_needs_work(
         self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
     ):
-        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni", "PR_AUTHOR": ""}):
             exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
             self.assertEqual(exit_code, 0)
             mock_post_comment.assert_called_once()
@@ -467,7 +467,7 @@ Looks great!
     def test_main_does_not_approve_when_author_not_in_allowed_list(
         self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
     ):
-        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni", "PR_AUTHOR": ""}):
             exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
             self.assertEqual(exit_code, 0)
             mock_post_comment.assert_called_once()
@@ -483,7 +483,7 @@ Looks great!
     def test_main_dry_run_skips_all_network_posts(
         self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
     ):
-        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni", "PR_AUTHOR": ""}):
             exit_code = ai_review.main(["--dry-run", "--pr", "101", "--env-file", "/non/existent/.env"])
             self.assertEqual(exit_code, 0)
             mock_post_comment.assert_not_called()

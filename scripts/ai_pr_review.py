@@ -872,8 +872,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     pr_author = (
         args.author or
-        os.environ.get("PR_AUTHOR", "").strip() or
-        meta.get("author", {}).get("login", "").strip()
+        meta.get("author", {}).get("login", "").strip() or
+        os.environ.get("PR_AUTHOR", "").strip()
     )
     is_lgtm = is_verdict_lgtm(clean_review_text)
     can_auto_approve = bool(
