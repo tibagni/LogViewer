@@ -394,6 +394,101 @@ Looks great!
             comment_posted = mock_post_top.call_args[0][2]
             self.assertIn("*Reviewed by AI (`gemini-flash-lite-latest`)", comment_posted)
 
+    def test_parse_auto_approve_authors(self):
+        self.assertEqual(
+            ai_review.parse_auto_approve_authors("tibagni, alice, bob"),
+            {"tibagni", "alice", "bob"}
+        )
+        self.assertEqual(
+            ai_review.parse_auto_approve_authors("TiBagni   Alice\n Bob"),
+            {"tibagni", "alice", "bob"}
+        )
+        self.assertEqual(ai_review.parse_auto_approve_authors(""), set())
+        self.assertEqual(ai_review.parse_auto_approve_authors(None), set())
+
+    def test_is_verdict_lgtm(self):
+        lgtm_text_1 = "### Overall Verdict\n\n✅ LGTM (Ready to merge)\n\n### Summary"
+        self.assertTrue(ai_review.is_verdict_lgtm(lgtm_text_1))
+
+        lgtm_text_2 = "### 1. Overall Verdict\n`✅ LGTM`\n\n### 2. Summary"
+        self.assertTrue(ai_review.is_verdict_lgtm(lgtm_text_2))
+
+        suggestions_text = "### Overall Verdict\n⚠️ LGTM with Suggestions (Non-blocking improvements; ready to merge)\n\n### Summary"
+        self.assertTrue(ai_review.is_verdict_lgtm(suggestions_text))
+
+        needs_work_text = "### Overall Verdict\n❌ Needs Work (Critical issues: threading bugs)\n\n### Summary"
+        self.assertFalse(ai_review.is_verdict_lgtm(needs_work_text))
+
+        random_text = "Some generic review notes without explicit verdict."
+        self.assertFalse(ai_review.is_verdict_lgtm(random_text))
+
+    @patch("scripts.ai_pr_review.post_pull_request_review")
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": [], "author": {"login": "tibagni"}})
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="--- a/src/F.kt\n+++ b/src/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n")
+    @patch("scripts.ai_pr_review.call_llm_api", return_value=("### Overall Verdict\n✅ LGTM\n\n### Summary\nGood work", "gemini-3.6-flash"))
+    def test_main_submits_approval_when_author_matches_and_lgtm(
+        self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+            exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_post_comment.assert_called_once()
+            mock_post_review.assert_called_once()
+            call_kwargs = mock_post_review.call_args[1]
+            self.assertEqual(call_kwargs.get("event"), "APPROVE")
+            self.assertEqual(call_kwargs.get("pr_number"), "101")
+
+    @patch("scripts.ai_pr_review.post_pull_request_review")
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": [], "author": {"login": "tibagni"}})
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="--- a/src/F.kt\n+++ b/src/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n")
+    @patch("scripts.ai_pr_review.call_llm_api", return_value=("### Overall Verdict\n❌ Needs Work\n\n### Key Findings\nBad code", "gemini-3.6-flash"))
+    def test_main_does_not_approve_when_verdict_needs_work(
+        self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+            exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_post_comment.assert_called_once()
+            mock_post_review.assert_not_called()
+
+    @patch("scripts.ai_pr_review.post_pull_request_review")
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": [], "author": {"login": "other_dev"}})
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="--- a/src/F.kt\n+++ b/src/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n")
+    @patch("scripts.ai_pr_review.call_llm_api", return_value=("### Overall Verdict\n✅ LGTM\n\n### Summary\nGood work", "gemini-3.6-flash"))
+    def test_main_does_not_approve_when_author_not_in_allowed_list(
+        self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+            exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_post_comment.assert_called_once()
+            mock_post_review.assert_not_called()
+
+    @patch("scripts.ai_pr_review.post_pull_request_review")
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": [], "author": {"login": "tibagni"}})
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="--- a/src/F.kt\n+++ b/src/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n")
+    @patch("scripts.ai_pr_review.call_llm_api", return_value=("### Overall Verdict\n✅ LGTM\n\n### Summary\nGood work", "gemini-3.6-flash"))
+    def test_main_dry_run_skips_all_network_posts(
+        self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_comment, mock_post_review
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key", "AUTO_APPROVE_AUTHORS": "tibagni"}):
+            exit_code = ai_review.main(["--dry-run", "--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_post_comment.assert_not_called()
+            mock_post_review.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
