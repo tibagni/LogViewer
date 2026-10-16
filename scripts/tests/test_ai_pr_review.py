@@ -191,7 +191,7 @@ Looks great!
         mock_response = MagicMock()
         mock_response.read.return_value = json.dumps({
             "models": [
-                {"name": "models/gemini-2.0-flash", "supportedGenerationMethods": ["generateContent"]},
+                {"name": "models/gemini-flash-latest", "supportedGenerationMethods": ["generateContent"]},
                 {"name": "models/gemini-pro-latest", "supportedGenerationMethods": ["generateContent"]}
             ]
         }).encode("utf-8")
@@ -199,7 +199,28 @@ Looks great!
 
         version, models = ai_review.get_available_models("dummy_key")
         self.assertEqual(version, "v1beta")
-        self.assertIn("gemini-2.0-flash", models)
+        self.assertIn("gemini-flash-latest", models)
+
+    @patch("urllib.request.urlopen")
+    def test_get_available_models_prioritizes_flash_and_lite_over_gemma(self, mock_urlopen):
+        # Raw API response with Gemma before Flash-Lite
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps({
+            "models": [
+                {"name": "models/gemma-4-26b-a4b-it", "supportedGenerationMethods": ["generateContent"]},
+                {"name": "models/gemini-flash-lite-latest", "supportedGenerationMethods": ["generateContent"]},
+                {"name": "models/gemini-3.8-flash", "supportedGenerationMethods": ["generateContent"]},
+                {"name": "models/gemini-pro-latest", "supportedGenerationMethods": ["generateContent"]},
+            ]
+        }).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        _, models = ai_review.get_available_models("dummy_key")
+        # Flash should be first, then Flash-Lite, then Pro, with Gemma last
+        self.assertEqual(
+            models,
+            ["gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-pro-latest", "gemma-4-26b-a4b-it"]
+        )
 
     @patch("urllib.request.urlopen")
     def test_call_llm_api_success(self, mock_urlopen):
@@ -215,8 +236,48 @@ Looks great!
         }).encode("utf-8")
         mock_urlopen.return_value.__enter__.return_value = mock_response
 
-        result = ai_review.call_llm_api("dummy_key", "prompt here", preferred_model="gemini-3.8-flash")
-        self.assertEqual(result, "Review feedback: LGTM!")
+        result_text, model_used = ai_review.call_llm_api("dummy_key", "prompt here", preferred_model="gemini-3.8-flash")
+        self.assertEqual(result_text, "Review feedback: LGTM!")
+        self.assertEqual(model_used, "gemini-3.8-flash")
+
+    @patch("scripts.ai_pr_review.get_available_models", return_value=("v1beta", ["gemini-3.8-flash"]))
+    @patch("time.sleep")
+    @patch("urllib.request.urlopen")
+    def test_call_llm_api_retries_on_503(self, mock_urlopen, mock_sleep, mock_models):
+        import urllib.error
+        import io
+
+        error_503 = urllib.error.HTTPError(
+            url="http://example.com",
+            code=503,
+            msg="Service Unavailable",
+            hdrs={},
+            fp=io.BytesIO(b'{"error": {"message": "High demand"}}')
+        )
+
+        mock_success = MagicMock()
+        mock_success.read.return_value = json.dumps({
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Success after retry!"}]
+                    }
+                }
+            ]
+        }).encode("utf-8")
+
+        mock_success_cm = MagicMock()
+        mock_success_cm.__enter__.return_value = mock_success
+
+        # First call fails with 503, second call succeeds
+        mock_urlopen.side_effect = [error_503, mock_success_cm]
+
+        text, model = ai_review.call_llm_api(
+            "dummy_key", "prompt here", preferred_model="gemini-3.8-flash", max_retries=1
+        )
+        self.assertEqual(text, "Success after retry!")
+        self.assertEqual(model, "gemini-3.8-flash")
+        mock_sleep.assert_called_once()
 
     @patch("subprocess.run")
     def test_find_existing_comment_found_primary_marker(self, mock_run):
@@ -316,6 +377,22 @@ Looks great!
             self.assertEqual(exit_code, 0)
             mock_post_top.assert_called_once()
             mock_post_inline.assert_called_once()
+
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch("scripts.ai_pr_review.get_pr_metadata", return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": []})
+    @patch("scripts.ai_pr_review.get_pr_diff", return_value="--- a/src/F.kt\n+++ b/src/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n")
+    @patch("scripts.ai_pr_review.call_llm_api", return_value=("LGTM", "gemini-flash-lite-latest"))
+    def test_main_formats_model_attribution_in_review_footer(
+        self, mock_call, mock_diff, mock_meta, mock_repo, mock_sha, mock_post_top
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key"}):
+            exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_post_top.assert_called_once()
+            comment_posted = mock_post_top.call_args[0][2]
+            self.assertIn("*Reviewed by AI (`gemini-flash-lite-latest`)", comment_posted)
 
 
 if __name__ == "__main__":

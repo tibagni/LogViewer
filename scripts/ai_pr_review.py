@@ -38,6 +38,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import Dict, List, Optional, Set, Tuple
@@ -51,13 +52,21 @@ EXCLUDED_EXTENSIONS = (
 )
 
 PREFERRED_MODELS_ORDER = [
+    # Tier 1: Primary Gemini Flash models (top speed and high-grade reasoning)
     "gemini-flash-latest",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
+
+    # Tier 2: Gemini Flash-Lite models (resilient high-capacity fallback with fast response)
+    "gemini-flash-lite-latest",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+
+    # Tier 3: Gemini Preview & Pro models
+    "gemini-3-flash-preview",
+    "gemini-3.1-pro-preview",
     "gemini-pro-latest",
 ]
 
@@ -407,7 +416,7 @@ Rules for inline comments:
 
 
 def get_available_models(api_key: str) -> Tuple[str, List[str]]:
-    """Discovers available models supporting generateContent, prioritizing stable flash models."""
+    """Discovers available models supporting generateContent, prioritizing stable flash and flash-lite models."""
     for version in ["v1beta", "v1"]:
         url = f"https://generativelanguage.googleapis.com/{version}/models"
         headers = {"x-goog-api-key": api_key}
@@ -422,20 +431,39 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
                 ]
                 print(f"Discovered {len(models)} models for API version {version}.")
 
+                # Disallow specialized/non-chat models (audio, vision-only, robotics, etc.)
+                disallowed_keywords = [
+                    "tts", "image", "transcribe", "clip", "banana", "robotics", "computer-use", "lyria"
+                ]
+                usable_models = [m for m in models if not any(x in m for x in disallowed_keywords)]
+
                 ordered_candidates = []
+                # 1. Preferred models in explicit tier order
                 for pref in PREFERRED_MODELS_ORDER:
-                    if pref in models and pref not in ordered_candidates:
+                    if pref in usable_models and pref not in ordered_candidates:
                         ordered_candidates.append(pref)
 
-                remaining_flash = [
-                    m for m in models
-                    if "flash" in m and not any(x in m for x in ["preview", "tts", "image", "omni", "lite"])
-                    and m not in ordered_candidates
-                ]
-                ordered_candidates.extend(sorted(remaining_flash, reverse=True))
+                # 2. Any other remaining Gemini Flash models (non-lite first, then lite)
+                for m in sorted(usable_models, reverse=True):
+                    if "gemini" in m and "flash" in m and "lite" not in m and m not in ordered_candidates:
+                        ordered_candidates.append(m)
+                for m in sorted(usable_models, reverse=True):
+                    if "gemini" in m and "flash" in m and "lite" in m and m not in ordered_candidates:
+                        ordered_candidates.append(m)
 
-                for m in models:
-                    if m not in ordered_candidates and not any(x in m for x in ["tts", "image"]):
+                # 3. Any other remaining Gemini models (e.g., Pro, Preview, etc.)
+                for m in sorted(usable_models, reverse=True):
+                    if "gemini" in m and m not in ordered_candidates:
+                        ordered_candidates.append(m)
+
+                # 4. Any other non-Gemma models
+                for m in usable_models:
+                    if not m.startswith("gemma") and m not in ordered_candidates:
+                        ordered_candidates.append(m)
+
+                # 5. Gemma models strictly as last resort
+                for m in sorted(usable_models, reverse=True):
+                    if m.startswith("gemma") and m not in ordered_candidates:
                         ordered_candidates.append(m)
 
                 if ordered_candidates:
@@ -446,59 +474,81 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
     return "v1beta", PREFERRED_MODELS_ORDER
 
 
-def call_llm_api(api_key: str, prompt: str, preferred_model: Optional[str] = None) -> str:
-    """Calls the LLM REST API with resilient fallback across available models."""
+def call_llm_api(
+    api_key: str,
+    prompt: str,
+    preferred_model: Optional[str] = None,
+    max_retries: int = 2,
+    retry_delay_seconds: float = 3.0
+) -> Tuple[str, str]:
+    """Calls the LLM REST API with resilient fallback across available models, retrying transient 503 errors.
+
+    Returns:
+        Tuple of (review_text, model_name_used)
+    """
     version, models = get_available_models(api_key)
     if preferred_model:
         models = [preferred_model] + [m for m in models if m != preferred_model]
 
     last_error = None
     for model in models:
-        print(f"Attempting review with LLM model '{model}' ({version})...")
-        url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent"
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key,
-        }
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2
+        attempts = 0
+        while attempts <= max_retries:
+            attempts += 1
+            if attempts > 1:
+                backoff = retry_delay_seconds * (2 ** (attempts - 2))
+                print(f"Waiting {backoff:.1f}s before retrying '{model}'...")
+                time.sleep(backoff)
+
+            attempt_str = f" [attempt {attempts}/{max_retries + 1}]" if max_retries > 0 else ""
+            print(f"Attempting review with LLM model '{model}' ({version}){attempt_str}...")
+            url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent"
+            headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key,
             }
-        }
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": prompt}]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.2
+                }
+            }
 
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST"
-        )
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers=headers,
+                method="POST"
+            )
 
-        try:
-            with urllib.request.urlopen(req, timeout=120) as response:
-                body = json.loads(response.read().decode("utf-8"))
-                candidates = body.get("candidates", [])
-                if not candidates:
-                    raise ValueError(f"No candidates returned by LLM: {body}")
-                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                if not text:
-                    raise ValueError(f"Empty text in candidate response: {body}")
-                print(f"✅ Successfully generated review with '{model}'!")
-                return text
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode("utf-8", errors="replace")
-            last_error = f"HTTP {e.code} for model {model} ({version}): {err_msg}"
-            print(f"Model '{model}' failed: {last_error}")
-            continue
-        except Exception as e:
-            last_error = str(e)
-            print(f"Model '{model}' unexpected error: {e}")
-            continue
+            try:
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                    candidates = body.get("candidates", [])
+                    if not candidates:
+                        raise ValueError(f"No candidates returned by LLM: {body}")
+                    text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if not text:
+                        raise ValueError(f"Empty text in candidate response: {body}")
+                    print(f"✅ Successfully generated review with '{model}'!")
+                    return text, model
+            except urllib.error.HTTPError as e:
+                err_msg = e.read().decode("utf-8", errors="replace")
+                last_error = f"HTTP {e.code} for model {model} ({version}): {err_msg}"
+                if e.code == 503 and attempts <= max_retries:
+                    print(f"Model '{model}' temporarily unavailable (HTTP 503): High demand. Retrying...")
+                    continue
+                print(f"Model '{model}' failed: {last_error}")
+                break
+            except Exception as e:
+                last_error = str(e)
+                print(f"Model '{model}' unexpected error: {e}")
+                break
 
     raise RuntimeError(f"All available LLM models failed. Last error: {last_error}")
 
@@ -633,6 +683,12 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Base branch to diff against when not reviewing a specific PR (default: from env or 'master')."
     )
     parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Preferred model name (e.g. 'gemini-flash-latest' or 'gemini-flash-lite-latest')."
+    )
+    parser.add_argument(
         "--env-file",
         type=str,
         default=".env",
@@ -654,7 +710,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("⚠️ Notice: Neither LLM_API_KEY nor GEMINI_API_KEY is set. Skipping automated code review.")
         return 0
 
-    preferred_model = os.environ.get("LLM_MODEL") or os.environ.get("GEMINI_MODEL")
+    preferred_model = (
+        args.model or
+        os.environ.get("LLM_MODEL", "").strip() or
+        os.environ.get("GEMINI_MODEL", "").strip() or
+        os.environ.get("AI_REVIEW_MODEL", "").strip() or
+        None
+    )
     pr_number = args.pr or os.environ.get("PR_NUMBER", "").strip()
     repo = get_repo_name()
     base_ref = args.base or os.environ.get("BASE_REF", "master").strip()
@@ -709,7 +771,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("=" * 80 + "\n")
 
     print("Requesting code review from LLM API...")
-    raw_review_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
+    llm_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
+    if isinstance(llm_output, tuple):
+        raw_review_output, model_used = llm_output
+    else:
+        raw_review_output = llm_output
+        model_used = preferred_model or "unknown"
 
     clean_review_text, raw_inline_comments = extract_inline_comments(raw_review_output)
     valid_inline, discarded_inline = filter_inline_comments(raw_inline_comments, valid_diff_lines)
@@ -717,12 +784,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     if discarded_inline:
         print(f"Notice: Omitted {len(discarded_inline)} inline comments because target lines were outside diff hunks.")
 
+    model_attribution = f" (`{model_used}`)" if model_used else ""
     formatted_review = f"""### 🤖 AI Code Review
 
 {clean_review_text.strip()}
 
 ---
-*Reviewed by AI using {source_description}.*
+*Reviewed by AI{model_attribution} using {source_description}.*
 """
 
     if args.dry_run:
