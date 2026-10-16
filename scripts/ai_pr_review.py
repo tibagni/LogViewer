@@ -577,11 +577,20 @@ def call_llm_api(
                     return text, model
             except urllib.error.HTTPError as e:
                 err_msg = e.read().decode("utf-8", errors="replace")
-                last_error = f"HTTP {e.code} for model {model} ({version}): {err_msg}"
+                try:
+                    parsed_err = json.loads(err_msg)
+                    detail = parsed_err.get("error", {}).get("message", err_msg.strip()[:200])
+                except Exception:
+                    detail = err_msg.strip()[:200]
+
+                last_error = f"HTTP {e.code} for model {model} ({version}): {detail}"
                 if e.code == 503 and attempts <= max_retries:
                     print(f"Model '{model}' temporarily unavailable (HTTP 503): High demand. Retrying...")
                     continue
-                print(f"Model '{model}' failed: {last_error}")
+                if e.code == 429:
+                    print(f"Model '{model}' rate-limited (HTTP 429: quota exceeded). Trying next model...")
+                    break
+                print(f"Model '{model}' failed (HTTP {e.code}): {detail}")
                 break
             except Exception as e:
                 last_error = str(e)
