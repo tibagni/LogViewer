@@ -190,4 +190,18 @@ class LogLineParserTests {
         assertNotNull(infoNullText)
         assertEquals("", infoNullText!!.message)
     }
+
+    @Test
+    fun testExtractLogStreamFromBeginningOfLine() {
+        assertEquals(LogStream.MAIN, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of main"))
+        assertEquals(LogStream.MAIN, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of crash"))
+        assertEquals(LogStream.SYSTEM, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of system"))
+        assertEquals(LogStream.EVENTS, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of events"))
+        assertEquals(LogStream.RADIO, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of radio"))
+        assertEquals(LogStream.KERNEL, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of kernel"))
+        assertEquals(LogStream.EVENTS, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of /dev/log/events"))
+        assertEquals(LogStream.SYSTEM, LogLineParser.extractLogStreamFromBeginningOfLine("--------- beginning of /dev/log/system:"))
+        assertNull(LogLineParser.extractLogStreamFromBeginningOfLine("10-12 22:33:46.839  3172  3172 I am_create_activity: test"))
+        assertNull(LogLineParser.extractLogStreamFromBeginningOfLine(""))
+    }
 }

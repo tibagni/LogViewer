@@ -29,6 +29,8 @@ interface LiveLogsRepository {
   val allLogsCount: Int
   val filteredLogsCount: Int
   val availableStreams: Set<LogStream>
+  val allowedStreams: Set<LogStream>?
+  fun setAllowedStreams(allowed: Set<LogStream>?)
 
   /**
    * Relative offset of the first entry currently retained in [allLogs] relative to the
@@ -64,6 +66,7 @@ class LiveLogsRepositoryImpl(
   private val _allLogs = ArrayDeque<LogEntry>()
   private val _filteredLogs = ArrayDeque<LogEntry>()
   private val _availableStreams = hashSetOf<LogStream>()
+  private var _allowedStreams: Set<LogStream>? = null
   private val liveFilters = mutableListOf<Filter>()
 
   override var totalLogsReceived: Long = 0L
@@ -86,6 +89,22 @@ class LiveLogsRepositoryImpl(
 
   override val availableStreams: Set<LogStream>
     get() = synchronized(lock) { _availableStreams.toSet() }
+
+  override val allowedStreams: Set<LogStream>?
+    get() = synchronized(lock) { _allowedStreams }
+
+  override fun setAllowedStreams(allowed: Set<LogStream>?) = synchronized(lock) {
+    _allowedStreams = allowed
+    for (filter in liveFilters) {
+      filter.getContext(filterContextTag)?.setAllowedStreams(allowed)
+    }
+    _filteredLogs.clear()
+    for (entry in _allLogs) {
+      if (entry.appliedFilter != null && (allowed?.contains(entry.logStream) ?: true)) {
+        _filteredLogs.add(entry)
+      }
+    }
+  }
 
   override val visibleLogsOffset: Int
     get() = synchronized(lock) { droppedLogsCount.toInt() }
@@ -122,8 +141,10 @@ class LiveLogsRepositoryImpl(
 
       if (firstMatchedFilter != null) {
         entry.appliedFilter = firstMatchedFilter
-        _filteredLogs.add(entry)
-        addedFiltered.add(entry)
+        if (_allowedStreams?.contains(entry.logStream) ?: true) {
+          _filteredLogs.add(entry)
+          addedFiltered.add(entry)
+        }
       }
 
       _allLogs.add(entry)
@@ -163,7 +184,10 @@ class LiveLogsRepositoryImpl(
     liveFilters.addAll(filters)
 
     for (filter in liveFilters) {
-      filter.initContext(filterContextTag)
+      val context = filter.initContext(filterContextTag)
+      _allowedStreams?.let {
+        context.setAllowedStreams(it)
+      }
     }
 
     val pr = progressReporter ?: ProgressReporter { _, _ -> }
@@ -185,13 +209,23 @@ class LiveLogsRepositoryImpl(
 
     val matched = Filters.applyMultipleFilters(_allLogs.toList(), liveFilters.toTypedArray(), filterContextTag, pr)
     _filteredLogs.clear()
-    _filteredLogs.addAll(matched)
+    val allowed = _allowedStreams
+    if (allowed == null) {
+      _filteredLogs.addAll(matched)
+    } else {
+      for (entry in matched) {
+        if (allowed.contains(entry.logStream)) {
+          _filteredLogs.add(entry)
+        }
+      }
+    }
   }
 
   override fun clear() = synchronized(lock) {
     _allLogs.clear()
     _filteredLogs.clear()
     _availableStreams.clear()
+    _allowedStreams = null
     totalLogsReceived = 0L
     droppedLogsCount = 0L
     for (filter in liveFilters) {

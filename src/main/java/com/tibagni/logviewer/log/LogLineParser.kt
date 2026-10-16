@@ -119,6 +119,14 @@ object LogLineParser {
   }
 
   @JvmStatic
+  fun extractLogStreamFromBeginningOfLine(line: String): LogStream? {
+    if (!line.startsWith("--------- beginning of")) return null
+    val target = line.removePrefix("--------- beginning of").trim().substringAfterLast('/').trimEnd(':')
+    val stream = LogStream.fromBuffer(target)
+    return if (stream != LogStream.UNKNOWN) stream else null
+  }
+
+  @JvmStatic
   @JvmOverloads
   fun createLogEntry(
     logLine: String,

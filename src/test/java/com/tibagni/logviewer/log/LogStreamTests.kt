@@ -111,4 +111,17 @@ class LogStreamTests {
         actual = LogStream.inferLogStreamFromName("log-file.txt")
         assertEquals(LogStream.UNKNOWN, actual)
     }
+
+    @Test
+    fun testFromBuffer() {
+        assertEquals(LogStream.MAIN, LogStream.fromBuffer("main"))
+        assertEquals(LogStream.MAIN, LogStream.fromBuffer("crash"))
+        assertEquals(LogStream.SYSTEM, LogStream.fromBuffer("system"))
+        assertEquals(LogStream.RADIO, LogStream.fromBuffer("radio"))
+        assertEquals(LogStream.EVENTS, LogStream.fromBuffer("events"))
+        assertEquals(LogStream.KERNEL, LogStream.fromBuffer("kernel"))
+        assertEquals(LogStream.UNKNOWN, LogStream.fromBuffer("unknown_buffer"))
+        assertEquals(LogStream.UNKNOWN, LogStream.fromBuffer(null))
+    }
 }
+

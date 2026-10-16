@@ -271,4 +271,96 @@ class LiveLogsRepositoryTests {
     assertEquals(0, filter.getContext(repo.filterContextTag)?.totalLinesFound)
     assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
   }
+
+  @Test
+  fun testSetAllowedStreamsFiltersExistingAndNewLogs() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
+    val filter = createFilter("ErrorFilter", "error")
+    repo.setLiveFilters(listOf(filter))
+
+    val entryMain = createEntry("main error 1", stream = LogStream.MAIN)
+    val entryEvents = createEntry("events error 1", stream = LogStream.EVENTS)
+
+    repo.addLogEntry(entryMain)
+    repo.addLogEntry(entryEvents)
+
+    assertEquals(2, repo.allLogsCount)
+    assertEquals(2, repo.filteredLogsCount)
+    assertEquals(2, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+
+    // Restrict allowed streams to MAIN only
+    repo.setAllowedStreams(setOf(LogStream.MAIN))
+    assertEquals(setOf(LogStream.MAIN), repo.allowedStreams)
+    assertEquals(1, repo.filteredLogsCount)
+    assertEquals(entryMain, repo.filteredLogs[0])
+    // Filter context should only count MAIN
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+
+    // Ingest another EVENTS error: should enter allLogs, but NOT filteredLogs
+    val entryEvents2 = createEntry("events error 2", stream = LogStream.EVENTS)
+    val batch = repo.addLogEntry(entryEvents2)
+    assertEquals(3, repo.allLogsCount)
+    assertEquals(1, repo.filteredLogsCount)
+    assertEquals(1, batch.newAllLogs.size)
+    assertEquals(0, batch.newFilteredLogs.size)
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+
+    // Re-allow EVENTS stream: both previous and newly arrived EVENTS errors appear in filteredLogs
+    repo.setAllowedStreams(setOf(LogStream.MAIN, LogStream.EVENTS))
+    assertEquals(3, repo.filteredLogsCount)
+    assertEquals(3, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+    assertEquals(listOf(entryMain, entryEvents, entryEvents2), repo.filteredLogs)
+  }
+
+  @Test
+  fun testEvictionWithDisallowedStreamsMaintainsFilteredLogsIntegrity() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 3)
+    val filter = createFilter("AnyFilter", "log")
+    repo.setLiveFilters(listOf(filter))
+
+    // Disallow EVENTS
+    repo.setAllowedStreams(setOf(LogStream.MAIN))
+
+    val e1 = createEntry("log 1", stream = LogStream.EVENTS)
+    val e2 = createEntry("log 2", stream = LogStream.MAIN)
+    val e3 = createEntry("log 3", stream = LogStream.EVENTS)
+
+    repo.addLogEntry(e1)
+    repo.addLogEntry(e2)
+    repo.addLogEntry(e3)
+
+    assertEquals(3, repo.allLogsCount)
+    assertEquals(1, repo.filteredLogsCount)
+    assertEquals(e2, repo.filteredLogs[0])
+
+    // Adding 4th entry evicts e1 (EVENTS, not in filteredLogs)
+    val e4 = createEntry("log 4", stream = LogStream.MAIN)
+    val batch = repo.addLogEntry(e4)
+
+    assertEquals(3, repo.allLogsCount)
+    assertEquals(2, repo.filteredLogsCount)
+    assertEquals(1, batch.evictedAllCount)
+    assertEquals(0, batch.evictedFilteredCount)
+    assertEquals(listOf(e2, e4), repo.filteredLogs)
+
+    // Adding 5th entry evicts e2 (MAIN, which is in filteredLogs)
+    val e5 = createEntry("log 5", stream = LogStream.MAIN)
+    val batch2 = repo.addLogEntry(e5)
+
+    assertEquals(3, repo.allLogsCount)
+    assertEquals(2, repo.filteredLogsCount)
+    assertEquals(1, batch2.evictedAllCount)
+    assertEquals(1, batch2.evictedFilteredCount)
+    assertEquals(listOf(e4, e5), repo.filteredLogs)
+  }
+
+  @Test
+  fun testClearResetsAllowedStreams() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
+    repo.setAllowedStreams(setOf(LogStream.MAIN))
+    assertEquals(setOf(LogStream.MAIN), repo.allowedStreams)
+
+    repo.clear()
+    assertNull(repo.allowedStreams)
+  }
 }

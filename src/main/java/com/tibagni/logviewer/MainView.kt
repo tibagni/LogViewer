@@ -43,6 +43,15 @@ interface View {
   fun requestFinish(doFinish: () -> Unit)
 }
 
+interface MainViewTab : View {
+  val contentPane: JPanel
+  fun attachFiltersPanel(panel: FiltersPanel) {}
+  fun onTabSelected() {}
+  fun onTabDeselected() {}
+  fun onThemeChanged() {}
+  fun getMenus(): List<JMenu> = emptyList()
+}
+
 interface MainView {
   val parent: JFrame
 
@@ -88,18 +97,27 @@ class MainViewImpl(
   // Dynamic Menu items
   private var saveFilteredLogs: JMenuItem? = null
 
+  private val tabs: List<MainViewTab>
   private val finishChain: List<View>
+    get() = listOf(filtersPanel) + tabs
   private var finishChainPosition = 0
+
+  private val activeTab: MainViewTab?
+    get() = if (::tabbedPane.isInitialized) {
+      tabs.firstOrNull { it.contentPane === tabbedPane.selectedComponent }
+    } else {
+      logViewerView
+    }
 
   val contentPane: JPanel
     get() = mainPanel
 
   init {
-    liveLogView = LiveLogViewImpl()
+    liveLogView = LiveLogViewImpl(this)
     filtersPanel = FiltersPanel(this)
     logViewerView = LogViewerViewImpl(this, filtersPanel, initialLogFiles)
     bugReportView = BugReportViewImpl(this)
-    finishChain = listOf(filtersPanel, logViewerView, bugReportView, liveLogView)
+    tabs = listOf(logViewerView, bugReportView, liveLogView)
 
     buildUi()
     configureMenuBar()
@@ -131,9 +149,7 @@ class MainViewImpl(
 
   fun themeChanged() {
     recreateFileChoosers()
-    logViewerView.onThemeChanged()
-    bugReportView.onThemeChanged()
-    liveLogView.onThemeChanged()
+    tabs.forEach { it.onThemeChanged() }
   }
 
   private fun recreateFileChoosers() {
@@ -321,14 +337,11 @@ class MainViewImpl(
     helpMenu.add(aboutItem)
     helpMenu.add(onlineHelpItem)
 
-    // Build menus specific to child views
-    val streamsMenu = logViewerView.buildStreamsMenu()
-
     // Add all menus in order
     menuBar.add(fileMenu)
     menuBar.add(logsMenu)
     menuBar.add(filtersMenu)
-    streamsMenu?.let { menuBar.add(it) }
+    activeTab?.getMenus()?.forEach { menuBar.add(it) }
     menuBar.add(helpMenu)
 
     parent.jMenuBar = menuBar
@@ -385,16 +398,16 @@ class MainViewImpl(
     // Ensure the initial tab (Logs) has the filters panel properly attached
     logViewerView.attachFiltersPanel(filtersPanel)
 
+    var lastActiveTab: MainViewTab? = logViewerView
     tabbedPane.addChangeListener {
-      when (tabbedPane.selectedComponent) {
-        logViewerView.contentPane -> {
-          logViewerView.attachFiltersPanel(filtersPanel)
-        }
-        liveLogView.contentPane -> {
-          liveLogView.attachFiltersPanel(filtersPanel)
-          liveLogView.onTabSelected()
-        }
+      lastActiveTab?.onTabDeselected()
+      val currentTab = activeTab
+      lastActiveTab = currentTab
+      currentTab?.let {
+        it.attachFiltersPanel(filtersPanel)
+        it.onTabSelected()
       }
+      refreshMenuBar()
     }
 
     mainPanel.add(

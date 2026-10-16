@@ -23,10 +23,8 @@ import kotlin.collections.HashSet
 
 
 // This is the interface known by other views (MainView)
-interface LogViewerView : View {
-  val contentPane: JPanel
+interface LogViewerView : MainViewTab {
   val presenter: LogViewerPresenter
-  fun attachFiltersPanel(panel: FiltersPanel)
   fun buildStreamsMenu(): JMenu?
   fun handleOpenLogsMenu()
   fun handleRefreshLogsMenu()
@@ -34,7 +32,6 @@ interface LogViewerView : View {
   fun handleSaveFilteredLogsMenu()
   fun handleGoToTimestampMenu()
   fun handleConfigureIgnoredLogs()
-  fun onThemeChanged()
 }
 
 // This is the interface known by the presenter
@@ -306,6 +303,8 @@ class LogViewerViewImpl(
       }
     })
   }
+
+  override fun getMenus(): List<JMenu> = listOfNotNull(buildStreamsMenu())
 
   override fun buildStreamsMenu(): JMenu? {
     if (logStreams.isEmpty()) return null

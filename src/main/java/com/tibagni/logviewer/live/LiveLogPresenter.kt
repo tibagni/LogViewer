@@ -10,6 +10,7 @@ import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogEntry
+import com.tibagni.logviewer.log.LogStream
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlin.time.Duration
@@ -20,6 +21,8 @@ interface LiveLogPresenterView {
   fun showStats(totalReceived: Long, droppedCount: Long, allCount: Int, filteredCount: Int)
   fun showLogsBatch(batch: LiveLogBatch)
   fun showAllLogs(allLogs: List<LogEntry>, filteredLogs: List<LogEntry>)
+  fun showFilteredLogs(filteredLogs: List<LogEntry>)
+  fun showAvailableLogStreams(streams: Set<LogStream>)
   fun showFilteringProgress(progress: Int)
   fun finishFilteringProgress()
 
@@ -39,12 +42,17 @@ interface LiveLogPresenter {
   val isStreaming: Boolean
   val connectedDevice: AdbDevice?
   val visibleLogsOffset: Int
+  val availableBuffers: List<String>
+  val defaultBuffers: List<String>
+  val availableStreams: Set<LogStream>
 
   fun init()
   fun loadDevices()
-  fun startStreaming(device: AdbDevice)
+  fun startStreaming(device: AdbDevice, buffers: List<String>? = null)
   fun stopStreaming()
   fun clearLogs()
+  fun setStreamAllowed(stream: LogStream, allowed: Boolean)
+  fun isStreamAllowed(stream: LogStream): Boolean
   fun openDeviceTerminal(device: AdbDevice)
   fun restartAdbServer()
   fun disconnectDevice()
@@ -79,6 +87,11 @@ class LiveLogPresenterImpl(
   private var streamingJob: Job? = null
   private var filteringJob: Job? = null
   private var deviceScanJob: Job? = null
+
+  override val availableBuffers: List<String> = AdbLogStreamer.ALL_BUFFERS
+  override val defaultBuffers: List<String> = AdbLogStreamer.DEFAULT_BUFFERS
+  private var lastStreamedBuffers: List<String> = defaultBuffers
+
   override val filterContextTag: FilterContextTag
     get() = liveLogsRepository.filterContextTag
 
@@ -92,6 +105,30 @@ class LiveLogPresenterImpl(
 
   override val visibleLogsOffset: Int
     get() = liveLogsRepository.visibleLogsOffset
+
+  private val streamsLock = Any()
+  private val allowedStreamsMap = mutableMapOf<LogStream, Boolean>()
+
+  override val availableStreams: Set<LogStream>
+    get() = synchronized(streamsLock) { allowedStreamsMap.keys.toSet() }
+
+  override fun isStreamAllowed(stream: LogStream): Boolean = synchronized(streamsLock) {
+    allowedStreamsMap[stream] ?: true
+  }
+
+  override fun setStreamAllowed(stream: LogStream, allowed: Boolean) {
+    val allowedSet: Set<LogStream>
+    synchronized(streamsLock) {
+      if (!allowedStreamsMap.containsKey(stream)) {
+        throw IllegalStateException("Stream $stream is not available")
+      }
+      allowedStreamsMap[stream] = allowed
+      allowedSet = allowedStreamsMap.filterValues { it }.keys.toSet()
+    }
+
+    liveLogsRepository.setAllowedStreams(allowedSet)
+    view.showFilteredLogs(liveLogsRepository.filteredLogs)
+  }
 
   private val filtersListener = object : FiltersRepository.Listener {
     override fun onFiltersApplied(appliedFilters: List<Filter>) {
@@ -181,7 +218,11 @@ class LiveLogPresenterImpl(
     }
   }
 
-  override fun startStreaming(device: AdbDevice) {
+  override fun startStreaming(device: AdbDevice, buffers: List<String>?) {
+    val activeBuffers = buffers ?: lastStreamedBuffers
+    if (activeBuffers.isEmpty()) return
+    lastStreamedBuffers = activeBuffers
+
     if (_isStreaming) {
       stopStreaming()
     }
@@ -195,11 +236,25 @@ class LiveLogPresenterImpl(
       isStreaming = true
     )
 
+    val initialStreams = activeBuffers.mapNotNull { LogStream.fromBuffer(it) }.filter { it != LogStream.UNKNOWN }.toSet()
+    val availableInitial: Set<LogStream>
+    synchronized(streamsLock) {
+      allowedStreamsMap.clear()
+      for (s in initialStreams) {
+        allowedStreamsMap[s] = true
+      }
+      availableInitial = allowedStreamsMap.keys.toSet()
+    }
+    if (availableInitial.isNotEmpty()) {
+      liveLogsRepository.setAllowedStreams(availableInitial)
+    }
+    view.showAvailableLogStreams(availableInitial)
+
     val channel = Channel<LogEntry>(capacity = LOG_CHANNEL_CAPACITY)
 
     val producerJob = coroutineScope.launch(ioDispatcher) {
       try {
-        adbLogStreamer.startStream(device.serialNumber).collect { entry ->
+        adbLogStreamer.startStream(device.serialNumber, activeBuffers).collect { entry ->
           channel.send(entry)
         }
       } catch (e: CancellationException) {
@@ -229,10 +284,14 @@ class LiveLogPresenterImpl(
             batch.add(next)
           }
 
+          val availableUpdated = updateStreamsIfNewDiscovered(batch)
           val resultBatch = liveLogsRepository.addLogEntries(batch)
           batch.clear()
 
           withContext(mainDispatcher) {
+            if (availableUpdated != null) {
+              view.showAvailableLogStreams(availableUpdated)
+            }
             view.showLogsBatch(resultBatch)
             view.showStats(
               totalReceived = liveLogsRepository.totalLogsReceived,
@@ -245,9 +304,13 @@ class LiveLogPresenterImpl(
           delay(BATCH_DISPATCH_DELAY)
         }
       } finally {
-        if (batch.isNotEmpty()) {
+        if (batch.isNotEmpty() && _isStreaming) {
+          val availableUpdated = updateStreamsIfNewDiscovered(batch)
           val resultBatch = liveLogsRepository.addLogEntries(batch)
           withContext(mainDispatcher) {
+            if (availableUpdated != null) {
+              view.showAvailableLogStreams(availableUpdated)
+            }
             view.showLogsBatch(resultBatch)
             view.showStats(
               totalReceived = liveLogsRepository.totalLogsReceived,
@@ -287,10 +350,36 @@ class LiveLogPresenterImpl(
     )
   }
 
+  private fun updateStreamsIfNewDiscovered(batch: List<LogEntry>): Set<LogStream>? {
+    val newStreams = batch.mapNotNull { entry ->
+      val stream = entry.logStream
+      if (stream != LogStream.UNKNOWN && !isStreamTracked(stream)) stream else null
+    }.toSet()
+
+    if (newStreams.isEmpty()) return null
+
+    return synchronized(streamsLock) {
+      for (s in newStreams) {
+        allowedStreamsMap[s] = true
+      }
+      val allowedSet = allowedStreamsMap.filterValues { it }.keys.toSet()
+      liveLogsRepository.setAllowedStreams(allowedSet)
+      allowedStreamsMap.keys.toSet()
+    }
+  }
+
+  private fun isStreamTracked(stream: LogStream): Boolean = synchronized(streamsLock) {
+    allowedStreamsMap.containsKey(stream)
+  }
+
   override fun clearLogs() {
     filteringJob?.cancel()
     filteringJob = null
     liveLogsRepository.clear()
+    synchronized(streamsLock) {
+      allowedStreamsMap.clear()
+    }
+    view.showAvailableLogStreams(emptySet())
     view.finishFilteringProgress()
     view.showAllLogs(emptyList(), emptyList())
     view.showStats(

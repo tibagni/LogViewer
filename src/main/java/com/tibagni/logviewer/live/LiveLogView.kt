@@ -1,20 +1,25 @@
 package com.tibagni.logviewer.live
 
+import com.tibagni.logviewer.MainView
+import com.tibagni.logviewer.MainViewTab
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.DeviceState
 import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.view.TriStateCheckbox
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogListTableModel
+import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.setupLogTableActions
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
+import com.tibagni.logviewer.util.layout.WrapLayout
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersPanel
@@ -48,21 +53,22 @@ import java.awt.event.MouseWheelListener
 import javax.swing.*
 import javax.swing.border.EmptyBorder
 
-interface LiveLogView : View {
-  val contentPane: JPanel
+interface LiveLogView : MainViewTab {
   val isStreaming: Boolean
   fun startStreaming(device: AdbDevice)
   fun stopStreaming()
-  fun attachFiltersPanel(panel: FiltersPanel)
-  fun onThemeChanged()
-  fun onTabSelected()
+  fun buildStreamsMenu(): JMenu?
 }
 
 class LiveLogViewImpl(
+  private val mainView: MainView? = null,
   // Allows tests to inject a mock presenter
   @VisibleForTesting
   presenterFactory: ((LiveLogPresenterView) -> LiveLogPresenter)? = null
 ) : LiveLogView, LiveLogPresenterView {
+
+  @VisibleForTesting
+  constructor(presenterFactory: (LiveLogPresenterView) -> LiveLogPresenter) : this(null, presenterFactory)
 
   private val rootCardLayout = CardLayout()
   override val contentPane: JPanel = JPanel(rootCardLayout)
@@ -73,6 +79,23 @@ class LiveLogViewImpl(
   override val isStreaming: Boolean get() = presenter.isStreaming
   override fun startStreaming(device: AdbDevice) = presenter.startStreaming(device)
   override fun stopStreaming() = presenter.stopStreaming()
+
+  override fun getMenus(): List<JMenu> = listOfNotNull(buildStreamsMenu())
+
+  override fun buildStreamsMenu(): JMenu? {
+    val streams = presenter.availableStreams
+    if (streams.size <= 1) return null
+
+    val streamsMenu = JMenu(I18n.get(I18n.MENU_STREAMS))
+    for (stream in streams) {
+      val item = JCheckBoxMenuItem(stream.toString()).apply {
+        state = presenter.isStreamAllowed(stream)
+        addItemListener { presenter.setStreamAllowed(stream, isSelected) }
+      }
+      streamsMenu.add(item)
+    }
+    return streamsMenu
+  }
 
   private lateinit var mainSplitPane: JSplitPane
   private var filtersPanel: FiltersPanel? = null
@@ -93,6 +116,10 @@ class LiveLogViewImpl(
 
   @VisibleForTesting internal lateinit var refreshDevicesBtn: JButton
   @VisibleForTesting internal lateinit var restartServerBtn: JButton
+  @VisibleForTesting internal lateinit var buffersCard: JPanel
+  @VisibleForTesting internal lateinit var selectAllCb: TriStateCheckbox
+  @VisibleForTesting internal val bufferCheckboxes = mutableMapOf<String, JCheckBox>()
+  private val activeStartButtons = mutableListOf<JButton>()
   private val deviceSubCardLayout = CardLayout()
   @VisibleForTesting internal lateinit var deviceCardsContainer: JPanel
   @VisibleForTesting internal lateinit var deviceItemsContainer: JPanel
@@ -101,7 +128,7 @@ class LiveLogViewImpl(
   @VisibleForTesting internal lateinit var filteredLogList: SearchableTable
   @VisibleForTesting internal lateinit var logListTableModel: LogListTableModel
   @VisibleForTesting internal lateinit var filteredLogListTableModel: LogListTableModel
-  private val logRenderer: LogCellRenderer = LogCellRenderer()
+  @VisibleForTesting internal val logRenderer: LogCellRenderer = LogCellRenderer()
 
   private val userPrefs: LogViewerPreferences = ServiceLocator.logViewerPrefs
 
@@ -169,12 +196,12 @@ class LiveLogViewImpl(
   }
 
   init {
-    buildUi()
     presenter = presenterFactory?.invoke(this) ?: LiveLogPresenterImpl(
       view = this,
       liveLogsRepository = ServiceLocator.liveLogsRepository,
       adbLogStreamer = ServiceLocator.adbLogStreamer
     )
+    buildUi()
     presenter.init()
 
     filtersPanelListener = object : FiltersPanelListener {
@@ -214,6 +241,87 @@ class LiveLogViewImpl(
     contentPane.add(devicesPanel, CARD_DEVICES)
     contentPane.add(logsPanel, CARD_LOGS)
     rootCardLayout.show(contentPane, CARD_DEVICES)
+  }
+
+  private fun createBuffersCard(): JPanel {
+    val card = BuffersCardContainer(
+      WrapLayout(FlowLayout.CENTER, UIScaleUtils.dip(8), UIScaleUtils.dip(4))
+    )
+    updateBuffersCardStyle(card)
+
+    val label = JLabel(I18n.get(I18n.LIVE_LOGS_BUFFERS)).apply {
+      font = font.deriveFont(Font.BOLD)
+    }
+    card.add(label)
+
+    selectAllCb = TriStateCheckbox(I18n.get(I18n.COMMON_ALL)).apply {
+      isOpaque = false
+      toolTipText = I18n.get(I18n.COMMON_SELECT_UNSELECT_ALL)
+      addSelectionChangedListener(object : TriStateCheckbox.SelectionChangedListener {
+        override fun onSelectionChanged(newSelectionState: TriStateCheckbox.SelectionState) {
+          val selectAll = newSelectionState == TriStateCheckbox.SelectionState.SELECTED
+          bufferCheckboxes.values.forEach { it.isSelected = selectAll }
+          updateStartButtonsState(selectAll)
+        }
+      })
+    }
+    card.add(selectAllCb)
+
+    card.add(JSeparator(SwingConstants.VERTICAL).apply {
+      preferredSize = Dimension(1, UIScaleUtils.dip(16))
+    })
+
+    val defaultSelected = presenter.defaultBuffers.toSet()
+    for (buf in presenter.availableBuffers) {
+      val checkbox = JCheckBox(buf).apply {
+        isOpaque = false
+        isSelected = defaultSelected.contains(buf)
+        addActionListener {
+          evaluateSelectAllCbState()
+          updateStartButtonsState(getSelectedBuffers().isNotEmpty())
+        }
+      }
+      bufferCheckboxes[buf] = checkbox
+      card.add(checkbox)
+    }
+
+    evaluateSelectAllCbState()
+    return card
+  }
+
+  private fun evaluateSelectAllCbState() {
+    val total = bufferCheckboxes.size
+    val selectedCount = bufferCheckboxes.values.count { it.isSelected }
+    selectAllCb.selectionState = when (selectedCount) {
+      total -> TriStateCheckbox.SelectionState.SELECTED
+      0 -> TriStateCheckbox.SelectionState.NOT_SELECTED
+      else -> TriStateCheckbox.SelectionState.PARTIALLY_SELECTED
+    }
+    selectAllCb.updateUI()
+  }
+
+  private fun updateBuffersCardStyle(card: JPanel = buffersCard) {
+    val borderColor = UIManager.getColor("Component.borderColor")
+      ?: UIManager.getColor("Separator.foreground")
+      ?: Color(200, 200, 200)
+    val cardBg = UIManager.getColor("Table.background") ?: UIManager.getColor("Panel.background")
+
+    card.border = BorderFactory.createCompoundBorder(
+      BorderFactory.createLineBorder(borderColor, 1),
+      EmptyBorder(UIScaleUtils.dip(8), UIScaleUtils.dip(14), UIScaleUtils.dip(8), UIScaleUtils.dip(14))
+    )
+    card.background = cardBg
+  }
+
+  internal fun getSelectedBuffers(): List<String> {
+    return presenter.availableBuffers.filter { bufferCheckboxes[it]?.isSelected == true }
+  }
+
+  private fun updateStartButtonsState(hasSelection: Boolean) {
+    for (btn in activeStartButtons) {
+      btn.isEnabled = hasSelection
+      btn.toolTipText = if (hasSelection) null else I18n.get(I18n.LIVE_LOGS_NO_BUFFERS_SELECTED_TOOLTIP)
+    }
   }
 
   private fun buildDevicesPanel(): JPanel {
@@ -287,10 +395,11 @@ class LiveLogViewImpl(
       }
     )
 
+    buffersCard = createBuffersCard()
     deviceItemsContainer = DeviceListContainer()
 
     val centeringPanel = CenteredScrollablePanel().apply {
-      val gbc = GridBagConstraints().apply {
+      val buffersGbc = GridBagConstraints().apply {
         gridx = 0
         gridy = 0
         weightx = 1.0
@@ -300,16 +409,32 @@ class LiveLogViewImpl(
         insets = Insets(
           UIScaleUtils.dip(20),
           UIScaleUtils.dip(16),
+          UIScaleUtils.dip(12),
+          UIScaleUtils.dip(16)
+        )
+      }
+      add(buffersCard, buffersGbc)
+
+      val devicesGbc = GridBagConstraints().apply {
+        gridx = 0
+        gridy = 1
+        weightx = 1.0
+        weighty = 0.0
+        anchor = GridBagConstraints.NORTH
+        fill = GridBagConstraints.NONE
+        insets = Insets(
+          0,
+          UIScaleUtils.dip(16),
           UIScaleUtils.dip(20),
           UIScaleUtils.dip(16)
         )
       }
-      add(deviceItemsContainer, gbc)
+      add(deviceItemsContainer, devicesGbc)
 
       val filler = JPanel().apply { isOpaque = false }
       val fillerGbc = GridBagConstraints().apply {
         gridx = 0
-        gridy = 1
+        gridy = 2
         weightx = 1.0
         weighty = 1.0
         fill = GridBagConstraints.BOTH
@@ -318,6 +443,7 @@ class LiveLogViewImpl(
 
       addComponentListener(object : ComponentAdapter() {
         override fun componentResized(e: ComponentEvent) {
+          buffersCard.revalidate()
           deviceItemsContainer.revalidate()
         }
       })
@@ -634,6 +760,7 @@ class LiveLogViewImpl(
       EmptyBorder(UIScaleUtils.dip(10), UIScaleUtils.dip(16), UIScaleUtils.dip(10), UIScaleUtils.dip(16))
     )
 
+    activeStartButtons.clear()
     for (device in devices) {
       val itemPanel = JPanel(BorderLayout()).apply {
         border = normalBorder
@@ -692,10 +819,20 @@ class LiveLogViewImpl(
         isOpaque = false
       }
       if (device.isOnline) {
+        val hasSelection = getSelectedBuffers().isNotEmpty()
         val startBtn = JButton(I18n.get(I18n.LIVE_LOGS_START)).apply {
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-          addActionListener { presenter.startStreaming(device) }
+          isEnabled = hasSelection
+          toolTipText = if (hasSelection) null else I18n.get(I18n.LIVE_LOGS_NO_BUFFERS_SELECTED_TOOLTIP)
+          addActionListener {
+            val selected = getSelectedBuffers()
+            if (selected.isNotEmpty()) {
+              presenter.startStreaming(device, selected)
+            }
+          }
         }
+        activeStartButtons.add(startBtn)
+
         val termBtn = JButton(I18n.get(I18n.LIVE_LOGS_TERMINAL)).apply {
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
           addActionListener { presenter.openDeviceTerminal(device) }
@@ -719,7 +856,10 @@ class LiveLogViewImpl(
 
           override fun mouseClicked(e: MouseEvent) {
             if (e.clickCount == 2 && SwingUtilities.isLeftMouseButton(e)) {
-              presenter.startStreaming(device)
+              val selected = getSelectedBuffers()
+              if (selected.isNotEmpty()) {
+                presenter.startStreaming(device, selected)
+              }
             }
           }
         })
@@ -803,6 +943,24 @@ class LiveLogViewImpl(
     if (filtersPanel?.activeFilterContextTag == presenter.filterContextTag) {
       filtersPanel?.updateFiltersUI()
     }
+  }
+
+  override fun showFilteredLogs(filteredLogs: List<LogEntry>) {
+    filteredLogListTableModel.setLogs(filteredLogs)
+    if (isAutoScrollActive) {
+      scrollToBottom()
+    }
+    if (filtersPanel?.activeFilterContextTag == presenter.filterContextTag) {
+      filtersPanel?.updateFiltersUI()
+    }
+  }
+
+  override fun showAvailableLogStreams(streams: Set<LogStream>) {
+    val showStreams = streams.size > 1
+    logRenderer.showStreams(showStreams)
+    logList.table.repaint()
+    filteredLogList.table.repaint()
+    mainView?.refreshMenuBar()
   }
 
   override fun showFilteringProgress(progress: Int) {
@@ -928,6 +1086,7 @@ class LiveLogViewImpl(
   override fun onThemeChanged() {
     updateLogFont()
     filtersPanel?.onThemeChanged()
+    updateBuffersCardStyle()
     if (currentDevices.isNotEmpty()) {
       populateDeviceList(currentDevices)
     }
@@ -937,6 +1096,32 @@ class LiveLogViewImpl(
   override fun requestFinish(doFinish: () -> Unit) {
     presenter.finishing()
     doFinish()
+  }
+}
+
+private class BuffersCardContainer(layout: WrapLayout) : JPanel(layout) {
+  init {
+    isOpaque = true
+    alignmentX = Component.CENTER_ALIGNMENT
+  }
+
+  override fun getPreferredSize(): Dimension {
+    val maxAllowed = UIScaleUtils.dip(DeviceListContainer.MAX_WIDTH)
+    val parentWidth = parent?.width ?: 0
+    val available = if (parentWidth > 0) parentWidth - UIScaleUtils.dip(32) else maxAllowed
+    val targetWidth = minOf(maxAllowed, maxOf(UIScaleUtils.dip(320), available))
+    val base = super.getPreferredSize()
+    return Dimension(targetWidth, base.height)
+  }
+
+  override fun getMinimumSize(): Dimension {
+    val pref = preferredSize
+    return Dimension(minOf(pref.width, UIScaleUtils.dip(320)), pref.height)
+  }
+
+  override fun getMaximumSize(): Dimension {
+    val pref = preferredSize
+    return Dimension(pref.width, pref.height)
   }
 }
 

@@ -114,7 +114,7 @@ class LiveLogPresenterTests {
       val entry1 = LogEntry("Entry 1", LogLevel.INFO, null, LogStream.MAIN)
       val entry2 = LogEntry("Entry 2", LogLevel.DEBUG, null, LogStream.MAIN)
       val streamDeferred = CompletableDeferred<Unit>()
-      `when`(mockStreamer.startStream(testDevice.serialNumber)).thenReturn(flow {
+      `when`(mockStreamer.startStream(testDevice.serialNumber, AdbLogStreamer.DEFAULT_BUFFERS)).thenReturn(flow {
         emit(entry1)
         emit(entry2)
         streamDeferred.await()
@@ -140,7 +140,7 @@ class LiveLogPresenterTests {
       assertTrue(presenter.isStreaming)
       assertEquals(testDevice, presenter.connectedDevice)
 
-      verify(mockStreamer).startStream(testDevice.serialNumber)
+      verify(mockStreamer).startStream(testDevice.serialNumber, AdbLogStreamer.DEFAULT_BUFFERS)
       verify(mockView).showStreamingStatus(I18n.get(I18n.LIVE_LOGS_STATUS_STREAMING), true)
       verify(mockRepo, atLeastOnce()).addLogEntries(anyList())
       verify(mockView, atLeastOnce()).showLogsBatch(batchResult)
@@ -155,7 +155,7 @@ class LiveLogPresenterTests {
   fun testStopStreaming() {
     runBlocking {
       val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-      `when`(mockStreamer.startStream(testDevice.serialNumber)).thenReturn(flow {
+      `when`(mockStreamer.startStream(testDevice.serialNumber, AdbLogStreamer.DEFAULT_BUFFERS)).thenReturn(flow {
         CompletableDeferred<Unit>().await()
       })
       val presenter = createPresenter(scope)
@@ -380,7 +380,7 @@ class LiveLogPresenterTests {
   fun testDisconnectDeviceReturnsToHub() {
     runBlocking {
       val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-      `when`(mockStreamer.startStream(testDevice.serialNumber)).thenReturn(flow {
+      `when`(mockStreamer.startStream(testDevice.serialNumber, AdbLogStreamer.DEFAULT_BUFFERS)).thenReturn(flow {
         CompletableDeferred<Unit>().await()
       })
       val presenter = createPresenter(scope)
@@ -394,6 +394,156 @@ class LiveLogPresenterTests {
       assertNull(presenter.connectedDevice)
       verify(mockStreamer).stopStream()
       verify(mockView).showDeviceScanning()
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testAvailableAndDefaultBuffers() {
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+    val presenter = createPresenter(scope)
+
+    assertEquals(AdbLogStreamer.ALL_BUFFERS, presenter.availableBuffers)
+    assertEquals(AdbLogStreamer.DEFAULT_BUFFERS, presenter.defaultBuffers)
+  }
+
+  @Test
+  fun testStartStreamingWithCustomBuffers() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val customBuffers = listOf("system", "events")
+      `when`(mockStreamer.startStream(testDevice.serialNumber, customBuffers)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice, customBuffers)
+
+      assertTrue(presenter.isStreaming)
+      verify(mockStreamer).startStream(testDevice.serialNumber, customBuffers)
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testResumeStreamingUsesLastStreamedBuffers() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val customBuffers = listOf("system", "events")
+      `when`(mockStreamer.startStream(testDevice.serialNumber, customBuffers)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice, customBuffers)
+      presenter.stopStreaming()
+
+      presenter.startStreaming(testDevice)
+
+      assertTrue(presenter.isStreaming)
+      verify(mockStreamer, times(2)).startStream(testDevice.serialNumber, customBuffers)
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testStartStreamingWithEmptyBuffersDoesNothing() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val presenter = createPresenter(scope)
+
+      presenter.startStreaming(testDevice, emptyList())
+
+      assertFalse(presenter.isStreaming)
+      verifyNoInteractions(mockStreamer)
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testAvailableStreamsInitializedFromBuffers() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val buffers = listOf("main", "events")
+      `when`(mockStreamer.startStream(testDevice.serialNumber, buffers)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice, buffers)
+
+      assertEquals(setOf(LogStream.MAIN, LogStream.EVENTS), presenter.availableStreams)
+      assertTrue(presenter.isStreamAllowed(LogStream.MAIN))
+      assertTrue(presenter.isStreamAllowed(LogStream.EVENTS))
+      verify(mockRepo).setAllowedStreams(setOf(LogStream.MAIN, LogStream.EVENTS))
+      verify(mockView).showAvailableLogStreams(setOf(LogStream.MAIN, LogStream.EVENTS))
+
+      presenter.finishing()
+    }
+  }
+
+  @Test
+  fun testSetStreamAllowedUpdatesRepoAndView() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val buffers = listOf("main", "events")
+      `when`(mockStreamer.startStream(testDevice.serialNumber, buffers)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+      val filteredList = listOf(LogEntry("test log", LogLevel.INFO, null, LogStream.MAIN))
+      `when`(mockRepo.filteredLogs).thenReturn(filteredList)
+
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice, buffers)
+
+      presenter.setStreamAllowed(LogStream.EVENTS, false)
+      assertFalse(presenter.isStreamAllowed(LogStream.EVENTS))
+      assertTrue(presenter.isStreamAllowed(LogStream.MAIN))
+      verify(mockRepo).setAllowedStreams(setOf(LogStream.MAIN))
+      verify(mockView).showFilteredLogs(filteredList)
+
+      // Re-enable EVENTS
+      presenter.setStreamAllowed(LogStream.EVENTS, true)
+      assertTrue(presenter.isStreamAllowed(LogStream.EVENTS))
+      verify(mockRepo, times(2)).setAllowedStreams(setOf(LogStream.MAIN, LogStream.EVENTS))
+
+      presenter.finishing()
+    }
+  }
+
+  @Test(expected = IllegalStateException::class)
+  fun testSetStreamAllowedForUnavailableStreamThrows() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val buffers = listOf("main")
+      `when`(mockStreamer.startStream(testDevice.serialNumber, buffers)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice, buffers)
+
+      presenter.setStreamAllowed(LogStream.RADIO, false)
+    }
+  }
+
+  @Test
+  fun testClearLogsResetsAvailableStreams() {
+    runBlocking {
+      val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+      val buffers = listOf("main", "system")
+      `when`(mockStreamer.startStream(testDevice.serialNumber, buffers)).thenReturn(flow {
+        CompletableDeferred<Unit>().await()
+      })
+
+      val presenter = createPresenter(scope)
+      presenter.startStreaming(testDevice, buffers)
+      assertEquals(2, presenter.availableStreams.size)
+
+      presenter.clearLogs()
+      assertTrue(presenter.availableStreams.isEmpty())
+      verify(mockView).showAvailableLogStreams(emptySet())
+
       presenter.finishing()
     }
   }
