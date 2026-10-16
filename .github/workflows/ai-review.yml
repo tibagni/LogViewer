@@ -32,5 +32,5 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_REF: ${{ github.base_ref }}
         run: |
-          python3 -m unittest discover -s scripts -p "test_*.py"
+          python3 -m unittest discover -s scripts/tests -p "test_*.py"
           python3 scripts/ai_pr_review.py

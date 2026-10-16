@@ -23,7 +23,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Run I18n script tests
-        run: python3 -m unittest discover -s scripts -p "test_*.py"
+        run: python3 -m unittest discover -s scripts/tests -p "test_*.py"
       - name: Validate I18n resource bundle
         run: python3 scripts/check_i18n.py --validate-bundle
       - name: Check for hardcoded UI strings in PR diff

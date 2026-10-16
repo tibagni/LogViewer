@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """Unit tests for check_i18n.py."""
 
+import sys
 import unittest
-from check_i18n import find_hardcoded_in_line, is_exempt
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.check_i18n import find_hardcoded_in_line, is_exempt
 
 
 class CheckI18nTests(unittest.TestCase):

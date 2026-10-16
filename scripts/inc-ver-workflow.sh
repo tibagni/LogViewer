@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Usage: ./inc-ver-workflow.sh <new-version>
-# Example: ./inc-ver-workflow.sh 2.8
+# Usage: ./scripts/inc-ver-workflow.sh <new-version>
+# Example: ./scripts/inc-ver-workflow.sh 2.8
 
 set -e
 

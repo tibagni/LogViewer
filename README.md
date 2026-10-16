@@ -60,7 +60,7 @@ To create a Pull Request instead of pushing directly to `master`, use the bundle
 1. Commit your changes locally.
 2. Run:
    ```bash
-   ./pr-workflow.sh <feature-branch-name>
+   ./scripts/pr-workflow.sh <feature-branch-name>
    ```
    This will create a new branch from your commits, push it to GitHub, automatically open a PR targeting `master` using your commit messages for the title and description, and switch back to your local `master`.
 
@@ -68,8 +68,8 @@ To create a Pull Request instead of pushing directly to `master`, use the bundle
 Deployments are handled via the [Release Deploy GitHub Action](https://github.com/tibagni/LogViewer/actions/workflows/deploy.yml):
 1. Run the version increment helper script:
    ```bash
-   ./inc-ver-workflow.sh <new-version>
-   # Example: ./inc-ver-workflow.sh 2.8
+   ./scripts/inc-ver-workflow.sh <new-version>
+   # Example: ./scripts/inc-ver-workflow.sh 2.8
    ```
    This validates the new version number, updates `app.properties`, creates the commit and tag, and pushes them to GitHub.
 2. On GitHub, navigate to the **Actions** tab ➔ **Release Deploy**.
