@@ -60,9 +60,19 @@ To create a Pull Request instead of pushing directly to `master`, use the bundle
 1. Commit your changes locally.
 2. Run:
    ```bash
+   # Create a new branch, push, open PR, and stay on the branch to continue iterating
    ./scripts/pr-workflow.sh <feature-branch-name>
+
+   # If already on a feature branch (or to be prompted when on master):
+   ./scripts/pr-workflow.sh
+
+   # Quick mode: create PR and immediately switch back to master and delete local branch
+   ./scripts/pr-workflow.sh --quick <branch-name>
+
+   # Open PR and watch CI / AI review checks live in terminal
+   ./scripts/pr-workflow.sh -w
    ```
-   This will create a new branch from your commits, push it to GitHub, automatically open a PR targeting `master` using your commit messages for the title and description, and switch back to your local `master`.
+   By default, the script pushes your commits, opens a PR targeting `master` (using your commit messages for the title and description), and keeps you on the branch so you can iterate on code review feedback. If a PR is already open for that branch, running the script pushes your latest updates to the existing PR.
 
 ## 🚀 Deploying a New Release
 Deployments are handled via the [Release Deploy GitHub Action](https://github.com/tibagni/LogViewer/actions/workflows/deploy.yml):
