@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.live
 
+import com.tibagni.logviewer.MainView
+import com.tibagni.logviewer.MainViewTab
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.adb.AdbDevice
@@ -10,6 +12,7 @@ import com.tibagni.logviewer.view.TriStateCheckbox
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogListTableModel
+import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.setupLogTableActions
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
@@ -50,21 +53,22 @@ import java.awt.event.MouseWheelListener
 import javax.swing.*
 import javax.swing.border.EmptyBorder
 
-interface LiveLogView : View {
-  val contentPane: JPanel
+interface LiveLogView : MainViewTab {
   val isStreaming: Boolean
   fun startStreaming(device: AdbDevice)
   fun stopStreaming()
-  fun attachFiltersPanel(panel: FiltersPanel)
-  fun onThemeChanged()
-  fun onTabSelected()
+  fun buildStreamsMenu(): JMenu?
 }
 
 class LiveLogViewImpl(
+  private val mainView: MainView? = null,
   // Allows tests to inject a mock presenter
   @VisibleForTesting
   presenterFactory: ((LiveLogPresenterView) -> LiveLogPresenter)? = null
 ) : LiveLogView, LiveLogPresenterView {
+
+  @VisibleForTesting
+  constructor(presenterFactory: (LiveLogPresenterView) -> LiveLogPresenter) : this(null, presenterFactory)
 
   private val rootCardLayout = CardLayout()
   override val contentPane: JPanel = JPanel(rootCardLayout)
@@ -75,6 +79,23 @@ class LiveLogViewImpl(
   override val isStreaming: Boolean get() = presenter.isStreaming
   override fun startStreaming(device: AdbDevice) = presenter.startStreaming(device)
   override fun stopStreaming() = presenter.stopStreaming()
+
+  override fun getMenus(): List<JMenu> = listOfNotNull(buildStreamsMenu())
+
+  override fun buildStreamsMenu(): JMenu? {
+    val streams = presenter.availableStreams
+    if (streams.size <= 1) return null
+
+    val streamsMenu = JMenu(I18n.get(I18n.MENU_STREAMS))
+    for (stream in streams) {
+      val item = JCheckBoxMenuItem(stream.toString()).apply {
+        state = presenter.isStreamAllowed(stream)
+        addItemListener { presenter.setStreamAllowed(stream, isSelected) }
+      }
+      streamsMenu.add(item)
+    }
+    return streamsMenu
+  }
 
   private lateinit var mainSplitPane: JSplitPane
   private var filtersPanel: FiltersPanel? = null
@@ -107,7 +128,7 @@ class LiveLogViewImpl(
   @VisibleForTesting internal lateinit var filteredLogList: SearchableTable
   @VisibleForTesting internal lateinit var logListTableModel: LogListTableModel
   @VisibleForTesting internal lateinit var filteredLogListTableModel: LogListTableModel
-  private val logRenderer: LogCellRenderer = LogCellRenderer()
+  @VisibleForTesting internal val logRenderer: LogCellRenderer = LogCellRenderer()
 
   private val userPrefs: LogViewerPreferences = ServiceLocator.logViewerPrefs
 
@@ -922,6 +943,24 @@ class LiveLogViewImpl(
     if (filtersPanel?.activeFilterContextTag == presenter.filterContextTag) {
       filtersPanel?.updateFiltersUI()
     }
+  }
+
+  override fun showFilteredLogs(filteredLogs: List<LogEntry>) {
+    filteredLogListTableModel.setLogs(filteredLogs)
+    if (isAutoScrollActive) {
+      scrollToBottom()
+    }
+    if (filtersPanel?.activeFilterContextTag == presenter.filterContextTag) {
+      filtersPanel?.updateFiltersUI()
+    }
+  }
+
+  override fun showAvailableLogStreams(streams: Set<LogStream>) {
+    val showStreams = streams.size > 1
+    logRenderer.showStreams(showStreams)
+    logList.table.repaint()
+    filteredLogList.table.repaint()
+    mainView?.refreshMenuBar()
   }
 
   override fun showFilteringProgress(progress: Int) {

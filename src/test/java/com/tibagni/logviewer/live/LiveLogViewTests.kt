@@ -571,4 +571,73 @@ class LiveLogViewTests {
     startBtn.doClick()
     verify(mockPresenter).startStreaming(testDevice, listOf("main"))
   }
+
+  @Test
+  fun testShowAvailableLogStreamsTogglesRendererAndCallsRefreshMenuBar() {
+    val mockMainView = mock(com.tibagni.logviewer.MainView::class.java)
+    val liveLogView = LiveLogViewImpl(mockMainView) { mockPresenter }
+
+    // With 1 stream, streams indicator should not be shown
+    liveLogView.showAvailableLogStreams(setOf(LogStream.MAIN))
+    val layout = liveLogView.logRenderer.layout as java.awt.BorderLayout
+    assertNull(layout.getLayoutComponent(java.awt.BorderLayout.LINE_END))
+    verify(mockMainView).refreshMenuBar()
+
+    // With 2+ streams, streams indicator should be shown
+    liveLogView.showAvailableLogStreams(setOf(LogStream.MAIN, LogStream.SYSTEM))
+    assertNotNull(layout.getLayoutComponent(java.awt.BorderLayout.LINE_END))
+    verify(mockMainView, times(2)).refreshMenuBar()
+  }
+
+  @Test
+  fun testBuildStreamsMenu() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+
+    // When 0 or 1 streams available, menu is null
+    `when`(mockPresenter.availableStreams).thenReturn(setOf(LogStream.MAIN))
+    assertNull(liveLogView.buildStreamsMenu())
+
+    // When 2 streams available, menu is created
+    `when`(mockPresenter.availableStreams).thenReturn(setOf(LogStream.MAIN, LogStream.SYSTEM))
+    `when`(mockPresenter.isStreamAllowed(LogStream.MAIN)).thenReturn(true)
+    `when`(mockPresenter.isStreamAllowed(LogStream.SYSTEM)).thenReturn(false)
+
+    val menu = liveLogView.buildStreamsMenu()
+    assertNotNull(menu)
+    assertEquals(2, menu!!.itemCount)
+
+    val item0 = menu.getItem(0) as javax.swing.JCheckBoxMenuItem
+    val item1 = menu.getItem(1) as javax.swing.JCheckBoxMenuItem
+
+    assertEquals(LogStream.MAIN.toString(), item0.text)
+    assertTrue(item0.state)
+    assertEquals(LogStream.SYSTEM.toString(), item1.text)
+    assertFalse(item1.state)
+
+    // Toggling item triggers presenter
+    item0.doClick()
+    verify(mockPresenter).setStreamAllowed(LogStream.MAIN, false)
+  }
+
+  @Test
+  fun testShowFilteredLogsUpdatesTableModel() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val entry1 = LogEntry("line 1", LogLevel.INFO, null, LogStream.MAIN)
+    val entry2 = LogEntry("line 2", LogLevel.DEBUG, null, LogStream.SYSTEM)
+
+    liveLogView.showFilteredLogs(listOf(entry1, entry2))
+    assertEquals(2, liveLogView.filteredLogListTableModel.rowCount)
+    assertEquals(entry1, liveLogView.filteredLogListTableModel.getEntry(0))
+    assertEquals(entry2, liveLogView.filteredLogListTableModel.getEntry(1))
+  }
+
+  @Test
+  fun testGetMenusIncludesStreamsMenu() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    `when`(mockPresenter.availableStreams).thenReturn(setOf(LogStream.MAIN, LogStream.SYSTEM))
+
+    val menus = liveLogView.getMenus()
+    assertEquals(1, menus.size)
+    assertEquals(2, menus[0].itemCount)
+  }
 }

@@ -122,17 +122,8 @@ object LogLineParser {
   fun extractLogStreamFromBeginningOfLine(line: String): LogStream? {
     if (!line.startsWith("--------- beginning of")) return null
     val target = line.removePrefix("--------- beginning of").trim().substringAfterLast('/').trimEnd(':')
-    return when (target.lowercase()) {
-      "main", "crash" -> LogStream.MAIN
-      "system" -> LogStream.SYSTEM
-      "radio" -> LogStream.RADIO
-      "events" -> LogStream.EVENTS
-      "kernel" -> LogStream.KERNEL
-      else -> {
-        val inferred = LogStream.inferLogStreamFromName(target)
-        if (inferred != LogStream.UNKNOWN) inferred else null
-      }
-    }
+    val stream = LogStream.fromBuffer(target)
+    return if (stream != LogStream.UNKNOWN) stream else null
   }
 
   @JvmStatic

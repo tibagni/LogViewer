@@ -16,12 +16,11 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 
-interface BugReportView : View {
-  val contentPane: JPanel
+import com.tibagni.logviewer.MainViewTab
 
+interface BugReportView : MainViewTab {
   fun onBugReportLoaded(bugreportPath: String, bugreportText: String)
   fun onBugReportClosed()
-  fun onThemeChanged()
 }
 
 interface BugReportPresenterView : AsyncPresenter.AsyncPresenterView {

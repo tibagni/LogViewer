@@ -25,6 +25,25 @@ public enum LogStream {
     logNamesMap.put(KERNEL, kernelLogNames);
   }
 
+  public static LogStream fromBuffer(String buffer) {
+    if (buffer == null) return UNKNOWN;
+    switch (buffer.toLowerCase()) {
+      case "main":
+      case "crash":
+        return MAIN;
+      case "system":
+        return SYSTEM;
+      case "radio":
+        return RADIO;
+      case "events":
+        return EVENTS;
+      case "kernel":
+        return KERNEL;
+      default:
+        return inferLogStreamFromName(buffer);
+    }
+  }
+
   public static LogStream inferLogStreamFromName(String logName) {
     for (LogStream stream : logNamesMap.keySet()) {
       String[] possibilities = logNamesMap.get(stream);
