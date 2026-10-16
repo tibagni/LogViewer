@@ -280,6 +280,43 @@ Looks great!
         self.assertEqual(model, "gemini-3.8-flash")
         mock_sleep.assert_called_once()
 
+    @patch("scripts.ai_pr_review.get_available_models", return_value=("v1beta", ["gemini-3.8-flash", "gemini-3.5-flash"]))
+    @patch("urllib.request.urlopen")
+    def test_call_llm_api_falls_back_on_429(self, mock_urlopen, mock_models):
+        import urllib.error
+        import io
+
+        error_429 = urllib.error.HTTPError(
+            url="http://example.com",
+            code=429,
+            msg="Too Many Requests",
+            hdrs={},
+            fp=io.BytesIO(b'{"error": {"message": "Resource exhausted: quota exceeded"}}')
+        )
+
+        mock_success = MagicMock()
+        mock_success.read.return_value = json.dumps({
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Success on second model!"}]
+                    }
+                }
+            ]
+        }).encode("utf-8")
+
+        mock_success_cm = MagicMock()
+        mock_success_cm.__enter__.return_value = mock_success
+
+        # First model fails with 429, second model succeeds
+        mock_urlopen.side_effect = [error_429, mock_success_cm]
+
+        text, model = ai_review.call_llm_api(
+            "dummy_key", "prompt here", preferred_model="gemini-3.8-flash"
+        )
+        self.assertEqual(text, "Success on second model!")
+        self.assertEqual(model, "gemini-3.5-flash")
+
     @patch("subprocess.run")
     def test_find_existing_comment_found_primary_marker(self, mock_run):
         comments_json = json.dumps([

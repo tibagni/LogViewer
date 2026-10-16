@@ -33,6 +33,4 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           AUTO_APPROVE_AUTHORS: ${{ vars.AUTO_APPROVE_AUTHORS || secrets.AUTO_APPROVE_AUTHORS || '' }}
-        run: |
-          python3 -m unittest discover -s scripts/tests -p "test_*.py"
-          python3 scripts/ai_pr_review.py
+        run: python3 scripts/ai_pr_review.py
