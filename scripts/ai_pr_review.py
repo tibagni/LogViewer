@@ -28,6 +28,10 @@ Available CLI options:
   --verbose, -v      Print the full assembled prompt to stdout before calling the LLM
   --pr <number>      Review a specific GitHub PR by number (uses `gh pr diff` and `gh pr view`)
   --base <branch>    Base branch to diff against (default: from env or 'master')
+  --model <name>     Preferred model name (e.g. 'gemini-flash-latest', 'gemini-flash-lite-latest')
+  --author <login>   PR author username (default: from PR_AUTHOR env or gh pr view)
+  --auto-approve-authors <logins>
+                     Comma-separated GitHub usernames eligible for auto-approval on LGTM
   --env-file <path>  Path to local env file (default: '.env')
 ================================================================================
 """
@@ -41,7 +45,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 PRIMARY_COMMENT_MARKER = "<!-- ai-code-review -->"
 RECOGNIZED_COMMENT_MARKERS = ("<!-- ai-code-review -->", "<!-- gemini-code-review -->")
@@ -254,6 +258,40 @@ def filter_inline_comments(
     return valid, discarded
 
 
+def parse_auto_approve_authors(raw: Optional[str]) -> Set[str]:
+    """Parses a comma- or whitespace-separated list of GitHub usernames into a lowercase set."""
+    if not raw:
+        return set()
+    parts = re.split(r"[,\s]+", raw.strip())
+    return {p.strip().lower() for p in parts if p.strip()}
+
+
+def is_verdict_lgtm(review_text: str) -> bool:
+    """Checks if the review verdict indicates approval (LGTM or LGTM with Suggestions).
+
+    Returns True if verdict contains LGTM and does not indicate Needs Work.
+    """
+    verdict_match = re.search(
+        r"(?:###|\*\*|##)?\s*(?:\d+\.\s*)?Overall Verdict[:\s]*([\s\S]*?)(?=(?:###|\*\*|##\s+[A-Za-z]|\n\n\d+\.|\Z))",
+        review_text,
+        re.IGNORECASE
+    )
+    if not verdict_match:
+        return False
+
+    target = verdict_match.group(1)
+
+    # If the verdict explicitly contains "needs work", do not approve
+    if re.search(r"\bneeds\s+work\b", target, re.IGNORECASE):
+        return False
+
+    # If the verdict contains "lgtm" (matches both "LGTM" and "LGTM with Suggestions")
+    if re.search(r"\blgtm\b", target, re.IGNORECASE):
+        return True
+
+    return False
+
+
 def get_git_diff(base_ref: str) -> str:
     """Extracts git diff against origin/<base_ref>, filtering out binary/asset files."""
     try:
@@ -311,8 +349,8 @@ def get_pr_diff(pr_number: str) -> str:
 
 
 def get_pr_metadata(pr_number: str) -> Dict:
-    """Fetches PR metadata (title, body, commits, human discussion, headRefOid) via GitHub CLI."""
-    cmd = ["gh", "pr", "view", str(pr_number), "--json", "title,body,commits,comments,headRefOid"]
+    """Fetches PR metadata (title, body, commits, human discussion, headRefOid, author) via GitHub CLI."""
+    cmd = ["gh", "pr", "view", str(pr_number), "--json", "title,body,commits,comments,headRefOid,author"]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         data = json.loads(res.stdout)
@@ -605,18 +643,23 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
         print("Review comment posted successfully.")
 
 
-def post_inline_review_comments(
+def post_pull_request_review(
     pr_number: str,
     repo: str,
-    commit_sha: str,
-    inline_comments: List[Dict]
+    commit_sha: Optional[str],
+    body: str,
+    event: str = "COMMENT",
+    inline_comments: Optional[List[Dict]] = None
 ) -> bool:
-    """Posts inline comments on the pull request diff via GitHub Reviews API."""
-    review_payload = {
-        "commit_id": commit_sha,
-        "body": "### 🤖 AI Code Review (Inline Feedback)\nSee inline suggestions on modified lines below.",
-        "event": "COMMENT",
-        "comments": [
+    """Submits a pull request review (APPROVE or COMMENT) with optional inline comments."""
+    review_payload: Dict[str, Any] = {
+        "event": event,
+        "body": body,
+    }
+    if commit_sha:
+        review_payload["commit_id"] = commit_sha
+    if inline_comments:
+        review_payload["comments"] = [
             {
                 "path": c["path"],
                 "line": c["line"],
@@ -625,8 +668,8 @@ def post_inline_review_comments(
             }
             for c in inline_comments
         ]
-    }
-    data = json.dumps(review_payload).encode("utf-8")
+
+    data = json.dumps(review_payload)
     cmd = [
         "gh", "api",
         "--method", "POST",
@@ -634,12 +677,40 @@ def post_inline_review_comments(
         "--input", "-"
     ]
     try:
-        subprocess.run(cmd, input=data, check=True)
-        print(f"Successfully posted {len(inline_comments)} inline review comments on commit {commit_sha[:7]}.")
+        subprocess.run(cmd, input=data, capture_output=True, text=True, check=True)
+        action_desc = "approved pull request" if event == "APPROVE" else (
+            f"posted {len(inline_comments)} inline review comments" if inline_comments else "submitted review"
+        )
+        print(f"Successfully {action_desc} on PR #{pr_number}.")
         return True
-    except Exception as e:
-        print(f"Warning: Failed to post inline review comments: {e}")
+    except subprocess.CalledProcessError as e:
+        err_msg = (e.stderr or e.stdout or str(e)).strip()
+        print(f"Warning: Failed to submit PR review (event={event}): {err_msg}")
+        if event == "APPROVE":
+            print("💡 Tip: To enable automatic PR approvals, ensure 'Allow GitHub Actions to create and approve pull requests' is enabled in repo Settings -> Actions -> General.")
         return False
+    except Exception as e:
+        print(f"Warning: Failed to submit PR review: {e}")
+        return False
+
+
+def post_inline_review_comments(
+    pr_number: str,
+    repo: str,
+    commit_sha: str,
+    inline_comments: List[Dict],
+    event: str = "COMMENT",
+    body: str = "### 🤖 AI Code Review (Inline Feedback)\nSee inline suggestions on modified lines below."
+) -> bool:
+    """Posts inline comments on the pull request diff via GitHub Reviews API."""
+    return post_pull_request_review(
+        pr_number=pr_number,
+        repo=repo,
+        commit_sha=commit_sha,
+        body=body,
+        event=event,
+        inline_comments=inline_comments
+    )
 
 
 def log_to_step_summary(review_text: str) -> None:
@@ -687,6 +758,18 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         type=str,
         default=None,
         help="Preferred model name (e.g. 'gemini-flash-latest' or 'gemini-flash-lite-latest')."
+    )
+    parser.add_argument(
+        "--author",
+        type=str,
+        default=None,
+        help="PR author username (default: from PR_AUTHOR env or gh pr view)."
+    )
+    parser.add_argument(
+        "--auto-approve-authors",
+        type=str,
+        default=None,
+        help="Comma-separated GitHub usernames eligible for auto-approval on LGTM (default: from AUTO_APPROVE_AUTHORS env)."
     )
     parser.add_argument(
         "--env-file",
@@ -784,6 +867,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     if discarded_inline:
         print(f"Notice: Omitted {len(discarded_inline)} inline comments because target lines were outside diff hunks.")
 
+    auto_approve_authors = parse_auto_approve_authors(
+        args.auto_approve_authors or os.environ.get("AUTO_APPROVE_AUTHORS")
+    )
+    pr_author = (
+        args.author or
+        meta.get("author", {}).get("login", "").strip() or
+        os.environ.get("PR_AUTHOR", "").strip()
+    )
+    is_lgtm = is_verdict_lgtm(clean_review_text)
+    can_auto_approve = bool(
+        pr_author and
+        pr_author.lower() in auto_approve_authors and
+        is_lgtm
+    )
+
     model_attribution = f" (`{model_used}`)" if model_used else ""
     formatted_review = f"""### 🤖 AI Code Review
 
@@ -806,6 +904,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"\n⚠️ Discarded Inline Comments (Outside diff hunks - {len(discarded_inline)}):")
             for c in discarded_inline:
                 print(f"  • {c['path']}:{c['line']} -> {c['body']}")
+        if can_auto_approve:
+            print(f"\n🎉 Auto-Approval Check: Author '{pr_author}' matches AUTO_APPROVE_AUTHORS and verdict is LGTM.")
+            print(f"   [DRY RUN] Would submit PR review with event: APPROVE")
+        elif pr_author and pr_author.lower() in auto_approve_authors:
+            print(f"\n⚠️ Auto-Approval Check: Author '{pr_author}' matches AUTO_APPROVE_AUTHORS, but verdict is not LGTM. Skipping approval.")
+        elif auto_approve_authors:
+            print(f"\nℹ️ Auto-Approval Check: Author '{pr_author or 'unknown'}' is not in AUTO_APPROVE_AUTHORS ({auto_approve_authors}). Skipping approval.")
         print("=" * 80)
         return 0
 
@@ -819,8 +924,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     # 1. ALWAYS post or update the single persistent top-level review comment in the conversation timeline
     post_or_update_review_comment(pr_number, repo, formatted_review)
 
-    # 2. If there are valid inline comments and a commit SHA, post inline comments to the diff
-    if valid_inline and head_sha:
+    # 2. If eligible for auto-approval, submit a Pull Request Review with event APPROVE
+    if can_auto_approve:
+        approval_body = (
+            f"### 🤖 AI Code Review (Approved)\n\n"
+            f"Approved pull request based on automated review verdict (LGTM).\n\n"
+            f"*Reviewed by AI{model_attribution} using {source_description}.*"
+        )
+        post_pull_request_review(
+            pr_number=pr_number,
+            repo=repo,
+            commit_sha=head_sha,
+            body=approval_body,
+            event="APPROVE",
+            inline_comments=valid_inline if valid_inline else None
+        )
+    elif valid_inline and head_sha:
+        # If there are valid inline comments and a commit SHA, post inline comments to the diff
         post_inline_review_comments(pr_number, repo, head_sha, valid_inline)
 
     return 0
