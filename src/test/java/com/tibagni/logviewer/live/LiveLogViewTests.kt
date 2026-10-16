@@ -13,6 +13,7 @@ import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import java.awt.Color
 import com.tibagni.logviewer.filter.FiltersPresenter
+import com.tibagni.logviewer.filter.FiltersView
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
@@ -31,7 +32,14 @@ import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import javax.swing.JSplitPane
 
+import com.tibagni.logviewer.filter.FilterContextTag
+
 class LiveLogViewTests {
+
+  companion object {
+    private val testTag = FilterContextTag.register("test_live_log_view_tag")
+    private val otherTag = FilterContextTag.register("test_other_tag")
+  }
 
   private val testDevice = AdbDevice(
     serialNumber = "device_123",
@@ -58,6 +66,7 @@ class LiveLogViewTests {
   fun setUp() {
     MockitoAnnotations.initMocks(this)
     `when`(mockHost.parentWindow).thenReturn(mockFrame)
+    `when`(mockPresenter.filterContextTag).thenReturn(testTag)
   }
 
   @Test
@@ -450,5 +459,68 @@ class LiveLogViewTests {
     // Collapse
     liveLogView.sidePanel.toggleExpandBtn?.doClick()
     assertFalse(liveLogView.isSidePanelExpanded)
+  }
+
+  private class TestFiltersPanel(host: FiltersPanelHost, presenterFactory: (FiltersView) -> FiltersPresenter) :
+    FiltersPanel(host, presenterFactory) {
+    var updateCount = 0
+    override fun updateFiltersUI() {
+      updateCount++
+    }
+  }
+
+  @Test
+  fun testAttachFiltersPanelCallsUpdateFiltersUI() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val testPanel = TestFiltersPanel(mockHost) { mockFiltersPresenter }
+
+    liveLogView.attachFiltersPanel(testPanel)
+
+    assertEquals(1, testPanel.updateCount)
+    assertEquals(testTag, testPanel.activeFilterContextTag)
+  }
+
+  @Test
+  fun testShowLogsBatchUpdatesFiltersUIInLiveLogsContext() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val testPanel = TestFiltersPanel(mockHost) { mockFiltersPresenter }
+    liveLogView.attachFiltersPanel(testPanel)
+    testPanel.updateCount = 0
+
+    val entry = LogEntry("line 1", LogLevel.INFO, null)
+    val batch = LiveLogBatch(
+      newAllLogs = listOf(entry),
+      newFilteredLogs = listOf(entry),
+      evictedAllCount = 0,
+      evictedFilteredCount = 0
+    )
+
+    liveLogView.showLogsBatch(batch)
+
+    assertEquals(1, testPanel.updateCount)
+
+    // When panel is switched to another context tag, should NOT update UI for live batches
+    testPanel.activeFilterContextTag = otherTag
+    testPanel.updateCount = 0
+
+    liveLogView.showLogsBatch(batch)
+
+    assertEquals(0, testPanel.updateCount)
+  }
+
+  @Test
+  fun testShowAllLogsUpdatesFiltersUIInLiveLogsContext() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val testPanel = TestFiltersPanel(mockHost) { mockFiltersPresenter }
+    liveLogView.attachFiltersPanel(testPanel)
+    testPanel.updateCount = 0
+
+    liveLogView.showAllLogs(emptyList(), emptyList())
+    assertEquals(1, testPanel.updateCount)
+
+    testPanel.activeFilterContextTag = otherTag
+    testPanel.updateCount = 0
+    liveLogView.showAllLogs(emptyList(), emptyList())
+    assertEquals(0, testPanel.updateCount)
   }
 }

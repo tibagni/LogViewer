@@ -2,6 +2,7 @@ package com.tibagni.logviewer.live
 
 import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogStream
@@ -60,7 +61,7 @@ class LiveLogsRepositoryTests {
     assertEquals(1, repo.filteredLogsCount)
     assertNull(entry1.appliedFilter)
     assertSame(filter, entry2.appliedFilter)
-    assertEquals(1, filter.temporaryInfo.totalLinesFound)
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
     assertEquals(entry2, repo.filteredLogs[0])
   }
 
@@ -75,8 +76,8 @@ class LiveLogsRepositoryTests {
     repo.addLogEntry(entry)
 
     assertSame(filter1, entry.appliedFilter)
-    assertEquals(1, filter1.temporaryInfo.totalLinesFound)
-    assertEquals(1, filter2.temporaryInfo.totalLinesFound)
+    assertEquals(1, filter1.getContext(repo.filterContextTag)?.totalLinesFound)
+    assertEquals(1, filter2.getContext(repo.filterContextTag)?.totalLinesFound)
     assertEquals(1, repo.filteredLogsCount)
   }
 
@@ -127,14 +128,14 @@ class LiveLogsRepositoryTests {
 
     assertEquals(2, repo.allLogsCount)
     assertEquals(1, repo.filteredLogsCount)
-    assertEquals(1, filter.temporaryInfo.totalLinesFound)
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
 
     // e3 causes e1 to be evicted from allLogs AND filteredLogs
     val batch3 = repo.addLogEntry(e3)
 
     assertEquals(2, repo.allLogsCount)
     assertEquals(0, repo.filteredLogsCount)
-    assertEquals(0, filter.temporaryInfo.totalLinesFound)
+    assertEquals(0, filter.getContext(repo.filterContextTag)?.totalLinesFound)
     assertEquals(1, batch3.evictedAllCount)
     assertEquals(1, batch3.evictedFilteredCount)
   }
@@ -158,7 +159,7 @@ class LiveLogsRepositoryTests {
     assertSame(filter, e2.appliedFilter)
     assertNull(e1.appliedFilter)
     assertNull(e3.appliedFilter)
-    assertEquals(1, filter.temporaryInfo.totalLinesFound)
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
   }
 
   @Test
@@ -184,7 +185,7 @@ class LiveLogsRepositoryTests {
     assertEquals(0, repo.droppedLogsCount)
     assertEquals(0, repo.visibleLogsOffset)
     assertTrue(repo.availableStreams.isEmpty())
-    assertEquals(0, filter.temporaryInfo.totalLinesFound)
+    assertEquals(0, filter.getContext(repo.filterContextTag)?.totalLinesFound)
   }
 
   @Test
@@ -237,5 +238,37 @@ class LiveLogsRepositoryTests {
 
     assertNull(e1.appliedFilter)
     assertEquals(0, repo.filteredLogsCount)
+  }
+
+  companion object {
+    private val OTHER_TAG = FilterContextTag.register("test_repo_static_logs")
+  }
+
+  @Test
+  fun testLiveLogsRepositoryUsesLiveLogsContextAndPreservesLogsContext() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 100)
+    val filter = createFilter("ErrorFilter", "error")
+
+    // Set up other context with existing static file data
+    val otherContext = filter.initContext(OTHER_TAG)
+    otherContext.incrementLineCount(LogStream.MAIN)
+    assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
+
+    // Apply filter in repo (filterContextTag context)
+    repo.setLiveFilters(listOf(filter))
+    assertNotNull(filter.getContext(repo.filterContextTag))
+    assertEquals(0, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+
+    // Ingest streaming line
+    repo.addLogEntry(createEntry("stream line with error"))
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+
+    // Crucially: other context was NEVER touched or clobbered
+    assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
+
+    // Clearing repo clears repo's context, not other
+    repo.clear()
+    assertEquals(0, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+    assertEquals(1, filter.getContext(OTHER_TAG)?.totalLinesFound)
   }
 }

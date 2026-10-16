@@ -16,6 +16,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.awt.*
@@ -122,6 +123,7 @@ class SearchableTable @JvmOverloads constructor(
     }
 
     searchRequest
+      .drop(1)
       .debounce { request ->
         if (request.text.isBlank()) 0L else SEARCH_DEBOUNCE_MS
       }

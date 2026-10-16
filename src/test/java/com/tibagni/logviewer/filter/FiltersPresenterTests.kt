@@ -560,16 +560,34 @@ class FiltersPresenterTests {
     verify(mockFiltersRepository).persistGroup(file, "Group1")
   }
 
+  companion object {
+    private val TEST_TAG = FilterContextTag.register("test_filters_presenter_tag")
+  }
+
   @Test
-  fun testApplyFiltersCleansUpTemporaryInfoAndNotifies() {
+  fun testApplyFiltersCleansUpContextAndNotifies() {
+    `when`(view.activeFilterContextTag).thenReturn(TEST_TAG)
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.initTemporaryInfo()
-    assertNotNull(f.temporaryInfo)
+    f.initContext(TEST_TAG)
+    assertNotNull(f.getContext(TEST_TAG))
     openedFilters["Group1"] = mutableListOf(f)
 
     presenter.applyFilters()
 
-    assertNull(f.temporaryInfo)
+    assertNull(f.getContext(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied()
+  }
+
+  @Test
+  fun testApplyFiltersDoesNotCleanUpContextWhenTagIsNull() {
+    `when`(view.activeFilterContextTag).thenReturn(null)
+    val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
+    f.initContext(TEST_TAG)
+    openedFilters["Group1"] = mutableListOf(f)
+
+    presenter.applyFilters()
+
+    assertNotNull(f.getContext(TEST_TAG))
     verify(mockFiltersRepository).notifyFiltersApplied()
   }
 }

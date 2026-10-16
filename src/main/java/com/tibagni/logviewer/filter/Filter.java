@@ -22,7 +22,7 @@ public class Filter {
   private LogLevel verbosity = LogLevel.VERBOSE;
   private Pattern pattern;
   private int flags = Pattern.CASE_INSENSITIVE;
-  private ContextInfo temporaryInfo;
+  private final Map<FilterContextTag, ContextInfo> contexts = new ConcurrentHashMap<>();
   private boolean isSimpleFilter;
 
   // Cache the pattern string and the case sensitive flag
@@ -32,7 +32,7 @@ public class Filter {
 
   public boolean wasLoadedFromLegacyFile = false;
 
-  // We intentionally don't copy the temporary info as it is temporary
+  // We intentionally don't copy the contexts as they are runtime-specific
   // We intentionally don't copy 'wasLoadedFromLegacyFile' as the copied filter would not have been loaded from a file
   @SuppressWarnings("CopyConstructorMissesField")
   public Filter(Filter from) throws FilterException {
@@ -142,16 +142,26 @@ public class Filter {
     return pattern;
   }
 
-  public ContextInfo getTemporaryInfo() {
-    return temporaryInfo;
+  public ContextInfo initContext(FilterContextTag tag) {
+    Objects.requireNonNull(tag, "tag must not be null");
+    ContextInfo info = new ContextInfo();
+    contexts.put(tag, info);
+    return info;
   }
 
-  public void resetTemporaryInfo() {
-    this.temporaryInfo = null;
+  public ContextInfo getContext(FilterContextTag tag) {
+    if (tag == null) return null;
+    return contexts.get(tag);
   }
 
-  public void initTemporaryInfo() {
-    temporaryInfo = new ContextInfo();
+  public void resetContext(FilterContextTag tag) {
+    if (tag != null) {
+      contexts.remove(tag);
+    }
+  }
+
+  public void resetAllContexts() {
+    contexts.clear();
   }
 
   public boolean isCaseSensitive() {
@@ -217,12 +227,11 @@ public class Filter {
     return flags == filter.flags &&
         Objects.equals(name, filter.name) &&
         Objects.equals(color, filter.color) &&
-        Objects.equals(getPatternString(), filter.getPatternString()) &&
-        Objects.equals(temporaryInfo, filter.temporaryInfo);
+        Objects.equals(getPatternString(), filter.getPatternString());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, color, pattern, flags, temporaryInfo);
+    return Objects.hash(name, color, getPatternString(), flags);
   }
 }

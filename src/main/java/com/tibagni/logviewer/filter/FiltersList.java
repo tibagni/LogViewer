@@ -28,8 +28,17 @@ public class FiltersList extends JPanel {
   private FiltersListener listener;
   private Map<String, Filter[]> filters;
   private Map<String, FilterUIGroup> filterUIGroups;
+  private FilterContextTag activeFilterContextTag;
   private final LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
   private final LogViewerPreferences userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+
+  public void setActiveFilterContextTag(FilterContextTag activeFilterContextTag) {
+    this.activeFilterContextTag = activeFilterContextTag;
+  }
+
+  public FilterContextTag getActiveFilterContextTag() {
+    return activeFilterContextTag;
+  }
 
   public FiltersList(LayoutManager layout, boolean isDoubleBuffered) {
     super(layout, isDoubleBuffered);
@@ -307,7 +316,7 @@ public class FiltersList extends JPanel {
 
       setLayout(new BorderLayout());
 
-      cellRenderer = new FilterCellRenderer();
+      cellRenderer = new FilterCellRenderer(FiltersList.this::getActiveFilterContextTag);
       hideGroupBtn = new FlatButton(HIDE);
 
       prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);

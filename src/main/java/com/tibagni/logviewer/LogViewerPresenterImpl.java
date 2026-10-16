@@ -2,6 +2,7 @@ package com.tibagni.logviewer;
 
 import com.tibagni.logviewer.filter.ContextInfo;
 import com.tibagni.logviewer.filter.Filter;
+import com.tibagni.logviewer.filter.FilterContextTag;
 import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
@@ -25,8 +26,9 @@ import java.util.function.Predicate;
 import static com.tibagni.logviewer.logger.ProfilerKt.wrapProfiler;
 
 public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerPresenter, FiltersRepository.Listener {
-  private final LogViewerPresenterView view;
+  public static final FilterContextTag FILTER_CONTEXT_TAG = FilterContextTag.register("logs");
 
+  private final LogViewerPresenterView view;
   private final List<LogEntry> filteredLogs;
   private final List<LogEntry> cachedAllowedFilteredLogs;
 
@@ -52,6 +54,11 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     cachedAllowedFilteredLogs = new ArrayList<>();
     filteredLogs = new ArrayList<>();
     allowedStreamsMap = new HashMap<>();
+  }
+
+  @Override
+  public FilterContextTag getFilterContextTag() {
+    return FILTER_CONTEXT_TAG;
   }
 
   @Override
@@ -312,7 +319,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     doAsync(() -> {
       filteredLogs.clear();
       filteredLogs.addAll(Filters.applyMultipleFilters(
-          logsRepository.getCurrentlyOpenedLogs(), toApply.toArray(new Filter[0]), this::updateAsyncProgress));
+          logsRepository.getCurrentlyOpenedLogs(), toApply.toArray(new Filter[0]), FILTER_CONTEXT_TAG, this::updateAsyncProgress));
       cachedAllowedFilteredLogs.clear();
       cachedAllowedFilteredLogs.addAll(excludeNonAllowedStreams(filteredLogs));
       updateFiltersContextInfo();
@@ -344,7 +351,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     }
 
     forEachFilter(filter -> {
-      ContextInfo filterTemporaryInfo = filter.getTemporaryInfo();
+      ContextInfo filterTemporaryInfo = filter.getContext(FILTER_CONTEXT_TAG);
       if (filterTemporaryInfo != null) {
         filterTemporaryInfo.setAllowedStreams(allowedStreams);
       }
@@ -554,7 +561,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   private void cleanUpFilterTempInfo() {
-    forEachFilter(Filter::resetTemporaryInfo);
+    forEachFilter(filter -> filter.resetContext(FILTER_CONTEXT_TAG));
   }
 
   private void forEachFilter(Consumer<Filter> consumer) {

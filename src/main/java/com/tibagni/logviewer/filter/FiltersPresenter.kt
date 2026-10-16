@@ -25,6 +25,8 @@ interface FiltersView {
   fun showErrorMessage(message: String?)
   fun showToast(message: String)
   fun onAppliedFiltersRemembered()
+  val activeFilterContextTag: FilterContextTag?
+    get() = null
 }
 
 interface FiltersPresenter {
@@ -389,7 +391,8 @@ class FiltersPresenterImpl(
   }
 
   private fun cleanUpFilterTempInfo() {
-    filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.resetTemporaryInfo() }
+    val tag = view.activeFilterContextTag ?: return
+    filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.resetContext(tag) }
   }
 
   private fun checkForUnsavedChanges() {

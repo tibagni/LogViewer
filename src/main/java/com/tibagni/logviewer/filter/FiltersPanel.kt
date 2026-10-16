@@ -35,7 +35,7 @@ interface FiltersPanelHost {
   fun showOpenMultipleFiltersFileChooser(): Array<File>
 }
 
-class FiltersPanel(
+open class FiltersPanel(
   private val host: FiltersPanelHost,
   // Allows tests to inject a mock presenter
   @VisibleForTesting
@@ -55,6 +55,12 @@ class FiltersPanel(
   internal var inputDialogProvider: (parent: Component, message: String, title: String) -> String? =
     { parent, msg, title -> JOptionPane.showInputDialog(parent, msg, title, JOptionPane.PLAIN_MESSAGE) }
 
+  override var activeFilterContextTag: FilterContextTag?
+    get() = filtersPane.activeFilterContextTag
+    set(value) {
+      filtersPane.activeFilterContextTag = value
+      updateFiltersUI()
+    }
 
   fun addFilterForPid(pid: Int) {
     presenter.addFilterForPid(pid)
@@ -305,8 +311,8 @@ class FiltersPanel(
     presenter.applyFilters()
   }
 
-  fun updateFiltersUI() {
-    filtersPane.updateUI()
+  open fun updateFiltersUI() {
+    filtersPane.repaint()
   }
 
   fun updateCollapseExpandButtonState() {

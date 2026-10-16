@@ -13,6 +13,7 @@ import java.awt.font.TextAttribute;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Object>, Serializable {
 
@@ -21,9 +22,15 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
           UIScaleUtils.dip(1),
           UIScaleUtils.dip(1));
   private String highlightedText;
+  private final Supplier<FilterContextTag> contextTagSupplier;
 
   public FilterCellRenderer() {
+    this(null);
+  }
+
+  public FilterCellRenderer(Supplier<FilterContextTag> contextTagSupplier) {
     super();
+    this.contextTagSupplier = contextTagSupplier;
     setOpaque(true);
     setBorder(DEFAULT_NO_FOCUS_BORDER);
     setName("List.cellRenderer");
@@ -58,9 +65,10 @@ public class FilterCellRenderer extends JCheckBox implements ListCellRenderer<Ob
     String verbosityMarkColor = ServiceLocator.INSTANCE.getThemeManager().isDark() ? "#FFF" : "#000";
     text = "<small color=" + verbosityMarkColor + ">" + filter.getVerbosity().toString().charAt(0) + "</small> " + text;
 
-    ContextInfo tempInfo = filter.getTemporaryInfo();
-    if (tempInfo != null) {
-      int totalLinesFound = tempInfo.getTotalLinesFound();
+    FilterContextTag contextTag = contextTagSupplier != null ? contextTagSupplier.get() : null;
+    ContextInfo contextInfo = contextTag != null ? filter.getContext(contextTag) : null;
+    if (contextInfo != null) {
+      int totalLinesFound = contextInfo.getTotalLinesFound();
       text += String.format(" {%d}", totalLinesFound);
     }
 

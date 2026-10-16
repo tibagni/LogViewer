@@ -4,6 +4,7 @@ import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.mock
@@ -11,6 +12,13 @@ import java.awt.Color
 import java.util.regex.Pattern
 
 class FilterTests {
+  companion object {
+    private val TAG_COUNT = FilterContextTag.register("test_tag_filter_count")
+    private val TAG_INFO = FilterContextTag.register("test_context_info")
+    private val TAG_LOGS = FilterContextTag.register("test_tag_logs")
+    private val TAG_LIVE_LOGS = FilterContextTag.register("test_tag_live_logs")
+  }
+
   @Test
   fun singleSimpleFilterTest() {
     val filter = Filter("name", "filterText", Color.WHITE, LogLevel.VERBOSE)
@@ -46,9 +54,9 @@ class FilterTests {
 
     // Run this test multiple times to increase the chances we catch concurrency issues
     for (i in 0 .. 20) {
-      val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), mock(ProgressReporter::class.java))
+      val filtered = Filters.applyMultipleFilters(input, arrayOf(filter), TAG_COUNT, mock(ProgressReporter::class.java))
       assertEquals(200, filtered.size)
-      assertEquals(200, filter.temporaryInfo.totalLinesFound)
+      assertEquals(200, filter.getContext(TAG_COUNT)?.totalLinesFound)
     }
   }
 
@@ -366,8 +374,7 @@ class FilterTests {
   @Test
   fun testContextInfo() {
     val filter = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
-    filter.initTemporaryInfo()
-    val contextInfo = filter.temporaryInfo
+    val contextInfo = filter.initContext(TAG_INFO)
 
     contextInfo.setAllowedStreams(setOf(LogStream.EVENTS, LogStream.MAIN, LogStream.SYSTEM))
     for (i in 1..10) contextInfo.incrementLineCount(LogStream.SYSTEM)
@@ -396,6 +403,19 @@ class FilterTests {
 
     assertEquals(filter, filter2)
     assertNotSame(filter, filter2)
+    assertEquals(filter.hashCode(), filter2.hashCode())
+  }
+
+  @Test
+  fun testEqualsAndHashCodeIgnoreRuntimeContexts() {
+    val filter1 = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    val filter2 = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+
+    val context = filter1.initContext(TAG_INFO)
+    context.incrementLineCount(LogStream.MAIN)
+
+    assertEquals(filter1, filter2)
+    assertEquals(filter1.hashCode(), filter2.hashCode())
   }
 
   @Test
@@ -405,6 +425,19 @@ class FilterTests {
 
     assertEquals(filter, filterCopy)
     assertNotSame(filter, filterCopy)
+    assertEquals(filter.hashCode(), filterCopy.hashCode())
+  }
+
+  @Test
+  fun testCopyFilterWithContextMaintainsEquality() {
+    val filter = Filter.createFromString("Filter Name,XHcrQFx3K1wuKG5ldHxjb20pKFwuYnIpezAsMX0=,2,0:0:0")
+    val context = filter.initContext(TAG_INFO)
+    context.incrementLineCount(LogStream.MAIN)
+
+    val filterCopy = Filter(filter)
+    assertEquals(filter, filterCopy)
+    assertNotSame(filter, filterCopy)
+    assertEquals(filter.hashCode(), filterCopy.hashCode())
   }
 
   @Test
@@ -416,5 +449,75 @@ class FilterTests {
     val caseInsensitiveFilter = Filter("name", "TestPattern", Color.WHITE, LogLevel.VERBOSE, false)
     assertEquals("TestPattern", caseInsensitiveFilter.pattern.pattern())
     assertEquals(Pattern.CASE_INSENSITIVE, caseInsensitiveFilter.pattern.flags())
+  }
+
+  @Test
+  fun testScopedFilterContextIsolation() {
+    val filter = Filter("Test", "pattern", Color.RED, LogLevel.DEBUG)
+
+    // Initially both contexts are null
+    assertNull(filter.getContext(TAG_LOGS))
+    assertNull(filter.getContext(TAG_LIVE_LOGS))
+
+    // Initialize LOGS context
+    val logsInfo = filter.initContext(TAG_LOGS)
+    assertNotNull(logsInfo)
+    assertNull(filter.getContext(TAG_LIVE_LOGS))
+
+    logsInfo.incrementLineCount(LogStream.MAIN)
+    assertEquals(1, logsInfo.totalLinesFound)
+
+    // Initialize LIVE_LOGS context
+    val liveLogsInfo = filter.initContext(TAG_LIVE_LOGS)
+    assertNotNull(liveLogsInfo)
+    assertEquals(0, liveLogsInfo.totalLinesFound)
+    assertEquals(1, filter.getContext(TAG_LOGS)?.totalLinesFound)
+
+    // Mutating LIVE_LOGS does not affect LOGS
+    liveLogsInfo.incrementLineCount(LogStream.MAIN)
+    liveLogsInfo.incrementLineCount(LogStream.MAIN)
+    assertEquals(2, filter.getContext(TAG_LIVE_LOGS)?.totalLinesFound)
+    assertEquals(1, filter.getContext(TAG_LOGS)?.totalLinesFound)
+
+    // Resetting LIVE_LOGS leaves LOGS intact
+    filter.resetContext(TAG_LIVE_LOGS)
+    assertNull(filter.getContext(TAG_LIVE_LOGS))
+    assertNotNull(filter.getContext(TAG_LOGS))
+    assertEquals(1, filter.getContext(TAG_LOGS)?.totalLinesFound)
+
+    // Resetting all clears LOGS too
+    filter.resetAllContexts()
+    assertNull(filter.getContext(TAG_LOGS))
+    assertNull(filter.getContext(TAG_LIVE_LOGS))
+  }
+
+  @Test
+  fun testConcurrentFilteringIsolationDoesNotClobberCounts() {
+    val filter = Filter("Common", "MATCH", Color.BLUE, LogLevel.VERBOSE)
+    val entries = (1..1000).map { LogEntry("Line $it MATCH", LogLevel.INFO, null) }
+
+    val reporter = mock(ProgressReporter::class.java)
+
+    // Repeat multiple times to ensure zero race conditions
+    for (iteration in 1..20) {
+      val staticFilterThread = Thread {
+        Filters.applyMultipleFilters(entries, arrayOf(filter), TAG_LOGS, reporter)
+      }
+      val liveFilterResetThread = Thread {
+        for (i in 1..50) {
+          filter.initContext(TAG_LIVE_LOGS)
+          filter.getContext(TAG_LIVE_LOGS)?.incrementLineCount(LogStream.MAIN)
+          filter.resetContext(TAG_LIVE_LOGS)
+        }
+      }
+
+      staticFilterThread.start()
+      liveFilterResetThread.start()
+
+      staticFilterThread.join()
+      liveFilterResetThread.join()
+
+      assertEquals(1000, filter.getContext(TAG_LOGS)?.totalLinesFound)
+    }
   }
 }
