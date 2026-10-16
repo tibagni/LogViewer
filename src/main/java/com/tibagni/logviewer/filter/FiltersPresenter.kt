@@ -391,12 +391,8 @@ class FiltersPresenterImpl(
   }
 
   private fun cleanUpFilterTempInfo() {
-    val tag = view.activeFilterContextTag
-    if (tag != null) {
-      filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.resetContext(tag) }
-    } else {
-      filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.resetAllContexts() }
-    }
+    val tag = view.activeFilterContextTag ?: return
+    filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.resetContext(tag) }
   }
 
   private fun checkForUnsavedChanges() {

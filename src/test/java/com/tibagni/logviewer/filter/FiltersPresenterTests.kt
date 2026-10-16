@@ -566,6 +566,7 @@ class FiltersPresenterTests {
 
   @Test
   fun testApplyFiltersCleansUpContextAndNotifies() {
+    `when`(view.activeFilterContextTag).thenReturn(TEST_TAG)
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
     f.initContext(TEST_TAG)
     assertNotNull(f.getContext(TEST_TAG))
@@ -574,6 +575,19 @@ class FiltersPresenterTests {
     presenter.applyFilters()
 
     assertNull(f.getContext(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied()
+  }
+
+  @Test
+  fun testApplyFiltersDoesNotCleanUpContextWhenTagIsNull() {
+    `when`(view.activeFilterContextTag).thenReturn(null)
+    val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
+    f.initContext(TEST_TAG)
+    openedFilters["Group1"] = mutableListOf(f)
+
+    presenter.applyFilters()
+
+    assertNotNull(f.getContext(TEST_TAG))
     verify(mockFiltersRepository).notifyFiltersApplied()
   }
 }
