@@ -5,6 +5,7 @@ Unit tests for scripts/ai_pr_review.py
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -346,6 +347,36 @@ Looks great!
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
         self.assertIn("repos/tibagni/LogViewer/pulls/12/reviews", cmd)
+
+    @patch("subprocess.run")
+    def test_post_pull_request_review_approve(self, mock_run):
+        mock_run.return_value = MagicMock()
+        success = ai_review.post_pull_request_review(
+            pr_number="12",
+            repo="tibagni/LogViewer",
+            commit_sha="commit_sha_123",
+            body="Approved by AI",
+            event="APPROVE"
+        )
+        self.assertTrue(success)
+        mock_run.assert_called_once()
+        call_kwargs = mock_run.call_args[1]
+        self.assertIsInstance(call_kwargs.get("input"), str)
+        payload = json.loads(call_kwargs["input"])
+        self.assertEqual(payload["event"], "APPROVE")
+        self.assertEqual(payload["body"], "Approved by AI")
+
+    @patch("subprocess.run")
+    def test_post_pull_request_review_handles_error(self, mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(1, ["gh"], stderr="Forbidden")
+        success = ai_review.post_pull_request_review(
+            pr_number="12",
+            repo="tibagni/LogViewer",
+            commit_sha="commit_sha_123",
+            body="Approved by AI",
+            event="APPROVE"
+        )
+        self.assertFalse(success)
 
     @patch.dict(os.environ, {}, clear=True)
     def test_main_no_api_key(self):

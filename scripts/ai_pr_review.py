@@ -669,7 +669,7 @@ def post_pull_request_review(
             for c in inline_comments
         ]
 
-    data = json.dumps(review_payload).encode("utf-8")
+    data = json.dumps(review_payload)
     cmd = [
         "gh", "api",
         "--method", "POST",
