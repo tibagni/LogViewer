@@ -1,4 +1,4 @@
-[![Release](https://img.shields.io/github/v/release/tibagni/LogViewer?color=blue)](https://github.com/tibagni/LogViewer/releases/latest)
+[![Release](https://badgen.net/github/release/tibagni/LogViewer?icon=github&label=Release)](https://github.com/tibagni/LogViewer/releases/latest)
 [![CI](https://github.com/tibagni/LogViewer/actions/workflows/main.yml/badge.svg)](https://github.com/tibagni/LogViewer/actions/workflows/main.yml)
 [![Coverage Status](https://coveralls.io/repos/github/tibagni/LogViewer/badge.svg?branch=master)](https://coveralls.io/github/tibagni/LogViewer?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
