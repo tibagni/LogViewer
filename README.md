@@ -13,7 +13,7 @@
 
   <br/>
 
-  [Documentation](https://tibagni.github.io/LogViewer/) • [Download](https://github.com/tibagni/LogViewer/releases/latest) • [Features](#-features) • [Quick Start](#-quick-start) • [Shortcuts](#-keyboard-shortcuts)
+  [Documentation](https://tibagni.github.io/LogViewer/) • [Download](https://github.com/tibagni/LogViewer/releases/latest) • [Features](#features) • [Quick Start](#quick-start) • [Shortcuts](#shortcuts)
 
   <br/><br/>
 
@@ -36,6 +36,7 @@ Analyzing raw Android logs, multi-file bugreports, or live logcat bursts can qui
 
 ---
 
+<a id="quick-start"></a>
 ## 🚀 Quick Start
 
 ### 1. Download & Run (No build required)
@@ -61,6 +62,7 @@ Switch to the **Live Logs** tab, select your connected Android device, choose yo
 
 ---
 
+<a id="features"></a>
 ## ✨ Features
 
 | Feature | Description |
@@ -103,7 +105,9 @@ Switch to the **Live Logs** tab, select your connected Android device, choose yo
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+<a id="shortcuts"></a>
+<a id="keyboard-shortcuts"></a>
+## ⌨ Keyboard Shortcuts
 
 | Shortcut (macOS / Linux & Windows) | Action |
 | :--- | :--- |
