@@ -111,14 +111,12 @@ class LiveLogsRepositoryImpl(
 
       var firstMatchedFilter: Filter? = null
       for (filter in liveFilters) {
-        if (filter.getContext(filterContextTag) == null) {
-          filter.initContext(filterContextTag)
-        }
         if (filter.appliesTo(entry)) {
           if (firstMatchedFilter == null) {
             firstMatchedFilter = filter
           }
-          filter.getContext(filterContextTag)?.incrementLineCount(entry.logStream)
+          val context = filter.getContext(filterContextTag) ?: filter.initContext(filterContextTag)
+          context.incrementLineCount(entry.logStream)
         }
       }
 

@@ -312,7 +312,7 @@ open class FiltersPanel(
   }
 
   open fun updateFiltersUI() {
-    filtersPane.updateUI()
+    filtersPane.repaint()
   }
 
   fun updateCollapseExpandButtonState() {
