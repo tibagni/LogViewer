@@ -211,6 +211,14 @@ fi
 # Watch checks if requested
 if [ "$WATCH_CHECKS" = true ]; then
   echo ""
+  echo "Waiting for GitHub Actions checks to start..."
+  for i in {1..8}; do
+    STATUS=$(gh pr checks "$PR_URL" 2>&1 || true)
+    if [[ ! "$STATUS" =~ "no checks reported" ]]; then
+      break
+    fi
+    sleep 2
+  done
   echo "Watching GitHub Actions checks..."
   gh pr checks "$PR_URL" --watch || true
 fi
