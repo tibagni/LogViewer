@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./pr-workflow.sh <new-branch-name>
+# Usage: ./scripts/pr-workflow.sh <new-branch-name>
 
 set -e
 
@@ -11,6 +11,14 @@ fi
 
 NEW_BRANCH="$1"
 BASE_BRANCH="master"
+
+# Ensure we're in the repository root
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+  echo "Error: Not inside a git repository."
+  exit 1
+fi
+cd "$REPO_ROOT"
 
 # Fetch latest changes from origin
 git fetch origin
