@@ -1,0 +1,14 @@
+/* Custom Dark Theme adjustments (IntelliJ / GitHub Dark style) */
+[data-md-color-scheme="slate"] {
+  /* Slightly lighter, neutral charcoal background (IntelliJ / GitHub Dimmed style) */
+  --md-default-bg-color: #2b2d30;
+  --md-default-bg-color--light: #323538;
+  --md-default-bg-color--lighter: #3a3e43;
+  --md-default-bg-color--lightest: #44484e;
+
+  /* Code blocks & preformatted text (slightly darker for contrast) */
+  --md-code-bg-color: #1e1f22;
+
+  /* Borders and dividers */
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.08);
+}

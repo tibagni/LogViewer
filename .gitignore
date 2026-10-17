@@ -1,6 +1,7 @@
-_site
-.sass-cache
-.jekyll-metadata
-.gradle
-.idea
-build
+site/
+.gradle/
+.idea/
+build/
+scripts/
+.env
+.env.local
