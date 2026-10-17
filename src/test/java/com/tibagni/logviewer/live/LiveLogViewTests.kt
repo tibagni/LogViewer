@@ -419,7 +419,7 @@ class LiveLogViewTests {
     liveLogView.showStreamingStatus("Stopped", false)
     assertTrue(liveLogView.sidePanel.isItemEnabled(LiveLogViewImpl.ID_STOP_RESUME))
     liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_STOP_RESUME)
-    verify(mockPresenter).startStreaming(testDevice)
+    verify(mockPresenter).startStreaming(testDevice, listOf("main", "system", "events", "crash"))
 
     // Clear logs button
     liveLogView.sidePanel.performAction(LiveLogViewImpl.ID_CLEAR)
