@@ -642,7 +642,7 @@ def get_review_timestamp(
     Optionally appends the commit SHA if provided.
 
     Example outputs:
-      "2026-10-17 20:51:02 CDT (01:51:02 UTC) • commit `abc1234`"
+      "2026-10-17 20:51:02 CDT (2026-10-18 01:51:02 UTC) • commit `abc1234`"
       "2026-10-17 20:51:02 UTC • commit `abc1234`"
     """
     if dt is None:
