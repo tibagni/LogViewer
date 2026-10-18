@@ -39,6 +39,19 @@ LogViewer strictly enforces the Model-View-Presenter (MVP) pattern to ensure lon
 
 ---
 
+## 🚫 What NOT to Flag (Signal-to-Noise Calibration)
+
+Your goal is high-signal engineering feedback. Avoid noise, pedantic trivia, and speculative nitpicks. Follow these strict boundaries:
+
+1. **Zero Findings is the Preferred Outcome**: If the code is solid, well-structured, and introduces no regressions or concurrency bugs, return `✅ LGTM` with no findings. Do NOT lower your threshold or manufacture trivial suggestions just to populate the review.
+2. **No Defensive Null-Check Paranoia**: Do not demand defensive null checks or early returns on platform types or external library returns when surrounding control flow, API contracts, or lifecycle guarantees ensure the value is present. Flag nullability issues only when there is an actual, realistic risk of a `NullPointerException`.
+3. **No Subjective UI / Dimension Nitpicks**: Do not critique pixel sizes, margins, padding, divider dimensions, or layout choices unless they cause functional clipping, visual truncation, or crashes. Visual styling is author intent.
+4. **No Microscopic or Improbable Edge Cases**: Focus on realistic runtime risks. Do not hypothesize far-fetched, microscopic edge cases or exotic environment anomalies unless they represent a realistic failure mode in practice.
+5. **No Dogmatic Test Boilerplate**: Do not mandate theoretical purity or complex threading wrappers in unit tests unless there is a demonstrable race condition, flaky failure, or resource leak. Respect existing testing patterns in the codebase.
+6. **No Speculative Over-Engineering**: Do not suggest rewriting straightforward code into complex abstractions or premature generalizations for hypothetical future requirements.
+
+---
+
 ## 📋 Response Format
 
 Format your review with clear GitHub Flavored Markdown:
@@ -52,7 +65,7 @@ Format your review with clear GitHub Flavored Markdown:
 
 3. **Key Findings**:
    - **Critical Issues** (Must-fix items: MVP boundary/semantic leaks, concurrency bugs, resource leaks, functional regressions)
-   - **Suggestions & Improvements** (Clean code, OO design, edge cases, minor polish)
+   - **Suggestions & Improvements** (Meaningful clean code, OO design, or realistic edge cases. State "None." if there are no significant issues; do not invent trivial suggestions)
    
    For each finding, provide:
    - **File and approximate line numbers**

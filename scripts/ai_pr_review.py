@@ -452,6 +452,8 @@ If you have specific line-level recommendations for modified code lines, you may
 ```
 Rules for inline comments:
 - Only reference files and line numbers that appear within the provided code diff hunks.
+- Only emit inline comments for genuine logic defects, concurrency violations, or high-risk design flaws.
+- Never emit inline comments for cosmetic preferences, pixel dimensions, defensive null checks, or speculative nitpicks.
 - Keep the comment body concise, polite, and actionable.
 - If there are no specific line-level issues, omit the ```inline-comments``` block completely."""
 
