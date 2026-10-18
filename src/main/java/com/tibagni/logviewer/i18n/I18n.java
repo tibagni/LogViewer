@@ -51,6 +51,11 @@ public final class I18n {
   public static final String PREF_PREFERRED_TEXT_EDITOR = "pref.preferred_text_editor";
   public static final String PREF_ADB_PATH = "pref.adb_path";
   public static final String PREF_LOG_FONT_FAMILY = "pref.log_font_family";
+  public static final String PREF_CATEGORY_APPEARANCE = "pref.category.appearance";
+  public static final String PREF_CATEGORY_LOGS = "pref.category.logs";
+  public static final String PREF_CATEGORY_FILTERS = "pref.category.filters";
+  public static final String PREF_CATEGORY_TOOLS = "pref.category.tools";
+  public static final String PREF_SAVING_CHANGES = "pref.saving_changes";
 
   // Main View & File Choosers
   public static final String MAIN_FILECHOOSER_OPEN_LOGS = "main.filechooser.open.logs";

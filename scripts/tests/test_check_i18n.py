@@ -26,6 +26,16 @@ class CheckI18nTests(unittest.TestCase):
         line = '  JLabel label = new JLabel("Status");'
         self.assertEqual(find_hardcoded_in_line(line), ["Status"])
 
+    def test_detects_jtextfield(self):
+        line1 = '  JTextField field = new JTextField("Username");'
+        line2 = '  val field = JTextField("Username")'
+        self.assertEqual(find_hardcoded_in_line(line1), ["Username"])
+        self.assertEqual(find_hardcoded_in_line(line2), ["Username"])
+
+    def test_detects_kotlin_anonymous_object(self):
+        line = '  private val preview = object : JTextField("Preview text") {'
+        self.assertEqual(find_hardcoded_in_line(line), ["Preview text"])
+
     def test_detects_titled_border(self):
         line = '  new TitledBorder("Options");'
         self.assertEqual(find_hardcoded_in_line(line), ["Options"])
