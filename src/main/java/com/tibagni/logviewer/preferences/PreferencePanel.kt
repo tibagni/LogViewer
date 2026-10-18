@@ -9,6 +9,7 @@ import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JTextField
+import javax.swing.SwingUtilities
 
 interface PreferencePanel {
   val id: String
@@ -48,7 +49,9 @@ internal fun bindLabelToCheckbox(label: JLabel, checkbox: JCheckBox) {
   label.cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   label.addMouseListener(object : MouseAdapter() {
     override fun mouseClicked(e: MouseEvent) {
-      checkbox.doClick()
+      if (SwingUtilities.isLeftMouseButton(e) && checkbox.isEnabled) {
+        checkbox.doClick()
+      }
     }
   })
 }

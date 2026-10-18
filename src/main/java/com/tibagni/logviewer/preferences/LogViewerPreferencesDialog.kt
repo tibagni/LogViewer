@@ -143,7 +143,8 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
     }
     cardsPanel.add(createSavingCard(), SAVING_CARD_ID)
 
-    categoriesList.addListSelectionListener {
+    categoriesList.addListSelectionListener { e ->
+      if (e.valueIsAdjusting || isSaving) return@addListSelectionListener
       val selected = categoriesList.selectedValue ?: return@addListSelectionListener
       cardLayout.show(cardsPanel, selected.id)
     }

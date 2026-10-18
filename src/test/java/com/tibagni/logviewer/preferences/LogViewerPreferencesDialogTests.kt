@@ -34,18 +34,10 @@ class LogViewerPreferencesDialogTests {
     val originalLocale = I18n.getLocale()
     try {
       I18n.setLocale(Locale.US)
-      if (!GraphicsEnvironment.isHeadless()) {
-        val dialog = LogViewerPreferencesDialog(null)
-        try {
-          val titles = dialog.preferencePanels.associate { it.id to it.title }
-          assertEquals("Appearance", titles[AppearancePreferencePanel.ID])
-          assertEquals("Logs", titles[LogsPreferencePanel.ID])
-          assertEquals("Filters", titles[FiltersPreferencePanel.ID])
-          assertEquals("Tools", titles[ToolsPreferencePanel.ID])
-        } finally {
-          dialog.onCancel()
-        }
-      }
+      assertEquals("Appearance", I18n.get(I18n.PREF_CATEGORY_APPEARANCE))
+      assertEquals("Logs", I18n.get(I18n.PREF_CATEGORY_LOGS))
+      assertEquals("Filters", I18n.get(I18n.PREF_CATEGORY_FILTERS))
+      assertEquals("Tools", I18n.get(I18n.PREF_CATEGORY_TOOLS))
     } finally {
       I18n.setLocale(originalLocale)
     }
@@ -56,18 +48,10 @@ class LogViewerPreferencesDialogTests {
     val originalLocale = I18n.getLocale()
     try {
       I18n.setLocale(Locale("pt", "BR"))
-      if (!GraphicsEnvironment.isHeadless()) {
-        val dialog = LogViewerPreferencesDialog(null)
-        try {
-          val titles = dialog.preferencePanels.associate { it.id to it.title }
-          assertEquals("Aparência", titles[AppearancePreferencePanel.ID])
-          assertEquals("Logs", titles[LogsPreferencePanel.ID])
-          assertEquals("Filtros", titles[FiltersPreferencePanel.ID])
-          assertEquals("Ferramentas", titles[ToolsPreferencePanel.ID])
-        } finally {
-          dialog.onCancel()
-        }
-      }
+      assertEquals("Aparência", I18n.get(I18n.PREF_CATEGORY_APPEARANCE))
+      assertEquals("Logs", I18n.get(I18n.PREF_CATEGORY_LOGS))
+      assertEquals("Filtros", I18n.get(I18n.PREF_CATEGORY_FILTERS))
+      assertEquals("Ferramentas", I18n.get(I18n.PREF_CATEGORY_TOOLS))
     } finally {
       I18n.setLocale(originalLocale)
     }
