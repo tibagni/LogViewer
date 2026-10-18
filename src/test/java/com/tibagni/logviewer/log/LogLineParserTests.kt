@@ -204,4 +204,37 @@ class LogLineParserTests {
         assertNull(LogLineParser.extractLogStreamFromBeginningOfLine("10-12 22:33:46.839  3172  3172 I am_create_activity: test"))
         assertNull(LogLineParser.extractLogStreamFromBeginningOfLine(""))
     }
+
+    @Test
+    fun testIsLogLineValidAndInvalid() {
+        assertTrue(LogLineParser.isLogLine("10-12 22:32:50.264  2646  2664 I chatty  : uid=1000"))
+        assertTrue(LogLineParser.isLogLine("01-06 20:46:42.501 821-1054/? I/WindowState: WIN DEATH"))
+        assertTrue(LogLineParser.isLogLine("00-00 00:00:00"))
+        assertTrue(LogLineParser.isLogLine("99-99 99:99:99 anything after"))
+
+        assertFalse(LogLineParser.isLogLine("10-12 22:32:5")) // too short (< 14 chars)
+        assertFalse(LogLineParser.isLogLine("10/12 22:32:50")) // wrong separator
+        assertFalse(LogLineParser.isLogLine("10-12-22:32:50")) // missing space
+        assertFalse(LogLineParser.isLogLine("1-12 22:32:50")) // 1-digit month
+        assertFalse(LogLineParser.isLogLine("10-1 22:32:50")) // 1-digit day
+        assertFalse(LogLineParser.isLogLine(""))
+    }
+
+    @Test
+    fun testFindTimestampStandardAndFallback() {
+        val ts = LogLineParser.findTimestamp("10-12 22:32:50.264  2646  2664 I chatty  : message")
+        assertNotNull(ts)
+        assertEquals(LogTimestamp(10, 12, 22, 32, 50, 264), ts)
+
+        val tsMicro = LogLineParser.findTimestamp("12-31 23:59:59.999999 1 1 D Test: Microseconds")
+        assertNotNull(tsMicro)
+        assertEquals(LogTimestamp(12, 31, 23, 59, 59, 999999), tsMicro)
+
+        val tsSingleDigit = LogLineParser.findTimestamp("1-6 20:46:42.501 821-1054/? I/WindowState: single digit month")
+        assertNotNull(tsSingleDigit)
+        assertEquals(LogTimestamp(1, 6, 20, 46, 42, 501), tsSingleDigit)
+
+        assertNull(LogLineParser.findTimestamp("Not a log line"))
+        assertNull(LogLineParser.findTimestamp(""))
+    }
 }

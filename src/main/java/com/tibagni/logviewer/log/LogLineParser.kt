@@ -24,32 +24,37 @@ object LogLineParser {
     Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
 
   /**
-   * Finds the process ID (PID) from a log line string, or returns -1 if not found.
+   * Determines whether the given text starts with a standard Android log line prefix (MM-DD HH:MM:SS).
    *
-   * @param logLine the raw log line text.
-   * @return the integer process ID, or -1 if parsing fails or line is invalid.
+   * @param line The raw text line to evaluate.
+   * @return True if the line matches standard log format, false otherwise.
    */
   @JvmStatic
   fun isLogLine(line: String): Boolean {
     if (line.length < 14) return false
-    if (line[0] in '0'..'9' &&
-      line[1] in '0'..'9' &&
+    return hasStandardLogPrefix(line) || LOG_START_PATTERN.matcher(line).lookingAt()
+  }
+
+  /**
+   * Fast-path check verifying if characters 0..13 match the standard `MM-DD HH:MM:SS` date prefix.
+   */
+  private fun hasStandardLogPrefix(line: String): Boolean {
+    return isDatePrefix(line, '\t')
+  }
+
+  /**
+   * Validates the 14-character date and time structure (MM-DD HH:MM:SS) with configurable space separator.
+   */
+  private fun isDatePrefix(line: String, allowedWhitespace: Char): Boolean {
+    return isTwoDigits(line, 0) &&
       line[2] == '-' &&
-      line[3] in '0'..'9' &&
-      line[4] in '0'..'9' &&
-      line[5] == ' ' &&
-      line[6] in '0'..'9' &&
-      line[7] in '0'..'9' &&
+      isTwoDigits(line, 3) &&
+      (line[5] == ' ' || line[5] == allowedWhitespace) &&
+      isTwoDigits(line, 6) &&
       line[8] == ':' &&
-      line[9] in '0'..'9' &&
-      line[10] in '0'..'9' &&
+      isTwoDigits(line, 9) &&
       line[11] == ':' &&
-      line[12] in '0'..'9' &&
-      line[13] in '0'..'9'
-    ) {
-      return true
-    }
-    return LOG_START_PATTERN.matcher(line).lookingAt()
+      isTwoDigits(line, 12)
   }
 
   @JvmStatic
@@ -62,37 +67,16 @@ object LogLineParser {
     }
   }
 
+  /**
+   * Parses the timestamp component from a log line, attempting a high-performance fast path first
+   * before falling back to regex matching.
+   *
+   * @param logLine The raw log line text.
+   * @return A parsed [LogTimestamp], or null if parsing fails.
+   */
   @JvmStatic
   fun findTimestamp(logLine: String): LogTimestamp? {
-    if (logLine.length >= 18 &&
-      logLine[0] in '0'..'9' && logLine[1] in '0'..'9' && logLine[2] == '-' &&
-      logLine[3] in '0'..'9' && logLine[4] in '0'..'9' &&
-      (logLine[5] == ' ' || logLine[5] == '\t') &&
-      logLine[6] in '0'..'9' && logLine[7] in '0'..'9' && logLine[8] == ':' &&
-      logLine[9] in '0'..'9' && logLine[10] in '0'..'9' && logLine[11] == ':' &&
-      logLine[12] in '0'..'9' && logLine[13] in '0'..'9' &&
-      (logLine[14] == '.' || logLine[14] == ',') &&
-      logLine[15] in '0'..'9' && logLine[16] in '0'..'9' && logLine[17] in '0'..'9'
-    ) {
-      val month = (logLine[0] - '0') * 10 + (logLine[1] - '0')
-      val day = (logLine[3] - '0') * 10 + (logLine[4] - '0')
-      val hour = (logLine[6] - '0') * 10 + (logLine[7] - '0')
-      val minutes = (logLine[9] - '0') * 10 + (logLine[10] - '0')
-      val seconds = (logLine[12] - '0') * 10 + (logLine[13] - '0')
-
-      var subEnd = 18
-      while (subEnd < logLine.length && logLine[subEnd] in '0'..'9') {
-        subEnd++
-      }
-      val subLen = subEnd - 15
-      if (subLen in 3..9) {
-        var hundredth = 0
-        for (i in 15 until subEnd) {
-          hundredth = hundredth * 10 + (logLine[i] - '0')
-        }
-        return LogTimestamp(month, day, hour, minutes, seconds, hundredth)
-      }
-    }
+    parseFastTimestamp(logLine)?.let { return it }
 
     try {
       val matcher = LOG_TIMESTAMP_PATTERN.matcher(logLine)
@@ -111,6 +95,56 @@ object LogLineParser {
     }
 
     return null
+  }
+
+  /**
+   * High-performance non-regex timestamp parser for standard Android `MM-DD HH:MM:SS.mmm` lines.
+   */
+  private fun parseFastTimestamp(logLine: String): LogTimestamp? {
+    if (!hasStandardTimestampPrefix(logLine)) return null
+
+    val month = parseTwoDigitInt(logLine, 0)
+    val day = parseTwoDigitInt(logLine, 3)
+    val hour = parseTwoDigitInt(logLine, 6)
+    val minutes = parseTwoDigitInt(logLine, 9)
+    val seconds = parseTwoDigitInt(logLine, 12)
+
+    var subEnd = 18
+    while (subEnd < logLine.length && logLine[subEnd] in '0'..'9') {
+      subEnd++
+    }
+    val subLen = subEnd - 15
+    if (subLen in 3..9) {
+      var hundredth = 0
+      for (i in 15 until subEnd) {
+        hundredth = hundredth * 10 + (logLine[i] - '0')
+      }
+      return LogTimestamp(month, day, hour, minutes, seconds, hundredth)
+    }
+    return null
+  }
+
+  /**
+   * Validates if the line begins with the standard timestamp structure up to 3 subsecond digits.
+   */
+  private fun hasStandardTimestampPrefix(line: String): Boolean {
+    if (line.length < 18) return false
+    val sep14 = line[14]
+    return isDatePrefix(line, '\t') &&
+      (sep14 == '.' || sep14 == ',') &&
+      isThreeDigits(line, 15)
+  }
+
+  private fun isTwoDigits(s: String, startIndex: Int): Boolean {
+    return s[startIndex] in '0'..'9' && s[startIndex + 1] in '0'..'9'
+  }
+
+  private fun isThreeDigits(s: String, startIndex: Int): Boolean {
+    return s[startIndex] in '0'..'9' && s[startIndex + 1] in '0'..'9' && s[startIndex + 2] in '0'..'9'
+  }
+
+  private fun parseTwoDigitInt(s: String, startIndex: Int): Int {
+    return (s[startIndex] - '0') * 10 + (s[startIndex + 1] - '0')
   }
 
   @JvmStatic
@@ -202,16 +236,17 @@ object LogLineParser {
     )
   }
 
+  private val LINE_INFO_PATTERNS = arrayOf(
+    LINE_INFO_THREADTIME,
+    LINE_INFO_PID_TID_SLASH,
+    LINE_INFO_PID_TID_SPACE
+  )
+
   private fun findLineInfoMatcher(logText: String): Matcher? {
-    var m = LINE_INFO_THREADTIME.matcher(logText)
-    if (m.find()) return m
-
-    m = LINE_INFO_PID_TID_SLASH.matcher(logText)
-    if (m.find()) return m
-
-    m = LINE_INFO_PID_TID_SPACE.matcher(logText)
-    if (m.find()) return m
-
+    for (pattern in LINE_INFO_PATTERNS) {
+      val m = pattern.matcher(logText)
+      if (m.find()) return m
+    }
     return null
   }
 }
