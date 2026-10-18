@@ -27,8 +27,8 @@ UI_PATTERNS = [
     re.compile(r'\.setTitle\s*\(\s*"([^"]+)"\s*\)'),
     # dialogTitle = "..." (Kotlin property)
     re.compile(r'dialogTitle\s*=\s*"([^"]+)"'),
-    # Java: new JLabel("..."), Kotlin: JLabel("...")
-    re.compile(r'(?:new\s+)?(?:JLabel|JButton|JMenuItem|JCheckBox|JRadioButton|JMenu|JTabbedPane)\s*\(\s*"([^"]+)"'),
+    # Java: new JLabel("..."), Kotlin: JLabel("..."), object : JLabel("...")
+    re.compile(r'(?:(?:new\s+)|(?:object\s*:\s*))?(?:JLabel|JButton|JMenuItem|JCheckBox|JRadioButton|JMenu|JTabbedPane|JTextField)\s*\(\s*"([^"]+)"'),
     # Tooltips: setToolTipText("...") or toolTipText = "..."
     re.compile(r'\.setToolTipText\s*\(\s*"([^"]+)"\s*\)'),
     re.compile(r'toolTipText\s*=\s*"([^"]+)"'),

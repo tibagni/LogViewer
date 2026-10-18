@@ -5,7 +5,7 @@ import javax.swing.BorderFactory
 import javax.swing.DefaultListCellRenderer
 import javax.swing.JList
 
-class PaddingListCellRenderer(
+open class PaddingListCellRenderer(
   private val top: Int,
   private val left: Int,
   private val bottom: Int,
