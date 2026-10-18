@@ -32,11 +32,13 @@ Available CLI options:
   --author <login>   PR author username (default: from PR_AUTHOR env or gh pr view)
   --auto-approve-authors <logins>
                      Comma-separated GitHub usernames eligible for auto-approval on LGTM
+  --timezone <zone>  Timezone for review timestamp (default: from REVIEW_TIMEZONE or 'America/Chicago')
   --env-file <path>  Path to local env file (default: '.env')
 ================================================================================
 """
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 import re
@@ -46,6 +48,11 @@ import time
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    ZoneInfo = None  # type: ignore
 
 PRIMARY_COMMENT_MARKER = "<!-- ai-code-review -->"
 RECOGNIZED_COMMENT_MARKERS = ("<!-- ai-code-review -->", "<!-- gemini-code-review -->")
@@ -624,6 +631,58 @@ def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
     return None
 
 
+def get_review_timestamp(
+    dt: Optional[datetime] = None,
+    tz_name: Optional[str] = None,
+    commit_sha: Optional[str] = None
+) -> str:
+    """
+    Formats a review timestamp showing local time and UTC in parentheses.
+    Default timezone is America/Chicago (or REVIEW_TIMEZONE env var).
+    Optionally appends the commit SHA if provided.
+
+    Example outputs:
+      "2026-10-17 20:51:02 CDT (01:51:02 UTC) • commit `abc1234`"
+      "2026-10-17 20:51:02 UTC • commit `abc1234`"
+    """
+    if dt is None:
+        dt = datetime.now(timezone.utc)
+    elif dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    target_tz_name = (
+        tz_name or
+        os.environ.get("REVIEW_TIMEZONE", "America/Chicago")
+    ).strip()
+
+    local_str: Optional[str] = None
+    local_dt: Optional[datetime] = None
+    if ZoneInfo and target_tz_name and target_tz_name.upper() != "UTC":
+        try:
+            target_tz = ZoneInfo(target_tz_name)
+            local_dt = dt.astimezone(target_tz)
+            local_str = local_dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+        except Exception:
+            local_str = None
+
+    utc_dt = dt.astimezone(timezone.utc)
+    utc_full_str = utc_dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    if not local_str or not local_dt:
+        time_part = utc_full_str
+    else:
+        if local_dt.date() == utc_dt.date():
+            utc_part = utc_dt.strftime("%H:%M:%S UTC")
+        else:
+            utc_part = utc_full_str
+        time_part = f"{local_str} ({utc_part})"
+
+    if commit_sha:
+        short_sha = commit_sha.strip()[:7]
+        return f"{time_part} • commit `{short_sha}`"
+    return time_part
+
+
 def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -> None:
     """Posts or updates the top-level PR review comment in the issue timeline."""
     full_comment = f"{PRIMARY_COMMENT_MARKER}\n{review_text}"
@@ -781,6 +840,12 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Comma-separated GitHub usernames eligible for auto-approval on LGTM (default: from AUTO_APPROVE_AUTHORS env)."
     )
     parser.add_argument(
+        "--timezone",
+        type=str,
+        default=None,
+        help="Timezone for review timestamp in comments (default: from REVIEW_TIMEZONE env or 'America/Chicago')."
+    )
+    parser.add_argument(
         "--env-file",
         type=str,
         default=".env",
@@ -839,7 +904,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not diff.strip():
         print("No reviewable code changes found.")
         if not args.dry_run and pr_number and repo:
-            review_body = "### 🤖 AI Code Review\n\nNo code changes requiring review were detected in this pull request."
+            timestamp_str = get_review_timestamp(tz_name=args.timezone, commit_sha=head_sha)
+            review_body = (
+                f"### 🤖 AI Code Review\n\n"
+                f"No code changes requiring review were detected in this pull request.\n\n"
+                f"---\n"
+                f"*Reviewed at: {timestamp_str}*"
+            )
             post_or_update_review_comment(pr_number, repo, review_body)
         return 0
 
@@ -892,12 +963,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
 
     model_attribution = f" (`{model_used}`)" if model_used else ""
+    timestamp_str = get_review_timestamp(tz_name=args.timezone, commit_sha=head_sha)
     formatted_review = f"""### 🤖 AI Code Review
 
 {clean_review_text.strip()}
 
 ---
-*Reviewed by AI{model_attribution} using {source_description}.*
+*Reviewed by AI{model_attribution} using {source_description}.*  
+*Reviewed at: {timestamp_str}*
 """
 
     if args.dry_run:
@@ -938,7 +1011,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         approval_body = (
             f"### 🤖 AI Code Review (Approved)\n\n"
             f"Approved pull request based on automated review verdict (LGTM).\n\n"
-            f"*Reviewed by AI{model_attribution} using {source_description}.*"
+            f"---\n"
+            f"*Reviewed by AI{model_attribution} using {source_description}.*  \n"
+            f"*Reviewed at: {timestamp_str}*"
         )
         post_pull_request_review(
             pr_number=pr_number,

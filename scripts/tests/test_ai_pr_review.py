@@ -557,6 +557,64 @@ Looks great!
             mock_post_comment.assert_not_called()
             mock_post_review.assert_not_called()
 
+    def test_get_review_timestamp_crossover_midnight(self):
+        from datetime import datetime, timezone
+        # Oct 18 01:51:02 UTC is Oct 17 20:51:02 CDT (different dates)
+        dt = datetime(2026, 10, 18, 1, 51, 2, tzinfo=timezone.utc)
+        ts = ai_review.get_review_timestamp(dt, tz_name="America/Chicago", commit_sha="c1973c435a109cb3d27afd6e4068f432006d54ea")
+        self.assertEqual(
+            ts,
+            "2026-10-17 20:51:02 CDT (2026-10-18 01:51:02 UTC) • commit `c1973c4`"
+        )
+
+    def test_get_review_timestamp_same_date(self):
+        from datetime import datetime, timezone
+        # Oct 17 20:00:00 UTC is Oct 17 15:00:00 CDT (same date)
+        dt = datetime(2026, 10, 17, 20, 0, 0, tzinfo=timezone.utc)
+        ts = ai_review.get_review_timestamp(dt, tz_name="America/Chicago", commit_sha="abcdef123456")
+        self.assertEqual(
+            ts,
+            "2026-10-17 15:00:00 CDT (20:00:00 UTC) • commit `abcdef1`"
+        )
+
+    def test_get_review_timestamp_utc_only(self):
+        from datetime import datetime, timezone
+        dt = datetime(2026, 10, 18, 1, 51, 2, tzinfo=timezone.utc)
+        ts = ai_review.get_review_timestamp(dt, tz_name="UTC", commit_sha="abcdef123456")
+        self.assertEqual(
+            ts,
+            "2026-10-18 01:51:02 UTC • commit `abcdef1`"
+        )
+
+    def test_get_review_timestamp_invalid_tz_fallback(self):
+        from datetime import datetime, timezone
+        dt = datetime(2026, 10, 18, 1, 51, 2, tzinfo=timezone.utc)
+        ts = ai_review.get_review_timestamp(dt, tz_name="Invalid/Timezone_Name", commit_sha="abcdef123456")
+        self.assertEqual(
+            ts,
+            "2026-10-18 01:51:02 UTC • commit `abcdef1`"
+        )
+
+    def test_get_review_timestamp_without_commit(self):
+        from datetime import datetime, timezone
+        dt = datetime(2026, 10, 17, 20, 0, 0, tzinfo=timezone.utc)
+        ts = ai_review.get_review_timestamp(dt, tz_name="America/Chicago")
+        self.assertEqual(
+            ts,
+            "2026-10-17 15:00:00 CDT (20:00:00 UTC)"
+        )
+
+    def test_get_review_timestamp_env_var(self):
+        from datetime import datetime, timezone
+        dt = datetime(2026, 10, 18, 1, 51, 2, tzinfo=timezone.utc)
+        with patch.dict(os.environ, {"REVIEW_TIMEZONE": "UTC"}):
+            ts = ai_review.get_review_timestamp(dt)
+            self.assertEqual(ts, "2026-10-18 01:51:02 UTC")
+
+    def test_parse_args_timezone_flag(self):
+        args = ai_review.parse_args(["--timezone", "America/New_York"])
+        self.assertEqual(args.timezone, "America/New_York")
+
 
 if __name__ == "__main__":
     unittest.main()
