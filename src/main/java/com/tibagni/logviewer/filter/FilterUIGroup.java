@@ -73,7 +73,7 @@ class FilterUIGroup extends JPanel {
     addBtn = new FlatButton(StringUtils.PLUS);
     addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
 
-    saveBtn = new FlatButton(I18n.get(I18n.FILTERS_BTN_SAVE));
+    saveBtn = new FlatButton(I18n.get(I18n.COMMON_SAVE));
     saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
     saveBtn.setVisible(false);
 
@@ -166,8 +166,8 @@ class FilterUIGroup extends JPanel {
     menuTitle.setBorder(new EmptyBorder(0, UIScaleUtils.dip(10), 0, 0));
     popup.add(menuTitle);
     popup.add(new JPopupMenu.Separator());
-    JMenuItem deleteMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_DELETE));
-    JMenuItem editMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_EDIT));
+    JMenuItem deleteMenuItem = popup.add(I18n.get(I18n.COMMON_DELETE));
+    JMenuItem editMenuItem = popup.add(I18n.get(I18n.COMMON_EDIT));
     JMenuItem duplicateMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_DUPLICATE));
     JMenuItem moveMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_MOVE));
 

@@ -84,23 +84,9 @@ public final class I18n {
   public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
   public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
 
-  // ADB Dialogs
-  public static final String ADB_DEVICES_DIALOG_TITLE = "adb.dialog.devices.title";
-  public static final String ADB_DEVICES_COL_STATUS = "adb.dialog.devices.col.status";
-  public static final String ADB_DEVICES_COL_NAME = "adb.dialog.devices.col.name";
-  public static final String ADB_DEVICES_COL_SERIAL = "adb.dialog.devices.col.serial";
-  public static final String ADB_DEVICES_COL_TRANSPORT_ID = "adb.dialog.devices.col.transport_id";
-  public static final String ADB_DEVICES_REFRESH = "adb.dialog.devices.refresh";
-  public static final String ADB_DEVICES_OPEN_TERMINAL = "adb.dialog.devices.open_terminal";
-  public static final String ADB_DEVICES_RESTART_SERVER = "adb.dialog.devices.restart_server";
-  public static final String ADB_DEVICES_NO_DEVICES = "adb.dialog.devices.no_devices";
-  public static final String ADB_DEVICES_UNAUTHORIZED_WARNING = "adb.dialog.devices.unauthorized_warning";
-  public static final String ADB_DEVICES_ADB_NOT_FOUND = "adb.dialog.devices.adb_not_found";
+  // ADB Operations & Errors
   public static final String ADB_DEVICES_RESTART_SUCCESS = "adb.dialog.devices.restart_success";
   public static final String ADB_DEVICES_RESTART_FAILED = "adb.dialog.devices.restart_failed";
-  public static final String ADB_SHELL_SELECT_DEVICE_TITLE = "adb.dialog.shell.select_device_title";
-  public static final String ADB_SHELL_SELECT_DEVICE_MSG = "adb.dialog.shell.select_device_msg";
-  public static final String ADB_SHELL_NO_ONLINE_DEVICES = "adb.dialog.shell.no_online_devices";
   public static final String ADB_SHELL_TERMINAL_FAILED = "adb.dialog.shell.terminal_failed";
   public static final String ADB_ERROR_TITLE = "adb.dialog.error.title";
 
@@ -122,7 +108,6 @@ public final class I18n {
   public static final String LIVE_LOGS_TERMINAL = "live.logs.terminal";
   public static final String LIVE_LOGS_CHANGE_DEVICE = "live.logs.change_device";
   public static final String LIVE_LOGS_STOP = "live.logs.stop";
-  public static final String LIVE_LOGS_CLEAR = "live.logs.clear";
   public static final String LIVE_LOGS_REFRESH = "live.logs.refresh";
   public static final String LIVE_LOGS_RESTART_SERVER = "live.logs.restart_server";
   public static final String LIVE_LOGS_RESTARTING_SERVER = "live.logs.restarting_server";
@@ -140,7 +125,6 @@ public final class I18n {
   public static final String LIVE_LOGS_ADB_NOT_FOUND_MSG = "live.logs.adb_not_found_msg";
   public static final String LIVE_LOGS_CONFIGURE_ADB = "live.logs.configure_adb";
   public static final String LIVE_LOGS_DEVICE_UNAUTHORIZED = "live.logs.device_unauthorized";
-  public static final String LIVE_LOGS_DEVICE_OFFLINE = "live.logs.device_offline";
   public static final String LIVE_LOGS_EXPAND_SIDEBAR = "live.logs.expand_sidebar";
   public static final String LIVE_LOGS_COLLAPSE_SIDEBAR = "live.logs.collapse_sidebar";
   public static final String LIVE_LOGS_BUFFERS = "live.logs.buffers";
@@ -204,7 +188,6 @@ public final class I18n {
   public static final String FILTER_DEDUP_CROSS_GROUP_ITEM = "filters.dedup.cross_group_item";
 
   // Filters List & Actions
-  public static final String FILTERS_BTN_SAVE = "filters.btn.save";
   public static final String FILTERS_TOOLTIP_PREV = "filters.tooltip.prev";
   public static final String FILTERS_TOOLTIP_NEXT = "filters.tooltip.next";
   public static final String FILTERS_TOOLTIP_ADD = "filters.tooltip.add";
@@ -212,8 +195,6 @@ public final class I18n {
   public static final String FILTERS_TOOLTIP_CLOSE_GROUP = "filters.tooltip.close_group";
   public static final String FILTERS_TOOLTIP_SELECT_ALL = "filters.tooltip.select_all";
   public static final String FILTERS_MENU_ITEMS_SELECTED = "filters.menu.items_selected";
-  public static final String FILTERS_MENU_DELETE = "filters.menu.delete";
-  public static final String FILTERS_MENU_EDIT = "filters.menu.edit";
   public static final String FILTERS_MENU_DUPLICATE = "filters.menu.duplicate";
   public static final String FILTERS_MENU_MOVE = "filters.menu.move";
   public static final String FILTERS_PROGRESS_APPLYING = "filters.progress.applying";
@@ -304,10 +285,8 @@ public final class I18n {
   public static final String LOG_DETAILS_BTN_FILTER_TAG = "logs.details.btn_filter_tag";
   public static final String LOG_DETAILS_OPEN_EDITOR_ERROR = "logs.details.open_editor_error";
   public static final String LOG_DETAILS_NO_EDITOR_CONFIGURED_MSG = "logs.details.no_editor_msg";
-  public static final String LOG_DETAILS_COPIED_NOTIFICATION = "logs.details.copied_notification";
   public static final String LOGS_SELECT_FILTER_GROUP_TITLE = "logs.select_group.title";
   public static final String LOGS_SELECT_FILTER_GROUP_MSG = "logs.select_group.msg";
-  public static final String LOGS_MY_LOGS_REMOVE = "logs.my_logs.remove";
   public static final String LOGS_GOTO_TIMESTAMP_TITLE = "logs.goto_timestamp.title";
   public static final String LOGS_GOTO_TIMESTAMP_MSG = "logs.goto_timestamp.msg";
   public static final String LOGS_SKIPPED_FILES_TITLE = "logs.skipped_files.title";

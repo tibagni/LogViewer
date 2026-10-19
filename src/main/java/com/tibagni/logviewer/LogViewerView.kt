@@ -289,7 +289,7 @@ class LogViewerViewImpl(
         }
       },
       addSelectionActions = { popup, _ ->
-        popup.add(I18n.get(I18n.LOGS_MY_LOGS_REMOVE)).addActionListener {
+        popup.add(I18n.get(I18n.COMMON_REMOVE)).addActionListener {
           presenter.removeFromMyLog(myLogsList.table.selectedRows)
         }
       }
