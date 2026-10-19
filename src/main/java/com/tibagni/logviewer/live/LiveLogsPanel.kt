@@ -130,7 +130,7 @@ class LiveLogsPanel(
         SidePanelEntry.Action(
           id = ID_CLEAR,
           icon = CommonIcons.clearIcon(),
-          text = I18n.get(I18n.LIVE_LOGS_CLEAR)
+          text = I18n.get(I18n.COMMON_CLEAR)
         ) { presenter.clearLogs() },
         SidePanelEntry.Toggle(
           id = ID_AUTOSCROLL,
