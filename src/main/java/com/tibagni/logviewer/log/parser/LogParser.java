@@ -118,10 +118,6 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText, String logPath) {
-    return getLogEntries(logText, logPath, null);
-  }
-
   private List<LogEntry> getLogEntries(String logText, String logPath, File logFile) {
     LogStream logStream = LogStream.inferLogStreamFromName(logPath);
     List<LogEntry> logLines = new ArrayList<>();
@@ -143,53 +139,23 @@ public class LogParser {
       if (lineEnd > start && logText.charAt(lineEnd - 1) == '\r') {
         lineEnd--;
       }
-      String line = logText.substring(start, lineEnd);
+      String line = sanitizeLine(logText.substring(start, lineEnd));
       start = end + 1;
 
-      // Sometimes a line can contain a lot of NULL chars at the end, making it fail when trying to open the log
-      // (as these NULL chars will make the line length too long). So check here if the line has NULL chars
-      // and remove them to avoid failing to open valid log files
-      if (!line.isEmpty() && line.charAt(line.length() - 1) == '\u0000') {
-        line = line.replaceAll("\\u0000", "");
-      }
-
       if (isLogLine(line)) {
-        if (continuationBuilder != null) {
-          logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
-          continuationBuilder = null;
-        } else if (currentLogLine != null) {
-          logLines.add(createLogEntry(currentLogLine, logStream, logFile, currentLineNumber));
-        }
+        flushPendingLogEntry(logLines, continuationBuilder, currentLogLine, logStream, logFile, currentLineNumber);
+        continuationBuilder = null;
 
         currentLogLine = line;
         currentLineNumber = rawLineNumber;
       } else if (!shouldIgnoreLine(line) && currentLogLine != null) {
-        // This is probably a continuation of a already started log line. Append to it
+        // This is probably a continuation of an already started log line. Append to it
         if (continuationBuilder == null) {
           continuationBuilder = new StringBuilder(currentLogLine);
         }
 
         if (continuationBuilder.length() >= MAX_LOG_LINE_ALLOWED) {
-          continuationBuilder.delete(MAX_LOG_LINE_ALLOWED, continuationBuilder.length());
-
-          // First check if we have already considered this as a potential bugreport. If so,
-          // don't waste any more time here
-          if (!potentialBugReports.containsKey(logPath)) {
-            // This could be a bugreport. If this is the case, keep track of it
-            if (isPotentialBugReport(logText)) {
-              Logger.info("Found a potential bugreport: " + logPath);
-
-              // Make sure to remove all '\r' so it does not get in the way of the parsers
-              String bugReportText = logText.replace("\r", "");
-              potentialBugReports.put(logPath, bugReportText);
-            } else {
-              String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
-              Logger.warning(
-                  "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
-                      "\"" + incorrectLinePreview + "\"\n\n" +
-                      "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
-            }
-          }
+          handleOversizedContinuation(continuationBuilder, logPath, logText);
 
           // We are done with this line, add it to the list and clear currentLogLine to avoid
           // executing this same code over and over for invalid lines
@@ -205,17 +171,79 @@ public class LogParser {
     }
 
     // Make sure to add the last log line as well
-    if (continuationBuilder != null) {
-      logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
-    } else if (currentLogLine != null) {
-      logLines.add(createLogEntry(currentLogLine, logStream, logFile, currentLineNumber));
-    }
+    flushPendingLogEntry(logLines, continuationBuilder, currentLogLine, logStream, logFile, currentLineNumber);
 
     return logLines;
   }
 
-  private LogEntry createLogEntry(String logLine, LogStream logStream) {
-    return createLogEntry(logLine, logStream, null, 0);
+  /**
+   * Strips trailing null characters if present to avoid false payload length errors.
+   *
+   * @param line the raw line text extracted from the log.
+   * @return the sanitized line without null characters.
+   */
+  private String sanitizeLine(String line) {
+    if (!line.isEmpty() && line.charAt(line.length() - 1) == '\u0000') {
+      return line.replace("\u0000", "");
+    }
+    return line;
+  }
+
+  /**
+   * Flushes the active log line or continuation buffer into the collected log entries list.
+   *
+   * @param logLines the list collecting parsed [LogEntry] instances.
+   * @param continuationBuilder the builder holding multiline continuation text, or null.
+   * @param currentLogLine the last single log line text, or null.
+   * @param logStream the [LogStream] associated with this log.
+   * @param logFile the source [File] being parsed, or null.
+   * @param lineNumber the line number in the source file.
+   */
+  private void flushPendingLogEntry(
+      List<LogEntry> logLines,
+      StringBuilder continuationBuilder,
+      String currentLogLine,
+      LogStream logStream,
+      File logFile,
+      int lineNumber) {
+    if (continuationBuilder != null) {
+      logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, lineNumber));
+    } else if (currentLogLine != null) {
+      logLines.add(createLogEntry(currentLogLine, logStream, logFile, lineNumber));
+    }
+  }
+
+  /**
+   * Inspects and logs payload overflow for oversized continuation lines, detecting potential bug reports.
+   *
+   * @param continuationBuilder the continuation buffer exceeding allowable payload length.
+   * @param logPath the path of the log file being parsed.
+   * @param logText the full raw text of the log file.
+   */
+  private void handleOversizedContinuation(
+      StringBuilder continuationBuilder,
+      String logPath,
+      String logText) {
+    continuationBuilder.delete(MAX_LOG_LINE_ALLOWED, continuationBuilder.length());
+
+    // First check if we have already considered this as a potential bugreport. If so,
+    // don't waste any more time here
+    if (!potentialBugReports.containsKey(logPath)) {
+      // This could be a bugreport. If this is the case, keep track of it
+      if (isPotentialBugReport(logText)) {
+        Logger.info("Found a potential bugreport: " + logPath);
+
+        // Make sure to remove all '\r' so it does not get in the way of the parsers
+        String bugReportText = logText.replace("\r", "");
+        potentialBugReports.put(logPath, bugReportText);
+      } else {
+        String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
+        Logger.warning(
+            "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
+                "\"" + incorrectLinePreview + "\"\n\n" +
+                "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+      }
+    }
   }
 
   private LogEntry createLogEntry(String logLine, LogStream logStream, File sourceFile, int lineNumber) {
