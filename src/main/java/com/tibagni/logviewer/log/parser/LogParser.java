@@ -65,7 +65,7 @@ public class LogParser {
 
     LogEntry[] result = logEntries.toArray(new LogEntry[0]);
 
-    if (availableLogs.size() > 1) {
+    if (availableLogs.size() > 1 || !isSorted(result)) {
       progressReporter.onProgress(91, "Sorting...");
       Arrays.parallelSort(result);
     }
@@ -268,5 +268,14 @@ public class LogParser {
 
   private boolean isPotentialBugReport(String logText) {
     return logText.contains("Bugreport format version:");
+  }
+
+  boolean isSorted(LogEntry[] entries) {
+    for (int i = 1; i < entries.length; i++) {
+      if (entries[i - 1].compareTo(entries[i]) > 0) {
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -310,4 +310,60 @@ class ParserTests {
         assertEquals(expected.size, actual.size)
         assertTrue(actual.containsAll(expected))
     }
+
+    @Test
+    fun testIsSorted() {
+        val entry1 = LogEntry("line 1", LogLevel.DEBUG, LogTimestamp(10, 12, 10, 0, 0, 0))
+        val entry2 = LogEntry("line 2", LogLevel.DEBUG, LogTimestamp(10, 12, 10, 0, 1, 0))
+        val entry3 = LogEntry("line 3", LogLevel.DEBUG, LogTimestamp(10, 12, 10, 0, 2, 0))
+
+        assertTrue(logParser.isSorted(emptyArray()))
+        assertTrue(logParser.isSorted(arrayOf(entry1)))
+        assertTrue(logParser.isSorted(arrayOf(entry1, entry2, entry3)))
+        assertFalse(logParser.isSorted(arrayOf(entry2, entry1, entry3)))
+        assertFalse(logParser.isSorted(arrayOf(entry3, entry2, entry1)))
+    }
+
+    @Test
+    fun testParseLogsSingleFileOutOfOrderSortsChronologically() {
+        // Simulates bugreport format where SYSTEM logs appear first, followed by earlier EVENT logs
+        val bugreportLogs = "10-12 22:35:00.000  1000  1000 I SystemLog: Line later in time\n" +
+                "10-12 22:30:00.000  1000  1000 I EventLog: Line earlier in time"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("bugreport.txt"))
+        `when`(reader.get("bugreport.txt")).thenReturn(bugreportLogs)
+
+        val entries = logParser.parseLogs(StandardCharsets.UTF_8)
+
+        assertEquals(2, entries.size)
+        assertEquals("10-12 22:30:00.000  1000  1000 I EventLog: Line earlier in time", entries[0].logText)
+        assertEquals(0, entries[0].index)
+        assertEquals("10-12 22:35:00.000  1000  1000 I SystemLog: Line later in time", entries[1].logText)
+        assertEquals(1, entries[1].index)
+
+        val descriptionCaptor = ArgumentCaptor.forClass(String::class.java)
+        verify(progressReporter, atLeastOnce()).onProgress(anyInt(), descriptionCaptor.capture())
+        assertTrue(descriptionCaptor.allValues.contains("Sorting..."))
+    }
+
+    @Test
+    fun testParseLogsSingleFileAlreadySortedBypassesSorting() {
+        val sortedLogs = "10-12 22:30:00.000  1000  1000 I SystemLog: Line earlier\n" +
+                "10-12 22:35:00.000  1000  1000 I SystemLog: Line later"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("logcat.txt"))
+        `when`(reader.get("logcat.txt")).thenReturn(sortedLogs)
+
+        val entries = logParser.parseLogs(StandardCharsets.UTF_8)
+
+        assertEquals(2, entries.size)
+        assertEquals("10-12 22:30:00.000  1000  1000 I SystemLog: Line earlier", entries[0].logText)
+        assertEquals(0, entries[0].index)
+        assertEquals("10-12 22:35:00.000  1000  1000 I SystemLog: Line later", entries[1].logText)
+        assertEquals(1, entries[1].index)
+
+        val descriptionCaptor = ArgumentCaptor.forClass(String::class.java)
+        verify(progressReporter, atLeastOnce()).onProgress(anyInt(), descriptionCaptor.capture())
+        assertFalse(descriptionCaptor.allValues.contains("Sorting..."))
+    }
 }
