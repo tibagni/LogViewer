@@ -279,6 +279,28 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   @Override
+  public void closeLogs() {
+    if (logsRepository.getCurrentlyOpenedLogs().isEmpty()) {
+      return;
+    }
+
+    cleanUpFilterTempInfo();
+    cleanUpFilterInfoFromLogEntries();
+    logsRepository.closeLogs();
+    allowedStreamsMap.clear();
+    filteredLogs.clear();
+    cachedAllowedFilteredLogs.clear();
+    myLogsRepository.reset(Collections.emptyList());
+
+    view.showFilteredLogs(cachedAllowedFilteredLogs);
+    view.showLogs(logsRepository.getCurrentlyOpenedLogs());
+    view.showAvailableLogStreams(allowedStreamsMap.keySet());
+    view.showMyLogs(myLogsRepository.getLogs());
+    view.showCurrentLogsLocation(null);
+    view.closeCurrentlyOpenedBugReports();
+  }
+
+  @Override
   public void saveFilteredLogs(File file) {
     if (filteredLogs.isEmpty()) {
       return;

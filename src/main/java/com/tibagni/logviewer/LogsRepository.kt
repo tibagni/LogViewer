@@ -27,6 +27,7 @@ interface LogsRepository {
 
   @Throws(OpenLogsException::class)
   fun openLogFiles(files: Array<File>, charset: Charset, progressReporter: ProgressReporter)
+  fun closeLogs()
   fun getMatchingLogEntry(entry: LogEntry): LogEntry?
 }
 
@@ -67,6 +68,15 @@ class LogsRepositoryImpl : LogsRepository {
   override val allLogsSize: Int
     get() = _currentlyOpenedLogs.size
 
+  override fun closeLogs() {
+    _currentlyOpenedLogs.clear()
+    _currentlyOpenedLogFiles.clear()
+    _availableStreams.clear()
+    _lastSkippedLogFiles.clear()
+    _potentialBugReports.clear()
+    _firstVisibleLogIndex = 0
+    _lastVisibleLogIndex = -1
+  }
 
   @Throws(OpenLogsException::class)
   override fun openLogFiles(files: Array<File>, charset: Charset, progressReporter: ProgressReporter) {

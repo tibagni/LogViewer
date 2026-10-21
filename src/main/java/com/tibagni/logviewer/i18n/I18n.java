@@ -71,6 +71,7 @@ public final class I18n {
   public static final String MENU_LOGS = "main.menu.logs";
   public static final String MENU_ITEM_OPEN_LOGS = "main.menu.logs.open";
   public static final String MENU_ITEM_REFRESH = "main.menu.logs.refresh";
+  public static final String MENU_ITEM_CLOSE_LOGS = "main.menu.logs.close";
   public static final String MENU_ENCODING = "main.menu.logs.encoding";
   public static final String MENU_ITEM_SAVE_FILTERED_LOGS = "main.menu.logs.save.filtered";
   public static final String MENU_ITEM_GO_TO_TIMESTAMP = "main.menu.logs.goto.timestamp";

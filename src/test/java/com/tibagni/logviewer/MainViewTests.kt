@@ -8,6 +8,17 @@ import org.junit.Test
 import org.mockito.Mockito.mock
 import javax.swing.JFrame
 
+import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.SwingUtils
+import java.awt.event.KeyEvent
+import javax.swing.JMenu
+import javax.swing.JMenuBar
+import javax.swing.JMenuItem
+import javax.swing.KeyStroke
+
+import org.mockito.ArgumentCaptor
+import org.mockito.Mockito.verify
+
 /**
  * Unit tests for [MainView] and [MainViewImpl] verifying UI setup and client property configurations.
  */
@@ -38,6 +49,54 @@ class MainViewTests {
     assertEquals(
       false,
       tabbedPane.getClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER)
+    )
+  }
+
+  @Test
+  fun testLogsMenuAccelerators() {
+    val mockPrefs = mock(LogViewerPreferences::class.java)
+    val frame = mock(JFrame::class.java)
+    MainViewImpl(frame, mockPrefs, emptySet())
+
+    val menuBarCaptor = ArgumentCaptor.forClass(JMenuBar::class.java)
+    verify(frame).jMenuBar = menuBarCaptor.capture()
+    val menuBar = menuBarCaptor.value
+    assertNotNull(menuBar)
+
+    var logsMenu: JMenu? = null
+    for (i in 0 until menuBar.menuCount) {
+      val menu = menuBar.getMenu(i)
+      if (menu != null && menu.text == I18n.get(I18n.MENU_LOGS)) {
+        logsMenu = menu
+        break
+      }
+    }
+    assertNotNull(logsMenu)
+
+    val menuShortcutMask = SwingUtils.getMenuShortcutKeyMask()
+
+    var openLogsItem: JMenuItem? = null
+    var closeLogsItem: JMenuItem? = null
+    for (i in 0 until logsMenu!!.itemCount) {
+      val item = logsMenu.getItem(i)
+      if (item != null && item.text == I18n.get(I18n.MENU_ITEM_OPEN_LOGS)) {
+        openLogsItem = item
+      }
+      if (item != null && item.text == I18n.get(I18n.MENU_ITEM_CLOSE_LOGS)) {
+        closeLogsItem = item
+      }
+    }
+
+    assertNotNull(openLogsItem)
+    assertEquals(
+      KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutMask),
+      openLogsItem?.accelerator
+    )
+
+    assertNotNull(closeLogsItem)
+    assertEquals(
+      KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask),
+      closeLogsItem?.accelerator
     )
   }
 }

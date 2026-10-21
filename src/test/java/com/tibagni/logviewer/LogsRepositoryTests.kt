@@ -197,4 +197,23 @@ class LogsRepositoryTests {
     val matched = logsRepository.getMatchingLogEntry(queryEntry)
     assertNull(matched)
   }
+
+  @Test
+  fun testCloseLogs() {
+    testOpenSingleLogFile()
+    assertTrue(logsRepository.currentlyOpenedLogs.isNotEmpty())
+    assertTrue(logsRepository.currentlyOpenedLogFiles.isNotEmpty())
+    assertTrue(logsRepository.allLogsSize > 0)
+
+    logsRepository.closeLogs()
+
+    assertTrue(logsRepository.currentlyOpenedLogs.isEmpty())
+    assertTrue(logsRepository.currentlyOpenedLogFiles.isEmpty())
+    assertTrue(logsRepository.availableStreams.isEmpty())
+    assertTrue(logsRepository.lastSkippedLogFiles.isEmpty())
+    assertTrue(logsRepository.potentialBugReports.isEmpty())
+    assertEquals(0, logsRepository.allLogsSize)
+    assertEquals(0, logsRepository.firstVisibleLogIndex)
+    assertEquals(-1, logsRepository.lastVisibleLogIndex)
+  }
 }
