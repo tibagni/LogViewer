@@ -366,4 +366,90 @@ class ParserTests {
         verify(progressReporter, atLeastOnce()).onProgress(anyInt(), descriptionCaptor.capture())
         assertFalse(descriptionCaptor.allValues.contains("Sorting..."))
     }
+
+    @Test
+    fun testIsBackwardTimeDiscontinuity() {
+        val t1 = LogTimestamp(10, 12, 22, 30, 0, 50)
+        val t2 = LogTimestamp(10, 12, 22, 30, 5, 0)
+        val tSubsecondJitter = LogTimestamp(10, 12, 22, 30, 0, 10)
+        val tEarlierSecond = LogTimestamp(10, 12, 22, 29, 59, 99)
+
+        // Earlier -> Later: not a backward discontinuity
+        assertFalse(logParser.isBackwardTimeDiscontinuity(t1, t2))
+
+        // Same timestamp: not a backward discontinuity
+        assertFalse(logParser.isBackwardTimeDiscontinuity(t1, t1))
+
+        // Subsecond jitter within the same second: not a discontinuity
+        assertFalse(logParser.isBackwardTimeDiscontinuity(t1, tSubsecondJitter))
+
+        // Clock jump backward by 1 second: is a discontinuity
+        assertTrue(logParser.isBackwardTimeDiscontinuity(t1, tEarlierSecond))
+
+        // Clock jump backward by 1 hour
+        val tEarlierHour = LogTimestamp(10, 12, 21, 30, 0, 50)
+        assertTrue(logParser.isBackwardTimeDiscontinuity(t1, tEarlierHour))
+    }
+
+    @Test
+    fun testDetectBackwardTimeDiscontinuityInLogs() {
+        val rawLogs = "10-12 22:30:00.000  1000  1000 I SystemLog: First entry\n" +
+                "10-12 21:15:00.000  1000  1000 I SystemLog: Clock shifted backward\n" +
+                "10-12 21:16:00.000  1000  1000 I SystemLog: Normal forward progression"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("logcat.txt"))
+        `when`(reader.get("logcat.txt")).thenReturn(rawLogs)
+
+        logParser.parseLogs(StandardCharsets.UTF_8)
+
+        val discontinuities = logParser.timeDiscontinuities
+        assertEquals(1, discontinuities.size)
+        val d = discontinuities[0]
+        assertEquals("logcat.txt", d.sourceFileName)
+        assertEquals(2, d.lineNumber)
+        assertEquals("10-12 22:30:00", d.formatPreviousTime())
+        assertEquals("10-12 21:15:00", d.formatCurrentTime())
+        assertEquals("-1h 15m", d.formatDelta())
+    }
+
+    @Test
+    fun testSubsecondJitterDoesNotTriggerDiscontinuity() {
+        val rawLogs = "10-12 22:30:00.500  1000  1000 I SystemLog: Core 1 logged slightly later millisecond\n" +
+                "10-12 22:30:00.480  1001  1001 I SystemLog: Core 2 logged slightly earlier millisecond"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("logcat.txt"))
+        `when`(reader.get("logcat.txt")).thenReturn(rawLogs)
+
+        logParser.parseLogs(StandardCharsets.UTF_8)
+
+        assertTrue(logParser.timeDiscontinuities.isEmpty())
+    }
+
+    @Test
+    fun testBufferBoundaryResetsDiscontinuityTracking() {
+        val rawLogs = "10-12 22:30:00.000  1000  1000 I SystemLog: Main buffer entry\n" +
+                "--------- beginning of system\n" +
+                "10-12 21:00:00.000  1000  1000 I SystemLog: System buffer start with older time"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("logcat.txt"))
+        `when`(reader.get("logcat.txt")).thenReturn(rawLogs)
+
+        logParser.parseLogs(StandardCharsets.UTF_8)
+
+        assertTrue(logParser.timeDiscontinuities.isEmpty())
+    }
+
+    @Test
+    fun testSectionHeaderResetsDiscontinuityTracking() {
+        val rawLogs = "10-12 22:30:00.000  1000  1000 I SystemLog: Main buffer entry\n" +
+                "------ SYSTEM LOG (logcat -v threadtime -d *:v) ------\n" +
+                "10-12 21:00:00.000  1000  1000 I SystemLog: System buffer start with older time"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("logcat.txt"))
+        `when`(reader.get("logcat.txt")).thenReturn(rawLogs)
+
+        logParser.parseLogs(StandardCharsets.UTF_8)
+
+        assertTrue(logParser.timeDiscontinuities.isEmpty())
+    }
 }

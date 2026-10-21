@@ -7,6 +7,7 @@ import com.tibagni.logviewer.filter.Filters;
 import com.tibagni.logviewer.log.LogEntry;
 import com.tibagni.logviewer.log.LogStream;
 import com.tibagni.logviewer.log.LogTimestamp;
+import com.tibagni.logviewer.log.TimeDiscontinuity;
 import com.tibagni.logviewer.logger.Logger;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.util.StringUtils;
@@ -242,6 +243,13 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
               view.showSkippedLogsMessage(skippedLogs);
             }
 
+            List<TimeDiscontinuity> discontinuities = logsRepository.getTimeDiscontinuities();
+            if (!discontinuities.isEmpty()) {
+              view.showTimeDiscontinuities(discontinuities);
+            } else {
+              view.hideTimeDiscontinuities();
+            }
+
             if (bugReports.isEmpty()) {
               view.closeCurrentlyOpenedBugReports();
             } else {
@@ -250,6 +258,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
               view.showOpenPotentialBugReport(entry.getKey(), entry.getValue());
             }
           } else {
+            view.hideTimeDiscontinuities();
             view.showCurrentLogsLocation(null);
             view.showErrorMessage("No logs found");
           }

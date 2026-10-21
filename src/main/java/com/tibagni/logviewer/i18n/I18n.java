@@ -294,6 +294,21 @@ public final class I18n {
   public static final String LOGS_TIMESTAMP_PARSE_ERROR_TITLE = "logs.timestamp_error.title";
   public static final String LOGS_TIMESTAMP_PARSE_ERROR_MSG = "logs.timestamp_error.msg";
 
+  // Time Discontinuities (Warning Banner & Details Dialog)
+  public static final String TIME_DISCONTINUITY_SINGLE = "time.discontinuity.single";
+  public static final String TIME_DISCONTINUITY_MULTIPLE = "time.discontinuity.multiple";
+  public static final String TIME_DISCONTINUITY_VIEW_DETAILS = "time.discontinuity.view_details";
+  public static final String TIME_DISCONTINUITY_DISMISS = "time.discontinuity.dismiss";
+  public static final String TIME_DISCONTINUITY_DIALOG_TITLE = "time.discontinuity.dialog_title";
+  public static final String TIME_DISCONTINUITY_DIALOG_HEADER = "time.discontinuity.dialog_header";
+  public static final String TIME_DISCONTINUITY_DIALOG_DESC = "time.discontinuity.dialog_desc";
+  public static final String TIME_DISCONTINUITY_COL_FILE = "time.discontinuity.col.file";
+  public static final String TIME_DISCONTINUITY_COL_LINE = "time.discontinuity.col.line";
+  public static final String TIME_DISCONTINUITY_COL_PREV = "time.discontinuity.col.prev";
+  public static final String TIME_DISCONTINUITY_COL_CURR = "time.discontinuity.col.curr";
+  public static final String TIME_DISCONTINUITY_COL_DELTA = "time.discontinuity.col.delta";
+  public static final String TIME_DISCONTINUITY_GO_TO_LINE = "time.discontinuity.go_to_line";
+
   // Visible Logs Configuration (VisibleLogsConfigurationDialog)
   public static final String VISIBLE_LOGS_TITLE = "visible_logs.title";
   public static final String VISIBLE_LOGS_FIRST_LABEL = "visible_logs.first_log_label";

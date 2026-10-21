@@ -16,6 +16,7 @@ interface LogsRepository {
   val availableStreams: Set<LogStream>
   val lastSkippedLogFiles: List<String>
   val potentialBugReports: Map<String, String>
+  val timeDiscontinuities: List<TimeDiscontinuity>
 
   var firstVisibleLogIndex: Int
   var lastVisibleLogIndex: Int
@@ -51,6 +52,10 @@ class LogsRepositoryImpl : LogsRepository {
   override val potentialBugReports: Map<String, String>
     get() = _potentialBugReports
 
+  private val _timeDiscontinuities = mutableListOf<TimeDiscontinuity>()
+  override val timeDiscontinuities: List<TimeDiscontinuity>
+    get() = _timeDiscontinuities
+
   private var _firstVisibleLogIndex = 0
   override var firstVisibleLogIndex: Int
     get() = _firstVisibleLogIndex
@@ -81,11 +86,13 @@ class LogsRepositoryImpl : LogsRepository {
       _availableStreams.reset(logParser.availableStreams)
       _lastSkippedLogFiles.reset(logParser.logsSkipped)
       _potentialBugReports.reset(logParser.potentialBugReports)
+      _timeDiscontinuities.reset(logParser.timeDiscontinuities)
 
       if (parsedLogs.isNotEmpty()) {
         _currentlyOpenedLogFiles.reset(files)
       } else {
         _currentlyOpenedLogFiles.clear()
+        _timeDiscontinuities.clear()
       }
 
       logParser.release()

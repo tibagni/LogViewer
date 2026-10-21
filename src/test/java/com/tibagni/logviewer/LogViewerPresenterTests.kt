@@ -8,6 +8,7 @@ import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
 import com.tibagni.logviewer.log.LogTimestamp
+import com.tibagni.logviewer.log.TimeDiscontinuity
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import org.junit.After
 import org.junit.Assert.*
@@ -1713,6 +1714,47 @@ class LogViewerPresenterTests {
     assertEquals(3172, info?.tid)
     assertEquals("KeyguardStatusView", info?.tag)
     assertEquals("refresh statusview showing:true", info?.message)
+  }
+
+  @Test
+  fun testLoadLogsWithTimeDiscontinuitiesShowsDiscontinuities() {
+    val inputLogFiles = arrayOf(File("test"))
+    val discontinuities = listOf(
+      TimeDiscontinuity(
+        sourceFile = File("test"),
+        sourceFileName = "test",
+        lineNumber = 42,
+        previousTimestamp = LogTimestamp(10, 12, 22, 30, 0, 0),
+        currentTimestamp = LogTimestamp(10, 12, 21, 0, 0, 0)
+      )
+    )
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockLogsRepository.timeDiscontinuities).thenReturn(discontinuities)
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(view).showTimeDiscontinuities(discontinuities)
+    verify(view, never()).hideTimeDiscontinuities()
+  }
+
+  @Test
+  fun testLoadLogsWithoutTimeDiscontinuitiesHidesDiscontinuities() {
+    val inputLogFiles = arrayOf(File("test"))
+
+    `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(
+      listOf(LogEntry("Log line 1", LogLevel.DEBUG, null))
+    )
+    `when`(mockLogsRepository.timeDiscontinuities).thenReturn(emptyList())
+
+    presenter.loadLogs(inputLogFiles)
+
+    verify(view).hideTimeDiscontinuities()
+    verify(view, never()).showTimeDiscontinuities(anyNonNull(emptyList()))
   }
 
   companion object {

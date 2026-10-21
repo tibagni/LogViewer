@@ -27,6 +27,7 @@ public class LogParser {
   private ProgressReporter progressReporter;
   private final List<String> logsSkipped;
   private final Map<String, String> potentialBugReports;
+  private final List<TimeDiscontinuity> timeDiscontinuities;
 
   public LogParser(LogReader logReader, ProgressReporter progressReporter) {
     this.logReader = logReader;
@@ -34,6 +35,7 @@ public class LogParser {
     this.logEntries = new ArrayList<>();
     this.logsSkipped = new ArrayList<>();
     this.potentialBugReports = new HashMap<>();
+    this.timeDiscontinuities = new ArrayList<>();
   }
 
   public LogEntry[] parseLogs(Charset charset) throws LogReaderException {
@@ -90,6 +92,11 @@ public class LogParser {
   }
 
   @NotNull
+  public List<TimeDiscontinuity> getTimeDiscontinuities() {
+    return timeDiscontinuities;
+  }
+
+  @NotNull
   public Set<LogStream> getAvailableStreams() {
     ensureState();
 
@@ -125,6 +132,7 @@ public class LogParser {
     String currentLogLine = null;
     int currentLineNumber = 0;
     StringBuilder continuationBuilder = null;
+    LogTimestamp lastTimestamp = null;
 
     int textLen = logText.length();
     int start = 0;
@@ -142,7 +150,27 @@ public class LogParser {
       String line = sanitizeLine(logText.substring(start, lineEnd));
       start = end + 1;
 
+      if (line.startsWith("--------- beginning of") || line.startsWith("------ ")) {
+        lastTimestamp = null;
+      }
+
       if (isLogLine(line)) {
+        LogTimestamp currentTimestamp = findTimestamp(line);
+        if (lastTimestamp != null && currentTimestamp != null) {
+          if (isBackwardTimeDiscontinuity(lastTimestamp, currentTimestamp)) {
+            timeDiscontinuities.add(new TimeDiscontinuity(
+                logFile,
+                logPath,
+                rawLineNumber,
+                lastTimestamp,
+                currentTimestamp
+            ));
+          }
+        }
+        if (currentTimestamp != null) {
+          lastTimestamp = currentTimestamp;
+        }
+
         flushPendingLogEntry(logLines, continuationBuilder, currentLogLine, logStream, logFile, currentLineNumber);
         continuationBuilder = null;
 
@@ -277,5 +305,16 @@ public class LogParser {
       }
     }
     return true;
+  }
+
+  boolean isBackwardTimeDiscontinuity(LogTimestamp prev, LogTimestamp curr) {
+    if (prev.compareTo(curr) <= 0) {
+      return false;
+    }
+    return prev.month != curr.month ||
+           prev.day != curr.day ||
+           prev.hour != curr.hour ||
+           prev.minutes != curr.minutes ||
+           prev.seconds != curr.seconds;
   }
 }

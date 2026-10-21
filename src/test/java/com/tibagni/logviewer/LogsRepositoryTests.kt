@@ -197,4 +197,28 @@ class LogsRepositoryTests {
     val matched = logsRepository.getMatchingLogEntry(queryEntry)
     assertNull(matched)
   }
+
+  @Test
+  fun testTimeDiscontinuitiesPopulated() {
+    val temporaryLogFile = createTempLogFiles("log")
+    logsRepository.openLogFiles(temporaryLogFile, StandardCharsets.UTF_8, mockProgressReporter)
+
+    val discontinuities = logsRepository.timeDiscontinuities
+    assertEquals(1, discontinuities.size)
+    assertEquals(4, discontinuities[0].lineNumber)
+    assertEquals("01-06 20:46:42", discontinuities[0].formatPreviousTime())
+    assertEquals("01-06 20:46:39", discontinuities[0].formatCurrentTime())
+    assertEquals("-3s", discontinuities[0].formatDelta())
+  }
+
+  @Test
+  fun testTimeDiscontinuitiesClearedWhenReopeningEmptyOrSequential() {
+    val temporaryLogFile = createTempLogFiles("log")
+    logsRepository.openLogFiles(temporaryLogFile, StandardCharsets.UTF_8, mockProgressReporter)
+    assertEquals(1, logsRepository.timeDiscontinuities.size)
+
+    val emptyFiles = createTempLogEmptyFiles("empty")
+    logsRepository.openLogFiles(emptyFiles, StandardCharsets.UTF_8, mockProgressReporter)
+    assertTrue(logsRepository.timeDiscontinuities.isEmpty())
+  }
 }

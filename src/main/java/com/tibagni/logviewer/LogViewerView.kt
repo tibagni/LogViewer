@@ -50,6 +50,8 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showNavigationPrevOver()
   fun showOpenPotentialBugReport(bugreportPath: String, bugreportText: String)
   fun closeCurrentlyOpenedBugReports()
+  fun showTimeDiscontinuities(discontinuities: List<TimeDiscontinuity>)
+  fun hideTimeDiscontinuities()
 }
 
 class LogViewerViewImpl(
@@ -66,6 +68,8 @@ class LogViewerViewImpl(
   private lateinit var filteredLogList: SearchableTable
   private lateinit var myLogsList: SearchableTable
   private lateinit var logsPane: JSplitPane
+  private lateinit var logsContainer: JPanel
+  private lateinit var timeDiscontinuityBanner: TimeDiscontinuityBanner
   private lateinit var currentLogsLbl: JLabel
   private lateinit var sideButtonsPanel: SideButtonsPanel
 
@@ -189,7 +193,7 @@ class LogViewerViewImpl(
     updateLogFont()
 
     // Configure file drop
-    FileDrop(Logger.getDebugStream(), logsPane) { presenter.loadLogs(it) }
+    FileDrop(Logger.getDebugStream(), logsContainer) { presenter.loadLogs(it) }
 
     // Load initial log files if any when component is shown
     if (initialLogFiles.isNotEmpty()) {
@@ -549,6 +553,40 @@ class LogViewerViewImpl(
     mainView.onBugReportClosed()
   }
 
+  override fun showTimeDiscontinuities(discontinuities: List<TimeDiscontinuity>) {
+    timeDiscontinuityBanner.showDiscontinuities(discontinuities) { discontinuity ->
+      navigateToDiscontinuity(discontinuity)
+    }
+  }
+
+  override fun hideTimeDiscontinuities() {
+    timeDiscontinuityBanner.dismiss()
+  }
+
+  private fun navigateToDiscontinuity(discontinuity: TimeDiscontinuity) {
+    val rowCount = logListTableModel.rowCount
+    var targetRow = -1
+    for (i in 0 until rowCount) {
+      val entry = logListTableModel.getValueAt(i, 0)
+      if (entry is LogEntry) {
+        val matchesFile = if (discontinuity.sourceFile != null) {
+          entry.sourceFile == discontinuity.sourceFile
+        } else {
+          entry.sourceFile?.name == discontinuity.sourceFileName || entry.sourceFile?.path == discontinuity.sourceFileName
+        }
+        if (matchesFile && entry.lineNumber >= discontinuity.lineNumber) {
+          targetRow = i
+          break
+        }
+      }
+    }
+
+    if (targetRow != -1) {
+      SwingUtils.scrollToVisible(logList.table, targetRow)
+      logList.table.setRowSelectionInterval(targetRow, targetRow)
+    }
+  }
+
   override fun showStartLoading() = mainView.showStartLoading("Logs")
 
   override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress("Logs", progress, note)
@@ -622,7 +660,13 @@ class LogViewerViewImpl(
     myLogsListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_MY_LOGS))
     myLogsList = SearchableTable(myLogsListTableModel)
 
-    mainLogSplit.leftComponent = logsPane
+    timeDiscontinuityBanner = TimeDiscontinuityBanner { mainView.parent }
+    logsContainer = JPanel(BorderLayout()).apply {
+      add(timeDiscontinuityBanner, BorderLayout.NORTH)
+      add(logsPane, BorderLayout.CENTER)
+    }
+
+    mainLogSplit.leftComponent = logsContainer
     mainLogSplit.rightComponent = myLogsList
     mainLogSplit.rightComponent.isVisible = false // Start collapsed
 

@@ -135,16 +135,43 @@ object CommonIcons {
 
   fun myLogsIcon(): ImageIcon = viewListIcon()
 
-  private fun createIcon(painter: (Graphics2D, Int, Color) -> Unit): ImageIcon {
-    val image = BufferedImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB)
+  fun warningIcon(iconSize: Int = 18): ImageIcon = createCustomIcon(iconSize) { g2d, size, _ ->
+    g2d.color = Color(0xEE, 0x9B, 0x00) // amber warning
+    g2d.stroke = BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+    val path = Path2D.Double()
+    path.moveTo(size / 2.0, size * 0.12)
+    path.lineTo(size * 0.90, size * 0.88)
+    path.lineTo(size * 0.10, size * 0.88)
+    path.closePath()
+    g2d.draw(path)
+    // Exclamation point
+    g2d.draw(Line2D.Double(size / 2.0, size * 0.38, size / 2.0, size * 0.62))
+    g2d.fill(Ellipse2D.Double(size / 2.0 - 1.0, size * 0.72, 2.0, 2.0))
+  }
+
+  fun closeIcon(iconSize: Int = 14): ImageIcon = createCustomIcon(iconSize) { g2d, size, color ->
+    g2d.color = color
+    g2d.stroke = BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+    val pad = size * 0.25
+    g2d.draw(Line2D.Double(pad, pad, size - pad, size - pad))
+    g2d.draw(Line2D.Double(size - pad, pad, pad, size - pad))
+  }
+
+  fun createCustomIcon(size: Int, painter: (Graphics2D, Int, Color) -> Unit): ImageIcon {
+    val image = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val g2d = image.createGraphics()
     try {
       g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
       g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
-      painter(g2d, ICON_SIZE, Color.WHITE)
+      painter(g2d, size, Color.WHITE)
     } finally {
       g2d.dispose()
     }
     return ImageIcon(image)
   }
+
+  private fun createIcon(painter: (Graphics2D, Int, Color) -> Unit): ImageIcon {
+    return createCustomIcon(ICON_SIZE, painter)
+  }
 }
+
