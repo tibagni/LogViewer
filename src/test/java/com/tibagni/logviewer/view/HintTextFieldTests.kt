@@ -4,7 +4,6 @@ import com.formdev.flatlaf.FlatClientProperties
 import com.formdev.flatlaf.FlatLightLaf
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.awt.GraphicsEnvironment
 import java.awt.image.BufferedImage
 import javax.swing.UIManager
 import javax.swing.plaf.metal.MetalLookAndFeel
@@ -33,8 +32,6 @@ class HintTextFieldTests {
    */
   @Test
   fun testHintTextFieldFallbackPainting() {
-    if (GraphicsEnvironment.isHeadless()) return
-
     val originalLaf = UIManager.getLookAndFeel()
     try {
       UIManager.setLookAndFeel(MetalLookAndFeel())

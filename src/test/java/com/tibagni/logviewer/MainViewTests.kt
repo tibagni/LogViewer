@@ -6,7 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.mockito.Mockito.mock
-import java.awt.GraphicsEnvironment
 import javax.swing.JFrame
 
 /**
@@ -22,10 +21,8 @@ class MainViewTests {
    */
   @Test
   fun testMainViewTabbedPaneClientProperties() {
-    if (GraphicsEnvironment.isHeadless()) return;
-
     val mockPrefs = mock(LogViewerPreferences::class.java)
-    val frame = JFrame()
+    val frame = mock(JFrame::class.java)
     val mainView = MainViewImpl(frame, mockPrefs, emptySet())
     val tabbedPane = mainView.mainTabbedPane
 

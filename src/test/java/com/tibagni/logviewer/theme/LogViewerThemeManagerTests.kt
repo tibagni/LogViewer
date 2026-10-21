@@ -5,7 +5,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.awt.Dimension
-import java.awt.GraphicsEnvironment
 import javax.swing.UIManager
 
 class LogViewerThemeManagerTests {
@@ -20,8 +19,6 @@ class LogViewerThemeManagerTests {
 
   @Test
   fun testThemeInstallationLight() {
-    if (GraphicsEnvironment.isHeadless()) return;
-
     LogViewerThemeManager.currentTheme = "Light"
     assertEquals("Light", LogViewerThemeManager.currentTheme)
     assertFalse(LogViewerThemeManager.isDark)
@@ -29,8 +26,6 @@ class LogViewerThemeManagerTests {
 
   @Test
   fun testThemeInstallationDark() {
-    if (GraphicsEnvironment.isHeadless()) return;
-
     LogViewerThemeManager.currentTheme = "Dark"
     assertEquals("Dark", LogViewerThemeManager.currentTheme)
     assertTrue(LogViewerThemeManager.isDark)
@@ -38,8 +33,6 @@ class LogViewerThemeManagerTests {
 
   @Test
   fun testTokenDefaults() {
-    if (GraphicsEnvironment.isHeadless()) return;
-
     LogViewerThemeManager.currentTheme = "Light"
 
     assertEquals(8, UIManager.get("Component.arc"))
@@ -61,8 +54,6 @@ class LogViewerThemeManagerTests {
 
   @Test
   fun testInvalidThemeKeepsCurrentOrFallsBack() {
-    if (GraphicsEnvironment.isHeadless()) return;
-
     LogViewerThemeManager.currentTheme = "Light"
     assertEquals("Light", LogViewerThemeManager.currentTheme)
 

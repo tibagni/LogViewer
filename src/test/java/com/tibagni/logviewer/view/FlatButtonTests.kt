@@ -12,8 +12,6 @@ class FlatButtonTests {
 
   @Test
   fun testToolbarButtonClientProperty() {
-    if (GraphicsEnvironment.isHeadless()) return;
-
     val button = FlatButton("Test")
     assertEquals(
       FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON,

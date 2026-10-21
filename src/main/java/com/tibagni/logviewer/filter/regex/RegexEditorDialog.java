@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
   private ButtonsPane buttonsPane;
   private JPanel contentPane;
-  JTextArea regexEdit;
+  private JTextArea regexEdit;
   private JTextArea regexPreview;
   private JCheckBox caseSensitive;
 
