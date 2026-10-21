@@ -58,4 +58,13 @@ class ButtonsPaneTests {
     pane.setDefaultButtonOk()
     assertNotNull(rootPane.defaultButton)
   }
+
+  @Test
+  fun testOkAndCancelButtonGetters() {
+    val listener = mock(ButtonsPane.Listener::class.java)
+    val pane = ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, listener)
+
+    assertNotNull(pane.buttonOk)
+    assertNotNull(pane.buttonCancel)
+  }
 }
