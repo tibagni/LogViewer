@@ -1,11 +1,18 @@
 package com.tibagni.logviewer.view;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
+/**
+ * A borderless flat button styled as a toolbar button.
+ *
+ * Configures FlatLaf toolbar button client properties and handles mouse rollover
+ * highlights while maintaining consistent padding and cursor styles.
+ */
 public class FlatButton extends JButton {
   protected Color normalColor;
   protected Color rolloverColor;
@@ -34,7 +41,12 @@ public class FlatButton extends JButton {
     initialize();
   }
 
+  /**
+   * Initializes the flat button properties, configuring the toolbar button client property,
+   * focus, border, cursor, and initial foreground colors.
+   */
   private void initialize() {
+    putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
     setFocusPainted(false);
     setBorderPainted(false);
     setContentAreaFilled(false);

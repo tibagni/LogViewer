@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
@@ -342,6 +343,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     editPane.add(nameLbl, cc.xy(1, 1));
     nameTxt = new JTextField();
     nameTxt.setEnabled(true);
+    nameTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
     editPane.add(nameTxt, cc.xy(3, 1, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     regexLbl = new JLabel();
@@ -349,6 +351,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     regexLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX));
     editPane.add(regexLbl, cc.xy(1, 3));
     regexTxt = new JTextField();
+    regexTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
     editPane.add(regexTxt, cc.xy(3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
     regexEditorBtn = new JButton();
     regexEditorBtn.setText(I18n.get(I18n.FILTER_BTN_REGEX_EDITOR));

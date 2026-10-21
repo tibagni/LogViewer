@@ -1,6 +1,8 @@
 package com.tibagni.logviewer
 
+import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.about.AboutDialog
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.bugreport.BugReportView
 import com.tibagni.logviewer.bugreport.BugReportViewImpl
 import com.tibagni.logviewer.filter.Filter
@@ -93,6 +95,16 @@ class MainViewImpl(
   private val bugReportView: BugReportView
   private val liveLogView: LiveLogView
   private lateinit var tabbedPane: JTabbedPane
+
+  /**
+   * The underlying [JTabbedPane] managing the primary view tabs (Logs, Bug Report, Live Logs).
+   *
+   * Exposed internally for unit and integration testing to inspect tab configuration,
+   * client properties, and visual styles.
+   */
+  @VisibleForTesting
+  internal val mainTabbedPane: JTabbedPane
+    get() = tabbedPane
 
   // Dynamic Menu items
   private var saveFilteredLogs: JMenuItem? = null
@@ -385,11 +397,29 @@ class MainViewImpl(
     LogViewerPreferencesDialog.showPreferencesDialog(parent)
   }
 
+  /**
+   * Constructs and configures the main user interface hierarchy.
+   *
+   * Initializes [mainPanel] and [tabbedPane], applying FlatLaf modern tab styling properties
+   * including underlined tab type ([FlatClientProperties.TABBED_PANE_TAB_TYPE_UNDERLINED]),
+   * tab separators ([FlatClientProperties.TABBED_PANE_SHOW_TAB_SEPARATORS]), and a borderless
+   * layout ([FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER]).
+   *
+   * Mounts the primary application tabs (Logs, Bug Report, and Live Logs), attaches tab selection
+   * change listeners to properly route active tab state and menu bar refreshes, and places the
+   * tabbed pane within the main layout.
+   */
   private fun buildUi() {
     mainPanel = JPanel()
     mainPanel.layout = GridBagLayout()
     mainPanel.preferredSize = Dimension(UIScaleUtils.dip(1000), UIScaleUtils.dip(500))
     tabbedPane = JTabbedPane()
+    tabbedPane.putClientProperty(
+      FlatClientProperties.TABBED_PANE_TAB_TYPE,
+      FlatClientProperties.TABBED_PANE_TAB_TYPE_UNDERLINED
+    )
+    tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_TAB_SEPARATORS, true)
+    tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false)
 
     tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LOGS), logViewerView.contentPane)
     tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_BUG_REPORT), bugReportView.contentPane)

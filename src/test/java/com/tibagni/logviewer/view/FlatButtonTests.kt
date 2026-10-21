@@ -1,15 +1,30 @@
 package com.tibagni.logviewer.view
 
+import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.theme.LogViewerThemeManager
 import org.junit.Assert.*
 import org.junit.Test
+import java.awt.GraphicsEnvironment
 import java.awt.event.MouseEvent
 import javax.swing.UIManager
 
 class FlatButtonTests {
 
   @Test
+  fun testToolbarButtonClientProperty() {
+    if (GraphicsEnvironment.isHeadless()) return;
+
+    val button = FlatButton("Test")
+    assertEquals(
+      FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON,
+      button.getClientProperty(FlatClientProperties.BUTTON_TYPE)
+    )
+  }
+
+  @Test
   fun testInitialColorsFromUIManager() {
+    if (GraphicsEnvironment.isHeadless()) return;
+
     LogViewerThemeManager.currentTheme = "Light"
     val button = FlatButton("Test")
     val expectedForeground = UIManager.getColor("Button.foreground")
@@ -18,6 +33,8 @@ class FlatButtonTests {
 
   @Test
   fun testUpdateUIUpdatesColorsOnThemeChange() {
+    if (GraphicsEnvironment.isHeadless()) return;
+
     LogViewerThemeManager.currentTheme = "Light"
     val button = FlatButton("Test")
     val lightForeground = button.foreground
@@ -33,6 +50,8 @@ class FlatButtonTests {
 
   @Test
   fun testMouseEnteredAndExited() {
+    if (GraphicsEnvironment.isHeadless()) return;
+
     LogViewerThemeManager.currentTheme = "Light"
     val button = FlatButton("Test")
     val normalColor = button.foreground
