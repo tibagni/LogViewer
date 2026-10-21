@@ -51,17 +51,17 @@ public class FiltersList extends JPanel {
   public void updateUI() {
     super.updateUI();
     if (filterUIGroups != null) {
-      for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
-        groupEntry.getValue().updateUI();
-        groupEntry.getValue().updateActionPaneButtons();
+      for (FilterUIGroup group : filterUIGroups.values()) {
+        group.updateUI();
+        group.updateActionPaneButtons();
       }
     }
   }
 
   public void updateActionPaneButtons() {
     if (filterUIGroups != null) {
-      for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
-        groupEntry.getValue().updateActionPaneButtons();
+      for (FilterUIGroup group : filterUIGroups.values()) {
+        group.updateActionPaneButtons();
       }
     }
   }

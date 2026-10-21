@@ -391,7 +391,6 @@ open class FiltersPanel(
 
   fun clearAllFiltersSelection() {
     presenter.setAllFiltersApplied(false)
-    updateFiltersUI()
   }
 
   fun handleCleanDuplicateFilters() {
