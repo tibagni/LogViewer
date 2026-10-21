@@ -86,7 +86,19 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     newLogViewerWindow(initialLogFiles);
   }
 
+  /**
+   * Initializes the application look and feel.
+   *
+   * Configures FlatLaf modern window decorations and embedded menu bars on frames and dialogs,
+   * loads the user-configured theme from preferences, and registers a preference listener
+   * to handle dynamic theme changes at runtime.
+   */
   private void initLookAndFeel() {
+    System.setProperty("flatlaf.useWindowDecorations", "true");
+    System.setProperty("flatlaf.menuBarEmbedded", "true");
+    JFrame.setDefaultLookAndFeelDecorated(true);
+    JDialog.setDefaultLookAndFeelDecorated(true);
+
     LogViewerPreferences prefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
     LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
     String lookAndFeel = prefs.getLookAndFeel();
