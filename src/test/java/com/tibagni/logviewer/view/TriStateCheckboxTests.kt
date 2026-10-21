@@ -23,14 +23,20 @@ class TriStateCheckboxTests {
     cb.selectionState = TriStateCheckbox.SelectionState.SELECTED
     assertEquals(TriStateCheckbox.SelectionState.SELECTED, cb.selectionState)
     assertTrue(cb.isSelected)
+    assertNull(cb.getClientProperty(com.formdev.flatlaf.FlatClientProperties.SELECTED_STATE))
 
     cb.selectionState = TriStateCheckbox.SelectionState.PARTIALLY_SELECTED
     assertEquals(TriStateCheckbox.SelectionState.PARTIALLY_SELECTED, cb.selectionState)
     assertFalse(cb.isSelected)
+    assertEquals(
+      com.formdev.flatlaf.FlatClientProperties.SELECTED_STATE_INDETERMINATE,
+      cb.getClientProperty(com.formdev.flatlaf.FlatClientProperties.SELECTED_STATE)
+    )
 
     cb.selectionState = TriStateCheckbox.SelectionState.NOT_SELECTED
     assertEquals(TriStateCheckbox.SelectionState.NOT_SELECTED, cb.selectionState)
     assertFalse(cb.isSelected)
+    assertNull(cb.getClientProperty(com.formdev.flatlaf.FlatClientProperties.SELECTED_STATE))
   }
 
   @Test

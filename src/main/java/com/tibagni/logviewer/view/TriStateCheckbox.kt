@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.view
 
+import com.formdev.flatlaf.FlatClientProperties
+import com.formdev.flatlaf.FlatLaf
 import java.awt.Color
 import java.awt.Component
 import java.awt.Graphics
@@ -7,7 +9,6 @@ import java.awt.event.ActionEvent
 import javax.swing.Icon
 import javax.swing.JCheckBox
 import javax.swing.UIManager
-
 
 class TriStateCheckbox(text: String? = null) : JCheckBox(text) {
   enum class SelectionState {
@@ -26,16 +27,28 @@ class TriStateCheckbox(text: String? = null) : JCheckBox(text) {
     set(value) {
       isSelected = value == SelectionState.SELECTED
       _selectionState = value
+      updateIndeterminateState()
+      repaint()
     }
 
   init {
     icon = TriStateCheckIcon(this)
+    updateIndeterminateState()
     addActionListener(this::actionPerformed)
+  }
+
+  private fun updateIndeterminateState() {
+    if (_selectionState == SelectionState.PARTIALLY_SELECTED) {
+      putClientProperty(FlatClientProperties.SELECTED_STATE, FlatClientProperties.SELECTED_STATE_INDETERMINATE)
+    } else {
+      putClientProperty(FlatClientProperties.SELECTED_STATE, null)
+    }
   }
 
   override fun updateUI() {
     super.updateUI()
     icon = TriStateCheckIcon(this)
+    updateIndeterminateState()
   }
 
   fun addSelectionChangedListener(listener: SelectionChangedListener) {
@@ -53,7 +66,7 @@ class TriStateCheckbox(text: String? = null) : JCheckBox(text) {
   }
 }
 
-private class TriStateCheckIcon(private val checkBox: TriStateCheckbox): Icon {
+private class TriStateCheckIcon(private val checkBox: TriStateCheckbox) : Icon {
   private val checkIcon: Icon?
     get() = UIManager.getIcon("CheckBox.icon")
   private val checkColor: Color
@@ -65,7 +78,10 @@ private class TriStateCheckIcon(private val checkBox: TriStateCheckbox): Icon {
     checkIcon?.paintIcon(c, g, x, y)
     if (checkBox.selectionState != TriStateCheckbox.SelectionState.PARTIALLY_SELECTED) return
 
-    // Draw a square to represent the partially selected state
+    // If FlatLaf is active, FlatCheckBoxIcon already painted the native vector indeterminate dash
+    if (UIManager.getLookAndFeel() is FlatLaf) return
+
+    // Fallback for non-FlatLaf Look and Feels: draw a square to represent the partially selected state
     g.color = checkColor
     g.fillRect(
       x + iconWidth / 2 - iconWidth / 4,

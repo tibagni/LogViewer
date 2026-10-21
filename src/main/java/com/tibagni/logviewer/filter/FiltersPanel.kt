@@ -311,7 +311,8 @@ open class FiltersPanel(
     presenter.applyFilters()
   }
 
-  open fun updateFiltersUI() {
+  open override fun updateFiltersUI() {
+    filtersPane.updateActionPaneButtons()
     filtersPane.repaint()
   }
 
@@ -540,7 +541,7 @@ open class FiltersPanel(
   }
 
   override fun onAppliedFiltersRemembered() {
-    filtersPane.updateUI()
+    updateFiltersUI()
   }
 
   fun onThemeChanged() {

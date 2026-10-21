@@ -63,6 +63,12 @@ class FiltersPanelTests {
   }
 
   @Test
+  fun testUpdateFiltersUIDoesNotThrow() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    panel.updateFiltersUI()
+  }
+
+  @Test
   fun testShowUnsavedIndication() {
     val panel = FiltersPanel(mockHost) { mockPresenter }
     // Null check safety (does not require display)
