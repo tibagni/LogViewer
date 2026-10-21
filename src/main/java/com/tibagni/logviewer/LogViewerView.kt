@@ -579,7 +579,7 @@ class LogViewerViewImpl(
     )
 
     mainSplitPane = JSplitPane()
-    mainSplitPane.dividerSize = UIScaleUtils.dip(5)
+    mainSplitPane.dividerSize = UIScaleUtils.dip(4)
     mainSplitPane.isOneTouchExpandable = true
     mainSplitPane.resizeWeight = 0.15
     _contentPane.add(
@@ -595,7 +595,7 @@ class LogViewerViewImpl(
     )
 
     mainLogSplit = JSplitPane()
-    mainLogSplit.dividerSize = UIScaleUtils.dip(5)
+    mainLogSplit.dividerSize = UIScaleUtils.dip(4)
     mainLogSplit.resizeWeight = 0.8
     mainLogSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
       if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
@@ -607,7 +607,7 @@ class LogViewerViewImpl(
     }
 
     logsPane = JSplitPane()
-    logsPane.dividerSize = UIScaleUtils.dip(5)
+    logsPane.dividerSize = UIScaleUtils.dip(4)
     logsPane.orientation = JSplitPane.VERTICAL_SPLIT
     logsPane.resizeWeight = 0.6
 

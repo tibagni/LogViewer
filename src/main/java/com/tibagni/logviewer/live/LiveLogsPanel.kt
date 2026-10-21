@@ -83,7 +83,7 @@ class LiveLogsPanel(
 
     // Center split pane with logs
     val logsSplitPane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
-    logsSplitPane.dividerSize = UIScaleUtils.dip(5)
+    logsSplitPane.dividerSize = UIScaleUtils.dip(4)
     logsSplitPane.resizeWeight = 0.5
 
     logListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_ALL))
@@ -98,7 +98,7 @@ class LiveLogsPanel(
     logsSplitPane.bottomComponent = filteredLogList
 
     mainSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT).apply {
-      dividerSize = UIScaleUtils.dip(5)
+      dividerSize = UIScaleUtils.dip(4)
       isOneTouchExpandable = true
       resizeWeight = 0.15
       rightComponent = logsSplitPane

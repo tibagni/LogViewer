@@ -136,7 +136,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
     contentPane.layout = GridBagLayout()
     mainSplitPane = JSplitPane()
-    mainSplitPane.dividerSize = UIScaleUtils.dip(5)
+    mainSplitPane.dividerSize = UIScaleUtils.dip(4)
     mainSplitPane.isOneTouchExpandable = true
     mainSplitPane.resizeWeight = 0.05
     contentPane.add(
