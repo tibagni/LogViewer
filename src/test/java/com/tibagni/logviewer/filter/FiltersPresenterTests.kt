@@ -364,6 +364,7 @@ class FiltersPresenterTests {
     assertTrue(f1.isApplied)
     assertTrue(f2.isApplied)
     verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(view).updateFiltersUI()
   }
 
   @Test
@@ -380,6 +381,7 @@ class FiltersPresenterTests {
     assertFalse(f1.isApplied)
     assertFalse(f2.isApplied)
     verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(view).updateFiltersUI()
   }
 
   @Test

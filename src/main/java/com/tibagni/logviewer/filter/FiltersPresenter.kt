@@ -24,6 +24,7 @@ interface FiltersView {
   fun showInfoMessage(title: String, message: String)
   fun showErrorMessage(message: String?)
   fun showToast(message: String)
+  fun updateFiltersUI()
   fun onAppliedFiltersRemembered()
   val activeFilterContextTag: FilterContextTag?
     get() = null
@@ -259,11 +260,13 @@ class FiltersPresenterImpl(
   override fun setAllFiltersApplied(group: String, isApplied: Boolean) {
     filtersRepository.currentlyOpenedFilters[group]?.forEach { it.isApplied = isApplied }
     applyFilters()
+    view.updateFiltersUI()
   }
 
   override fun setAllFiltersApplied(isApplied: Boolean) {
     filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.isApplied = isApplied }
     applyFilters()
+    view.updateFiltersUI()
   }
 
   override fun cleanDuplicateFilters() {

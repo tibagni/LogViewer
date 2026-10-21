@@ -58,6 +58,14 @@ public class FiltersList extends JPanel {
     }
   }
 
+  public void updateActionPaneButtons() {
+    if (filterUIGroups != null) {
+      for (Map.Entry<String, FilterUIGroup> groupEntry : filterUIGroups.entrySet()) {
+        groupEntry.getValue().updateActionPaneButtons();
+      }
+    }
+  }
+
   private void initialize() {
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
     filterUIGroups = new HashMap<>();
