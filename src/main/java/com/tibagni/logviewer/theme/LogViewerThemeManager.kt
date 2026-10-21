@@ -20,18 +20,23 @@ import javax.swing.UIManager
  *
  * Utilizes FlatLaf to provide modern light, dark, macOS, and IntelliJ/Darcula
  * themes with consistent component styling, rounded corners, rounded
- * selection arcs, slender splitters, floating inset scrollbars, underlined
- * tabs, tooltip styling, drop shadows, table presentation defaults, and
- * unified window title pane decorations.
+ * selection arcs, pill progress bars, slender splitters, floating inset
+ * scrollbars, underlined tabs, tooltip styling, drop shadows, table
+ * presentation defaults, and unified window title pane decorations.
  */
 object LogViewerThemeManager {
   private val LIGHT = LogViewerTheme("Light", false) { FlatLightLaf.setup() }
   private val DARK = LogViewerTheme("Dark", true) { FlatDarkLaf.setup() }
-  private val MAC_LIGHT = LogViewerTheme("macOS Light", false) { FlatMacLightLaf.setup() }
-  private val MAC_DARK = LogViewerTheme("macOS Dark", true) { FlatMacDarkLaf.setup() }
-  private val INTELLIJ = LogViewerTheme("IntelliJ Light", false) { FlatIntelliJLaf.setup() }
+  private val MAC_LIGHT =
+    LogViewerTheme("macOS Light", false) { FlatMacLightLaf.setup() }
+  private val MAC_DARK =
+    LogViewerTheme("macOS Dark", true) { FlatMacDarkLaf.setup() }
+  private val INTELLIJ =
+    LogViewerTheme("IntelliJ Light", false) { FlatIntelliJLaf.setup() }
   private val DARCULA = LogViewerTheme("Darcula", true) { FlatDarculaLaf.setup() }
-  private val NONE = LogViewerTheme("None", false) { throw IllegalArgumentException("Tried to install theme NONE") }
+  private val NONE = LogViewerTheme("None", false) {
+    throw IllegalArgumentException("Tried to install theme NONE")
+  }
   private val DEFAULT = LIGHT
 
   private val allThemes = mapOf(
@@ -47,9 +52,10 @@ object LogViewerThemeManager {
   /**
    * The name of the currently active theme.
    *
-   * Setting this property applies the requested theme (e.g., "Light" or "Dark") and updates
-   * application UI tokens. If the provided theme name does not match any registered theme
-   * and no theme has been installed yet, falls back to the default theme ("Light").
+   * Setting this property applies the requested theme (e.g., "Light" or "Dark")
+   * and updates application UI tokens. If the provided theme name does not match
+   * any registered theme and no theme has been installed yet, falls back to the
+   * default theme ("Light").
    */
   var currentTheme: String
     get() = installedTheme.name
@@ -73,10 +79,11 @@ object LogViewerThemeManager {
    * defaults and tokens.
    *
    * Configures modern component rounding, rounded selection arcs (menus,
-   * combo boxes, lists, tables), slender splitters with centered one-touch
-   * buttons, underlined tab styling and tab separators, tooltip arcs, floating
-   * inset scrollbars, popup drop shadows, table grid metrics, and unified
-   * window title pane decorations across the user interface.
+   * combo boxes, lists, tables), pill progress bars, slender splitters with
+   * centered one-touch buttons, underlined tab styling and tab separators,
+   * tooltip arcs, floating inset scrollbars, popup drop shadows, table grid
+   * metrics, and unified window title pane decorations across the user
+   * interface.
    *
    * @param theme the [LogViewerTheme] instance to install and activate.
    */
@@ -93,6 +100,8 @@ object LogViewerThemeManager {
     UIManager.put("Component.arc", 8)
     UIManager.put("Button.arc", 8)
     UIManager.put("TextComponent.arc", 8)
+    UIManager.put("ProgressBar.arc", 999)
+    UIManager.put("ProgressBar.cycleTime", 1000)
     UIManager.put("Component.arrowType", "chevron")
     UIManager.put("MenuItem.selectionArc", 4)
     UIManager.put("ComboBox.selectionArc", 4)

@@ -72,6 +72,8 @@ class LogViewerThemeManagerTests {
     assertEquals(8, UIManager.get("Component.arc"))
     assertEquals(8, UIManager.get("Button.arc"))
     assertEquals(8, UIManager.get("TextComponent.arc"))
+    assertEquals(999, UIManager.get("ProgressBar.arc"))
+    assertEquals(1000, UIManager.get("ProgressBar.cycleTime"))
     assertEquals("chevron", UIManager.get("Component.arrowType"))
     assertEquals(4, UIManager.get("MenuItem.selectionArc"))
     assertEquals(4, UIManager.get("ComboBox.selectionArc"))
