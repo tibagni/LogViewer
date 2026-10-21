@@ -425,7 +425,7 @@ public class FileDrop
             boolean support = false;
             try
             {   Class arbitraryDndClass = Class.forName( "java.awt.dnd.DnDConstants" );
-                support = true;
+                support = !java.awt.GraphicsEnvironment.isHeadless();
             }   // end try
             catch( Exception e )
             {   support = false;

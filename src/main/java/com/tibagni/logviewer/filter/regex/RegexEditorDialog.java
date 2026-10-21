@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter.regex;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
@@ -34,7 +35,12 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
   boolean isRegexValid;
   Result result;
 
-  private RegexEditorDialog(Dialog owner) {
+  /**
+   * Constructs a new {@code RegexEditorDialog} with the specified owner dialog.
+   *
+   * @param owner the {@link Dialog} from which the dialog is displayed, or {@code null}
+   */
+  RegexEditorDialog(Dialog owner) {
     super(owner);
     LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
     highlightColor = themeManager.isDark() ? new Color(101, 70, 0) : new Color(255, 233, 152);
@@ -87,7 +93,13 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
     dispose();
   }
 
-  private void applyRegexToPreview() {
+  /**
+   * Applies the current regular expression in {@link #regexEdit} to the preview text,
+   * highlighting matching occurrences in {@link #regexPreview}. Updates the outline
+   * property and background color of {@link #regexEdit} based on whether the regular
+   * expression is valid.
+   */
+  void applyRegexToPreview() {
     String regexPattern = regexEdit.getText();
     String previewText = regexPreview.getText();
     Highlighter highlighter = regexPreview.getHighlighter();
@@ -110,7 +122,17 @@ public class RegexEditorDialog extends JDialog implements ButtonsPane.Listener {
       }
     }
 
+    regexEdit.putClientProperty(FlatClientProperties.OUTLINE, isRegexValid ? null : FlatClientProperties.OUTLINE_ERROR);
     regexEdit.setBackground(isRegexValid ? defaultRegexEditBg : errorRegexEditBg);
+  }
+
+  /**
+   * Returns the regex pattern input text area.
+   *
+   * @return the regex input {@link JTextArea}
+   */
+  JTextArea getRegexEdit() {
+    return regexEdit;
   }
 
   private void updateOkButton() {

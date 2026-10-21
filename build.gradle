@@ -8,7 +8,7 @@ buildscript {
         json_version = '20180813'
         commonsio_version = '2.6'
         apache_commons_version = '3.0'
-        flatlaf_version = '1.5'
+        flatlaf_version = '3.5.4'
         jacoco_tool_version = '0.8.7'
         shadowjar_version = '8.1.1'
         testlogger_version = '3.2.0'
@@ -96,6 +96,10 @@ jacocoTestReport {
             ])
         }))
     }
+}
+
+test {
+    systemProperty 'java.awt.headless', 'true'
 }
 
 def props = new Properties()
