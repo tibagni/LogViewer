@@ -3,6 +3,7 @@ package com.tibagni.logviewer.log
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.EditorLauncher
 import com.tibagni.logviewer.util.SwingUtils
 import java.awt.Component
@@ -11,6 +12,8 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
+import javax.swing.JMenu
+import javax.swing.JMenuItem
 import javax.swing.JPopupMenu
 import javax.swing.JSeparator
 import javax.swing.JTable
@@ -94,11 +97,47 @@ internal fun createPopupMenu(
   val singleEntry = selectedEntries.singleOrNull()
 
   addSelectionActions?.invoke(popup, selectedEntries)
+  if (selectedEntries.size == 2) {
+    addElapsedTimeContextActions(popup, selectedEntries[0], selectedEntries[1])
+  }
   if (singleEntry != null) {
     addSingleLogLineContextActions(table, popup, singleEntry, parentWindow, filtersPanelProvider)
     addExtraSingleEntryActions?.invoke(popup, singleEntry)
   }
   return popup
+}
+
+private fun addElapsedTimeContextActions(
+  popup: JPopupMenu,
+  first: LogEntry,
+  second: LogEntry
+) {
+  val t1 = first.timestamp ?: return
+  val t2 = second.timestamp ?: return
+  val durationResult = ElapsedTimeHelper.calculateDuration(t1, t2) ?: return
+  val durationText = ElapsedTimeHelper.formatDurationMenuText(durationResult)
+  val fullDurationStr = ElapsedTimeHelper.formatDurationWithSeconds(durationResult)
+
+  if (popup.componentCount > 0) {
+    popup.add(JSeparator())
+  }
+
+  val elapsedTimeMenu = JMenu(I18n.format(I18n.LOGS_MENU_ELAPSED_TIME, durationText))
+
+  val copySnippetItem = JMenuItem(I18n.get(I18n.LOGS_MENU_COPY_ELAPSED_TIME_SNIPPET))
+  copySnippetItem.addActionListener {
+    val snippet = ElapsedTimeHelper.createSnippet(first, second, durationResult)
+    CommonUtils.copyToClipboard(snippet)
+  }
+  elapsedTimeMenu.add(copySnippetItem)
+
+  val copyDurationOnlyItem = JMenuItem(I18n.get(I18n.LOGS_MENU_COPY_DURATION_ONLY))
+  copyDurationOnlyItem.addActionListener {
+    CommonUtils.copyToClipboard(fullDurationStr)
+  }
+  elapsedTimeMenu.add(copyDurationOnlyItem)
+
+  popup.add(elapsedTimeMenu)
 }
 
 private fun addSingleLogLineContextActions(

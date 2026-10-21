@@ -74,6 +74,7 @@ Switch to the **Live Logs** tab, select your connected Android device, choose yo
 | **Dual-Pane Synchronized Views** | The **Filtered Logs** pane displays matched lines while the **All Logs** pane preserves chronological timeline context. Double-click any line to navigate between views. |
 | **"My Logs" Bookmarking** | Pin and curate critical log entries into a dedicated "My Logs" pane to assemble an incident investigation timeline. |
 | **Quick Context Actions** | Right-click any log line to "Filter by PID", inspect detailed multi-line text (`Cmd+I` / `Ctrl+I`), or bookmark directly into "My Logs". |
+| **Elapsed Time Measurement** | Select any two log lines and right-click to instantly inspect the elapsed duration or copy a formatted incident snippet (both log lines with time delta) for bug reports and tickets. |
 | **Global Filter Search** | Search across all open filter groups using the global find dialog (`Cmd+Shift+F` / `Ctrl+Shift+F`). |
 | **Advanced In-Table Search** | In-table search with real-time debounce, match count tracking, highlight tracking, and reverse search (`Shift+Enter` / `Shift+F3`). |
 | **Log Stream Badges** | Visual badges (`[main]`, `[system]`, `[events]`, `[radio]`, `[kernel]`) clearly differentiate sources in mixed live streams. |
