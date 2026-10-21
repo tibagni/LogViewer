@@ -259,6 +259,11 @@ public final class I18n {
   public static final String LOGS_MENU_FILTER_BY_PID = "logs.menu.filter_by_pid";
   public static final String LOGS_MENU_FILTER_BY_TAG = "logs.menu.filter_by_tag";
   public static final String LOGS_MENU_LOG_DETAILS = "logs.menu.log_details";
+  public static final String LOGS_MENU_ELAPSED_TIME = "logs.menu.elapsed_time";
+  public static final String LOGS_MENU_COPY_ELAPSED_TIME_SNIPPET = "logs.menu.copy_elapsed_time_snippet";
+  public static final String LOGS_MENU_COPY_DURATION_ONLY = "logs.menu.copy_duration_only";
+  public static final String ELAPSED_TIME_LABEL = "logs.elapsed_time_label";
+  public static final String ELAPSED_TIME_BACKWARD = "logs.elapsed_time_backward";
 
   // Log Line Details Dialog
   public static final String LOG_DETAILS_TITLE = "logs.details.title";

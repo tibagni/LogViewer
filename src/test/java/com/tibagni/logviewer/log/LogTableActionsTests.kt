@@ -252,4 +252,60 @@ class LogTableActionsTests {
 
     assertTrue(menuTexts.contains("Extra Single Action"))
   }
+
+  @Test
+  fun testCreatePopupMenuTwoEntriesWithTimestampsAddsElapsedTimeMenu() {
+    val model = LogListTableModel("Test")
+    val t1 = LogTimestamp(5, 15, 14, 15, 0, 50)
+    val t2 = LogTimestamp(5, 15, 14, 16, 23, 500)
+    val entry0 = LogEntry("05-15 14:15:00.050 Line 0", LogLevel.INFO, t1, LogStream.MAIN)
+    val entry1 = LogEntry("05-15 14:16:23.500 Line 1", LogLevel.DEBUG, t2, LogStream.MAIN)
+    model.setLogs(listOf(entry0, entry1))
+
+    val table = JTable(model)
+    table.setRowSelectionInterval(0, 1)
+
+    val popup = createPopupMenu(
+      table = table,
+      model = model
+    )
+
+    // Find the Elapsed Time menu (which is a JMenu)
+    val elapsedMenu = (0 until popup.componentCount)
+      .mapNotNull { popup.getComponent(it) as? javax.swing.JMenu }
+      .firstOrNull { it.text.contains("1m 23s 450ms") }
+
+    assertNotNull("Popup should contain Elapsed Time menu", elapsedMenu)
+    assertEquals(2, elapsedMenu!!.itemCount)
+
+    val copySnippetItem = elapsedMenu.getItem(0)
+    assertEquals(I18n.get(I18n.LOGS_MENU_COPY_ELAPSED_TIME_SNIPPET), copySnippetItem.text)
+    assertTrue(copySnippetItem.actionListeners.isNotEmpty())
+
+    val copyDurationOnlyItem = elapsedMenu.getItem(1)
+    assertEquals(I18n.get(I18n.LOGS_MENU_COPY_DURATION_ONLY), copyDurationOnlyItem.text)
+    assertTrue(copyDurationOnlyItem.actionListeners.isNotEmpty())
+  }
+
+  @Test
+  fun testCreatePopupMenuTwoEntriesWithoutTimestampsDoesNotAddElapsedTimeMenu() {
+    val model = LogListTableModel("Test")
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    val entry1 = LogEntry("Line 1", LogLevel.DEBUG, null, LogStream.MAIN)
+    model.setLogs(listOf(entry0, entry1))
+
+    val table = JTable(model)
+    table.setRowSelectionInterval(0, 1)
+
+    val popup = createPopupMenu(
+      table = table,
+      model = model
+    )
+
+    val elapsedMenu = (0 until popup.componentCount)
+      .mapNotNull { popup.getComponent(it) as? javax.swing.JMenu }
+      .firstOrNull()
+
+    assertNull("Popup should not contain Elapsed Time menu when timestamps are null", elapsedMenu)
+  }
 }
