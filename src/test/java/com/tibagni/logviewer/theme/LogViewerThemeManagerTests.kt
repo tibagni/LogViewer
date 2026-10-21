@@ -14,7 +14,11 @@ class LogViewerThemeManagerTests {
     val themes = LogViewerThemeManager.availableThemes
     assertTrue(themes.contains("Light"))
     assertTrue(themes.contains("Dark"))
-    assertEquals(2, themes.size)
+    assertTrue(themes.contains("macOS Light"))
+    assertTrue(themes.contains("macOS Dark"))
+    assertTrue(themes.contains("IntelliJ Light"))
+    assertTrue(themes.contains("Darcula"))
+    assertEquals(6, themes.size)
   }
 
   @Test
@@ -28,6 +32,34 @@ class LogViewerThemeManagerTests {
   fun testThemeInstallationDark() {
     LogViewerThemeManager.currentTheme = "Dark"
     assertEquals("Dark", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationMacLight() {
+    LogViewerThemeManager.currentTheme = "macOS Light"
+    assertEquals("macOS Light", LogViewerThemeManager.currentTheme)
+    assertFalse(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationMacDark() {
+    LogViewerThemeManager.currentTheme = "macOS Dark"
+    assertEquals("macOS Dark", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationIntelliJ() {
+    LogViewerThemeManager.currentTheme = "IntelliJ Light"
+    assertEquals("IntelliJ Light", LogViewerThemeManager.currentTheme)
+    assertFalse(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationDarcula() {
+    LogViewerThemeManager.currentTheme = "Darcula"
+    assertEquals("Darcula", LogViewerThemeManager.currentTheme)
     assertTrue(LogViewerThemeManager.isDark)
   }
 
@@ -50,6 +82,8 @@ class LogViewerThemeManagerTests {
     assertEquals(false, UIManager.get("TabbedPane.tabSeparatorsFullHeight"))
     assertEquals(false, UIManager.get("Table.showVerticalLines"))
     assertEquals(Dimension(0, 1), UIManager.get("Table.intercellSpacing"))
+    assertEquals(true, UIManager.get("TitlePane.unifiedBackground"))
+    assertEquals(true, UIManager.get("TitlePane.menuBarEmbedded"))
   }
 
   @Test

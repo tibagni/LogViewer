@@ -1,8 +1,12 @@
 package com.tibagni.logviewer.theme
 
+import com.formdev.flatlaf.FlatDarculaLaf
 import com.formdev.flatlaf.FlatDarkLaf
+import com.formdev.flatlaf.FlatIntelliJLaf
 import com.formdev.flatlaf.FlatLaf
 import com.formdev.flatlaf.FlatLightLaf
+import com.formdev.flatlaf.themes.FlatMacDarkLaf
+import com.formdev.flatlaf.themes.FlatMacLightLaf
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import java.awt.Dimension
@@ -12,18 +16,27 @@ import javax.swing.UIManager
 /**
  * Manages look-and-feel themes and global UI design tokens for the LogViewer application.
  *
- * Utilizes FlatLaf to provide modern light and dark themes with consistent component styling,
- * rounded corners, rounded selection arcs, custom scrollbar appearances, and table presentation defaults.
+ * Utilizes FlatLaf to provide modern light, dark, macOS, and IntelliJ/Darcula themes with consistent
+ * component styling, rounded corners, rounded selection arcs, custom scrollbar appearances,
+ * table presentation defaults, and unified window title pane decorations.
  */
 object LogViewerThemeManager {
   private val LIGHT = LogViewerTheme("Light", false) { FlatLightLaf.setup() }
   private val DARK = LogViewerTheme("Dark", true) { FlatDarkLaf.setup() }
+  private val MAC_LIGHT = LogViewerTheme("macOS Light", false) { FlatMacLightLaf.setup() }
+  private val MAC_DARK = LogViewerTheme("macOS Dark", true) { FlatMacDarkLaf.setup() }
+  private val INTELLIJ = LogViewerTheme("IntelliJ Light", false) { FlatIntelliJLaf.setup() }
+  private val DARCULA = LogViewerTheme("Darcula", true) { FlatDarculaLaf.setup() }
   private val NONE = LogViewerTheme("None", false) { throw IllegalArgumentException("Tried to install theme NONE") }
   private val DEFAULT = LIGHT
 
   private val allThemes = mapOf(
     LIGHT.name to LIGHT,
-    DARK.name to DARK
+    DARK.name to DARK,
+    MAC_LIGHT.name to MAC_LIGHT,
+    MAC_DARK.name to MAC_DARK,
+    INTELLIJ.name to INTELLIJ,
+    DARCULA.name to DARCULA
   )
   private var installedTheme: LogViewerTheme = NONE
 
@@ -55,7 +68,8 @@ object LogViewerThemeManager {
    * Installs the specified theme and configures application-wide Swing UI defaults and tokens.
    *
    * Configures modern component rounding, rounded selection arcs (menus, combo boxes, lists, tables),
-   * scrollbar styling, tabbed pane separators, and table grid metrics across the user interface.
+   * scrollbar styling, tabbed pane separators, table grid metrics, and unified window title pane
+   * decorations across the user interface.
    *
    * @param theme the [LogViewerTheme] instance to install and activate.
    */
@@ -86,6 +100,8 @@ object LogViewerThemeManager {
     UIManager.put("Table.showVerticalLines", false)
     UIManager.put("Table.intercellSpacing", Dimension(0, 1))
     UIManager.put("Table.rowHeight", UIScaleUtils.dip(22))
+    UIManager.put("TitlePane.unifiedBackground", true)
+    UIManager.put("TitlePane.menuBarEmbedded", true)
 
     FlatLaf.updateUILater()
   }
