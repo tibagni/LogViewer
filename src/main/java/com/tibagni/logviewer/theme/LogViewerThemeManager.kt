@@ -10,15 +10,19 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import java.awt.Dimension
+import java.awt.Insets
 import java.lang.IllegalArgumentException
 import javax.swing.UIManager
 
 /**
- * Manages look-and-feel themes and global UI design tokens for the LogViewer application.
+ * Manages look-and-feel themes and global UI design tokens for the LogViewer
+ * application.
  *
- * Utilizes FlatLaf to provide modern light, dark, macOS, and IntelliJ/Darcula themes with consistent
- * component styling, rounded corners, rounded selection arcs, custom scrollbar appearances,
- * table presentation defaults, and unified window title pane decorations.
+ * Utilizes FlatLaf to provide modern light, dark, macOS, and IntelliJ/Darcula
+ * themes with consistent component styling, rounded corners, rounded
+ * selection arcs, slender splitters, floating inset scrollbars, underlined
+ * tabs, tooltip styling, drop shadows, table presentation defaults, and
+ * unified window title pane decorations.
  */
 object LogViewerThemeManager {
   private val LIGHT = LogViewerTheme("Light", false) { FlatLightLaf.setup() }
@@ -65,11 +69,14 @@ object LogViewerThemeManager {
     get() = installedTheme.isDark
 
   /**
-   * Installs the specified theme and configures application-wide Swing UI defaults and tokens.
+   * Installs the specified theme and configures application-wide Swing UI
+   * defaults and tokens.
    *
-   * Configures modern component rounding, rounded selection arcs (menus, combo boxes, lists, tables),
-   * scrollbar styling, tabbed pane separators, table grid metrics, and unified window title pane
-   * decorations across the user interface.
+   * Configures modern component rounding, rounded selection arcs (menus,
+   * combo boxes, lists, tables), slender splitters with centered one-touch
+   * buttons, underlined tab styling and tab separators, tooltip arcs, floating
+   * inset scrollbars, popup drop shadows, table grid metrics, and unified
+   * window title pane decorations across the user interface.
    *
    * @param theme the [LogViewerTheme] instance to install and activate.
    */
@@ -91,11 +98,18 @@ object LogViewerThemeManager {
     UIManager.put("ComboBox.selectionArc", 4)
     UIManager.put("List.selectionArc", 4)
     UIManager.put("Table.selectionArc", 4)
-    UIManager.put("ScrollBar.thumbArc", 6)
-    UIManager.put("ScrollBar.trackArc", 6)
-    UIManager.put("ScrollBar.showButtons", false)
+    UIManager.put("SplitPane.dividerSize", UIScaleUtils.dip(4))
+    UIManager.put("SplitPane.centerOneTouchButtons", true)
+    UIManager.put("TabbedPane.tabType", "underlined")
     UIManager.put("TabbedPane.showTabSeparators", true)
     UIManager.put("TabbedPane.tabSeparatorsFullHeight", false)
+    UIManager.put("ToolTip.arc", 6)
+    UIManager.put("ScrollBar.thumbArc", 6)
+    UIManager.put("ScrollBar.trackArc", 6)
+    UIManager.put("ScrollBar.thumbInsets", Insets(2, 2, 2, 2))
+    UIManager.put("ScrollBar.width", UIScaleUtils.dip(10))
+    UIManager.put("ScrollBar.showButtons", false)
+    UIManager.put("Popup.dropShadowPainted", true)
     UIManager.put("Table.showHorizontalLines", showDividers)
     UIManager.put("Table.showVerticalLines", false)
     UIManager.put("Table.intercellSpacing", Dimension(0, 1))

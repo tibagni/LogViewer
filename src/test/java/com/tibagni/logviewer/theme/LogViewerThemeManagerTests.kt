@@ -4,7 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import java.awt.Dimension
+import java.awt.Insets
 import javax.swing.UIManager
 
 class LogViewerThemeManagerTests {
@@ -75,9 +77,16 @@ class LogViewerThemeManagerTests {
     assertEquals(4, UIManager.get("ComboBox.selectionArc"))
     assertEquals(4, UIManager.get("List.selectionArc"))
     assertEquals(4, UIManager.get("Table.selectionArc"))
+    assertEquals(UIScaleUtils.dip(4), UIManager.get("SplitPane.dividerSize"))
+    assertEquals(true, UIManager.get("SplitPane.centerOneTouchButtons"))
+    assertEquals("underlined", UIManager.get("TabbedPane.tabType"))
+    assertEquals(6, UIManager.get("ToolTip.arc"))
     assertEquals(6, UIManager.get("ScrollBar.thumbArc"))
     assertEquals(6, UIManager.get("ScrollBar.trackArc"))
+    assertEquals(Insets(2, 2, 2, 2), UIManager.get("ScrollBar.thumbInsets"))
+    assertEquals(UIScaleUtils.dip(10), UIManager.get("ScrollBar.width"))
     assertEquals(false, UIManager.get("ScrollBar.showButtons"))
+    assertEquals(true, UIManager.get("Popup.dropShadowPainted"))
     assertEquals(true, UIManager.get("TabbedPane.showTabSeparators"))
     assertEquals(false, UIManager.get("TabbedPane.tabSeparatorsFullHeight"))
     assertEquals(false, UIManager.get("Table.showVerticalLines"))
