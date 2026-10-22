@@ -25,10 +25,12 @@ class AppearancePreferencePanel(
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_APPEARANCE)
 
   private val lookAndFeelCbx = JComboBox<String>()
+  internal val accentColorPicker = AccentColorPickerPanel(themeManager)
   private val logFontSizeCbx = JComboBox<Int>()
   private val logFontFamilyCbx = JComboBox<String>()
   private val boldLogTextChbx = JCheckBox()
-  private val fontPreviewTxt = object : JTextField("Preview: 0123456789 ABCabc") { // no-i18n
+  private val fontPreviewTxt = object :
+    JTextField("Preview: 0123456789 ABCabc") { // no-i18n
     override fun getMinimumSize(): Dimension {
       val min = super.getMinimumSize()
       min.width = UIScaleUtils.dip(80)
@@ -44,19 +46,39 @@ class AppearancePreferencePanel(
     isEditable = false
   }
 
+  /**
+   * The name of the accent color selected in the picker.
+   */
+  var selectedAccentColor: String
+    get() = accentColorPicker.selectedAccentColor
+    set(value) {
+      accentColorPicker.selectedAccentColor = value
+    }
+
   override val panel: JComponent = buildPanel()
 
   override val hasTimeConsumingOperation: Boolean
-    get() = (lookAndFeelCbx.selectedItem as? String) != themeManager.currentTheme
+    get() = (lookAndFeelCbx.selectedItem as? String) !=
+      themeManager.currentTheme ||
+      accentColorPicker.selectedAccentColor !=
+      themeManager.currentAccentColor
 
   init {
     initLookAndFeel()
+    initAccentColor()
     initLogFont()
   }
 
   private fun initLookAndFeel() {
     themeManager.availableThemes.forEach { lookAndFeelCbx.addItem(it) }
     lookAndFeelCbx.selectedItem = themeManager.currentTheme
+  }
+
+  /**
+   * Initializes the accent color picker and selects the currently configured accent color.
+   */
+  private fun initAccentColor() {
+    accentColorPicker.selectedAccentColor = userPrefs.accentColor
   }
 
   private fun initLogFont() {
@@ -75,7 +97,8 @@ class AppearancePreferencePanel(
   }
 
   private fun updateFontPreview() {
-    val family = (logFontFamilyCbx.selectedItem as? String) ?: userPrefs.logFontFamily
+    val family = (logFontFamilyCbx.selectedItem as? String)
+      ?: userPrefs.logFontFamily
     val size = (logFontSizeCbx.selectedItem as? Int) ?: userPrefs.logFontSize
     val bold = boldLogTextChbx.isSelected
     val style = if (bold) Font.BOLD else Font.PLAIN
@@ -86,6 +109,11 @@ class AppearancePreferencePanel(
     val selectedTheme = lookAndFeelCbx.selectedItem as? String
     if (selectedTheme != null && selectedTheme != themeManager.currentTheme) {
       userPrefs.lookAndFeel = selectedTheme
+    }
+
+    val selectedAccent = accentColorPicker.selectedAccentColor
+    if (selectedAccent != userPrefs.accentColor) {
+      userPrefs.accentColor = selectedAccent
     }
 
     val selectedFont = logFontFamilyCbx.selectedItem as? String
@@ -108,7 +136,10 @@ class AppearancePreferencePanel(
     val form = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
-        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow"
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
+          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
+          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
+          "center:d:noGrow"
       )
     ).apply { isOpaque = false }
 
@@ -117,27 +148,38 @@ class AppearancePreferencePanel(
     form.add(lookNFeelLbl, cc.xy(1, 1))
     form.add(lookAndFeelCbx, cc.xy(3, 1))
 
-    // Row 3: Separator
-    form.add(JSeparator(), cc.xyw(1, 3, 3, CellConstraints.FILL, CellConstraints.DEFAULT))
+    // Row 3: Accent Color
+    val accentColorLbl = JLabel(I18n.get(I18n.PREF_ACCENT_COLOR))
+    form.add(accentColorLbl, cc.xy(1, 3))
+    form.add(accentColorPicker, cc.xy(3, 3))
 
-    // Row 5: Log Font Family
+    // Row 5: Separator
+    form.add(
+      JSeparator(),
+      cc.xyw(1, 5, 3, CellConstraints.FILL, CellConstraints.DEFAULT)
+    )
+
+    // Row 7: Log Font Family
     val fontFamilyLbl = JLabel(I18n.get(I18n.PREF_LOG_FONT_FAMILY))
-    form.add(fontFamilyLbl, cc.xy(1, 5))
-    form.add(logFontFamilyCbx, cc.xy(3, 5))
+    form.add(fontFamilyLbl, cc.xy(1, 7))
+    form.add(logFontFamilyCbx, cc.xy(3, 7))
 
-    // Row 7: Log Font Size
+    // Row 9: Log Font Size
     val fontSizeLbl = JLabel(I18n.get(I18n.PREF_LOG_FONT_SIZE))
-    form.add(fontSizeLbl, cc.xy(1, 7))
-    form.add(logFontSizeCbx, cc.xy(3, 7))
+    form.add(fontSizeLbl, cc.xy(1, 9))
+    form.add(logFontSizeCbx, cc.xy(3, 9))
 
-    // Row 9: Bold Log Text
+    // Row 11: Bold Log Text
     val boldLogLbl = JLabel(I18n.get(I18n.PREF_LOG_FONT_BOLD))
     bindLabelToCheckbox(boldLogLbl, boldLogTextChbx)
-    form.add(boldLogLbl, cc.xy(1, 9))
-    form.add(boldLogTextChbx, cc.xy(3, 9))
+    form.add(boldLogLbl, cc.xy(1, 11))
+    form.add(boldLogTextChbx, cc.xy(3, 11))
 
-    // Row 11: Font Preview
-    form.add(fontPreviewTxt, cc.xyw(1, 11, 3, CellConstraints.FILL, CellConstraints.DEFAULT))
+    // Row 13: Font Preview
+    form.add(
+      fontPreviewTxt,
+      cc.xyw(1, 13, 3, CellConstraints.FILL, CellConstraints.DEFAULT)
+    )
 
     return form
   }

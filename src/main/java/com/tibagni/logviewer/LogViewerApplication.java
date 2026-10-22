@@ -103,6 +103,7 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
     LogViewerThemeManager themeManager = ServiceLocator.INSTANCE.getThemeManager();
     String lookAndFeel = prefs.getLookAndFeel();
     Logger.debug("Installing theme: " + lookAndFeel);
+    themeManager.setAccentColor(prefs.getAccentColor());
     themeManager.setCurrentTheme(lookAndFeel);
 
 //    UIScaleUtils.updateDefaultSizes();
@@ -133,6 +134,13 @@ public class LogViewerApplication implements UpdateManager.UpdateListener {
           ServiceLocator.INSTANCE.getThemeManager().setCurrentTheme(lookAndFeel);
           mainView.themeChanged();
         }
+      }
+
+      @Override
+      public void onAccentColorChanged() {
+        ServiceLocator.INSTANCE.getThemeManager()
+            .setAccentColor(prefs.getAccentColor());
+        mainView.themeChanged();
       }
     });
   }

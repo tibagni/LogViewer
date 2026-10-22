@@ -37,6 +37,7 @@ public final class I18n {
   // Preferences Dialog
   public static final String PREF_DIALOG_TITLE = "pref.dialog.title";
   public static final String PREF_LOOK_AND_FEEL = "pref.look_and_feel";
+  public static final String PREF_ACCENT_COLOR = "pref.accent_color";
   public static final String PREF_LOG_FONT_SIZE = "pref.log_font_size";
   public static final String PREF_LOG_FONT_BOLD = "pref.log_font_bold";
   public static final String PREF_DEFAULT_LOGS_PATH = "pref.default_logs_path";

@@ -144,6 +144,7 @@ class AdbManagerTests {
       override var lastFilterPaths: Array<File> = emptyArray()
       override var defaultLogsPath: File = File("")
       override var lookAndFeel: String = ""
+      override var accentColor: String = "Default"
       override var openLastFilter: Boolean = false
       override var reapplyFiltersAfterEdit: Boolean = false
       override var rememberAppliedFilters: Boolean = false
