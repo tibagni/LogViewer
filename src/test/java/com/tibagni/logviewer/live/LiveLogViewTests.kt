@@ -26,6 +26,7 @@ import java.io.File
 import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.DeviceState
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.FlatButton
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JPanel
@@ -639,5 +640,17 @@ class LiveLogViewTests {
     val menus = liveLogView.getMenus()
     assertEquals(1, menus.size)
     assertEquals(2, menus[0].itemCount)
+  }
+  @Test
+  fun testHeaderActionButtonsInLiveLogViewAreFlatButtons() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    assertEquals(
+      FlatButton::class.java,
+      liveLogView.refreshDevicesBtn.javaClass
+    )
+    assertEquals(
+      FlatButton::class.java,
+      liveLogView.restartServerBtn.javaClass
+    )
   }
 }

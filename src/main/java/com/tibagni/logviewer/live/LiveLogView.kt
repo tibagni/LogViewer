@@ -29,6 +29,7 @@ import com.tibagni.logviewer.view.SearchableTable
 import com.tibagni.logviewer.view.SideButtonsPanel
 import com.tibagni.logviewer.view.SidePanelEntry
 import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.TriStateCheckbox
 import java.awt.BorderLayout
 import java.awt.CardLayout
@@ -116,9 +117,9 @@ class LiveLogViewImpl(
   internal val isSidePanelExpanded: Boolean
     get() = sidePanel.isExpanded
 
-  @VisibleForTesting internal val refreshDevicesBtn: JButton
+  @VisibleForTesting internal val refreshDevicesBtn: FlatButton
     get() = devicesPanel.refreshDevicesBtn
-  @VisibleForTesting internal val restartServerBtn: JButton
+  @VisibleForTesting internal val restartServerBtn: FlatButton
     get() = devicesPanel.restartServerBtn
   @VisibleForTesting internal val buffersCard: JPanel
     get() = devicesPanel.buffersCard

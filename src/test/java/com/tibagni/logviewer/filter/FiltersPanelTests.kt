@@ -4,10 +4,16 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.view.SingleChoiceDialog
+import com.tibagni.logviewer.view.ToolbarDivider
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.FlatButton
+import java.awt.FlowLayout
+import javax.swing.JButton
 import org.junit.Assert.*
 import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Test
+import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
@@ -222,4 +228,116 @@ class FiltersPanelTests {
     val selected = panel.showSelectFilterGroup(listOf("Group1"))
     assertNull(selected)
   }
+  @Test
+  fun testToolbarActionButtonsInstantiatedAndTyped() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    assertEquals(
+      FlatButton::class.java,
+      panel.addNewFilterGroupBtn.javaClass
+    )
+    assertEquals(
+      FlatButton::class.java,
+      panel.moreFilterOptionsBtn.javaClass
+    )
+    assertEquals(
+      FlatButton::class.java,
+      panel.collapseExpandAllGroupsBtn.javaClass
+    )
+    assertEquals(
+      FlatButton::class.java,
+      panel.findFiltersBtn.javaClass
+    )
+    assertEquals(
+      FlatButton::class.java,
+      panel.applyFiltersBtn.javaClass
+    )
+    assertEquals(
+      ToolbarDivider::class.java,
+      panel.applyDivider.javaClass
+    )
+    val layout = panel.filterActionButtonsPane.layout as FlowLayout
+    assertEquals(FlowLayout.RIGHT, layout.alignment)
+    assertEquals(UIScaleUtils.dip(4), layout.hgap)
+    assertEquals(0, layout.vgap)
+  }
+
+  @Test
+  fun testApplyFiltersButtonVisibilityWhenBothReapplyTrue() {
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(true)
+    val panel = FiltersPanel(mockHost, { mockPresenter }, mockPrefs)
+    assertFalse(panel.applyFiltersBtn.isVisible)
+    assertFalse(panel.applyDivider.isVisible)
+  }
+
+  @Test
+  fun testApplyFiltersButtonVisibilityWhenReapplyFiltersAfterEditFalse() {
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(true)
+    val panel = FiltersPanel(mockHost, { mockPresenter }, mockPrefs)
+    assertTrue(panel.applyFiltersBtn.isVisible)
+    assertTrue(panel.applyDivider.isVisible)
+  }
+
+  @Test
+  fun testApplyFiltersButtonVisibilityWhenApplyFilterOnCheckFalse() {
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(false)
+    val panel = FiltersPanel(mockHost, { mockPresenter }, mockPrefs)
+    assertTrue(panel.applyFiltersBtn.isVisible)
+    assertTrue(panel.applyDivider.isVisible)
+  }
+
+  @Test
+  fun testApplyFiltersButtonVisibilityWhenBothFalse() {
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(false)
+    val panel = FiltersPanel(mockHost, { mockPresenter }, mockPrefs)
+    assertTrue(panel.applyFiltersBtn.isVisible)
+    assertTrue(panel.applyDivider.isVisible)
+  }
+
+  @Test
+  fun testApplyFiltersButtonVisibilityPreferenceListenerUpdates() {
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(true)
+
+    val panel = FiltersPanel(mockHost, { mockPresenter }, mockPrefs)
+    assertFalse(panel.applyFiltersBtn.isVisible)
+    assertFalse(panel.applyDivider.isVisible)
+
+    val captor = ArgumentCaptor.forClass(
+      LogViewerPreferences.Listener::class.java
+    )
+    verify(mockPrefs).addPreferenceListener(
+      captureNonNull(captor, dummyPrefsListener)
+    )
+    val listener = captor.value
+
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+    listener.onReapplyFiltersConfigChanged()
+    assertTrue(panel.applyFiltersBtn.isVisible)
+    assertTrue(panel.applyDivider.isVisible)
+
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(false)
+    listener.onApplyFiltersOnCheckChanged()
+    assertTrue(panel.applyFiltersBtn.isVisible)
+    assertTrue(panel.applyDivider.isVisible)
+
+    `when`(mockPrefs.applyFilterOnCheck).thenReturn(true)
+    listener.onApplyFiltersOnCheckChanged()
+    assertFalse(panel.applyFiltersBtn.isVisible)
+    assertFalse(panel.applyDivider.isVisible)
+  }
+
+  private fun <T : Any> captureNonNull(
+    captor: ArgumentCaptor<T>,
+    fallback: T
+  ): T {
+    captor.capture()
+    return fallback
+  }
+
+  private val dummyPrefsListener = object : LogViewerPreferences.Adapter() {}
 }
