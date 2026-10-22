@@ -187,6 +187,241 @@ class ParserTests {
     }
 
     @Test
+    fun testParseBugreportWithIndentedLogsAndSectionBoundaries() {
+        val bugreportContent = "========================================================\n" +
+                "== dumpstate: 2026-09-11 14:27:20\n" +
+                "========================================================\n" +
+                "Bugreport format version: 2.0\n" +
+                "------ SYSTEM LOG (logcat -v threadtime -d *:v) ------\n" +
+                "09-11 14:27:20.100  1000  1000 I ActivityManager: Line 1\n" +
+                "09-11 14:27:20.200  1000  1000 I ActivityManager: Line 2\n" +
+                "------ 0.120s was the duration of 'SYSTEM LOG' ------\n" +
+                "Non-log section duration text that should not bleed into Line 2\n" +
+                "------ DUMPSYS (dumpsys) ------\n" +
+                "    08-04 19:37:00.810 D AnimatableClockView: animateDoze(isDozing=false)\n" +
+                "    08-04 19:37:01.000 D AnimatableClockView: animateDoze(isDozing=true)\n" +
+                "        09-11 13:53:29.984 ROTATION_0 to ROTATION_90\n" +
+                "          source=WindowManager\n" +
+                "------ 0.200s was the duration of 'DUMPSYS' ------\n"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("bugreport.txt"))
+        `when`(reader.get("bugreport.txt")).thenReturn(bugreportContent)
+
+        val entries = logParser.parseLogs(StandardCharsets.UTF_8)
+
+        // 5 distinct entries sorted chronologically: 08-04 entries come before 09-11 entries
+        assertEquals(5, entries.size)
+        assertEquals("    08-04 19:37:00.810 D AnimatableClockView: animateDoze(isDozing=false)", entries[0].logText)
+        assertEquals(LogLevel.DEBUG, entries[0].logLevel)
+        assertEquals(LogTimestamp(8, 4, 19, 37, 0, 810), entries[0].timestamp)
+
+        assertEquals("    08-04 19:37:01.000 D AnimatableClockView: animateDoze(isDozing=true)", entries[1].logText)
+        assertEquals(LogLevel.DEBUG, entries[1].logLevel)
+        assertEquals(LogTimestamp(8, 4, 19, 37, 1, 0), entries[1].timestamp)
+
+        assertEquals(
+            "        09-11 13:53:29.984 ROTATION_0 to ROTATION_90" + System.lineSeparator() +
+                    "          source=WindowManager",
+            entries[2].logText
+        )
+        assertEquals(LogTimestamp(9, 11, 13, 53, 29, 984), entries[2].timestamp)
+
+        assertEquals("09-11 14:27:20.100  1000  1000 I ActivityManager: Line 1", entries[3].logText)
+        assertEquals("09-11 14:27:20.200  1000  1000 I ActivityManager: Line 2", entries[4].logText)
+
+        // Verify potentialBugReports map is populated
+        assertTrue(logParser.potentialBugReports.containsKey("bugreport.txt"))
+    }
+
+    @Test
+    fun testParseNormalLogsPreservesIndentedContinuations() {
+        val normalLogContent = "10-12 22:32:50.264  2646  2664 I MyTag: Starting JSON dump:\n" +
+                "    {\n" +
+                "        \"id\": 12345,\n" +
+                "        \"name\": \"test\"\n" +
+                "    }\n" +
+                "2026-10-12 22:32:51.000  2646  2664 D MyTag: logcat -v year format\n" +
+                "10-12 22:32:52.000  2646  2664 E CrashTag: Fatal Exception:\n" +
+                "\tat com.android.server.am.ActivityManagerService.startProcess(ActivityManagerService.java:123)\n" +
+                "\t... 12 more\n"
+
+        `when`(reader.availableLogPaths).thenReturn(setOf("main.txt"))
+        `when`(reader.get("main.txt")).thenReturn(normalLogContent)
+
+        val entries = logParser.parseLogs(StandardCharsets.UTF_8)
+
+        assertEquals(3, entries.size)
+        // Entry 1 has JSON indented continuation preserved
+        assertEquals(
+            "10-12 22:32:50.264  2646  2664 I MyTag: Starting JSON dump:" + System.lineSeparator() +
+                    "    {" + System.lineSeparator() +
+                    "        \"id\": 12345," + System.lineSeparator() +
+                    "        \"name\": \"test\"" + System.lineSeparator() +
+                    "    }",
+            entries[0].logText
+        )
+        assertEquals(LogLevel.INFO, entries[0].logLevel)
+
+        // Entry 2 is logcat -v year format
+        assertEquals("2026-10-12 22:32:51.000  2646  2664 D MyTag: logcat -v year format", entries[1].logText)
+        assertEquals(LogLevel.DEBUG, entries[1].logLevel)
+        assertEquals(LogTimestamp(10, 12, 22, 32, 51, 0), entries[1].timestamp)
+
+        // Entry 3 has stack trace continuation preserved
+        assertEquals(
+            "10-12 22:32:52.000  2646  2664 E CrashTag: Fatal Exception:" + System.lineSeparator() +
+                    "\tat com.android.server.am.ActivityManagerService.startProcess(ActivityManagerService.java:123)" + System.lineSeparator() +
+                    "\t... 12 more",
+            entries[2].logText
+        )
+        assertEquals(LogLevel.ERROR, entries[2].logLevel)
+
+        // Verify potentialBugReports map is empty for normal logs
+        assertTrue(logParser.potentialBugReports.isEmpty())
+    }
+
+    @Test
+    fun testRealWorldBugreportNoCombinedTimestamps() {
+        val file = java.io.File("../support/bugreport-blanc_g-W3WB36.36-123-2-2026-09-11-14-27-20.txt")
+        if (!file.exists()) return
+
+        val fileReader = com.tibagni.logviewer.log.FileLogReader(arrayOf(file))
+        val parser = LogParser(fileReader, object : ProgressReporter {
+            override fun onProgress(progress: Int, note: String?) {}
+        })
+        val entries = parser.parseLogs(StandardCharsets.UTF_8)
+
+        assertTrue(entries.isNotEmpty())
+
+        val timestampRegex = Regex("""^\s*(?:\d{4}-)?\d{2}-\d{2}[ \t]+\d{2}:\d{2}:\d{2}""")
+        var combinedCount = 0
+        for (entry in entries) {
+            val lines = entry.logText.split("\n")
+            if (lines.size > 1) {
+                for (i in 1 until lines.size) {
+                    if (timestampRegex.containsMatchIn(lines[i])) {
+                        combinedCount++
+                    }
+                }
+            }
+        }
+        assertEquals(0, combinedCount)
+    }
+
+    @Test
+    fun testGetLogEntriesEmptyAndWhitespaceOnly() {
+        val emptyResult = logParser.getLogEntries("", "main.txt", null)
+        assertTrue(emptyResult.isEmpty())
+
+        val whitespaceResult = logParser.getLogEntries("   \n\t\n  \n", "main.txt", null)
+        assertTrue(whitespaceResult.isEmpty())
+    }
+
+    @Test
+    fun testGetLogEntriesSingleLineWithLineNumbers() {
+        val text = "\n\n10-12 22:32:50.264  2646  2664 I Tag: Line at 3\n"
+        val entries = logParser.getLogEntries(text, "main.txt", null)
+
+        assertEquals(1, entries.size)
+        assertEquals("10-12 22:32:50.264  2646  2664 I Tag: Line at 3", entries[0].logText)
+        assertEquals(3, entries[0].lineNumber)
+        assertEquals(LogStream.MAIN, entries[0].logStream)
+    }
+
+    @Test
+    fun testGetLogEntriesCrlfAndLf() {
+        val text = "10-12 22:32:50.100  1000  1000 I Tag: Line 1\r\n" +
+                "10-12 22:32:50.200  1000  1000 I Tag: Line 2\n" +
+                "10-12 22:32:50.300  1000  1000 I Tag: Line 3\r\n"
+        val entries = logParser.getLogEntries(text, "system.txt", null)
+
+        assertEquals(3, entries.size)
+        assertEquals("10-12 22:32:50.100  1000  1000 I Tag: Line 1", entries[0].logText)
+        assertEquals("10-12 22:32:50.200  1000  1000 I Tag: Line 2", entries[1].logText)
+        assertEquals("10-12 22:32:50.300  1000  1000 I Tag: Line 3", entries[2].logText)
+        assertEquals(LogStream.SYSTEM, entries[0].logStream)
+    }
+
+    @Test
+    fun testGetLogEntriesTrailingNullCharacterSanitization() {
+        val text = "10-12 22:32:50.100  1000  1000 I Tag: Clean\u0000\n"
+        val entries = logParser.getLogEntries(text, "main.txt", null)
+
+        assertEquals(1, entries.size)
+        assertEquals("10-12 22:32:50.100  1000  1000 I Tag: Clean", entries[0].logText)
+        assertFalse(entries[0].logText.contains("\u0000"))
+    }
+
+    @Test
+    fun testGetLogEntriesContinuationLines() {
+        val text = "10-12 22:32:50.100  1000  1000 E Crash: Exception occurred:\n" +
+                "    java.lang.RuntimeException: test\n" +
+                "        at com.test.Main.run(Main.java:42)\n" +
+                "10-12 22:32:51.000  1000  1000 I Normal: Recovered\n"
+        val entries = logParser.getLogEntries(text, "main.txt", null)
+
+        assertEquals(2, entries.size)
+        assertEquals(
+            "10-12 22:32:50.100  1000  1000 E Crash: Exception occurred:" + System.lineSeparator() +
+                    "    java.lang.RuntimeException: test" + System.lineSeparator() +
+                    "        at com.test.Main.run(Main.java:42)",
+            entries[0].logText
+        )
+        assertEquals(1, entries[0].lineNumber)
+        assertEquals(LogLevel.ERROR, entries[0].logLevel)
+
+        assertEquals("10-12 22:32:51.000  1000  1000 I Normal: Recovered", entries[1].logText)
+        assertEquals(4, entries[1].lineNumber)
+        assertEquals(LogLevel.INFO, entries[1].logLevel)
+    }
+
+    @Test
+    fun testGetLogEntriesIgnoredLinesFlushesAndSkips() {
+        val text = "10-12 22:32:50.100  1000  1000 I Tag: Line before ignore\n" +
+                "--------- beginning of system\n" +
+                "10-12 22:32:51.000  1000  1000 I Tag: Line after ignore\n"
+        val entries = logParser.getLogEntries(text, "main.txt", null)
+
+        assertEquals(2, entries.size)
+        assertEquals("10-12 22:32:50.100  1000  1000 I Tag: Line before ignore", entries[0].logText)
+        assertEquals("10-12 22:32:51.000  1000  1000 I Tag: Line after ignore", entries[1].logText)
+    }
+
+    @Test
+    fun testGetLogEntriesBugreportSectionBoundaries() {
+        val text = "========================================================\n" +
+                "== dumpstate: 2026-09-11 14:27:20\n" +
+                "========================================================\n" +
+                "Bugreport format version: 2.0\n" +
+                "------ SYSTEM LOG (logcat -v threadtime -d *:v) ------\n" +
+                "    08-04 19:37:00.810 D Anim: Dumpsys line\n" +
+                "        with continuation\n" +
+                "------ 0.120s was the duration of 'SYSTEM LOG' ------\n" +
+                "Section summary metadata\n" +
+                "    08-04 19:37:02.000 D Anim: Next section line\n"
+        val entries = logParser.getLogEntries(text, "bugreport.txt", null)
+
+        assertEquals(2, entries.size)
+        assertEquals(
+            "    08-04 19:37:00.810 D Anim: Dumpsys line" + System.lineSeparator() +
+                    "        with continuation",
+            entries[0].logText
+        )
+        assertEquals("    08-04 19:37:02.000 D Anim: Next section line", entries[1].logText)
+    }
+
+    @Test
+    fun testGetLogEntriesOversizedContinuationTruncation() {
+        val hugePayload = buildHugeLogPayload()
+        val text = hugePayload + "\n10-12 22:32:55.000  1000  1000 I Tag: Next line after oversized\n"
+        val entries = logParser.getLogEntries(text, "main.txt", null)
+
+        assertEquals(2, entries.size)
+        assertEquals(LogParser.MAX_LOG_LINE_ALLOWED, entries[0].logText.length)
+        assertEquals("10-12 22:32:55.000  1000  1000 I Tag: Next line after oversized", entries[1].logText)
+    }
+
+    @Test
     fun testParseInvalidLogs() {
         val testLogLine = buildHugeLogPayload()
         val logNames = setOf("bugreport")
