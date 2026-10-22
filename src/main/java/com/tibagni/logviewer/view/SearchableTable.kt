@@ -13,6 +13,7 @@ import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -36,7 +37,7 @@ class SearchableTable @JvmOverloads constructor(
   sm: ListSelectionModel? = null
 ) : JPanel() {
 
-  private val searchOptionPanel = JPanel()
+  internal val searchOptionPanel = JPanel()
   internal val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
   @VisibleForTesting
   internal val clearSearchText = FlatButton(
@@ -60,7 +61,10 @@ class SearchableTable @JvmOverloads constructor(
   internal val close = FlatButton(StringUtils.DELETE)
 
   val table = JTable(dm, cm, sm)
-  val scrollPane = JScrollPane(table)
+  val scrollPane = JScrollPane(table).apply {
+    border = BorderFactory.createEmptyBorder()
+    viewportBorder = BorderFactory.createEmptyBorder()
+  }
 
   companion object {
     private const val SEARCH_DEBOUNCE_MS = 250L
@@ -270,6 +274,17 @@ class SearchableTable @JvmOverloads constructor(
 
   private fun buildUi() {
     layout = GridBagLayout()
+
+    searchOptionPanel.border = BorderFactory.createCompoundBorder(
+      BorderFactory.createMatteBorder(
+        UIScaleUtils.dip(1), 0, 0, 0,
+        UIManager.getColor("Component.borderColor") ?: Color(128, 128, 128, 60)
+      ),
+      BorderFactory.createEmptyBorder(
+        UIScaleUtils.dip(4), UIScaleUtils.dip(6),
+        UIScaleUtils.dip(4), UIScaleUtils.dip(6)
+      )
+    )
 
     val layout = FormLayout(
       "200dlu, pref, pref, pref, pref, pref, pref, pref, pref:grow, right:pref",

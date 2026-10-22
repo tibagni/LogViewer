@@ -94,8 +94,34 @@ class LogViewerThemeManagerTests {
     assertEquals(false, UIManager.get("TabbedPane.tabSeparatorsFullHeight"))
     assertEquals(false, UIManager.get("Table.showVerticalLines"))
     assertEquals(Dimension(0, 1), UIManager.get("Table.intercellSpacing"))
+    assertEquals(UIScaleUtils.dip(26), UIManager.get("TableHeader.height"))
+    val expectedMargins = Insets(
+      UIScaleUtils.dip(2), UIScaleUtils.dip(6),
+      UIScaleUtils.dip(2), UIScaleUtils.dip(6)
+    )
+    assertEquals(expectedMargins, UIManager.get("TableHeader.cellMargins"))
+    assertEquals(expectedMargins, UIManager.get("Table.cellMargins"))
+    assertEquals(false, UIManager.get("TableHeader.showTrailingVerticalLine"))
     assertEquals(true, UIManager.get("TitlePane.unifiedBackground"))
     assertEquals(true, UIManager.get("TitlePane.menuBarEmbedded"))
+  }
+
+  /**
+   * Tests table header height, cell margins, and trailing vertical line
+   * suppression configured in application UI defaults.
+   */
+  @Test
+  fun testTableHeaderAndCellMetrics() {
+    LogViewerThemeManager.currentTheme = "Light"
+
+    val expectedMargins = Insets(
+      UIScaleUtils.dip(2), UIScaleUtils.dip(6),
+      UIScaleUtils.dip(2), UIScaleUtils.dip(6)
+    )
+    assertEquals(UIScaleUtils.dip(26), UIManager.get("TableHeader.height"))
+    assertEquals(expectedMargins, UIManager.get("TableHeader.cellMargins"))
+    assertEquals(expectedMargins, UIManager.get("Table.cellMargins"))
+    assertEquals(false, UIManager.get("TableHeader.showTrailingVerticalLine"))
   }
 
   @Test
