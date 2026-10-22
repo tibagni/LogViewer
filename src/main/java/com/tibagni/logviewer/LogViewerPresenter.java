@@ -19,6 +19,7 @@ public interface LogViewerPresenter {
   void loadLogs(File[] logFiles, Charset charset);
   void refreshLogs();
   void refreshLogsWithDifferentCharset(Charset charset);
+  void closeLogs();
   void saveFilteredLogs(File file);
 
   int getNextFilteredLogForFilter(Filter filter, int firstLogIndexSearch);

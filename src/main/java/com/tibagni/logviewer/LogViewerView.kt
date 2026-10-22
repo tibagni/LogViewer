@@ -28,6 +28,7 @@ interface LogViewerView : MainViewTab {
   fun buildStreamsMenu(): JMenu?
   fun handleOpenLogsMenu()
   fun handleRefreshLogsMenu()
+  fun handleCloseLogsMenu()
   fun handleChangeCharsetMenu(charset: Charset)
   fun handleSaveFilteredLogsMenu()
   fun handleGoToTimestampMenu()
@@ -328,6 +329,7 @@ class LogViewerViewImpl(
   }
 
   override fun handleRefreshLogsMenu() = presenter.refreshLogs()
+  override fun handleCloseLogsMenu() = presenter.closeLogs()
   override fun handleChangeCharsetMenu(charset: Charset) = presenter.refreshLogsWithDifferentCharset(charset)
 
   override fun handleSaveFilteredLogsMenu() {
@@ -454,6 +456,8 @@ class LogViewerViewImpl(
   override fun showMyLogs(logEntries: List<LogEntry>?) {
     if (logEntries.isNullOrEmpty()) {
       myLogsListTableModel.clear()
+      sideButtonsPanel.setItemActive(MY_LOGS_BUTTON_ID, false)
+      showMyLogsPanel(false)
     } else {
       myLogsListTableModel.setLogs(logEntries)
       myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }

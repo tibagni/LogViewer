@@ -1326,6 +1326,35 @@ class LogViewerPresenterTests {
   }
 
   @Test
+  fun testCloseLogs() {
+    val logEntry = LogEntry("Log line 1", LogLevel.DEBUG, null)
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(listOf(logEntry))
+    `when`(mockMyLogsRepository.logs).thenReturn(emptyList())
+
+    presenter.closeLogs()
+
+    verify(mockLogsRepository).closeLogs()
+    verify(mockMyLogsRepository).reset(emptyList())
+    verify(view).showFilteredLogs(emptyList())
+    verify(view).showLogs(anyOrNull())
+    verify(view).showAvailableLogStreams(emptySet())
+    verify(view).showMyLogs(emptyList())
+    verify(view).showCurrentLogsLocation(null)
+    verify(view).closeCurrentlyOpenedBugReports()
+  }
+
+  @Test
+  fun testCloseLogsWhenNoLogsLoaded() {
+    `when`(mockLogsRepository.currentlyOpenedLogs).thenReturn(emptyList())
+
+    presenter.closeLogs()
+
+    verify(mockLogsRepository, never()).closeLogs()
+    verify(mockMyLogsRepository, never()).reset(anyOrNull())
+    verify(view, never()).showLogs(anyOrNull())
+  }
+
+  @Test
   fun testSaveFilteredLogs() {
     val tempFile = File.createTempFile("temp", ".tmp")
     presenter.setFilteredLogsForTesting(arrayOf(LogEntry("Log line 1", LogLevel.DEBUG, null)))

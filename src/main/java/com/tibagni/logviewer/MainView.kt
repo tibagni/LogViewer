@@ -301,12 +301,17 @@ class MainViewImpl(
 
     val logsMenu = JMenu(I18n.get(I18n.MENU_LOGS))
     val openLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_LOGS))
+    openLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutMask)
     openLogsItem.addActionListener { logViewerView.handleOpenLogsMenu() }
     logsMenu.add(openLogsItem)
     val refreshLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_REFRESH))
     refreshLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)
     refreshLogsItem.addActionListener { logViewerView.handleRefreshLogsMenu() }
     logsMenu.add(refreshLogsItem)
+    val closeLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLOSE_LOGS))
+    closeLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask)
+    closeLogsItem.addActionListener { logViewerView.handleCloseLogsMenu() }
+    logsMenu.add(closeLogsItem)
 
     val changeEncodingMenu = JMenu(I18n.get(I18n.MENU_ENCODING))
     configureCharsetsMenu(changeEncodingMenu)

@@ -113,6 +113,7 @@ Switch to the **Live Logs** tab, select your connected Android device, choose yo
 | Shortcut (macOS / Linux & Windows) | Action |
 | :--- | :--- |
 | `Cmd+O` / `Ctrl+O` | Open log files |
+| `Cmd+W` / `Ctrl+W` | Close currently opened logs |
 | `Cmd+Shift+F` / `Ctrl+Shift+F` | Search across all filters |
 | `Cmd+F` / `Ctrl+F` | Find in active log table |
 | `F3` / `Shift+F3` | Next / previous search match |
