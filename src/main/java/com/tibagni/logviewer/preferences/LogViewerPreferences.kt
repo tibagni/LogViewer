@@ -7,6 +7,11 @@ interface LogViewerPreferences {
     var lastFilterPaths: Array<File>
     var defaultLogsPath: File
     var lookAndFeel: String
+    /**
+     * The accent color chosen by the user (e.g. "Default", "Blue", "Purple",
+     * "Teal", "Red", "Orange", "Green").
+     */
+    var accentColor: String
     var openLastFilter: Boolean
     var reapplyFiltersAfterEdit: Boolean
     var rememberAppliedFilters: Boolean
@@ -36,6 +41,10 @@ interface LogViewerPreferences {
 
     interface Listener {
         fun onLookAndFeelChanged()
+        /**
+         * Invoked when the accent color preference changes.
+         */
+        fun onAccentColorChanged() {}
         fun onDefaultFiltersPathChanged()
         fun onLastFilterPathChanged()
         fun onOpenLastFilterChanged()
@@ -55,6 +64,7 @@ interface LogViewerPreferences {
 
     abstract class Adapter : Listener {
         override fun onLookAndFeelChanged() {}
+        override fun onAccentColorChanged() {}
         override fun onDefaultFiltersPathChanged() {}
         override fun onLastFilterPathChanged() {}
         override fun onOpenLastFilterChanged() {}

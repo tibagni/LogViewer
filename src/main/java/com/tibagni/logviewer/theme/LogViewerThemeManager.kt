@@ -9,20 +9,22 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import com.formdev.flatlaf.themes.FlatMacLightLaf
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.Insets
 import java.lang.IllegalArgumentException
 import javax.swing.UIManager
 
 /**
- * Manages look-and-feel themes and global UI design tokens for the LogViewer
- * application.
+ * Manages look-and-feel themes, accent colors, and global UI design properties
+ * for the LogViewer application.
  *
  * Utilizes FlatLaf to provide modern light, dark, macOS, and IntelliJ/Darcula
- * themes with consistent component styling, rounded corners, rounded
- * selection arcs, pill progress bars, slender splitters, floating inset
- * scrollbars, underlined tabs, tooltip styling, drop shadows, table
- * presentation defaults, and unified window title pane decorations.
+ * themes with customizable accent colors, consistent component styling,
+ * rounded corners, rounded selection arcs, pill progress bars, slender
+ * splitters, floating inset scrollbars, underlined tabs, tooltip styling, drop
+ * shadows, table presentation defaults, and unified window title pane
+ * decorations.
  */
 object LogViewerThemeManager {
   private val LIGHT = LogViewerTheme("Light", false) { FlatLightLaf.setup() }
@@ -50,10 +52,35 @@ object LogViewerThemeManager {
   private var installedTheme: LogViewerTheme = NONE
 
   /**
+   * Map of accent color names to their corresponding hex color codes.
+   * A null hex value represents the default look-and-feel accent color.
+   */
+  val ACCENT_COLORS = mapOf(
+    "Default" to null,
+    "Blue" to "#2670E8",
+    "Purple" to "#7C4DFF",
+    "Teal" to "#00BFA5",
+    "Red" to "#E53935",
+    "Orange" to "#FB8C00",
+    "Green" to "#43A047"
+  )
+
+  /**
+   * List of available accent color names supported for theme personalization.
+   */
+  val availableAccentColors = ACCENT_COLORS.keys.toList()
+
+  /**
+   * The name of the currently active accent color.
+   */
+  var currentAccentColor: String = "Default"
+    private set
+
+  /**
    * The name of the currently active theme.
    *
    * Setting this property applies the requested theme (e.g., "Light" or "Dark")
-   * and updates application UI tokens. If the provided theme name does not match
+   * and updates application UI properties. If the provided theme name does not match
    * any registered theme and no theme has been installed yet, falls back to the
    * default theme ("Light").
    */
@@ -75,8 +102,68 @@ object LogViewerThemeManager {
     get() = installedTheme.isDark
 
   /**
+   * Sets the accent color for FlatLaf themes and refreshes the UI.
+   *
+   * @param accentColor the name of the accent color to apply.
+   */
+  fun setAccentColor(accentColor: String) {
+    currentAccentColor = if (ACCENT_COLORS.containsKey(accentColor)) {
+      accentColor
+    } else {
+      "Default"
+    }
+    val hex = ACCENT_COLORS[currentAccentColor]
+    FlatLaf.setGlobalExtraDefaults(
+      if (hex != null) mapOf("@accentColor" to hex) else emptyMap()
+    )
+    if (installedTheme != NONE) {
+      installedTheme.install()
+      applyUiProperties()
+      FlatLaf.updateUILater()
+    }
+  }
+
+  /**
+   * Returns the default accent color for the currently active theme.
+   *
+   * @return the theme's default accent [Color].
+   */
+  fun getDefaultAccentColor(): Color {
+    if (currentAccentColor == "Default") {
+      val uimColor = UIManager.getColor("Component.accentColor")
+      if (uimColor != null) return uimColor
+    }
+    return when {
+      currentTheme.startsWith("macOS") -> Color.decode("#007AFF")
+      isDark -> Color.decode("#4B6EAF")
+      else -> Color.decode("#2675BF")
+    }
+  }
+
+  /**
+   * Returns the [Color] corresponding to the specified accent color name.
+   * If the accent color is "Default", returns [getDefaultAccentColor].
+   * If the color is unknown or invalid, falls back to [getDefaultAccentColor].
+   *
+   * @param accentColor the name of the accent color (e.g., "Default", "Blue", etc.).
+   * @return the resolved [Color].
+   */
+  fun getColorForAccent(accentColor: String): Color {
+    val hex = ACCENT_COLORS[accentColor]
+    return if (hex != null) {
+      try {
+        Color.decode(hex)
+      } catch (e: NumberFormatException) {
+        getDefaultAccentColor()
+      }
+    } else {
+      getDefaultAccentColor()
+    }
+  }
+
+  /**
    * Installs the specified theme and configures application-wide Swing UI
-   * defaults and tokens.
+   * defaults and properties.
    *
    * Configures modern component rounding, rounded selection arcs (menus,
    * combo boxes, lists, tables), pill progress bars, slender splitters with
@@ -89,8 +176,19 @@ object LogViewerThemeManager {
    */
   private fun install(theme: LogViewerTheme) {
     installedTheme = theme
+    val hex = ACCENT_COLORS[currentAccentColor]
+    FlatLaf.setGlobalExtraDefaults(
+      if (hex != null) mapOf("@accentColor" to hex) else emptyMap()
+    )
     theme.install()
+    applyUiProperties()
+    FlatLaf.updateUILater()
+  }
 
+  /**
+   * Configures application-wide Swing UI defaults and design properties.
+   */
+  private fun applyUiProperties() {
     val showDividers = try {
       ServiceLocator.logViewerPrefs.showLogLineDividers
     } catch (e: Throwable) {
@@ -125,8 +223,6 @@ object LogViewerThemeManager {
     UIManager.put("Table.rowHeight", UIScaleUtils.dip(22))
     UIManager.put("TitlePane.unifiedBackground", true)
     UIManager.put("TitlePane.menuBarEmbedded", true)
-
-    FlatLaf.updateUILater()
   }
 
   /**

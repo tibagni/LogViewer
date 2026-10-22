@@ -681,4 +681,47 @@ class LogViewerPreferencesImplTests {
         verify(mockListener, never()).onLogFontBoldChanged()
         assertEquals(LogViewerPreferencesImpl.DEFAULT_LOG_FONT_BOLD, returnedVal)
     }
+
+    @Test
+    fun testSettingAccentColor() {
+        LogViewerPreferencesImpl.accentColor = "Blue"
+
+        verify(mockPrefs, times(1)).put(
+            LogViewerPreferencesImpl.ACCENT_COLOR,
+            "Blue"
+        )
+        verify(mockListener, only()).onAccentColorChanged()
+    }
+
+    @Test
+    fun testGettingAccentColor() {
+        `when`(mockPrefs.get(
+            LogViewerPreferencesImpl.ACCENT_COLOR,
+            LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR
+        )).thenReturn("Teal")
+        val returnedVal = LogViewerPreferencesImpl.accentColor
+
+        verify(mockPrefs, times(1)).get(
+            LogViewerPreferencesImpl.ACCENT_COLOR,
+            LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR
+        )
+        verify(mockListener, never()).onAccentColorChanged()
+        assertEquals("Teal", returnedVal)
+    }
+
+    @Test
+    fun testGettingAccentColorUnset() {
+        `when`(mockPrefs.get(
+            LogViewerPreferencesImpl.ACCENT_COLOR,
+            LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR
+        )).thenReturn(LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR)
+        val returnedVal = LogViewerPreferencesImpl.accentColor
+
+        verify(mockPrefs, times(1)).get(
+            LogViewerPreferencesImpl.ACCENT_COLOR,
+            LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR
+        )
+        verify(mockListener, never()).onAccentColorChanged()
+        assertEquals(LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR, returnedVal)
+    }
 }

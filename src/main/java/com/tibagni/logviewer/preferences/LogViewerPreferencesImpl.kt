@@ -12,6 +12,8 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val OPEN_LAST_FILTER = "open_last_filter"
     /*Visible for Testing*/ const val LOGS_PATH = "logs_path"
     /*Visible for Testing*/ const val LOOK_AND_FEEL = "look_and_feel"
+    /*Visible for Testing*/ const val ACCENT_COLOR = "accent_color"
+    /*Visible for Testing*/ const val DEFAULT_ACCENT_COLOR = "Default"
     /*Visible for Testing*/ const val REAPPLY_FILTERS_AFTER_EDIT = "reapply_filters_after_edit"
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS = "remember_applied_filters"
     /*Visible for Testing*/ const val REMEMBER_APPLIED_FILTERS_PREFIX = "applied_for_group_"
@@ -78,6 +80,16 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         set(lookAndFeel) {
             preferences.put(LOOK_AND_FEEL, lookAndFeel)
             listeners.forEach { l -> l.onLookAndFeelChanged() }
+        }
+
+    override var accentColor: String
+        get() = preferences.get(
+            ACCENT_COLOR,
+            DEFAULT_ACCENT_COLOR
+        ) ?: DEFAULT_ACCENT_COLOR
+        set(accentColor) {
+            preferences.put(ACCENT_COLOR, accentColor)
+            listeners.forEach { l -> l.onAccentColorChanged() }
         }
 
     override var openLastFilter: Boolean
