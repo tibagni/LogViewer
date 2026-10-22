@@ -4,11 +4,15 @@ import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogListTableModel
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 import java.awt.event.KeyEvent
+import javax.swing.border.CompoundBorder
+import javax.swing.border.EmptyBorder
+import javax.swing.border.MatteBorder
 import javax.swing.table.DefaultTableModel
 
 class SearchableTableTests {
@@ -249,5 +253,67 @@ class SearchableTableTests {
     )
     assertEquals(FlatButton::class.java, table.searchNext.javaClass)
     assertEquals(FlatButton::class.java, table.close.javaClass)
+  }
+
+  /**
+   * Tests that scrollPane has empty borders on both border and viewportBorder
+   * to ensure an edge-to-edge presentation connecting cleanly to splitters.
+   */
+  @Test
+  fun testScrollPaneBorderSetup() {
+    val table = SearchableTable(DefaultTableModel())
+
+    assertNotNull(table.scrollPane.border)
+    assertNotNull(table.scrollPane.viewportBorder)
+
+    val borderInsets = table.scrollPane.border.getBorderInsets(table.scrollPane)
+    assertEquals(0, borderInsets.top)
+    assertEquals(0, borderInsets.left)
+    assertEquals(0, borderInsets.bottom)
+    assertEquals(0, borderInsets.right)
+
+    val viewportInsets =
+      table.scrollPane.viewportBorder.getBorderInsets(table.scrollPane)
+    assertEquals(0, viewportInsets.top)
+    assertEquals(0, viewportInsets.left)
+    assertEquals(0, viewportInsets.bottom)
+    assertEquals(0, viewportInsets.right)
+  }
+
+  /**
+   * Tests that searchOptionPanel is styled with a docked find bar border:
+   * top matte border separating it from the content above, and empty padding.
+   */
+  @Test
+  fun testSearchOptionPanelBorderSetup() {
+    val table = SearchableTable(DefaultTableModel())
+    val border = table.searchOptionPanel.border
+    assertTrue(
+      "Border should be a CompoundBorder",
+      border is CompoundBorder
+    )
+    val compoundBorder = border as CompoundBorder
+
+    assertTrue(
+      "Outside border should be a MatteBorder",
+      compoundBorder.outsideBorder is MatteBorder
+    )
+    val matteBorder = compoundBorder.outsideBorder as MatteBorder
+    val matteInsets = matteBorder.getBorderInsets(table.searchOptionPanel)
+    assertEquals(UIScaleUtils.dip(1), matteInsets.top)
+    assertEquals(0, matteInsets.left)
+    assertEquals(0, matteInsets.bottom)
+    assertEquals(0, matteInsets.right)
+
+    assertTrue(
+      "Inside border should be an EmptyBorder",
+      compoundBorder.insideBorder is EmptyBorder
+    )
+    val emptyInsets =
+      compoundBorder.insideBorder.getBorderInsets(table.searchOptionPanel)
+    assertEquals(UIScaleUtils.dip(4), emptyInsets.top)
+    assertEquals(UIScaleUtils.dip(6), emptyInsets.left)
+    assertEquals(UIScaleUtils.dip(4), emptyInsets.bottom)
+    assertEquals(UIScaleUtils.dip(6), emptyInsets.right)
   }
 }

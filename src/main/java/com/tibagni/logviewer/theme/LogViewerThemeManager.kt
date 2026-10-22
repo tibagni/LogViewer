@@ -168,9 +168,9 @@ object LogViewerThemeManager {
    * Configures modern component rounding, rounded selection arcs (menus,
    * combo boxes, lists, tables), pill progress bars, slender splitters with
    * centered one-touch buttons, underlined tab styling and tab separators,
-   * tooltip arcs, floating inset scrollbars, popup drop shadows, table grid
-   * metrics, and unified window title pane decorations across the user
-   * interface.
+   * tooltip arcs, floating inset scrollbars, popup drop shadows, table header
+   * metrics, table cell margins, table grid metrics, and unified window title
+   * pane decorations across the user interface.
    *
    * @param theme the [LogViewerTheme] instance to install and activate.
    */
@@ -187,6 +187,11 @@ object LogViewerThemeManager {
 
   /**
    * Configures application-wide Swing UI defaults and design properties.
+   *
+   * Sets component corner rounding, selection arcs, scrollbar styling,
+   * split pane sizing, tab presentation, popup drop shadows, and modern
+   * table metrics including table header height, cell margins, and trailing
+   * vertical line suppression.
    */
   private fun applyUiProperties() {
     val showDividers = try {
@@ -221,6 +226,14 @@ object LogViewerThemeManager {
     UIManager.put("Table.showVerticalLines", false)
     UIManager.put("Table.intercellSpacing", Dimension(0, 1))
     UIManager.put("Table.rowHeight", UIScaleUtils.dip(22))
+    UIManager.put("TableHeader.height", UIScaleUtils.dip(26))
+    val tableCellMargins = Insets(
+      UIScaleUtils.dip(2), UIScaleUtils.dip(6),
+      UIScaleUtils.dip(2), UIScaleUtils.dip(6)
+    )
+    UIManager.put("TableHeader.cellMargins", tableCellMargins)
+    UIManager.put("Table.cellMargins", tableCellMargins)
+    UIManager.put("TableHeader.showTrailingVerticalLine", false)
     UIManager.put("TitlePane.unifiedBackground", true)
     UIManager.put("TitlePane.menuBarEmbedded", true)
   }

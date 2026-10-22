@@ -108,10 +108,12 @@ class SearchFiltersDialog(
       }
     }
 
+    val tableBorderColor = UIManager.getColor("Component.borderColor")
+      ?: Color(128, 128, 128, 80)
     val tableScrollPane = JScrollPane(resultsTable).apply {
       border = BorderFactory.createCompoundBorder(
         BorderFactory.createEmptyBorder(0, UIScaleUtils.dip(10), 0, UIScaleUtils.dip(10)),
-        BorderFactory.createLineBorder(if (ServiceLocator.themeManager.isDark) Color(60, 60, 60) else Color(200, 200, 200))
+        BorderFactory.createLineBorder(tableBorderColor)
       )
     }
 
