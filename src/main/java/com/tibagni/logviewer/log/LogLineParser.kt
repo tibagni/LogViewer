@@ -7,11 +7,13 @@ import java.util.regex.Pattern
 
 object LogLineParser {
   private val LOG_LEVEL_PATTERN =
-    Pattern.compile("^\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}.*?([VDIWE])")
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}.*?([VDIWEF])")
   private val LOG_START_PATTERN =
-    Pattern.compile("^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")
+    Pattern.compile("^(?:\\d{4}-)?\\d{2}-\\d{2}[ \t]+\\d{2}:\\d{2}:\\d{2}")
+  private val LOG_START_INDENTED_PATTERN =
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{2}-\\d{2}[ \t]+\\d{2}:\\d{2}:\\d{2}")
   private val LOG_TIMESTAMP_PATTERN =
-    Pattern.compile("^(\\d{1,2})-(\\d{1,2})\\s(\\d{1,2}):(\\d{1,2}):(\\d{1,2}).(\\d{3,})")
+    Pattern.compile("^\\s*(?:\\d{4}-)?(\\d{1,2})-(\\d{1,2})[ \t]+(\\d{1,2}):(\\d{1,2}):(\\d{1,2})(?:[\\.,:](\\d{3,})|(?=\\s|$))")
 
   private val LOG_PID_PATTERN =
     Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+\\d+|(\\d+)-\\d+(?:/\\S*)?)\\s+([VDIWEF])(?:[\\s/:]|$)")
@@ -24,37 +26,62 @@ object LogLineParser {
     Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
 
   /**
-   * Determines whether the given text starts with a standard Android log line prefix (MM-DD HH:MM:SS).
+   * Determines whether the given text starts with an Android log line prefix (MM-DD HH:MM:SS or YYYY-MM-DD HH:MM:SS).
    *
    * @param line The raw text line to evaluate.
-   * @return True if the line matches standard log format, false otherwise.
+   * @param allowLeadingWhitespace When true, allows leading whitespace before timestamp (used in bugreports).
+   * @return True if the line matches log format, false otherwise.
    */
   @JvmStatic
-  fun isLogLine(line: String): Boolean {
-    if (line.length < 14) return false
-    return hasStandardLogPrefix(line) || LOG_START_PATTERN.matcher(line).lookingAt()
+  @JvmOverloads
+  fun isLogLine(line: String, allowLeadingWhitespace: Boolean = false): Boolean {
+    var offset = 0
+    if (allowLeadingWhitespace) {
+      val len = line.length
+      while (offset < len && (line[offset] == ' ' || line[offset] == '\t')) {
+        offset++
+      }
+    }
+    if (line.length - offset < 14) return false
+    return hasDatePrefixAt(line, offset) ||
+      (if (allowLeadingWhitespace) LOG_START_INDENTED_PATTERN.matcher(line).lookingAt()
+       else LOG_START_PATTERN.matcher(line).lookingAt())
   }
 
   /**
-   * Fast-path check verifying if characters 0..13 match the standard `MM-DD HH:MM:SS` date prefix.
+   * Checks if characters starting at [startIndex] match the date/time structure (MM-DD HH:MM:SS or YYYY-MM-DD HH:MM:SS).
    */
-  private fun hasStandardLogPrefix(line: String): Boolean {
-    return isDatePrefix(line, '\t')
-  }
+  private fun hasDatePrefixAt(line: String, startIndex: Int): Boolean {
+    var i = startIndex
+    val len = line.length
+    if (len - i < 14) return false
 
-  /**
-   * Validates the 14-character date and time structure (MM-DD HH:MM:SS) with configurable space separator.
-   */
-  private fun isDatePrefix(line: String, allowedWhitespace: Char): Boolean {
-    return isTwoDigits(line, 0) &&
-      line[2] == '-' &&
-      isTwoDigits(line, 3) &&
-      (line[5] == ' ' || line[5] == allowedWhitespace) &&
-      isTwoDigits(line, 6) &&
-      line[8] == ':' &&
-      isTwoDigits(line, 9) &&
-      line[11] == ':' &&
-      isTwoDigits(line, 12)
+    // Optional 4-digit year: YYYY-
+    if (i + 5 <= len && isFourDigits(line, i) && line[i + 4] == '-') {
+      i += 5
+    }
+
+    if (len - i < 14) return false
+
+    // MM-DD
+    if (!isTwoDigits(line, i) || line[i + 2] != '-' || !isTwoDigits(line, i + 3)) {
+      return false
+    }
+    i += 5
+
+    // Separator between date and time: 1 or more spaces or tabs
+    if (i >= len || (line[i] != ' ' && line[i] != '\t')) return false
+    while (i < len && (line[i] == ' ' || line[i] == '\t')) {
+      i++
+    }
+
+    // HH:MM:SS
+    if (len - i < 8) return false
+    return isTwoDigits(line, i) &&
+      line[i + 2] == ':' &&
+      isTwoDigits(line, i + 3) &&
+      line[i + 5] == ':' &&
+      isTwoDigits(line, i + 6)
   }
 
   @JvmStatic
@@ -81,13 +108,14 @@ object LogLineParser {
     try {
       val matcher = LOG_TIMESTAMP_PATTERN.matcher(logLine)
       if (matcher.find()) {
+        val hundredthStr = matcher.group(6) ?: "0"
         return LogTimestamp(
           matcher.group(1),
           matcher.group(2),
           matcher.group(3),
           matcher.group(4),
           matcher.group(5),
-          matcher.group(6)
+          hundredthStr
         )
       }
     } catch (e: Exception) {
@@ -98,49 +126,82 @@ object LogLineParser {
   }
 
   /**
-   * High-performance non-regex timestamp parser for standard Android `MM-DD HH:MM:SS.mmm` lines.
+   * High-performance non-regex timestamp parser for Android timestamped lines.
    */
   private fun parseFastTimestamp(logLine: String): LogTimestamp? {
-    if (!hasStandardTimestampPrefix(logLine)) return null
+    var offset = 0
+    val len = logLine.length
+    while (offset < len && (logLine[offset] == ' ' || logLine[offset] == '\t')) {
+      offset++
+    }
+    if (len - offset < 18) return null
 
-    val month = parseTwoDigitInt(logLine, 0)
-    val day = parseTwoDigitInt(logLine, 3)
-    val hour = parseTwoDigitInt(logLine, 6)
-    val minutes = parseTwoDigitInt(logLine, 9)
-    val seconds = parseTwoDigitInt(logLine, 12)
+    // Optional 4-digit year: YYYY-
+    if (offset + 5 <= len && isFourDigits(logLine, offset) && logLine[offset + 4] == '-') {
+      offset += 5
+    }
 
-    var subEnd = 18
-    while (subEnd < logLine.length && logLine[subEnd] in '0'..'9') {
+    if (len - offset < 18) return null
+
+    // MM-DD
+    if (!isTwoDigits(logLine, offset) || logLine[offset + 2] != '-' || !isTwoDigits(logLine, offset + 3)) {
+      return null
+    }
+
+    val month = parseTwoDigitInt(logLine, offset)
+    val day = parseTwoDigitInt(logLine, offset + 3)
+
+    var i = offset + 5
+    if (i >= len || (logLine[i] != ' ' && logLine[i] != '\t')) return null
+    while (i < len && (logLine[i] == ' ' || logLine[i] == '\t')) {
+      i++
+    }
+
+    if (len - i < 12) return null // Need at least HH:MM:SS.mmm (8 + 1 + 3)
+
+    if (!isTwoDigits(logLine, i) || logLine[i + 2] != ':' || !isTwoDigits(logLine, i + 3) ||
+        logLine[i + 5] != ':' || !isTwoDigits(logLine, i + 6)) {
+      return null
+    }
+
+    val hour = parseTwoDigitInt(logLine, i)
+    val minutes = parseTwoDigitInt(logLine, i + 3)
+    val seconds = parseTwoDigitInt(logLine, i + 6)
+
+    val sep = logLine[i + 8]
+    if (sep != '.' && sep != ',' && sep != ':') return null
+    if (!isThreeDigits(logLine, i + 9)) return null
+
+    var subEnd = i + 12
+    while (subEnd < len && logLine[subEnd] in '0'..'9') {
       subEnd++
     }
-    val subLen = subEnd - 15
+    val subLen = subEnd - (i + 9)
     if (subLen in 3..9) {
       var hundredth = 0
-      for (i in 15 until subEnd) {
-        hundredth = hundredth * 10 + (logLine[i] - '0')
+      for (idx in (i + 9) until subEnd) {
+        hundredth = hundredth * 10 + (logLine[idx] - '0')
       }
       return LogTimestamp(month, day, hour, minutes, seconds, hundredth)
     }
     return null
   }
 
-  /**
-   * Validates if the line begins with the standard timestamp structure up to 3 subsecond digits.
-   */
-  private fun hasStandardTimestampPrefix(line: String): Boolean {
-    if (line.length < 18) return false
-    val sep14 = line[14]
-    return isDatePrefix(line, '\t') &&
-      (sep14 == '.' || sep14 == ',') &&
-      isThreeDigits(line, 15)
-  }
-
   private fun isTwoDigits(s: String, startIndex: Int): Boolean {
-    return s[startIndex] in '0'..'9' && s[startIndex + 1] in '0'..'9'
+    return startIndex + 1 < s.length && s[startIndex] in '0'..'9' && s[startIndex + 1] in '0'..'9'
   }
 
   private fun isThreeDigits(s: String, startIndex: Int): Boolean {
-    return s[startIndex] in '0'..'9' && s[startIndex + 1] in '0'..'9' && s[startIndex + 2] in '0'..'9'
+    return startIndex + 2 < s.length &&
+      s[startIndex] in '0'..'9' && s[startIndex + 1] in '0'..'9' && s[startIndex + 2] in '0'..'9'
+  }
+
+  private fun isFourDigits(s: String, startIndex: Int): Boolean {
+    return startIndex + 3 < s.length &&
+      s[startIndex] in '0'..'9' &&
+      s[startIndex + 1] in '0'..'9' &&
+      s[startIndex + 2] in '0'..'9' &&
+      s[startIndex + 3] in '0'..'9'
   }
 
   private fun parseTwoDigitInt(s: String, startIndex: Int): Int {

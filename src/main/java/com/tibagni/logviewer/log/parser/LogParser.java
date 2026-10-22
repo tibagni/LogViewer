@@ -118,13 +118,10 @@ public class LogParser {
     logReader = null;
   }
 
-  private List<LogEntry> getLogEntries(String logText, String logPath, File logFile) {
+  List<LogEntry> getLogEntries(String logText, String logPath, File logFile) {
     LogStream logStream = LogStream.inferLogStreamFromName(logPath);
-    List<LogEntry> logLines = new ArrayList<>();
-
-    String currentLogLine = null;
-    int currentLineNumber = 0;
-    StringBuilder continuationBuilder = null;
+    boolean isBugReport = registerBugReportIfNeeded(logText, logPath);
+    EntryCollector collector = new EntryCollector(logStream, logFile, logPath, logText, potentialBugReports);
 
     int textLen = logText.length();
     int start = 0;
@@ -142,38 +139,38 @@ public class LogParser {
       String line = sanitizeLine(logText.substring(start, lineEnd));
       start = end + 1;
 
-      if (isLogLine(line)) {
-        flushPendingLogEntry(logLines, continuationBuilder, currentLogLine, logStream, logFile, currentLineNumber);
-        continuationBuilder = null;
-
-        currentLogLine = line;
-        currentLineNumber = rawLineNumber;
-      } else if (!shouldIgnoreLine(line) && currentLogLine != null) {
-        // This is probably a continuation of an already started log line. Append to it
-        if (continuationBuilder == null) {
-          continuationBuilder = new StringBuilder(currentLogLine);
-        }
-
-        if (continuationBuilder.length() >= MAX_LOG_LINE_ALLOWED) {
-          handleOversizedContinuation(continuationBuilder, logPath, logText);
-
-          // We are done with this line, add it to the list and clear currentLogLine to avoid
-          // executing this same code over and over for invalid lines
-          logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
-          continuationBuilder = null;
-          currentLogLine = null;
-
-          // This could simply be a malformed line, just continue parsing other lines
-          continue;
-        }
-        continuationBuilder.append(StringUtils.LINE_SEPARATOR).append(line);
+      // In bugreports, section boundaries (e.g. '------ SYSTEM LOG ... ------') and log buffer
+      // banners (shouldIgnoreLine) delimit independent log blocks and reset continuation state.
+      if (isDelimiter(line, isBugReport)) {
+        collector.flushAndReset();
+      } else if (isLogLine(line, isBugReport)) {
+        collector.startNewEntry(line, rawLineNumber);
+      } else {
+        collector.appendContinuation(line);
       }
     }
 
-    // Make sure to add the last log line as well
-    flushPendingLogEntry(logLines, continuationBuilder, currentLogLine, logStream, logFile, currentLineNumber);
+    return collector.finish();
+  }
 
-    return logLines;
+  /**
+   * Registers a bugreport file upfront to enable indented service dumpsys parsing
+   * without sacrificing strict column-0 matching for standard log files.
+   */
+  private boolean registerBugReportIfNeeded(String logText, String logPath) {
+    boolean isBugReport = isPotentialBugReport(logText);
+    if (isBugReport && !potentialBugReports.containsKey(logPath)) {
+      Logger.info("Found a potential bugreport: " + logPath);
+      potentialBugReports.put(logPath, logText.replace("\r", ""));
+    }
+    return isBugReport;
+  }
+
+  /**
+   * Checks whether a line is a section delimiter or should-ignore buffer header.
+   */
+  private boolean isDelimiter(String line, boolean isBugReport) {
+    return (isBugReport && isSectionBoundary(line)) || shouldIgnoreLine(line);
   }
 
   /**
@@ -190,63 +187,100 @@ public class LogParser {
   }
 
   /**
-   * Flushes the active log line or continuation buffer into the collected log entries list.
-   *
-   * @param logLines the list collecting parsed [LogEntry] instances.
-   * @param continuationBuilder the builder holding multiline continuation text, or null.
-   * @param currentLogLine the last single log line text, or null.
-   * @param logStream the [LogStream] associated with this log.
-   * @param logFile the source [File] being parsed, or null.
-   * @param lineNumber the line number in the source file.
+   * Encapsulates mutable log accumulation state (current entry, multiline continuations,
+   * line numbers, and payload thresholds) during log file parsing.
    */
-  private void flushPendingLogEntry(
-      List<LogEntry> logLines,
-      StringBuilder continuationBuilder,
-      String currentLogLine,
-      LogStream logStream,
-      File logFile,
-      int lineNumber) {
-    if (continuationBuilder != null) {
-      logLines.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, lineNumber));
-    } else if (currentLogLine != null) {
-      logLines.add(createLogEntry(currentLogLine, logStream, logFile, lineNumber));
+  private static class EntryCollector {
+    private final List<LogEntry> entries = new ArrayList<>();
+    private final LogStream logStream;
+    private final File logFile;
+    private final String logPath;
+    private final String logText;
+    private final Map<String, String> potentialBugReports;
+
+    private String currentLogLine = null;
+    private int currentLineNumber = 0;
+    private StringBuilder continuationBuilder = null;
+
+    EntryCollector(
+        LogStream logStream,
+        File logFile,
+        String logPath,
+        String logText,
+        Map<String, String> potentialBugReports) {
+      this.logStream = logStream;
+      this.logFile = logFile;
+      this.logPath = logPath;
+      this.logText = logText;
+      this.potentialBugReports = potentialBugReports;
     }
-  }
 
-  /**
-   * Inspects and logs payload overflow for oversized continuation lines, detecting potential bug reports.
-   *
-   * @param continuationBuilder the continuation buffer exceeding allowable payload length.
-   * @param logPath the path of the log file being parsed.
-   * @param logText the full raw text of the log file.
-   */
-  private void handleOversizedContinuation(
-      StringBuilder continuationBuilder,
-      String logPath,
-      String logText) {
-    continuationBuilder.delete(MAX_LOG_LINE_ALLOWED, continuationBuilder.length());
+    void startNewEntry(String line, int lineNumber) {
+      flush();
+      continuationBuilder = null;
+      currentLogLine = line;
+      currentLineNumber = lineNumber;
+    }
 
-    // First check if we have already considered this as a potential bugreport. If so,
-    // don't waste any more time here
-    if (!potentialBugReports.containsKey(logPath)) {
-      // This could be a bugreport. If this is the case, keep track of it
-      if (isPotentialBugReport(logText)) {
-        Logger.info("Found a potential bugreport: " + logPath);
+    void appendContinuation(String line) {
+      if (currentLogLine == null) {
+        return;
+      }
 
-        // Make sure to remove all '\r' so it does not get in the way of the parsers
-        String bugReportText = logText.replace("\r", "");
-        potentialBugReports.put(logPath, bugReportText);
-      } else {
-        String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
-        Logger.warning(
-            "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
-                "\"" + incorrectLinePreview + "\"\n\n" +
-                "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+      if (continuationBuilder == null) {
+        continuationBuilder = new StringBuilder(currentLogLine);
+      }
+
+      if (continuationBuilder.length() >= MAX_LOG_LINE_ALLOWED) {
+        handleOversizedContinuation();
+        entries.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
+        continuationBuilder = null;
+        currentLogLine = null;
+        return;
+      }
+
+      continuationBuilder.append(StringUtils.LINE_SEPARATOR).append(line);
+    }
+
+    void flushAndReset() {
+      flush();
+      continuationBuilder = null;
+      currentLogLine = null;
+    }
+
+    List<LogEntry> finish() {
+      flushAndReset();
+      return entries;
+    }
+
+    private void flush() {
+      if (continuationBuilder != null) {
+        entries.add(createLogEntry(continuationBuilder.toString(), logStream, logFile, currentLineNumber));
+      } else if (currentLogLine != null) {
+        entries.add(createLogEntry(currentLogLine, logStream, logFile, currentLineNumber));
+      }
+    }
+
+    private void handleOversizedContinuation() {
+      continuationBuilder.delete(MAX_LOG_LINE_ALLOWED, continuationBuilder.length());
+
+      if (!potentialBugReports.containsKey(logPath)) {
+        if (isPotentialBugReport(logText)) {
+          Logger.info("Found a potential bugreport: " + logPath);
+          String bugReportText = logText.replace("\r", "");
+          potentialBugReports.put(logPath, bugReportText);
+        } else {
+          String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
+          Logger.warning(
+              "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
+                  "\"" + incorrectLinePreview + "\"\n\n" +
+                  "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
+        }
       }
     }
   }
 
-  private LogEntry createLogEntry(String logLine, LogStream logStream, File sourceFile, int lineNumber) {
+  private static LogEntry createLogEntry(String logLine, LogStream logStream, File sourceFile, int lineNumber) {
     return LogLineParser.createLogEntry(logLine, lineNumber, logStream, sourceFile);
   }
 
@@ -259,15 +293,36 @@ public class LogParser {
   }
 
   boolean isLogLine(String line) {
-    return LogLineParser.isLogLine(line);
+    return isLogLine(line, false);
+  }
+
+  boolean isLogLine(String line, boolean allowLeadingWhitespace) {
+    return LogLineParser.isLogLine(line, allowLeadingWhitespace);
   }
 
   private boolean shouldIgnoreLine(String line) {
     return LogLineParser.shouldIgnoreLine(line);
   }
 
-  private boolean isPotentialBugReport(String logText) {
-    return logText.contains("Bugreport format version:");
+  /**
+   * Recognizes Android bugreport dumpstate section boundaries, such as:
+   * '------ SYSTEM LOG (logcat -v threadtime -d *:v) ------' or
+   * '------ 0.120s was the duration of 'SYSTEM LOG' ------'.
+   */
+  private static boolean isSectionBoundary(String line) {
+    return line.length() >= 14 && line.startsWith("------ ") && line.endsWith(" ------");
+  }
+
+  /**
+   * Fast check to identify bugreport files by inspecting the format version banner
+   * within the first 200KB of the file.
+   */
+  private static boolean isPotentialBugReport(String logText) {
+    if (logText == null) {
+      return false;
+    }
+    int limit = Math.min(logText.length(), 200_000);
+    return logText.substring(0, limit).contains("Bugreport format version:");
   }
 
   boolean isSorted(LogEntry[] entries) {

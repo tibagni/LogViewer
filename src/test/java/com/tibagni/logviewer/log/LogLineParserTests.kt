@@ -218,6 +218,22 @@ class LogLineParserTests {
         assertFalse(LogLineParser.isLogLine("1-12 22:32:50")) // 1-digit month
         assertFalse(LogLineParser.isLogLine("10-1 22:32:50")) // 1-digit day
         assertFalse(LogLineParser.isLogLine(""))
+
+        // Year prefix (YYYY-MM-DD)
+        assertTrue(LogLineParser.isLogLine("2026-10-12 22:32:50.264  2646  2664 I chatty  : uid=1000"))
+
+        // Indented lines (rejected by default, allowed when allowLeadingWhitespace is true)
+        val indentedLine = "    08-04 19:37:00.810 D AnimatableClockView: animateDoze"
+        assertFalse(LogLineParser.isLogLine(indentedLine))
+        assertTrue(LogLineParser.isLogLine(indentedLine, allowLeadingWhitespace = true))
+        assertTrue(LogLineParser.isLogLine("        09-11 13:53:29.984 ROTATION_0 to ROTATION_90", allowLeadingWhitespace = true))
+        assertTrue(LogLineParser.isLogLine("  2026-09-11 14:27:20.123  1000  1000 I Tag: test", allowLeadingWhitespace = true))
+        assertTrue(LogLineParser.isLogLine("    08-04 11:36:56:598 AudioService()", allowLeadingWhitespace = true))
+
+        // Stack traces and non-log lines remain false even when allowLeadingWhitespace is true
+        assertFalse(LogLineParser.isLogLine("\tat com.android.server.am.ActivityManagerService.startProcess(ActivityManagerService.java:123)", allowLeadingWhitespace = true))
+        assertFalse(LogLineParser.isLogLine("--------- beginning of main", allowLeadingWhitespace = true))
+        assertFalse(LogLineParser.isLogLine("------ KERNEL LOG ------", allowLeadingWhitespace = true))
     }
 
     @Test
@@ -225,6 +241,22 @@ class LogLineParserTests {
         val ts = LogLineParser.findTimestamp("10-12 22:32:50.264  2646  2664 I chatty  : message")
         assertNotNull(ts)
         assertEquals(LogTimestamp(10, 12, 22, 32, 50, 264), ts)
+
+        val tsYear = LogLineParser.findTimestamp("2026-10-12 22:32:50.264  2646  2664 I chatty  : message")
+        assertNotNull(tsYear)
+        assertEquals(LogTimestamp(10, 12, 22, 32, 50, 264), tsYear)
+
+        val tsIndented = LogLineParser.findTimestamp("    08-04 19:37:00.810 D AnimatableClockView: animateDoze")
+        assertNotNull(tsIndented)
+        assertEquals(LogTimestamp(8, 4, 19, 37, 0, 810), tsIndented)
+
+        val tsColon = LogLineParser.findTimestamp("08-04 11:36:56:598 AudioService()")
+        assertNotNull(tsColon)
+        assertEquals(LogTimestamp(8, 4, 11, 36, 56, 598), tsColon)
+
+        val tsNoSubseconds = LogLineParser.findTimestamp("10-12 22:32:50")
+        assertNotNull(tsNoSubseconds)
+        assertEquals(LogTimestamp(10, 12, 22, 32, 50, 0), tsNoSubseconds)
 
         val tsMicro = LogLineParser.findTimestamp("12-31 23:59:59.999999 1 1 D Test: Microseconds")
         assertNotNull(tsMicro)
@@ -236,5 +268,14 @@ class LogLineParserTests {
 
         assertNull(LogLineParser.findTimestamp("Not a log line"))
         assertNull(LogLineParser.findTimestamp(""))
+    }
+
+    @Test
+    fun testFindLogLevel() {
+        assertEquals(LogLevel.DEBUG, LogLineParser.findLogLevel("    08-04 19:37:00.810 D AnimatableClockView: animateDoze"))
+        assertEquals(LogLevel.INFO, LogLineParser.findLogLevel("2026-10-12 22:32:50.264  2646  2664 I chatty  : message"))
+        assertEquals(LogLevel.ERROR, LogLineParser.findLogLevel("10-12 22:32:50.264  2646  2664 F FatalTag: fatal crash"))
+        assertEquals(LogLevel.WARNING, LogLineParser.findLogLevel("10-12 22:32:50.264  2646  2664 W WarnTag: warning message"))
+        assertEquals(LogLevel.VERBOSE, LogLineParser.findLogLevel("10-12 22:32:50.264  2646  2664 V VerboseTag: verbose message"))
     }
 }

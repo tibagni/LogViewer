@@ -18,6 +18,7 @@ public enum LogLevel {
       case "W":
         return LogLevel.WARNING;
       case "E":
+      case "F":
         return LogLevel.ERROR;
     }
 
