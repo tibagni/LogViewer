@@ -231,4 +231,23 @@ class SearchableTableTests {
     assertEquals(6, highlights[0].startOffset)
     assertEquals(11, highlights[0].endOffset)
   }
+  @Test
+  fun testSearchButtonsInstantiatedAndTyped() {
+    val table = SearchableTable(DefaultTableModel())
+    assertEquals(
+      FlatButton::class.java,
+      table.clearSearchText.javaClass
+    )
+    assertEquals(
+      ToolbarDivider::class.java,
+      table.clearSearchDivider.javaClass
+    )
+    assertEquals(FlatButton::class.java, table.searchLast.javaClass)
+    assertEquals(
+      ToolbarDivider::class.java,
+      table.searchNavDivider.javaClass
+    )
+    assertEquals(FlatButton::class.java, table.searchNext.javaClass)
+    assertEquals(FlatButton::class.java, table.close.javaClass)
+  }
 }

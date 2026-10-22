@@ -12,6 +12,7 @@ import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.MultipleChoiceDialog
 import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.FlowLayout
@@ -35,16 +36,21 @@ interface FiltersPanelHost {
   fun showOpenMultipleFiltersFileChooser(): Array<File>
 }
 
-open class FiltersPanel(
+open class FiltersPanel @VisibleForTesting internal constructor(
   private val host: FiltersPanelHost,
-  // Allows tests to inject a mock presenter
+  presenterFactory: ((FiltersView) -> FiltersPresenter)?,
   @VisibleForTesting
-  presenterFactory: ((FiltersView) -> FiltersPresenter)? = null
+  internal val userPrefs: LogViewerPreferences
 ) : JPanel(), FiltersView, View {
 
+  constructor(
+    host: FiltersPanelHost,
+    presenterFactory: ((FiltersView) -> FiltersPresenter)? = null
+  ) : this(host, presenterFactory, ServiceLocator.logViewerPrefs)
+
   @VisibleForTesting
-  internal val presenter: FiltersPresenter = presenterFactory?.invoke(this) ?: FiltersPresenterImpl(this)
-  private val userPrefs: LogViewerPreferences = ServiceLocator.logViewerPrefs
+  internal val presenter: FiltersPresenter =
+    presenterFactory?.invoke(this) ?: FiltersPresenterImpl(this)
 
   // Allow tests to fake user dialog choices without opening real Swing dialogs
   @VisibleForTesting
@@ -89,11 +95,20 @@ open class FiltersPanel(
     }
   }
 
-  private lateinit var addNewFilterGroupBtn: JButton
-  private lateinit var moreFilterOptionsBtn: JButton
-  private lateinit var collapseExpandAllGroupsBtn: JButton
-  private lateinit var findFiltersBtn: JButton
-  private lateinit var applyFiltersBtn: JButton
+  @VisibleForTesting
+  internal lateinit var addNewFilterGroupBtn: FlatButton
+  @VisibleForTesting
+  internal lateinit var moreFilterOptionsBtn: FlatButton
+  @VisibleForTesting
+  internal lateinit var collapseExpandAllGroupsBtn: FlatButton
+  @VisibleForTesting
+  internal lateinit var findFiltersBtn: FlatButton
+  @VisibleForTesting
+  internal lateinit var applyFiltersBtn: FlatButton
+  @VisibleForTesting
+  internal lateinit var applyDivider: ToolbarDivider
+  @VisibleForTesting
+  internal lateinit var filterActionButtonsPane: JPanel
   val filtersPane: FiltersList = FiltersList()
 
   var listener: FiltersPanelListener? = null
@@ -134,26 +149,37 @@ open class FiltersPanel(
     )
 
     val filterButtonsPane = JPanel(BorderLayout())
-    val filterActionButtonsPane = JPanel()
+    filterActionButtonsPane = JPanel(
+      FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(4), 0)
+    )
     collapseExpandAllGroupsBtn = FlatButton()
-    addNewFilterGroupBtn = JButton()
+    updateCollapseExpandButtonState()
+    addNewFilterGroupBtn = FlatButton()
     addNewFilterGroupBtn.actionCommand = "Add"
     addNewFilterGroupBtn.text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
-    moreFilterOptionsBtn = JButton()
-    moreFilterOptionsBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_MORE_OPTIONS)
+    moreFilterOptionsBtn = FlatButton()
+    moreFilterOptionsBtn.toolTipText = I18n.get(
+      I18n.FILTERS_TOOLTIP_MORE_OPTIONS
+    )
     moreFilterOptionsBtn.text = StringUtils.THREE_LINES
-    applyFiltersBtn = JButton()
-    applyFiltersBtn.actionCommand = "Apply"
-    applyFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_APPLY)
-    applyFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
-    findFiltersBtn = JButton()
+    applyFiltersBtn = FlatButton(
+      I18n.get(I18n.FILTERS_BTN_APPLY)
+    ).apply {
+      actionCommand = "Apply"
+      toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
+    }
+    applyDivider = ToolbarDivider()
+    findFiltersBtn = FlatButton()
     findFiltersBtn.actionCommand = "Find"
     findFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_FIND)
     findFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
 
     filterActionButtonsPane.add(applyFiltersBtn)
+    filterActionButtonsPane.add(applyDivider)
     filterActionButtonsPane.add(findFiltersBtn)
+    filterActionButtonsPane.add(ToolbarDivider())
     filterActionButtonsPane.add(addNewFilterGroupBtn)
+    filterActionButtonsPane.add(ToolbarDivider())
     filterActionButtonsPane.add(moreFilterOptionsBtn)
 
     filterButtonsPane.add(collapseExpandAllGroupsBtn, BorderLayout.WEST)
@@ -168,8 +194,8 @@ open class FiltersPanel(
           Insets(
             UIScaleUtils.dip(0),
             UIScaleUtils.dip(0),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(5)
+            UIScaleUtils.dip(6),
+            UIScaleUtils.dip(2)
           )
         )
         .withFill(GridBagConstraints.BOTH)
@@ -179,11 +205,15 @@ open class FiltersPanel(
 
   private fun setupActions() {
     userPrefs.addPreferenceListener(object : LogViewerPreferences.Adapter() {
+      override fun onReapplyFiltersConfigChanged() {
+        updateApplyFiltersButtonVisibility()
+      }
+
       override fun onApplyFiltersOnCheckChanged() {
-        applyFiltersBtn.isVisible = !userPrefs.applyFilterOnCheck
+        updateApplyFiltersButtonVisibility()
       }
     })
-    applyFiltersBtn.isVisible = !userPrefs.applyFilterOnCheck
+    updateApplyFiltersButtonVisibility()
 
     addNewFilterGroupBtn.addActionListener { addGroup() }
     moreFilterOptionsBtn.addMouseListener(object : MouseAdapter() {
@@ -191,11 +221,26 @@ open class FiltersPanel(
         showFilterOptionsMenu(e)
       }
     })
-    collapseExpandAllGroupsBtn.addActionListener { filtersPane.toggleGroupsVisibility() }
+    collapseExpandAllGroupsBtn.addActionListener {
+      filtersPane.toggleGroupsVisibility()
+    }
     findFiltersBtn.addActionListener { showSearchFiltersDialog() }
     applyFiltersBtn.addActionListener { applyFilters() }
 
     setupFiltersContextActions()
+  }
+
+  /**
+   * Updates the visibility of the Apply Filters button and its adjacent
+   * divider based on user preferences, triggering container layout refresh.
+   */
+  private fun updateApplyFiltersButtonVisibility() {
+    val shouldShow = !userPrefs.reapplyFiltersAfterEdit ||
+      !userPrefs.applyFilterOnCheck
+    applyFiltersBtn.isVisible = shouldShow
+    applyDivider.isVisible = shouldShow
+    filterActionButtonsPane.revalidate()
+    filterActionButtonsPane.repaint()
   }
 
   private fun setupFiltersContextActions() {
@@ -547,6 +592,10 @@ open class FiltersPanel(
   fun onThemeChanged() {
     SwingUtilities.updateComponentTreeUI(filtersPane)
     collapseExpandAllGroupsBtn.updateUI()
+    addNewFilterGroupBtn.updateUI()
+    moreFilterOptionsBtn.updateUI()
+    findFiltersBtn.updateUI()
+    applyFiltersBtn.updateUI()
     updateUI()
   }
 }

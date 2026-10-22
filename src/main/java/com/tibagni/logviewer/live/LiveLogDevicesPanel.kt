@@ -7,6 +7,8 @@ import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.layout.WrapLayout
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.view.TriStateCheckbox
 import java.awt.*
 import java.awt.event.ComponentAdapter
@@ -26,8 +28,9 @@ class LiveLogDevicesPanel(
   private val presenter: LiveLogPresenter
 ) : JPanel(BorderLayout()) {
 
-  internal val refreshDevicesBtn: JButton
-  internal val restartServerBtn: JButton
+  internal val refreshDevicesBtn: FlatButton
+  internal val restartServerBtn: FlatButton
+  internal val toolbarDivider: ToolbarDivider
   internal val buffersCard: JPanel
   internal val selectAllCb: TriStateCheckbox
   private val _bufferCheckboxes = mutableMapOf<String, JCheckBox>()
@@ -84,6 +87,9 @@ class LiveLogDevicesPanel(
    */
   internal fun onThemeChanged() {
     updateBuffersCardStyle()
+    refreshDevicesBtn.updateUI()
+    restartServerBtn.updateUI()
+    toolbarDivider.updateUI()
     if (currentDevices.isNotEmpty()) {
       populateDeviceList(currentDevices)
     }
@@ -334,16 +340,24 @@ class LiveLogDevicesPanel(
       font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(14).toFloat())
     }
 
-    refreshDevicesBtn = JButton(I18n.get(I18n.LIVE_LOGS_REFRESH)).apply {
+    refreshDevicesBtn = FlatButton(
+      I18n.get(I18n.LIVE_LOGS_REFRESH)
+    ).apply {
       addActionListener { presenter.loadDevices() }
     }
-    restartServerBtn = JButton(I18n.get(I18n.LIVE_LOGS_RESTART_SERVER)).apply {
+    restartServerBtn = FlatButton(
+      I18n.get(I18n.LIVE_LOGS_RESTART_SERVER)
+    ).apply {
       addActionListener { presenter.restartAdbServer() }
     }
+    toolbarDivider = ToolbarDivider()
 
-    val buttonsPanel = JPanel(FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(8), 0)).apply {
+    val buttonsPanel = JPanel(
+      FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(4), 0)
+    ).apply {
       isOpaque = false
       add(refreshDevicesBtn)
+      add(toolbarDivider)
       add(restartServerBtn)
     }
 

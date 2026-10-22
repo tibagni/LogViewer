@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.view
 
 import com.jgoodies.forms.builder.PanelBuilder
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.jgoodies.forms.factories.CC
 import com.jgoodies.forms.layout.FormLayout
 import com.tibagni.logviewer.filter.Filter
@@ -37,12 +38,26 @@ class SearchableTable @JvmOverloads constructor(
 
   private val searchOptionPanel = JPanel()
   internal val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
-  private val clearSearchText = JButton(I18n.get(I18n.COMMON_CLEAR))
-  private val searchLast = JButton(StringUtils.UP_ARROW_HEAD_BIG)
-  private val searchNext = JButton(StringUtils.DOWN_ARROW_HEAD_BIG)
+  @VisibleForTesting
+  internal val clearSearchText = FlatButton(
+    I18n.get(I18n.COMMON_CLEAR)
+  )
+  @VisibleForTesting
+  internal val clearSearchDivider = ToolbarDivider()
+  @VisibleForTesting
+  internal val searchLast = FlatButton(
+    StringUtils.UP_ARROW_HEAD_BIG
+  )
+  @VisibleForTesting
+  internal val searchNavDivider = ToolbarDivider()
+  @VisibleForTesting
+  internal val searchNext = FlatButton(
+    StringUtils.DOWN_ARROW_HEAD_BIG
+  )
   private val searchResult = JLabel()
   private val matchCaseOption = JCheckBox(I18n.get(I18n.SEARCH_MATCH_CASE))
-  private val close = FlatButton(StringUtils.DELETE)
+  @VisibleForTesting
+  internal val close = FlatButton(StringUtils.DELETE)
 
   val table = JTable(dm, cm, sm)
   val scrollPane = JScrollPane(table)
@@ -257,18 +272,20 @@ class SearchableTable @JvmOverloads constructor(
     layout = GridBagLayout()
 
     val layout = FormLayout(
-      "200dlu, pref, pref, pref, pref, pref, pref:grow, right:pref",  // columns
-      "pref"// rows
+      "200dlu, pref, pref, pref, pref, pref, pref, pref, pref:grow, right:pref",
+      "pref"
     )
     val builder = PanelBuilder(layout, searchOptionPanel)
     builder.add(searchText, CC.xy(1, 1))
     builder.add(clearSearchText, CC.xy(2, 1))
-    builder.add(searchLast, CC.xy(3, 1))
-    builder.add(searchNext, CC.xy(4, 1))
-    builder.add(searchResult, CC.xy(5, 1))
-    builder.add(matchCaseOption, CC.xy(6, 1))
-    builder.add(JLabel(), CC.xy(7, 1)) // Empty space
-    builder.add(close, CC.xy(8, 1))
+    builder.add(clearSearchDivider, CC.xy(3, 1))
+    builder.add(searchLast, CC.xy(4, 1))
+    builder.add(searchNavDivider, CC.xy(5, 1))
+    builder.add(searchNext, CC.xy(6, 1))
+    builder.add(searchResult, CC.xy(7, 1))
+    builder.add(matchCaseOption, CC.xy(8, 1))
+    builder.add(JLabel(), CC.xy(9, 1)) // Empty space
+    builder.add(close, CC.xy(10, 1))
 
     add(
       searchOptionPanel,
