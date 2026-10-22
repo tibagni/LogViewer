@@ -7,23 +7,19 @@ import java.util.regex.Pattern
 
 object LogLineParser {
   private val LOG_LEVEL_PATTERN =
-    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}.*?([VDIWEF])")
-  private val LOG_START_PATTERN =
-    Pattern.compile("^(?:\\d{4}-)?\\d{2}-\\d{2}[ \t]+\\d{2}:\\d{2}:\\d{2}")
-  private val LOG_START_INDENTED_PATTERN =
-    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{2}-\\d{2}[ \t]+\\d{2}:\\d{2}:\\d{2}")
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}(?:[\\.,:]\\d+)?(?:\\s+(?:\\d+|\\d+-\\d+(?:/\\S*)?))*\\s+([VDIWEF])(?:[\\s/:]|$)")
   private val LOG_TIMESTAMP_PATTERN =
     Pattern.compile("^\\s*(?:\\d{4}-)?(\\d{1,2})-(\\d{1,2})[ \t]+(\\d{1,2}):(\\d{1,2}):(\\d{1,2})(?:[\\.,:](\\d{3,})|(?=\\s|$))")
 
   private val LOG_PID_PATTERN =
-    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+\\d+|(\\d+)-\\d+(?:/\\S*)?)\\s+([VDIWEF])(?:[\\s/:]|$)")
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,:]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+\\d+|(\\d+)-\\d+(?:/\\S*)?)\\s+([VDIWEF])(?:[\\s/:]|$)")
 
   private val LINE_INFO_THREADTIME =
-    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+(\\d+))\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,:]\\d+\\s+(?:(?:\\d+\\s+)?(\\d+)\\s+(\\d+))\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
   private val LINE_INFO_PID_TID_SLASH =
-    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])/([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,:]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])/([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
   private val LINE_INFO_PID_TID_SPACE =
-    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
+    Pattern.compile("^\\s*(?:\\d{4}-)?\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{1,2}:\\d{1,2}[\\.,:]\\d+\\s+(\\d+)-(\\d+)(?:/\\S*)?\\s+([VDIWEF])\\s+([^:]*?)\\s*:\\s*(.*)$", Pattern.DOTALL)
 
   /**
    * Determines whether the given text starts with an Android log line prefix (MM-DD HH:MM:SS or YYYY-MM-DD HH:MM:SS).
@@ -43,9 +39,7 @@ object LogLineParser {
       }
     }
     if (line.length - offset < 14) return false
-    return hasDatePrefixAt(line, offset) ||
-      (if (allowLeadingWhitespace) LOG_START_INDENTED_PATTERN.matcher(line).lookingAt()
-       else LOG_START_PATTERN.matcher(line).lookingAt())
+    return hasDatePrefixAt(line, offset)
   }
 
   /**

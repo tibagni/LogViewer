@@ -121,7 +121,7 @@ public class LogParser {
   List<LogEntry> getLogEntries(String logText, String logPath, File logFile) {
     LogStream logStream = LogStream.inferLogStreamFromName(logPath);
     boolean isBugReport = registerBugReportIfNeeded(logText, logPath);
-    EntryCollector collector = new EntryCollector(logStream, logFile, logPath, logText, potentialBugReports);
+    EntryCollector collector = new EntryCollector(logStream, logFile, isBugReport);
 
     int textLen = logText.length();
     int start = 0;
@@ -194,9 +194,7 @@ public class LogParser {
     private final List<LogEntry> entries = new ArrayList<>();
     private final LogStream logStream;
     private final File logFile;
-    private final String logPath;
-    private final String logText;
-    private final Map<String, String> potentialBugReports;
+    private final boolean isBugReport;
 
     private String currentLogLine = null;
     private int currentLineNumber = 0;
@@ -205,14 +203,10 @@ public class LogParser {
     EntryCollector(
         LogStream logStream,
         File logFile,
-        String logPath,
-        String logText,
-        Map<String, String> potentialBugReports) {
+        boolean isBugReport) {
       this.logStream = logStream;
       this.logFile = logFile;
-      this.logPath = logPath;
-      this.logText = logText;
-      this.potentialBugReports = potentialBugReports;
+      this.isBugReport = isBugReport;
     }
 
     void startNewEntry(String line, int lineNumber) {
@@ -264,18 +258,12 @@ public class LogParser {
     private void handleOversizedContinuation() {
       continuationBuilder.delete(MAX_LOG_LINE_ALLOWED, continuationBuilder.length());
 
-      if (!potentialBugReports.containsKey(logPath)) {
-        if (isPotentialBugReport(logText)) {
-          Logger.info("Found a potential bugreport: " + logPath);
-          String bugReportText = logText.replace("\r", "");
-          potentialBugReports.put(logPath, bugReportText);
-        } else {
-          String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
-          Logger.warning(
-              "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
-                  "\"" + incorrectLinePreview + "\"\n\n" +
-                  "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
-        }
+      if (!isBugReport) {
+        String incorrectLinePreview = continuationBuilder.substring(0, 100) + "...";
+        Logger.warning(
+            "Incorrect format on following line (too long - " + continuationBuilder.length() + " bytes):\n" +
+                "\"" + incorrectLinePreview + "\"\n\n" +
+                "Maximum logcat line should be " + LOGGER_ENTRY_MAX_PAYLOAD + " bytes");
       }
     }
   }

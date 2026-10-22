@@ -26,9 +26,10 @@ class LogLineParserTests {
         assertEquals(25175, LogLineParser.findPid("01-06 20:46:39.481 25175-25175/? E/AndroidRuntime: FATAL EXCEPTION: main"))
         assertEquals(25175, LogLineParser.findPid("01-06 20:46:39.481 25175-25175 E/AndroidRuntime: FATAL EXCEPTION: main"))
 
-        // With 4-digit year and comma subseconds
+        // With 4-digit year, comma subseconds, and colon subseconds
         assertEquals(2071, LogLineParser.findPid("2024-10-04 15:53:01.303  2071  2136 I Tag: Message"))
         assertEquals(2071, LogLineParser.findPid("10-04 15:53:01,303  2071  2136 I Tag: Message"))
+        assertEquals(2071, LogLineParser.findPid("10-04 15:53:01:303  2071  2136 I Tag: Message"))
 
         // Non-matching lines
         assertEquals(-1, LogLineParser.findPid("Not a log line"))
@@ -277,5 +278,10 @@ class LogLineParserTests {
         assertEquals(LogLevel.ERROR, LogLineParser.findLogLevel("10-12 22:32:50.264  2646  2664 F FatalTag: fatal crash"))
         assertEquals(LogLevel.WARNING, LogLineParser.findLogLevel("10-12 22:32:50.264  2646  2664 W WarnTag: warning message"))
         assertEquals(LogLevel.VERBOSE, LogLineParser.findLogLevel("10-12 22:32:50.264  2646  2664 V VerboseTag: verbose message"))
+
+        // Level-less dumpsys lines should default to DEBUG instead of matching letters inside words
+        assertEquals(LogLevel.DEBUG, LogLineParser.findLogLevel("        09-11 13:53:29.984 ROTATION_0 to ROTATION_90"))
+        assertEquals(LogLevel.DEBUG, LogLineParser.findLogLevel("    08-04 11:36:56:598 FocusRequester: request focus"))
+        assertEquals(LogLevel.DEBUG, LogLineParser.findLogLevel("    08-04 11:36:56:598 Event: something happened"))
     }
 }
