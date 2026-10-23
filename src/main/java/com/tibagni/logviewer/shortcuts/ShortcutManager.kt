@@ -36,8 +36,7 @@ class ShortcutManager(
   }
 
   fun isCustomized(action: ShortcutAction): Boolean {
-    if (!action.isRebindable) return false
-    return getKeyStroke(action) != getDefaultKeyStroke(action)
+    return action.isRebindable && getKeyStroke(action) != getDefaultKeyStroke(action)
   }
 
   fun setCustomKeyStroke(action: ShortcutAction, keyStroke: KeyStroke?) {
@@ -52,20 +51,13 @@ class ShortcutManager(
 
   fun applyMappings(mappings: Map<ShortcutAction, KeyStroke>) {
     val serialized = mutableMapOf<String, String?>()
-    for (action in ShortcutAction.values()) {
+    for (action in ShortcutAction.entries) {
       if (!action.isRebindable) continue
       val defaultKs = getDefaultKeyStroke(action)
       val targetKs = mappings[action] ?: defaultKs
       serialized[action.id] = if (targetKs == defaultKs) null else serializeKeyStroke(targetKs)
     }
     userPrefs.applyCustomShortcuts(serialized)
-  }
-
-  fun resetAllToDefaults() {
-    val cleared = ShortcutAction.values()
-      .filter { it.isRebindable }
-      .associate { it.id to null as String? }
-    userPrefs.applyCustomShortcuts(cleared)
   }
 
   fun bindToMenuItem(menuItem: JMenuItem, action: ShortcutAction) {
@@ -96,9 +88,9 @@ class ShortcutManager(
   fun findConflicts(
     candidateAction: ShortcutAction,
     candidateKeyStroke: KeyStroke,
-    currentMappings: Map<ShortcutAction, KeyStroke> = ShortcutAction.values().associateWith { getKeyStroke(it) }
+    currentMappings: Map<ShortcutAction, KeyStroke> = ShortcutAction.entries.associateWith { getKeyStroke(it) }
   ): List<ShortcutAction> {
-    return ShortcutAction.values().filter { other ->
+    return ShortcutAction.entries.filter { other ->
       other != candidateAction &&
         candidateAction.scope.conflictsWith(other.scope) &&
         (currentMappings[other] ?: getKeyStroke(other)) == candidateKeyStroke

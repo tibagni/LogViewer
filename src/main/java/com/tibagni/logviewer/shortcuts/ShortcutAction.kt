@@ -237,8 +237,4 @@ enum class ShortcutAction(
   fun getDefaultKeyStroke(isMac: Boolean): KeyStroke {
     return if (isMac) defaultMacKeyStroke else defaultWinLinuxKeyStroke
   }
-
-  companion object {
-    fun fromId(id: String): ShortcutAction? = values().firstOrNull { it.id == id }
-  }
 }

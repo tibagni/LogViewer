@@ -14,7 +14,6 @@ import java.awt.Dialog
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Font
-import java.awt.Window
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -44,10 +43,10 @@ class KeymapPreferencePanel(
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_KEYMAP)
 
   @VisibleForTesting
-  internal val pendingMappings: MutableMap<ShortcutAction, KeyStroke> =
-    ShortcutAction.values().associateWith { shortcutManager.getKeyStroke(it) }.toMutableMap()
+  internal val currentMappings: MutableMap<ShortcutAction, KeyStroke> =
+    ShortcutAction.entries.associateWith { shortcutManager.getKeyStroke(it) }.toMutableMap()
 
-  private var visibleActions: List<ShortcutAction> = ShortcutAction.values().toList()
+  private var visibleActions: List<ShortcutAction> = ShortcutAction.entries
 
   @VisibleForTesting
   internal val searchField = HintTextField(I18n.get(I18n.KEYMAP_SEARCH_HINT))
@@ -143,9 +142,9 @@ class KeymapPreferencePanel(
   internal fun filterShortcuts(query: String) {
     val trimmed = query.trim().lowercase()
     visibleActions = if (trimmed.isEmpty()) {
-      ShortcutAction.values().toList()
+      ShortcutAction.entries
     } else {
-      ShortcutAction.values().filter { action ->
+      ShortcutAction.entries.filter { action ->
         val categoryMatch = action.category.displayName.lowercase().contains(trimmed)
         val nameMatch = action.displayName.lowercase().contains(trimmed)
         val ksText = formatActionShortcut(action).lowercase()
@@ -168,7 +167,7 @@ class KeymapPreferencePanel(
   internal fun assignShortcut(action: ShortcutAction, newKeyStroke: KeyStroke): Boolean {
     if (!action.isRebindable) return false
 
-    val conflicts = shortcutManager.findConflicts(action, newKeyStroke, pendingMappings)
+    val conflicts = shortcutManager.findConflicts(action, newKeyStroke, currentMappings)
     val readOnlyConflict = conflicts.firstOrNull { !it.isRebindable }
     if (readOnlyConflict != null) {
       val formattedKey = ShortcutManager.formatKeyStroke(newKeyStroke, shortcutManager.isMac)
@@ -196,7 +195,7 @@ class KeymapPreferencePanel(
       }
     }
 
-    pendingMappings[action] = newKeyStroke
+    currentMappings[action] = newKeyStroke
     tableModel.fireTableDataChanged()
     val idx = visibleActions.indexOf(action)
     if (idx >= 0) {
@@ -208,7 +207,7 @@ class KeymapPreferencePanel(
 
   internal fun resetActionToDefault(action: ShortcutAction) {
     if (!action.isRebindable) return
-    pendingMappings[action] = shortcutManager.getDefaultKeyStroke(action)
+    currentMappings[action] = shortcutManager.getDefaultKeyStroke(action)
     tableModel.fireTableDataChanged()
     val idx = visibleActions.indexOf(action)
     if (idx >= 0) {
@@ -218,8 +217,8 @@ class KeymapPreferencePanel(
   }
 
   internal fun resetAllToDefaults() {
-    for (action in ShortcutAction.values()) {
-      pendingMappings[action] = shortcutManager.getDefaultKeyStroke(action)
+    for (action in ShortcutAction.entries) {
+      currentMappings[action] = shortcutManager.getDefaultKeyStroke(action)
     }
     tableModel.fireTableDataChanged()
     updateButtonStates()
@@ -274,18 +273,18 @@ class KeymapPreferencePanel(
   private fun updateButtonStates() {
     val selected = getSelectedAction()
     changeBtn.isEnabled = selected != null && selected.isRebindable
-    resetSelectedBtn.isEnabled = selected != null && selected.isRebindable && isActionModified(selected)
-    resetAllBtn.isEnabled = ShortcutAction.values().any { isActionModified(it) }
+    resetSelectedBtn.isEnabled = selected != null && selected.isRebindable && isCustomized(selected)
+    resetAllBtn.isEnabled = ShortcutAction.entries.any { isCustomized(it) }
   }
 
-  private fun isActionModified(action: ShortcutAction): Boolean {
+  private fun isCustomized(action: ShortcutAction): Boolean {
     if (!action.isRebindable) return false
-    val current = pendingMappings[action] ?: shortcutManager.getDefaultKeyStroke(action)
+    val current = currentMappings[action] ?: shortcutManager.getDefaultKeyStroke(action)
     return current != shortcutManager.getDefaultKeyStroke(action)
   }
 
   private fun formatActionShortcut(action: ShortcutAction): String {
-    val ks = pendingMappings[action] ?: shortcutManager.getDefaultKeyStroke(action)
+    val ks = currentMappings[action] ?: shortcutManager.getDefaultKeyStroke(action)
     val formatted = ShortcutManager.formatKeyStroke(ks, shortcutManager.isMac)
     return if (action.isRebindable) {
       formatted
@@ -295,7 +294,7 @@ class KeymapPreferencePanel(
   }
 
   override fun apply() {
-    shortcutManager.applyMappings(pendingMappings)
+    shortcutManager.applyMappings(currentMappings)
   }
 
   private inner class KeymapTableModel : AbstractTableModel() {
@@ -334,8 +333,8 @@ class KeymapPreferencePanel(
       val comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
       val action = visibleActions.getOrNull(row)
       if (action != null) {
-        val modified = isActionModified(action)
-        font = font.deriveFont(if (modified) Font.BOLD else Font.PLAIN)
+        val customized = isCustomized(action)
+        font = font.deriveFont(if (customized) Font.BOLD else Font.PLAIN)
       }
       return comp
     }
