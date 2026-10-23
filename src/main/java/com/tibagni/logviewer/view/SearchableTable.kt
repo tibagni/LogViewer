@@ -12,7 +12,6 @@ import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.shortcuts.ShortcutAction
-import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
@@ -28,6 +27,7 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.util.Collections
 import javax.swing.*
+import javax.swing.border.Border
 import javax.swing.event.TableModelEvent
 import javax.swing.table.TableColumnModel
 import javax.swing.table.TableModel
@@ -39,28 +39,57 @@ class SearchableTable @JvmOverloads constructor(
   sm: ListSelectionModel? = null
 ) : JPanel() {
 
-  internal val searchOptionPanel = JPanel()
+  internal val searchOptionPanel = object : JPanel() {
+    override fun paintComponent(g: Graphics) {
+      val g2 = g.create() as? Graphics2D ?: return
+      try {
+        if (width > 0 && height > 0) {
+          g2.setRenderingHint(
+            RenderingHints.KEY_ANTIALIASING,
+            RenderingHints.VALUE_ANTIALIAS_ON
+          )
+          val bg = UIManager.getColor("Panel.background")
+            ?: background
+            ?: Color(240, 240, 240)
+          val isDark = isDarkTheme(bg)
+          val tint = if (isDark) {
+            Color(255, 255, 255, 8)
+          } else {
+            Color(0, 0, 0, 10)
+          }
+          g2.color = bg
+          g2.fillRect(0, 0, width, height)
+          g2.color = tint
+          g2.fillRect(0, 0, width, height)
+        }
+      } finally {
+        g2.dispose()
+      }
+      super.paintComponent(g)
+    }
+  }
+
   internal val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
   @VisibleForTesting
-  internal val clearSearchText = FlatButton(
-    I18n.get(I18n.COMMON_CLEAR)
-  )
+  internal val searchResult = StatusBadge()
   @VisibleForTesting
-  internal val clearSearchDivider = ToolbarDivider()
+  internal val searchLast = FlatButton("").apply {
+    icon = CommonIcons.chevronUpIcon()
+    toolTipText = I18n.get(I18n.SEARCH_PREV_MATCH)
+  }
   @VisibleForTesting
-  internal val searchLast = FlatButton(
-    StringUtils.UP_ARROW_HEAD_BIG
-  )
+  internal val searchNext = FlatButton("").apply {
+    icon = CommonIcons.chevronDownIcon()
+    toolTipText = I18n.get(I18n.SEARCH_NEXT_MATCH)
+  }
   @VisibleForTesting
   internal val searchNavDivider = ToolbarDivider()
-  @VisibleForTesting
-  internal val searchNext = FlatButton(
-    StringUtils.DOWN_ARROW_HEAD_BIG
-  )
-  private val searchResult = JLabel()
   private val matchCaseOption = JCheckBox(I18n.get(I18n.SEARCH_MATCH_CASE))
   @VisibleForTesting
-  internal val close = FlatButton(StringUtils.DELETE)
+  internal val close = FlatButton("").apply {
+    icon = CommonIcons.closeIcon()
+    toolTipText = I18n.get(I18n.SEARCH_TOOLTIP_HIDE)
+  }
 
   val table = JTable(dm, cm, sm)
   val scrollPane = JScrollPane(table).apply {
@@ -102,19 +131,24 @@ class SearchableTable @JvmOverloads constructor(
       updateSearchRequest()
     }
 
-    clearSearchText.addActionListener {
-      searchText.text = ""
-    }
-
     table.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
         val shortcutManager = ServiceLocator.shortcutManager
         when {
-          shortcutManager.matches(e, ShortcutAction.SEARCH_FIND_IN_TABLE) -> showSearch()
-          shortcutManager.matches(e, ShortcutAction.SEARCH_NEXT_MATCH) -> {
+          shortcutManager.matches(
+            e,
+            ShortcutAction.SEARCH_FIND_IN_TABLE
+          ) -> showSearch()
+          shortcutManager.matches(
+            e,
+            ShortcutAction.SEARCH_NEXT_MATCH
+          ) -> {
             if (searchOptionPanel.isVisible) searchInDirection(true)
           }
-          shortcutManager.matches(e, ShortcutAction.SEARCH_PREV_MATCH) -> {
+          shortcutManager.matches(
+            e,
+            ShortcutAction.SEARCH_PREV_MATCH
+          ) -> {
             if (searchOptionPanel.isVisible) searchInDirection(false)
           }
           e.keyCode == KeyEvent.VK_ESCAPE -> hideSearch()
@@ -127,20 +161,27 @@ class SearchableTable @JvmOverloads constructor(
         val shortcutManager = ServiceLocator.shortcutManager
         when {
           e.keyCode == KeyEvent.VK_ESCAPE -> hideSearch()
-          e.keyCode == KeyEvent.VK_ENTER -> searchInDirection(!e.isShiftDown)
-          shortcutManager.matches(e, ShortcutAction.SEARCH_NEXT_MATCH) -> searchInDirection(true)
-          shortcutManager.matches(e, ShortcutAction.SEARCH_PREV_MATCH) -> searchInDirection(false)
+          e.keyCode == KeyEvent.VK_ENTER -> {
+            searchInDirection(!e.isShiftDown)
+          }
+          shortcutManager.matches(
+            e,
+            ShortcutAction.SEARCH_NEXT_MATCH
+          ) -> searchInDirection(true)
+          shortcutManager.matches(
+            e,
+            ShortcutAction.SEARCH_PREV_MATCH
+          ) -> searchInDirection(false)
         }
       }
     })
 
     close.addActionListener { hideSearch() }
-    close.toolTipText = I18n.get(I18n.SEARCH_TOOLTIP_HIDE)
 
     searchText.whenTextChanges { updateSearchRequest() }
 
     table.model.addTableModelListener {
-      // Re-perform search if the model inserted or deleted items, ignore simple update events
+      // Re-perform search if the model inserted or deleted items
       if (searchOptionPanel.isVisible && it.type != TableModelEvent.UPDATE) {
         updateSearchRequest(revisionDelta = 1L)
       }
@@ -168,6 +209,31 @@ class SearchableTable @JvmOverloads constructor(
       .launchIn(scope)
   }
 
+  /**
+   * Refreshes vector icons, search result badge, panel borders, and repaints
+   * the search option panel when the active Look and Feel changes.
+   */
+  fun onThemeChanged() {
+    searchLast.icon = CommonIcons.chevronUpIcon()
+    searchNext.icon = CommonIcons.chevronDownIcon()
+    close.icon = CommonIcons.closeIcon()
+    searchResult.updateUI()
+    searchOptionPanel.border = createSearchOptionPanelBorder()
+    searchOptionPanel.repaint()
+    repaint()
+  }
+
+  private fun isDarkTheme(fallbackBg: Color): Boolean {
+    return try {
+      ServiceLocator.themeManager.isDark
+    } catch (_: Throwable) {
+      val lum = (0.299 * fallbackBg.red +
+        0.587 * fallbackBg.green +
+        0.114 * fallbackBg.blue) / 255.0
+      lum < 0.5
+    }
+  }
+
   private fun updateSearchRequest(revisionDelta: Long = 0L) {
     searchRequest.value = SearchRequest(
       text = searchText.text,
@@ -176,7 +242,11 @@ class SearchableTable @JvmOverloads constructor(
     )
   }
 
-  internal fun findNextMatchIndex(matchedIndexList: List<Int>, lastPos: Int, searchDown: Boolean): Int {
+  internal fun findNextMatchIndex(
+    matchedIndexList: List<Int>,
+    lastPos: Int,
+    searchDown: Boolean
+  ): Int {
     val idx = Collections.binarySearch(matchedIndexList, lastPos)
     val insertionPoint = if (idx >= 0) idx else -(idx + 1)
     return if (searchDown) {
@@ -199,9 +269,21 @@ class SearchableTable @JvmOverloads constructor(
       val matchedIndexList = job?.await() ?: emptyList()
       if (matchedIndexList.isEmpty()) return@launch
 
-      val lastPos = if (lastSearchGoToPos != -1) lastSearchGoToPos else table.selectedRow
-      val itemIndex = findNextMatchIndex(matchedIndexList, lastPos, searchDown)
-      searchResult.text = " ${itemIndex + 1}/${matchedIndexList.size} "
+      val lastPos = if (lastSearchGoToPos != -1) {
+        lastSearchGoToPos
+      } else {
+        table.selectedRow
+      }
+      val itemIndex = findNextMatchIndex(
+        matchedIndexList,
+        lastPos,
+        searchDown
+      )
+      searchResult.updateResult(
+        currentMatch = itemIndex + 1,
+        totalMatches = matchedIndexList.size,
+        targetVariant = StatusBadge.Variant.NORMAL
+      )
       val targetCellPos = matchedIndexList[itemIndex]
       SwingUtils.scrollToVisible(table, targetCellPos)
       LogCellRenderer.setHighlightLine(table, targetCellPos)
@@ -210,7 +292,9 @@ class SearchableTable @JvmOverloads constructor(
     }
   }
 
-  internal fun searchContent(request: SearchRequest): Deferred<List<Int>> {
+  internal fun searchContent(
+    request: SearchRequest
+  ): Deferred<List<Int>> {
     searchRequest.value = request
     lastExecutedRequest = request
     lastSearchJob?.cancel()
@@ -244,10 +328,32 @@ class SearchableTable @JvmOverloads constructor(
 
       withContext(Dispatchers.Main) {
         LogCellRenderer.setSearchFilter(table, filter)
-        searchResult.text = when {
-          filterResult?.isFailure == true -> " ${I18n.get(I18n.SEARCH_BAD_PATTERN)} "
-          pattern.isBlank() -> ""
-          else -> "  ${I18n.format(I18n.SEARCH_RESULTS_COUNT, matchedEntries.size)}  "
+        when {
+          filterResult?.isFailure == true -> {
+            searchResult.updateResult(
+              currentMatch = 0,
+              totalMatches = 0,
+              targetVariant = StatusBadge.Variant.WARNING,
+              customMessage = I18n.get(I18n.SEARCH_BAD_PATTERN)
+            )
+          }
+          pattern.isBlank() -> {
+            searchResult.clear()
+          }
+          matchedEntries.isEmpty() -> {
+            searchResult.updateResult(
+              currentMatch = 0,
+              totalMatches = 0,
+              targetVariant = StatusBadge.Variant.NO_RESULTS
+            )
+          }
+          else -> {
+            searchResult.updateResult(
+              currentMatch = 0,
+              totalMatches = matchedEntries.size,
+              targetVariant = StatusBadge.Variant.NORMAL
+            )
+          }
         }
         table.repaint()
       }
@@ -276,6 +382,7 @@ class SearchableTable @JvmOverloads constructor(
     searchOptionPanel.isVisible = false
     searchText.text = ""
     matchCaseOption.isSelected = false
+    searchResult.clear()
     LogCellRenderer.setHighlightLine(table, -1)
     LogCellRenderer.setSearchFilter(table, null)
     table.repaint()
@@ -283,35 +390,40 @@ class SearchableTable @JvmOverloads constructor(
     revalidate()
   }
 
-  private fun buildUi() {
-    layout = GridBagLayout()
-
-    searchOptionPanel.border = BorderFactory.createCompoundBorder(
+  private fun createSearchOptionPanelBorder(): Border {
+    return BorderFactory.createCompoundBorder(
       BorderFactory.createMatteBorder(
         UIScaleUtils.dip(1), 0, 0, 0,
-        UIManager.getColor("Component.borderColor") ?: Color(128, 128, 128, 60)
+        UIManager.getColor("Component.borderColor")
+          ?: Color(128, 128, 128, 60)
       ),
       BorderFactory.createEmptyBorder(
         UIScaleUtils.dip(4), UIScaleUtils.dip(6),
         UIScaleUtils.dip(4), UIScaleUtils.dip(6)
       )
     )
+  }
+
+  private fun buildUi() {
+    layout = GridBagLayout()
+
+    searchOptionPanel.isOpaque = false
+    searchOptionPanel.border = createSearchOptionPanelBorder()
 
     val layout = FormLayout(
-      "200dlu, pref, pref, pref, pref, pref, pref, pref, pref:grow, right:pref",
+      "200dlu, 4dlu, pref, 4dlu, pref, 2dlu, pref, 4dlu, pref, 4dlu, " +
+        "pref, pref:grow, right:pref",
       "pref"
     )
     val builder = PanelBuilder(layout, searchOptionPanel)
     builder.add(searchText, CC.xy(1, 1))
-    builder.add(clearSearchText, CC.xy(2, 1))
-    builder.add(clearSearchDivider, CC.xy(3, 1))
-    builder.add(searchLast, CC.xy(4, 1))
-    builder.add(searchNavDivider, CC.xy(5, 1))
-    builder.add(searchNext, CC.xy(6, 1))
-    builder.add(searchResult, CC.xy(7, 1))
-    builder.add(matchCaseOption, CC.xy(8, 1))
-    builder.add(JLabel(), CC.xy(9, 1)) // Empty space
-    builder.add(close, CC.xy(10, 1))
+    builder.add(searchResult, CC.xy(3, 1))
+    builder.add(searchLast, CC.xy(5, 1))
+    builder.add(searchNext, CC.xy(7, 1))
+    builder.add(searchNavDivider, CC.xy(9, 1))
+    builder.add(matchCaseOption, CC.xy(11, 1))
+    builder.add(JLabel(), CC.xy(12, 1)) // Empty space
+    builder.add(close, CC.xy(13, 1))
 
     add(
       searchOptionPanel,

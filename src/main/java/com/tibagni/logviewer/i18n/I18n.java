@@ -217,6 +217,8 @@ public final class I18n {
   public static final String SEARCH_TOOLTIP_HIDE = "search.tooltip.hide";
   public static final String SEARCH_BAD_PATTERN = "search.bad_pattern";
   public static final String SEARCH_RESULTS_COUNT = "search.results_count";
+  public static final String SEARCH_NEXT_MATCH = "search.next_match";
+  public static final String SEARCH_PREV_MATCH = "search.prev_match";
 
   // Filters Panel & Controls (LogViewerView)
   public static final String FILTERS_PANEL_TITLE = "filters.panel.title";

@@ -195,4 +195,198 @@ class CommonIconsTests {
     assertEquals(24, customSizeIcon.iconWidth)
     assertEquals(24, customSizeIcon.iconHeight)
   }
+
+  /**
+   * Verifies that [CommonIcons.chevronUpIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testChevronUpIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.chevronUpIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("chevronUpIcon should have painted pixels", hasPaintedPixels)
+
+    val customIcon = CommonIcons.chevronUpIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.chevronUpIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testChevronUpIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.CYAN)
+      val icon = CommonIcons.chevronUpIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasCyanPixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val green = (rgb ushr 8) and 0xFF
+          val blue = rgb and 0xFF
+          alpha > 0 && green > 100 && blue > 100
+        }
+      }
+      assertTrue("chevronUpIcon should paint with theme color", hasCyanPixel)
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
+
+  /**
+   * Verifies that [CommonIcons.chevronDownIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testChevronDownIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.chevronDownIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue(
+      "chevronDownIcon should have painted pixels",
+      hasPaintedPixels
+    )
+
+    val customIcon = CommonIcons.chevronDownIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.chevronDownIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testChevronDownIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.ORANGE)
+      val icon = CommonIcons.chevronDownIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasOrangePixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val red = (rgb ushr 16) and 0xFF
+          val green = (rgb ushr 8) and 0xFF
+          alpha > 0 && red > 100 && green > 50
+        }
+      }
+      assertTrue(
+        "chevronDownIcon should paint with theme color",
+        hasOrangePixel
+      )
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
+
+  /**
+   * Verifies that [CommonIcons.closeIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testCloseIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.closeIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("closeIcon should have painted pixels", hasPaintedPixels)
+
+    val customIcon = CommonIcons.closeIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.closeIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testCloseIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.RED)
+      val icon = CommonIcons.closeIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasRedPixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val red = (rgb ushr 16) and 0xFF
+          alpha > 0 && red > 100
+        }
+      }
+      assertTrue("closeIcon should paint with theme color", hasRedPixel)
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
+
+  /**
+   * Verifies that vector icons paint with component foreground when supplied.
+   */
+  @Test
+  fun testDynamicVectorIconPaintsWithComponentForeground() {
+    val icon = CommonIcons.chevronUpIcon()
+    val btn = FlatButton("")
+    btn.foreground = Color.YELLOW
+    val img = BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB)
+    val g = img.createGraphics()
+    try {
+      icon.paintIcon(btn, g, 0, 0)
+    } finally {
+      g.dispose()
+    }
+    val hasYellowPixel = (0 until img.width).any { x ->
+      (0 until img.height).any { y ->
+        val rgb = img.getRGB(x, y)
+        val alpha = (rgb ushr 24) and 0xFF
+        val red = (rgb ushr 16) and 0xFF
+        val green = (rgb ushr 8) and 0xFF
+        alpha > 0 && red > 100 && green > 100
+      }
+    }
+    assertTrue("Should paint using button foreground", hasYellowPixel)
+  }
 }

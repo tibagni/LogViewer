@@ -290,5 +290,7 @@ class LiveLogsPanel(
     statusLabel.icon = CommonIcons.statusIndicatorIcon(isStreaming)
     headerPanel.border = createHeaderBorder()
     headerPanel.repaint()
+    logList.onThemeChanged()
+    filteredLogList.onThemeChanged()
   }
 }
