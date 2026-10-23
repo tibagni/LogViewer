@@ -428,7 +428,7 @@ object ScreenshotGenerator {
     ServiceLocator.liveLogsRepository.addLogEntries(liveAllLogs)
     liveLogView.showLogsView(device)
     liveLogView.showStreamingStatus("Streaming", true)
-    liveLogView.deviceLabel.text = I18n.format(I18n.LIVE_LOGS_LABEL_DEVICE, device.displayName)
+    liveLogView.deviceLabel.text = device.displayName
     liveLogView.showStats(87112L, 0L, 87112, 458)
     liveLogView.showAvailableLogStreams(setOf(LogStream.MAIN, LogStream.SYSTEM, LogStream.EVENTS))
 
