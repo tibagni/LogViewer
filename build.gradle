@@ -147,3 +147,13 @@ tasks.register('checkI18nBundle', Exec) {
     commandLine 'python3', 'scripts/check_i18n.py', '--validate-bundle'
 }
 check.dependsOn checkI18nBundle
+
+tasks.register('generateScreenshots', JavaExec) {
+    description = 'Generates documentation screenshots for README.md and gh-pages'
+    group = 'documentation'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.tibagni.logviewer.tools.ScreenshotGenerator'
+    if (project.hasProperty('outputDir')) {
+        args project.property('outputDir')
+    }
+}

@@ -200,6 +200,17 @@ Deployments are handled via the [Release Deploy GitHub Action](https://github.co
 2. On GitHub, navigate to the **Actions** tab ➔ **Release Deploy**.
 3. Click **Run workflow**, enter the tag name (e.g. `2.8`), and submit. The workflow will automatically build the standalone fat JAR, generate release notes, and publish the GitHub Release with the binary attached.
 
+### 7. Generating Documentation Screenshots
+To regenerate all screenshots used in `README.md` and the [User Guide (`gh-pages`)](https://tibagni.github.io/LogViewer/) after UI changes:
+```bash
+# Generate into docs/images/ (default):
+./gradlew generateScreenshots
+
+# Or specify a custom output directory:
+./gradlew generateScreenshots -PoutputDir=/path/to/output
+```
+The task renders the live Swing UI off-screen using your currently configured theme, accent color, and log font settings.
+
 ---
 
 ## 📄 License
