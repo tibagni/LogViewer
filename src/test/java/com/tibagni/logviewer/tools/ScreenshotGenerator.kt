@@ -148,7 +148,7 @@ object ScreenshotGenerator {
     val filteredLogs = buildSampleFilteredLogs(filterGroups)
     val myLogs = buildSampleMyLogs(filterGroups)
 
-    logViewerView.showCurrentLogsLocation("C:\\Users\\TBAGNI\\Downloads\\AndroidLogs\\Logs\\")
+    logViewerView.showCurrentLogsLocation("C:\\AndroidLogs\\Logs\\")
     val availableStreams = linkedSetOf(
       LogStream.KERNEL,
       LogStream.MAIN,
@@ -569,7 +569,7 @@ object ScreenshotGenerator {
     searchFiltersDialog.dispose()
 
     // 4. line-inspector.png
-    val sampleFile = File("/Users/tbagni/Downloads/AndroidLogs/Logs/aplogd/Boot-0000000023_Set-0000000543_Stream-e.txt")
+    val sampleFile = File("C:\\AndroidLogs\\Logs\\aplogd\\Boot-0000000023_Set-0000000543_Stream-e.txt")
     val sampleFilter = Filter("dvm_lock_sample:", "dvm_lock_sample:", Color.YELLOW, LogLevel.VERBOSE, false)
     val rawLine = "10-10 14:15:09.930  2350  5964 I dvm_lock_sample: [system_server,1,binder:2350_14,5,PowerManagerService.java,2041,void com.android.server.power.PowerManagerService.acquireWakeLockInternal(android.os.IBinder, int, int, java.lang.String, java.lang.String, android.os.WorkSource, java.lang.String, int, int, android.os.IWakeLockCallback),-,2100,void com.android.server.power.PowerManagerService.acquireWakeLockInternal(android.os.IBinder, int, int, java.lang.String, java.lang.String, android.os.WorkSource, java.lang.String, int, int, android.os.IWakeLockCallback),1]"
     val entry = LogEntry(
