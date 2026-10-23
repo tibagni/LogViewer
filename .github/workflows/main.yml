@@ -29,6 +29,8 @@ jobs:
       - name: Check for hardcoded UI strings in PR diff
         if: github.event_name == 'pull_request'
         run: python3 scripts/check_i18n.py --diff origin/${{ github.base_ref }}
+      - name: Validate README keyboard shortcuts table
+        run: ./gradlew checkReadmeShortcuts
       - name: Build with Gradle
         run: ./gradlew build
       - name: Upload test report

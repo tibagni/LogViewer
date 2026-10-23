@@ -19,11 +19,15 @@ class LogViewerPreferencesDialogTests {
     val dialog = LogViewerPreferencesDialog(null)
     try {
       val ids = dialog.preferencePanels.map { it.id }
-      assertEquals(4, ids.size)
+      assertEquals(5, ids.size)
       assertEquals(AppearancePreferencePanel.ID, ids[0])
       assertEquals(LogsPreferencePanel.ID, ids[1])
       assertEquals(FiltersPreferencePanel.ID, ids[2])
       assertEquals(ToolsPreferencePanel.ID, ids[3])
+      assertEquals(KeymapPreferencePanel.ID, ids[4])
+
+      dialog.selectCategory(KeymapPreferencePanel.ID)
+      assertEquals(KeymapPreferencePanel.ID, dialog.categoriesList.selectedValue?.id)
     } finally {
       dialog.onCancel()
     }
@@ -38,6 +42,7 @@ class LogViewerPreferencesDialogTests {
       assertEquals("Logs", I18n.get(I18n.PREF_CATEGORY_LOGS))
       assertEquals("Filters", I18n.get(I18n.PREF_CATEGORY_FILTERS))
       assertEquals("Tools", I18n.get(I18n.PREF_CATEGORY_TOOLS))
+      assertEquals("Keymap", I18n.get(I18n.PREF_CATEGORY_KEYMAP))
     } finally {
       I18n.setLocale(originalLocale)
     }
@@ -52,6 +57,7 @@ class LogViewerPreferencesDialogTests {
       assertEquals("Logs", I18n.get(I18n.PREF_CATEGORY_LOGS))
       assertEquals("Filtros", I18n.get(I18n.PREF_CATEGORY_FILTERS))
       assertEquals("Ferramentas", I18n.get(I18n.PREF_CATEGORY_TOOLS))
+      assertEquals("Atalhos", I18n.get(I18n.PREF_CATEGORY_KEYMAP))
     } finally {
       I18n.setLocale(originalLocale)
     }

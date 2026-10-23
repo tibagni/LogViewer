@@ -8,6 +8,7 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
+import com.tibagni.logviewer.shortcuts.ShortcutAction
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -298,7 +299,9 @@ class LogViewerViewImpl(
 
     myLogsList.table.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent?) {
-        if (myLogsList.table.selectedRow != -1 && (e?.keyCode == KeyEvent.VK_DELETE)) {
+        if (myLogsList.table.selectedRow != -1 && e != null &&
+          ServiceLocator.shortcutManager.matches(e, ShortcutAction.LOGS_REMOVE_MY_LOG)
+        ) {
           presenter.removeFromMyLog(myLogsList.table.selectedRows)
         }
       }

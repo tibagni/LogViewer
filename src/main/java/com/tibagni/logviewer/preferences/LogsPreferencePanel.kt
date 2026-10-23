@@ -4,11 +4,11 @@ import com.jgoodies.forms.layout.CellConstraints
 import com.jgoodies.forms.layout.FormLayout
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
-import javax.swing.JButton
 import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JFileChooser
@@ -24,7 +24,7 @@ class LogsPreferencePanel(
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_LOGS)
 
   private val logsPathTxt = createPathTextField()
-  private val logsPathBtn = JButton("...").apply {
+  private val logsPathBtn = FlatButton("...").apply {
     toolTipText = I18n.get(I18n.PREF_DEFAULT_LOGS_PATH)
   }
   private val showLineNumbersChbx = JCheckBox()

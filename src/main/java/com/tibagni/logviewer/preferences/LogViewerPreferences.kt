@@ -36,6 +36,9 @@ interface LogViewerPreferences {
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
+    fun getCustomShortcut(actionId: String): String? = null
+    fun setCustomShortcut(actionId: String, serializedKeyStroke: String?) {}
+    fun applyCustomShortcuts(shortcuts: Map<String, String?>) {}
     fun addPreferenceListener(listener: Listener)
     fun removePreferenceListener(listener: Listener)
 
@@ -60,6 +63,7 @@ interface LogViewerPreferences {
         fun onLogFontSizeChanged() {}
         fun onLogFontFamilyChanged() {}
         fun onLogFontBoldChanged() {}
+        fun onShortcutsChanged() {}
     }
 
     abstract class Adapter : Listener {
@@ -80,5 +84,6 @@ interface LogViewerPreferences {
         override fun onLogFontSizeChanged() {}
         override fun onLogFontFamilyChanged() {}
         override fun onLogFontBoldChanged() {}
+        override fun onShortcutsChanged() {}
     }
 }

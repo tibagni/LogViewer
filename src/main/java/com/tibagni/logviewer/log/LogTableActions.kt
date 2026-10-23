@@ -1,23 +1,23 @@
 package com.tibagni.logviewer.log
 
+import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.shortcuts.ShortcutAction
 import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.EditorLauncher
-import com.tibagni.logviewer.util.SwingUtils
 import java.awt.Component
 import java.awt.Window
+import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import javax.swing.JComponent
 import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.JPopupMenu
 import javax.swing.JSeparator
 import javax.swing.JTable
-import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
 
 /**
@@ -32,22 +32,15 @@ fun JTable.setupLogTableActions(
   addSelectionActions: ((popup: JPopupMenu, selectedEntries: List<LogEntry>) -> Unit)? = null,
   addExtraSingleEntryActions: ((popup: JPopupMenu, singleEntry: LogEntry) -> Unit)? = null
 ) {
-  val shortcutMask = try {
-    SwingUtils.getMenuShortcutKeyMask()
-  } catch (e: Throwable) {
-    KeyEvent.CTRL_DOWN_MASK
-  }
-  val inspectShortcut = KeyStroke.getKeyStroke(KeyEvent.VK_I, shortcutMask)
-  registerKeyboardAction(
-    {
-      if (selectedRowCount == 1) {
+  addKeyListener(object : KeyAdapter() {
+    override fun keyPressed(e: KeyEvent) {
+      if (selectedRowCount == 1 && ServiceLocator.shortcutManager.matches(e, ShortcutAction.LOGS_INSPECT_LINE)) {
+        e.consume()
         val entry = model.getEntry(selectedRow) ?: (model.getValueAt(selectedRow, 0) as LogEntry)
-        showLogLineDetails(this, entry, parentWindow, filtersPanelProvider)
+        showLogLineDetails(this@setupLogTableActions, entry, parentWindow, filtersPanelProvider)
       }
-    },
-    inspectShortcut,
-    JComponent.WHEN_FOCUSED
-  )
+    }
+  })
 
   addMouseListener(object : MouseAdapter() {
     override fun mouseClicked(e: MouseEvent) {

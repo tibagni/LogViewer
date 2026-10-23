@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.filter;
 
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.shortcuts.ShortcutAction;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
 import com.tibagni.logviewer.util.LogFontManager;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
@@ -32,10 +33,17 @@ class FilterListSearchHandler {
     return isSearching;
   }
 
+  public void startSearch() {
+    if (!isSearching) {
+      initSearch();
+    }
+  }
+
   public void handleKeyTyped(char charTyped) {
     if (!isSearching) {
-      // We only start searching if user pressed '/'
-      if (charTyped == '/') {
+      Character triggerChar = ServiceLocator.INSTANCE.getShortcutManager()
+          .getUnmodifiedTriggerChar(ShortcutAction.FILTERS_INLINE_SEARCH);
+      if (triggerChar != null && Character.toLowerCase(charTyped) == Character.toLowerCase(triggerChar)) {
         initSearch();
       }
       return;

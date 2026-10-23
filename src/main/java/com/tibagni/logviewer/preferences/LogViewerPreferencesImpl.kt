@@ -29,6 +29,7 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     /*Visible for Testing*/ const val DEFAULT_LOG_FONT_BOLD = false
     /*Visible for Testing*/ const val LOG_FONT_FAMILY = "log_font_family"
     /*Visible for Testing*/ const val DEFAULT_LOG_FONT_FAMILY = "Monospaced"
+    /*Visible for Testing*/ const val CUSTOM_SHORTCUT_PREFIX = "custom_shortcut_"
 
     // Allow changing for tests
     private var preferences = Preferences.userRoot().node(javaClass.name)
@@ -189,6 +190,33 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
     override fun getAppliedFiltersIndices(group: String): List<Int> {
         val savedData = preferences.get(REMEMBER_APPLIED_FILTERS_PREFIX + group, "")
         return savedData.split(",".toRegex()).mapNotNull { it.toIntOrNull() }
+    }
+
+    override fun getCustomShortcut(actionId: String): String? {
+        val raw = preferences.get(CUSTOM_SHORTCUT_PREFIX + actionId, null)
+        return if (!raw.isNullOrBlank()) raw else null
+    }
+
+    override fun setCustomShortcut(actionId: String, serializedKeyStroke: String?) {
+        val key = CUSTOM_SHORTCUT_PREFIX + actionId
+        if (serializedKeyStroke.isNullOrBlank()) {
+            preferences.remove(key)
+        } else {
+            preferences.put(key, serializedKeyStroke)
+        }
+        listeners.forEach { l -> l.onShortcutsChanged() }
+    }
+
+    override fun applyCustomShortcuts(shortcuts: Map<String, String?>) {
+        for ((actionId, serializedKeyStroke) in shortcuts) {
+            val key = CUSTOM_SHORTCUT_PREFIX + actionId
+            if (serializedKeyStroke.isNullOrBlank()) {
+                preferences.remove(key)
+            } else {
+                preferences.put(key, serializedKeyStroke)
+            }
+        }
+        listeners.forEach { l -> l.onShortcutsChanged() }
     }
 
     override fun addPreferenceListener(listener: LogViewerPreferences.Listener) {
