@@ -250,6 +250,11 @@ public final class I18n {
 
   // Logs View & Context Actions (LogViewerView)
   public static final String LOGS_PATH_PREFIX = "logs.path_prefix";
+  public static final String LOGS_STATUS_ALL = "logs.status.all";
+  public static final String LOGS_STATUS_FILTERED = "logs.status.filtered";
+  public static final String LOGS_STATUS_ALL_DROPPED = "logs.status.all.dropped";
+  public static final String LOGS_STATUS_FILTERED_DROPPED =
+      "logs.status.filtered.dropped";
   public static final String LOGS_TAB_ALL = "logs.tab.all";
   public static final String LOGS_TAB_FILTERED = "logs.tab.filtered";
   public static final String LOGS_TAB_MY_LOGS = "logs.tab.my_logs";

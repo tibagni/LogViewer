@@ -1,5 +1,6 @@
 package com.tibagni.logviewer
 
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersPanel
@@ -67,7 +68,14 @@ class LogViewerViewImpl(
   private lateinit var filteredLogList: SearchableTable
   private lateinit var myLogsList: SearchableTable
   private lateinit var logsPane: JSplitPane
-  private lateinit var currentLogsLbl: JLabel
+  @VisibleForTesting
+  internal lateinit var headerPanel: JPanel
+  @VisibleForTesting
+  internal lateinit var currentLogsLbl: JLabel
+  @VisibleForTesting
+  internal lateinit var statusBadge: StatusBadge
+  private var totalLogsCount = 0
+  private var filteredLogsCount = 0
   private lateinit var sideButtonsPanel: SideButtonsPanel
 
   private lateinit var logListTableModel: LogListTableModel
@@ -424,6 +432,10 @@ class LogViewerViewImpl(
     updateLogFont()
     filtersPanel.onThemeChanged()
     SwingUtilities.updateComponentTreeUI(sideButtonsPanel)
+    if (currentLogsLbl.icon != null) {
+      currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
+    }
+    headerPanel.repaint()
   }
 
   override fun requestFinish(doFinish: () -> Unit) {
@@ -448,6 +460,8 @@ class LogViewerViewImpl(
   }
 
   override fun showLogs(logEntries: List<LogEntry>?) {
+    totalLogsCount = logEntries?.size ?: 0
+    statusBadge.updateStats(totalLogsCount, filteredLogsCount)
     logListTableModel.setLogs(logEntries)
     // calc the line number view needed width
     logEntries?.lastOrNull()?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
@@ -478,17 +492,32 @@ class LogViewerViewImpl(
 
   override fun showCurrentLogsLocation(logsPath: String?) {
     Logger.debug("showCurrentLogsLocation: $logsPath")
-    val text = if (logsPath == null) null else SwingUtils.truncateTextFor(
+    if (logsPath == null) {
+      totalLogsCount = 0
+      filteredLogsCount = 0
+      statusBadge.updateStats(0, 0)
+      currentLogsLbl.text = null
+      currentLogsLbl.icon = null
+      headerPanel.isVisible = false
+      return
+    }
+
+    currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
+    headerPanel.isVisible = true
+    val availableWidth = if (contentPane.width > 0) contentPane.width else 1000
+    val text = SwingUtils.truncateTextFor(
       currentLogsLbl,
-      I18n.get(I18n.LOGS_PATH_PREFIX),
+      "",
       logsPath,
-      contentPane.width
-    )
+      availableWidth
+    ).trim()
 
     currentLogsLbl.text = text
   }
 
   override fun showFilteredLogs(logEntries: List<LogEntry>?) {
+    filteredLogsCount = logEntries?.size ?: 0
+    statusBadge.updateStats(totalLogsCount, filteredLogsCount)
     logEntries?.let {
       filteredLogListTableModel.setLogs(it)
     }
@@ -567,17 +596,69 @@ class LogViewerViewImpl(
     currentLogsLbl = JLabel()
     currentLogsLbl.autoscrolls = true
     currentLogsLbl.text = ""
-    currentLogsLbl.border = BorderFactory.createEmptyBorder(
-      UIScaleUtils.dip(5),
-      UIScaleUtils.dip(5),
-      UIScaleUtils.dip(5),
-      UIScaleUtils.dip(5)
+    currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
+    currentLogsLbl.iconTextGap = UIScaleUtils.dip(6)
+
+    statusBadge = StatusBadge()
+
+    headerPanel = object : JPanel(BorderLayout()) {
+      override fun paintComponent(g: Graphics) {
+        val g2 = g.create() as? Graphics2D ?: return
+        try {
+          if (width > 0 && height > 0) {
+            g2.setRenderingHint(
+              RenderingHints.KEY_ANTIALIASING,
+              RenderingHints.VALUE_ANTIALIAS_ON
+            )
+            val bg = UIManager.getColor("Panel.background")
+              ?: background
+              ?: Color(240, 240, 240)
+            val isDark = isDarkTheme(bg)
+            val tint = if (isDark) {
+              Color(255, 255, 255, 8)
+            } else {
+              Color(0, 0, 0, 10)
+            }
+            g2.color = bg
+            g2.fillRect(0, 0, width, height)
+            g2.color = tint
+            g2.fillRect(0, 0, width, height)
+          }
+        } finally {
+          g2.dispose()
+        }
+        super.paintComponent(g)
+      }
+    }
+    headerPanel.isOpaque = false
+    headerPanel.isVisible = false
+    headerPanel.border = BorderFactory.createCompoundBorder(
+      BorderFactory.createMatteBorder(
+        0,
+        0,
+        UIScaleUtils.dip(1),
+        0,
+        UIManager.getColor("Component.borderColor")
+          ?: Color(128, 128, 128, 60)
+      ),
+      BorderFactory.createEmptyBorder(
+        UIScaleUtils.dip(4),
+        UIScaleUtils.dip(8),
+        UIScaleUtils.dip(4),
+        UIScaleUtils.dip(8)
+      )
     )
+    headerPanel.add(currentLogsLbl, BorderLayout.CENTER)
+    headerPanel.add(statusBadge, BorderLayout.EAST)
+
     _contentPane.add(
-      currentLogsLbl,
+      headerPanel,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(0)
+        .withGridWidth(2)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.HORIZONTAL)
         .withAnchor(GridBagConstraints.WEST)
         .build()
     )
@@ -654,6 +735,21 @@ class LogViewerViewImpl(
     )
 
     mainSplitPane.leftComponent = filtersPanel
+  }
+
+  /**
+   * Determines whether the active theme is a dark theme, using the theme
+   * manager or falling back to relative luminance of [fallbackBg].
+   */
+  private fun isDarkTheme(fallbackBg: Color): Boolean {
+    return try {
+      ServiceLocator.themeManager.isDark
+    } catch (_: Throwable) {
+      val lum = (0.299 * fallbackBg.red +
+        0.587 * fallbackBg.green +
+        0.114 * fallbackBg.blue) / 255.0
+      lum < 0.5
+    }
   }
 
   companion object {

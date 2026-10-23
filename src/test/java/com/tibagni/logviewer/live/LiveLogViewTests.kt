@@ -5,6 +5,7 @@ import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.filter.FiltersPanelHost
+import com.tibagni.logviewer.i18n.I18n
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -652,5 +653,174 @@ class LiveLogViewTests {
       FlatButton::class.java,
       liveLogView.restartServerBtn.javaClass
     )
+  }
+
+  /**
+   * Verifies that [LiveLogView.statusBadge] updates properly on
+   * [LiveLogView.showStats].
+   */
+  @Test
+  fun testStatusBadgeUpdatesOnShowStats() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val badge = liveLogView.statusBadge
+    assertNotNull(badge)
+    assertFalse(badge.isVisible)
+
+    // When allCount == 0, statusBadge is hidden
+    liveLogView.showStats(
+      totalReceived = 0,
+      droppedCount = 0,
+      allCount = 0,
+      filteredCount = 0
+    )
+    assertFalse(badge.isVisible)
+    assertEquals("", badge.text)
+
+    // When allCount == 100, filteredCount == 0, statusBadge displays 100 lines
+    liveLogView.showStats(
+      totalReceived = 100,
+      droppedCount = 0,
+      allCount = 100,
+      filteredCount = 0
+    )
+    assertTrue(badge.isVisible)
+    assertEquals("100 lines", badge.text)
+    assertEquals(I18n.format(I18n.LOGS_STATUS_ALL, "100"), badge.text)
+
+    // When allCount == 100, filteredCount == 25, statusBadge displays 25 of 100
+    liveLogView.showStats(
+      totalReceived = 100,
+      droppedCount = 0,
+      allCount = 100,
+      filteredCount = 25
+    )
+    assertTrue(badge.isVisible)
+    assertEquals("25 of 100 lines (25%)", badge.text)
+    assertEquals(
+      I18n.format(I18n.LOGS_STATUS_FILTERED, "25", "100", 25),
+      badge.text
+    )
+
+    // When droppedCount > 0 and filteredCount == 0
+    liveLogView.showStats(
+      totalReceived = 120,
+      droppedCount = 20,
+      allCount = 100,
+      filteredCount = 0
+    )
+    assertTrue(badge.isVisible)
+    assertEquals(
+      I18n.format(I18n.LOGS_STATUS_ALL_DROPPED, "100", "20"),
+      badge.text
+    )
+
+    // When droppedCount > 0 and filteredCount == 25
+    liveLogView.showStats(
+      totalReceived = 120,
+      droppedCount = 20,
+      allCount = 100,
+      filteredCount = 25
+    )
+    assertTrue(badge.isVisible)
+    assertEquals(
+      I18n.format(
+        I18n.LOGS_STATUS_FILTERED_DROPPED,
+        "25",
+        "100",
+        25,
+        "20"
+      ),
+      badge.text
+    )
+
+    // Resetting back to 0 hides badge again
+    liveLogView.showStats(
+      totalReceived = 0,
+      droppedCount = 0,
+      allCount = 0,
+      filteredCount = 0
+    )
+    assertFalse(badge.isVisible)
+    assertEquals("", badge.text)
+  }
+
+  /**
+   * Verifies that the modern status bar contains the smartphone icon on
+   * [LiveLogView.deviceLabel], the dynamic status indicator on
+   * [LiveLogView.statusLabel], a theme-aware vertical divider, and that
+   * [LiveLogView.statsLabel] is removed from the left toolbar.
+   */
+  @Test
+  fun testModernStatusBarLeftIconsAndDivider() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+
+    // Device label has smartphone icon and custom gap
+    assertNotNull(liveLogView.deviceLabel.icon)
+    assertEquals(16, liveLogView.deviceLabel.icon.iconWidth)
+    assertEquals(16, liveLogView.deviceLabel.icon.iconHeight)
+    assertEquals(
+      UIScaleUtils.dip(6),
+      liveLogView.deviceLabel.iconTextGap
+    )
+
+    // Status label has status indicator icon and custom gap
+    assertNotNull(liveLogView.statusLabel.icon)
+    assertEquals(16, liveLogView.statusLabel.icon.iconWidth)
+    assertEquals(16, liveLogView.statusLabel.icon.iconHeight)
+    assertEquals(
+      UIScaleUtils.dip(6),
+      liveLogView.statusLabel.iconTextGap
+    )
+
+    // When streaming is active, status indicator updates
+    liveLogView.showStreamingStatus("Streaming", true)
+    assertEquals("Streaming", liveLogView.statusLabel.text)
+    assertNotNull(liveLogView.statusLabel.icon)
+
+    // When streaming is stopped, status indicator updates
+    liveLogView.showStreamingStatus("Stopped", false)
+    assertEquals("Stopped", liveLogView.statusLabel.text)
+    assertNotNull(liveLogView.statusLabel.icon)
+
+    // Device label displays clean name without prefix
+    liveLogView.showLogsView(testDevice)
+    assertEquals(testDevice.displayName, liveLogView.deviceLabel.text)
+
+    // Stats label is retained as a property, but not added to the toolbar
+    assertNull(liveLogView.statsLabel.parent)
+
+    // Verify vertical divider and header panel paint in headless mode
+    val logsPanel = liveLogView.logsPanel
+    val divider = logsPanel.createVerticalDivider()
+    divider.setSize(1, 14)
+    val divImage = java.awt.image.BufferedImage(
+      1,
+      14,
+      java.awt.image.BufferedImage.TYPE_INT_ARGB
+    )
+    val divGraphics = divImage.createGraphics()
+    try {
+      divider.paint(divGraphics)
+    } finally {
+      divGraphics.dispose()
+    }
+
+    logsPanel.headerPanel.setSize(300, 30)
+    val headerImage = java.awt.image.BufferedImage(
+      300,
+      30,
+      java.awt.image.BufferedImage.TYPE_INT_ARGB
+    )
+    val headerGraphics = headerImage.createGraphics()
+    try {
+      logsPanel.headerPanel.paint(headerGraphics)
+    } finally {
+      headerGraphics.dispose()
+    }
+
+    // onThemeChanged updates icons without exceptions
+    liveLogView.onThemeChanged()
+    assertNotNull(liveLogView.deviceLabel.icon)
+    assertNotNull(liveLogView.statusLabel.icon)
   }
 }

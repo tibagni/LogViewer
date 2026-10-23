@@ -28,6 +28,7 @@ import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.SearchableTable
 import com.tibagni.logviewer.view.SideButtonsPanel
 import com.tibagni.logviewer.view.SidePanelEntry
+import com.tibagni.logviewer.view.StatusBadge
 import com.tibagni.logviewer.view.Toast
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.TriStateCheckbox
@@ -101,10 +102,12 @@ class LiveLogViewImpl(
 
   private lateinit var mainSplitPane: JSplitPane
   private lateinit var devicesPanel: LiveLogDevicesPanel
+  @VisibleForTesting internal lateinit var logsPanel: LiveLogsPanel
   private var filtersPanel: FiltersPanel? = null
   @VisibleForTesting internal lateinit var deviceLabel: JLabel
   @VisibleForTesting internal lateinit var statusLabel: JLabel
   @VisibleForTesting internal lateinit var statsLabel: JLabel
+  @VisibleForTesting internal lateinit var statusBadge: StatusBadge
   @VisibleForTesting internal lateinit var sidePanel: SideButtonsPanel
   @VisibleForTesting internal lateinit var filteringProgressBar: JProgressBar
 
@@ -254,7 +257,7 @@ class LiveLogViewImpl(
   }
 
   private fun buildLogsPanel(): JPanel {
-    val logsPanel = LiveLogsPanel(
+    logsPanel = LiveLogsPanel(
       presenter = presenter,
       logRenderer = logRenderer,
       onAutoScrollToggled = { active ->
@@ -267,6 +270,7 @@ class LiveLogViewImpl(
     deviceLabel = logsPanel.deviceLabel
     statusLabel = logsPanel.statusLabel
     statsLabel = logsPanel.statsLabel
+    statusBadge = logsPanel.statusBadge
     filteringProgressBar = logsPanel.filteringProgressBar
 
     logListTableModel = logsPanel.logListTableModel
@@ -307,7 +311,8 @@ class LiveLogViewImpl(
   }
 
   override fun showStreamingStatus(statusText: String, isStreaming: Boolean) {
-    statusLabel.text = I18n.format(I18n.LIVE_LOGS_LABEL_STATUS, statusText)
+    statusLabel.text = statusText
+    statusLabel.icon = CommonIcons.statusIndicatorIcon(isStreaming)
     if (isStreaming) {
       sidePanel.updateItem(
         ID_STOP_RESUME,
@@ -324,7 +329,7 @@ class LiveLogViewImpl(
       sidePanel.setItemEnabled(ID_STOP_RESUME, presenter.connectedDevice != null)
     }
     val device = presenter.connectedDevice
-    deviceLabel.text = I18n.format(I18n.LIVE_LOGS_LABEL_DEVICE, device?.displayName ?: "-")
+    deviceLabel.text = device?.displayName ?: "-"
     sidePanel.setItemEnabled(ID_TERMINAL, device?.isOnline == true)
   }
 
@@ -333,7 +338,7 @@ class LiveLogViewImpl(
   }
 
   override fun showLogsView(device: AdbDevice) {
-    deviceLabel.text = I18n.format(I18n.LIVE_LOGS_LABEL_DEVICE, device.displayName)
+    deviceLabel.text = device.displayName
     sidePanel.setItemEnabled(ID_TERMINAL, device.isOnline)
     sidePanel.setItemEnabled(ID_STOP_RESUME, true)
     rootCardLayout.show(contentPane, CARD_LOGS)
@@ -398,8 +403,18 @@ class LiveLogViewImpl(
     }
   }
 
-  override fun showStats(totalReceived: Long, droppedCount: Long, allCount: Int, filteredCount: Int) {
-    statsLabel.text = I18n.format(I18n.LIVE_LOGS_STATUS_SUMMARY, allCount, droppedCount)
+  override fun showStats(
+    totalReceived: Long,
+    droppedCount: Long,
+    allCount: Int,
+    filteredCount: Int
+  ) {
+    statsLabel.text = I18n.format(
+      I18n.LIVE_LOGS_STATUS_SUMMARY,
+      allCount,
+      droppedCount
+    )
+    statusBadge.updateStats(allCount, filteredCount, droppedCount)
   }
 
   override fun showLogsBatch(batch: LiveLogBatch) {
@@ -608,6 +623,9 @@ class LiveLogViewImpl(
     updateLogFont()
     filtersPanel?.onThemeChanged()
     devicesPanel.onThemeChanged()
+    if (::logsPanel.isInitialized) {
+      logsPanel.onThemeChanged(isStreaming)
+    }
     SwingUtilities.updateComponentTreeUI(contentPane)
   }
 
