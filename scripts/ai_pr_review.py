@@ -38,6 +38,7 @@ Available CLI options:
 """
 
 import argparse
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import json
 import os
@@ -279,11 +280,11 @@ def strip_context_requests(text: str) -> str:
 
 
 def fetch_file_context(
-    repo_root: str,
-    requested_files: List[str],
-    max_files: int = MAX_CONTEXT_FILES,
-    max_lines: int = MAX_CONTEXT_FILE_LINES,
-    max_bytes: int = MAX_CONTEXT_FILE_BYTES
+        repo_root: str,
+        requested_files: List[str],
+        max_files: int = MAX_CONTEXT_FILES,
+        max_lines: int = MAX_CONTEXT_FILE_LINES,
+        max_bytes: int = MAX_CONTEXT_FILE_BYTES
 ) -> Dict[str, str]:
     """Safely reads requested files from the repository root with strict bounds."""
     results: Dict[str, str] = {}
@@ -313,7 +314,8 @@ def fetch_file_context(
                 content = f.read(max_bytes)
                 lines = content.splitlines()
                 if len(lines) > max_lines:
-                    content = "\n".join(lines[:max_lines]) + f"\n\n// ... [truncated after {max_lines} lines for context limits] ..."
+                    content = "\n".join(
+                        lines[:max_lines]) + f"\n\n// ... [truncated after {max_lines} lines for context limits] ..."
                 results[clean_path] = content
         except Exception as e:
             print(f"Warning: Could not read context file '{clean_path}': {e}")
@@ -322,8 +324,8 @@ def fetch_file_context(
 
 
 def filter_inline_comments(
-    comments: List[Dict],
-    valid_diff_lines: Dict[str, Set[int]]
+        comments: List[Dict],
+        valid_diff_lines: Dict[str, Set[int]]
 ) -> Tuple[List[Dict], List[Dict]]:
     """Filters comments into (valid_comments, discarded_comments) based on diff hunk lines."""
     valid = []
@@ -487,13 +489,13 @@ def load_review_guidelines(guidelines_path: str = ".github/review_guidelines.md"
 
 
 def build_prompt(
-    guidelines: str,
-    diff: str,
-    title: Optional[str] = None,
-    description: Optional[str] = None,
-    commits: Optional[List[str]] = None,
-    comments: Optional[List[Dict[str, str]]] = None,
-    allow_context_requests: bool = True
+        guidelines: str,
+        diff: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        commits: Optional[List[str]] = None,
+        comments: Optional[List[Dict[str, str]]] = None,
+        allow_context_requests: bool = True
 ) -> str:
     """Assembles the system guidelines, PR context, and code diff into the LLM review prompt."""
     sections = [guidelines.strip(), "\n---"]
@@ -551,12 +553,12 @@ Rules for inline comments:
 
 
 def build_second_pass_prompt(
-    guidelines: str,
-    diff: str,
-    first_pass_review: str,
-    file_contexts: Dict[str, str],
-    title: Optional[str] = None,
-    description: Optional[str] = None
+        guidelines: str,
+        diff: str,
+        first_pass_review: str,
+        file_contexts: Dict[str, str],
+        title: Optional[str] = None,
+        description: Optional[str] = None
 ) -> str:
     """Assembles the second-pass prompt including original diff, draft review, and requested file contents."""
     sections = [guidelines.strip(), "\n---"]
@@ -672,11 +674,11 @@ def get_available_models(api_key: str) -> Tuple[str, List[str]]:
 
 
 def call_llm_api(
-    api_key: str,
-    prompt: str,
-    preferred_model: Optional[str] = None,
-    max_retries: int = 2,
-    retry_delay_seconds: float = 3.0
+        api_key: str,
+        prompt: str,
+        preferred_model: Optional[str] = None,
+        max_retries: int = 2,
+        retry_delay_seconds: float = 3.0
 ) -> Tuple[str, str]:
     """Calls the LLM REST API with resilient fallback across available models, retrying transient 503 errors.
 
@@ -784,9 +786,9 @@ def find_existing_comment(pr_number: str, repo: str) -> Optional[int]:
 
 
 def get_review_timestamp(
-    dt: Optional[datetime] = None,
-    tz_name: Optional[str] = None,
-    commit_sha: Optional[str] = None
+        dt: Optional[datetime] = None,
+        tz_name: Optional[str] = None,
+        commit_sha: Optional[str] = None
 ) -> str:
     """
     Formats a review timestamp showing local time and UTC in parentheses.
@@ -803,8 +805,8 @@ def get_review_timestamp(
         dt = dt.replace(tzinfo=timezone.utc)
 
     target_tz_name = (
-        tz_name or
-        os.environ.get("REVIEW_TIMEZONE", "America/Chicago")
+            tz_name or
+            os.environ.get("REVIEW_TIMEZONE", "America/Chicago")
     ).strip()
 
     local_str: Optional[str] = None
@@ -864,12 +866,12 @@ def post_or_update_review_comment(pr_number: str, repo: str, review_text: str) -
 
 
 def post_pull_request_review(
-    pr_number: str,
-    repo: str,
-    commit_sha: Optional[str],
-    body: str,
-    event: str = "COMMENT",
-    inline_comments: Optional[List[Dict]] = None
+        pr_number: str,
+        repo: str,
+        commit_sha: Optional[str],
+        body: str,
+        event: str = "COMMENT",
+        inline_comments: Optional[List[Dict]] = None
 ) -> bool:
     """Submits a pull request review (APPROVE or COMMENT) with optional inline comments."""
     review_payload: Dict[str, Any] = {
@@ -907,7 +909,8 @@ def post_pull_request_review(
         err_msg = (e.stderr or e.stdout or str(e)).strip()
         print(f"Warning: Failed to submit PR review (event={event}): {err_msg}")
         if event == "APPROVE":
-            print("💡 Tip: To enable automatic PR approvals, ensure 'Allow GitHub Actions to create and approve pull requests' is enabled in repo Settings -> Actions -> General.")
+            print(
+                "💡 Tip: To enable automatic PR approvals, ensure 'Allow GitHub Actions to create and approve pull requests' is enabled in repo Settings -> Actions -> General.")
         return False
     except Exception as e:
         print(f"Warning: Failed to submit PR review: {e}")
@@ -915,12 +918,12 @@ def post_pull_request_review(
 
 
 def post_inline_review_comments(
-    pr_number: str,
-    repo: str,
-    commit_sha: str,
-    inline_comments: List[Dict],
-    event: str = "COMMENT",
-    body: str = "### 🤖 AI Code Review (Inline Feedback)\nSee inline suggestions on modified lines below."
+        pr_number: str,
+        repo: str,
+        commit_sha: str,
+        inline_comments: List[Dict],
+        event: str = "COMMENT",
+        body: str = "### 🤖 AI Code Review (Inline Feedback)\nSee inline suggestions on modified lines below."
 ) -> bool:
     """Posts inline comments on the pull request diff via GitHub Reviews API."""
     return post_pull_request_review(
@@ -1011,81 +1014,253 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
-    args = parse_args(argv)
+@dataclass
+class ChangeContext:
+    diff: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    commits: List[str] = field(default_factory=list)
+    comments: List[Dict[str, str]] = field(default_factory=list)
+    pr_number: Optional[str] = None
+    head_sha: Optional[str] = None
+    pr_author: Optional[str] = None
 
-    # 1. Load local env file if present
-    load_env_file(args.env_file)
 
-    # 2. Check API key
-    api_key = (os.environ.get("LLM_API_KEY", "").strip() or
-               os.environ.get("GEMINI_API_KEY", "").strip())
-    if not api_key:
-        print("⚠️ Notice: Neither LLM_API_KEY nor GEMINI_API_KEY is set. Skipping automated code review.")
-        return 0
+def get_api_key() -> str:
+    return (os.environ.get("LLM_API_KEY", "").strip() or
+            os.environ.get("GEMINI_API_KEY", "").strip())
 
-    preferred_model = (
-        args.model or
-        os.environ.get("LLM_MODEL", "").strip() or
-        os.environ.get("GEMINI_MODEL", "").strip() or
-        os.environ.get("AI_REVIEW_MODEL", "").strip() or
-        None
-    )
-    pr_number = args.pr or os.environ.get("PR_NUMBER", "").strip()
-    repo = get_repo_name()
-    base_ref = args.base or os.environ.get("BASE_REF", "master").strip()
-    head_sha = get_head_sha(pr_number)
 
-    title = None
-    description = None
-    commits = []
-    comments = []
+def get_preferred_model(args: argparse.Namespace) -> Optional[str]:
+    return (args.model or
+            os.environ.get("LLM_MODEL", "").strip() or
+            os.environ.get("GEMINI_MODEL", "").strip() or
+            os.environ.get("AI_REVIEW_MODEL", "").strip() or
+            None)
 
-    # 3. Extract diff and PR context
+
+def extract_change_context(
+    pr_number: Optional[str],
+    base_ref: str,
+    head_sha: Optional[str] = None,
+    explicit_author: Optional[str] = None
+) -> ChangeContext:
+    """Extracts git diff and metadata for a specific PR or local branch comparison."""
     if pr_number:
         print(f"Fetching diff and context for PR #{pr_number}...")
         diff = get_pr_diff(pr_number)
         meta = get_pr_metadata(pr_number)
         title = meta.get("title")
         description = meta.get("body")
+        commits: List[str] = []
         for c in meta.get("commits", []):
             oid = c.get("oid", "")[:7]
             headline = c.get("messageHeadline", "")
             commits.append(f"`{oid}`: {headline}" if oid else headline)
         comments = meta.get("filtered_comments", [])
-    else:
-        print(f"Fetching diff against base branch '{base_ref}'...")
-        diff = get_git_diff(base_ref)
-        commits = get_local_commit_log(base_ref)
+        pr_author = (
+            explicit_author or
+            meta.get("author", {}).get("login", "").strip() or
+            os.environ.get("PR_AUTHOR", "").strip() or
+            None
+        )
+        return ChangeContext(
+            diff=diff,
+            title=title,
+            description=description,
+            commits=commits,
+            comments=comments,
+            pr_number=pr_number,
+            head_sha=head_sha,
+            pr_author=pr_author
+        )
 
-    if not diff.strip():
-        print("No reviewable code changes found.")
-        if not args.dry_run and pr_number and repo:
-            timestamp_str = get_review_timestamp(tz_name=args.timezone, commit_sha=head_sha)
-            review_body = (
-                f"### 🤖 AI Code Review\n\n"
-                f"No code changes requiring review were detected in this pull request.\n\n"
-                f"---\n"
-                f"*Reviewed at: {timestamp_str}*"
-            )
-            post_or_update_review_comment(pr_number, repo, review_body)
-        return 0
+    print(f"Fetching diff against base branch '{base_ref}'...")
+    diff = get_git_diff(base_ref)
+    commits = get_local_commit_log(base_ref)
+    pr_author = explicit_author or os.environ.get("PR_AUTHOR", "").strip() or None
+    return ChangeContext(
+        diff=diff,
+        title=None,
+        description=None,
+        commits=commits,
+        comments=[],
+        pr_number=None,
+        head_sha=head_sha,
+        pr_author=pr_author
+    )
 
+
+def handle_empty_diff(
+    change: ChangeContext,
+    repo: Optional[str],
+    dry_run: bool,
+    timezone_name: Optional[str]
+) -> bool:
+    """Checks if the diff is empty. If empty, optionally posts notification and returns True to finish early."""
+    if change.diff.strip():
+        return False
+
+    print("No reviewable code changes found.")
+    if not dry_run and change.pr_number and repo:
+        timestamp_str = get_review_timestamp(tz_name=timezone_name, commit_sha=change.head_sha)
+        review_body = (
+            f"### 🤖 AI Code Review\n\n"
+            f"No code changes requiring review were detected in this pull request.\n\n"
+            f"---\n"
+            f"*Reviewed at: {timestamp_str}*"
+        )
+        post_or_update_review_comment(change.pr_number, repo, review_body)
+    return True
+
+
+def resolve_context_files(
+    review_output: str,
+    repo_root: str
+) -> Dict[str, str]:
+    """Parses requested context files from review output and loads their contents from disk."""
+    requested_files = parse_context_requests(review_output)
+    if not requested_files:
+        return {}
+
+    print(f"Reviewer requested additional context for {len(requested_files)} file(s): {', '.join(requested_files)}")
+    file_contexts = fetch_file_context(repo_root, requested_files)
+    if not file_contexts:
+        print("Notice: None of the requested context files could be loaded. Proceeding with Pass 1 review.")
+        return {}
+
+    print(f"Loaded {len(file_contexts)} context file(s). Executing Pass 2 verification...")
+    return file_contexts
+
+
+def run_second_pass_if_needed(
+    api_key: str,
+    guidelines: str,
+    change: ChangeContext,
+    first_pass_review: str,
+    model_used: str,
+    preferred_model: Optional[str] = None,
+    verbose: bool = False
+) -> Tuple[str, str, List[str]]:
+    """Checks if the reviewer requested additional context files and executes Pass 2 verification if so.
+
+    Returns:
+        Tuple of (final_review_text, model_name_used, list_of_verified_file_paths)
+    """
+    file_contexts = resolve_context_files(first_pass_review, get_project_root())
+    if not file_contexts:
+        return first_pass_review, model_used, []
+
+    try:
+        pass2_prompt = build_second_pass_prompt(
+            guidelines=guidelines,
+            diff=change.diff,
+            first_pass_review=first_pass_review,
+            file_contexts=file_contexts,
+            title=change.title,
+            description=change.description
+        )
+        if verbose:
+            print("\n" + "=" * 80)
+            print("VERBOSE: Pass 2 Prompt Sent to LLM")
+            print("=" * 80)
+            print(pass2_prompt)
+            print("=" * 80 + "\n")
+
+        pass2_output, pass2_model = call_llm_api(
+            api_key=api_key,
+            prompt=pass2_prompt,
+            preferred_model=preferred_model or model_used
+        )
+        verified_files = sorted(file_contexts.keys())
+        print(f"Pass 2 verification completed successfully using {pass2_model}.")
+        return pass2_output, pass2_model, verified_files
+    except Exception as e:
+        print(f"Warning: Pass 2 verification failed: {e}. Falling back to Pass 1 review.")
+        return first_pass_review, model_used, []
+
+
+def print_dry_run_results(
+    formatted_review: str,
+    valid_inline: List[Dict[str, Any]],
+    discarded_inline: List[Dict[str, Any]],
+    can_auto_approve: bool,
+    pr_author: Optional[str],
+    auto_approve_authors: Set[str]
+) -> None:
+    """Prints the full dry-run review, inline comments, and auto-approval evaluation to stdout."""
+    print("\n" + "=" * 80)
+    print("DRY RUN: Generated AI Code Review (Not posted to GitHub)")
+    print("=" * 80)
+    print(formatted_review)
+    if valid_inline:
+        print(f"\n💬 Inline Comments to Post ({len(valid_inline)}):")
+        for c in valid_inline:
+            print(f"  • {c['path']}:{c['line']} -> {c['body']}")
+    if discarded_inline:
+        print(f"\n⚠️ Discarded Inline Comments (Outside diff hunks - {len(discarded_inline)}):")
+        for c in discarded_inline:
+            print(f"  • {c['path']}:{c['line']} -> {c['body']}")
+    if can_auto_approve:
+        print(f"\n🎉 Auto-Approval Check: Author '{pr_author}' matches AUTO_APPROVE_AUTHORS and verdict is LGTM.")
+        print("   [DRY RUN] Would submit PR review with event: APPROVE")
+    elif pr_author and pr_author.lower() in auto_approve_authors:
+        print(
+            f"\n⚠️ Auto-Approval Check: Author '{pr_author}' matches AUTO_APPROVE_AUTHORS, but verdict is not LGTM. Skipping approval."
+        )
+    elif auto_approve_authors:
+        print(
+            f"\nℹ️ Auto-Approval Check: Author '{pr_author or 'unknown'}' is not in AUTO_APPROVE_AUTHORS ({auto_approve_authors}). Skipping approval."
+        )
+    print("=" * 80)
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = parse_args(argv)
+
+    # 1. Load local env file if present
+    load_env_file(args.env_file)
+
+    # 2. Retrieve variables and parameters
+    api_key = get_api_key()
+    preferred_model = get_preferred_model(args)
+    pr_number = args.pr or os.environ.get("PR_NUMBER", "").strip()
+    repo = get_repo_name()
+    base_ref = args.base or os.environ.get("BASE_REF", "master").strip()
+    head_sha = get_head_sha(pr_number)
     two_pass_enabled = not (
         args.no_two_pass or
         os.environ.get("AI_REVIEW_DISABLE_TWO_PASS", "").strip().lower() in ("1", "true", "yes")
     )
 
-    print(f"Extracted diff ({len(diff)} characters). Loading review guidelines...")
-    valid_diff_lines = parse_valid_diff_lines(diff)
+    # 3. Check if we have what is needed to continue. Finish early if we don't
+    if not api_key:
+        print("⚠️ Notice: Neither LLM_API_KEY nor GEMINI_API_KEY is set. Skipping automated code review.")
+        return 0
+
+    # 4. Extract diff and change context
+    change = extract_change_context(
+        pr_number=pr_number,
+        base_ref=base_ref,
+        head_sha=head_sha,
+        explicit_author=args.author
+    )
+
+    # 5. Check if we have what to review. Finish early if we don't
+    if handle_empty_diff(change, repo, args.dry_run, args.timezone):
+        return 0
+
+    # 6. Load review guidelines and assemble prompt
+    print(f"Extracted diff ({len(change.diff)} characters). Loading review guidelines...")
+    valid_diff_lines = parse_valid_diff_lines(change.diff)
     guidelines, source_description = load_review_guidelines()
     prompt = build_prompt(
         guidelines=guidelines,
-        diff=diff,
-        title=title,
-        description=description,
-        commits=commits,
-        comments=comments,
+        diff=change.diff,
+        title=change.title,
+        description=change.description,
+        commits=change.commits,
+        comments=change.comments,
         allow_context_requests=two_pass_enabled
     )
 
@@ -1096,54 +1271,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(prompt)
         print("=" * 80 + "\n")
 
+    # 7. Request code review (Pass 1)
     print("Requesting code review from LLM API" + (" (Pass 1)..." if two_pass_enabled else "..."))
-    llm_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
-    if isinstance(llm_output, tuple):
-        raw_review_output, model_used = llm_output
-    else:
-        raw_review_output = llm_output
-        model_used = preferred_model or "unknown"
+    raw_review_output, model_used = call_llm_api(api_key, prompt, preferred_model=preferred_model)
 
+    # 8. Second-pass context verification (if requested and enabled)
     verified_files: List[str] = []
     if two_pass_enabled:
-        requested_files = parse_context_requests(raw_review_output)
-        if requested_files:
-            print(f"Reviewer requested additional context for {len(requested_files)} file(s): {', '.join(requested_files)}")
-            file_contexts = fetch_file_context(get_project_root(), requested_files)
-            if file_contexts:
-                print(f"Loaded {len(file_contexts)} context file(s). Executing Pass 2 verification...")
-                try:
-                    pass2_prompt = build_second_pass_prompt(
-                        guidelines=guidelines,
-                        diff=diff,
-                        first_pass_review=raw_review_output,
-                        file_contexts=file_contexts,
-                        title=title,
-                        description=description
-                    )
-                    if args.verbose:
-                        print("\n" + "=" * 80)
-                        print("VERBOSE: Pass 2 Prompt Sent to LLM")
-                        print("=" * 80)
-                        print(pass2_prompt)
-                        print("=" * 80 + "\n")
+        raw_review_output, model_used, verified_files = run_second_pass_if_needed(
+            api_key=api_key,
+            guidelines=guidelines,
+            change=change,
+            first_pass_review=raw_review_output,
+            model_used=model_used,
+            preferred_model=preferred_model,
+            verbose=args.verbose
+        )
 
-                    pass2_output = call_llm_api(
-                        api_key=api_key,
-                        prompt=pass2_prompt,
-                        preferred_model=preferred_model or model_used
-                    )
-                    if isinstance(pass2_output, tuple):
-                        raw_review_output, model_used = pass2_output
-                    else:
-                        raw_review_output = pass2_output
-                    verified_files = sorted(file_contexts.keys())
-                    print(f"Pass 2 verification completed successfully using {model_used}.")
-                except Exception as e:
-                    print(f"Warning: Pass 2 verification failed: {e}. Falling back to Pass 1 review.")
-            else:
-                print("Notice: None of the requested context files could be loaded. Proceeding with Pass 1 review.")
-
+    # 9. Clean output and extract inline comments
     raw_review_output = strip_context_requests(raw_review_output)
     clean_review_text, raw_inline_comments = extract_inline_comments(raw_review_output)
     clean_review_text = strip_context_requests(clean_review_text)
@@ -1152,24 +1297,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     if discarded_inline:
         print(f"Notice: Omitted {len(discarded_inline)} inline comments because target lines were outside diff hunks.")
 
+    # 10. Check auto-approval eligibility
     auto_approve_authors = parse_auto_approve_authors(
         args.auto_approve_authors or os.environ.get("AUTO_APPROVE_AUTHORS")
     )
-    pr_author = (
-        args.author or
-        meta.get("author", {}).get("login", "").strip() or
-        os.environ.get("PR_AUTHOR", "").strip()
-    )
     is_lgtm = is_verdict_lgtm(clean_review_text)
     can_auto_approve = bool(
-        pr_author and
-        pr_author.lower() in auto_approve_authors and
+        change.pr_author and
+        change.pr_author.lower() in auto_approve_authors and
         is_lgtm
     )
 
+    # 11. Format final review markdown
     context_note = f", context-verified: {', '.join(f'`{f}`' for f in verified_files)}" if verified_files else ""
     model_attribution = f" (`{model_used}`{context_note})" if model_used else ""
-    timestamp_str = get_review_timestamp(tz_name=args.timezone, commit_sha=head_sha)
+    timestamp_str = get_review_timestamp(tz_name=args.timezone, commit_sha=change.head_sha)
     formatted_review = f"""### 🤖 AI Code Review
 
 {clean_review_text.strip()}
@@ -1179,40 +1321,27 @@ def main(argv: Optional[List[str]] = None) -> int:
 *Reviewed at: {timestamp_str}*
 """
 
-    if args.dry_run:
-        print("\n" + "=" * 80)
-        print("DRY RUN: Generated AI Code Review (Not posted to GitHub)")
-        print("=" * 80)
-        print(formatted_review)
-        if valid_inline:
-            print(f"\n💬 Inline Comments to Post ({len(valid_inline)}):")
-            for c in valid_inline:
-                print(f"  • {c['path']}:{c['line']} -> {c['body']}")
-        if discarded_inline:
-            print(f"\n⚠️ Discarded Inline Comments (Outside diff hunks - {len(discarded_inline)}):")
-            for c in discarded_inline:
-                print(f"  • {c['path']}:{c['line']} -> {c['body']}")
-        if can_auto_approve:
-            print(f"\n🎉 Auto-Approval Check: Author '{pr_author}' matches AUTO_APPROVE_AUTHORS and verdict is LGTM.")
-            print(f"   [DRY RUN] Would submit PR review with event: APPROVE")
-        elif pr_author and pr_author.lower() in auto_approve_authors:
-            print(f"\n⚠️ Auto-Approval Check: Author '{pr_author}' matches AUTO_APPROVE_AUTHORS, but verdict is not LGTM. Skipping approval.")
-        elif auto_approve_authors:
-            print(f"\nℹ️ Auto-Approval Check: Author '{pr_author or 'unknown'}' is not in AUTO_APPROVE_AUTHORS ({auto_approve_authors}). Skipping approval.")
-        print("=" * 80)
+    # 12. Handle dry-run or local execution (print to stdout and finish)
+    is_dry_run = args.dry_run or not change.pr_number or not repo
+    if is_dry_run:
+        if not args.dry_run:
+            print("\nNotice: No PR number or repository specified. Running in dry-run mode.")
+        print_dry_run_results(
+            formatted_review=formatted_review,
+            valid_inline=valid_inline,
+            discarded_inline=discarded_inline,
+            can_auto_approve=can_auto_approve,
+            pr_author=change.pr_author,
+            auto_approve_authors=auto_approve_authors
+        )
         return 0
 
     log_to_step_summary(formatted_review)
 
-    if not pr_number or not repo:
-        print("Error: PR_NUMBER and GITHUB_REPOSITORY (or remote.origin.url) are required to post comments.")
-        print("Use --dry-run to test locally without posting comments.")
-        return 1
+    # 13. Post or update the persistent top-level review comment
+    post_or_update_review_comment(change.pr_number, repo, formatted_review)
 
-    # 1. ALWAYS post or update the single persistent top-level review comment in the conversation timeline
-    post_or_update_review_comment(pr_number, repo, formatted_review)
-
-    # 2. If eligible for auto-approval, submit a Pull Request Review with event APPROVE
+    # 14. Submit auto-approval review or post inline comments
     if can_auto_approve:
         approval_body = (
             f"### 🤖 AI Code Review (Approved)\n\n"
@@ -1222,16 +1351,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             f"*Reviewed at: {timestamp_str}*"
         )
         post_pull_request_review(
-            pr_number=pr_number,
+            pr_number=change.pr_number,
             repo=repo,
-            commit_sha=head_sha,
+            commit_sha=change.head_sha,
             body=approval_body,
             event="APPROVE",
             inline_comments=valid_inline if valid_inline else None
         )
-    elif valid_inline and head_sha:
+    elif valid_inline and change.head_sha:
         # If there are valid inline comments and a commit SHA, post inline comments to the diff
-        post_inline_review_comments(pr_number, repo, head_sha, valid_inline)
+        post_inline_review_comments(change.pr_number, repo, change.head_sha, valid_inline)
 
     return 0
 
