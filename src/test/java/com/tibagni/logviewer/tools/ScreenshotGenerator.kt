@@ -17,6 +17,8 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.live.LiveLogViewImpl
 import com.tibagni.logviewer.log.*
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.preferences.KeymapPreferencePanel
+import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl
 import com.tibagni.logviewer.rc.LogLevelConfig
 import com.tibagni.logviewer.rc.RuntimeConfiguration
@@ -643,6 +645,19 @@ object ScreenshotGenerator {
     realizeWindow(goToDialog)
     saveWindowImage(goToDialog, File(outputDir, "go-to-dialog.png"))
     goToDialog.dispose()
+
+    // 7. keymap-settings.png
+    val prefsDialog = LogViewerPreferencesDialog(owner)
+    prefsDialog.isModal = false
+    prefsDialog.selectCategory(KeymapPreferencePanel.ID)
+    val keymapPanel = prefsDialog.preferencePanels.filterIsInstance<KeymapPreferencePanel>().firstOrNull()
+    if (keymapPanel != null && keymapPanel.shortcutsTable.rowCount > 1) {
+      keymapPanel.shortcutsTable.setRowSelectionInterval(1, 1)
+    }
+    prefsDialog.pack()
+    realizeWindow(prefsDialog)
+    saveWindowImage(prefsDialog, File(outputDir, "keymap-settings.png"))
+    prefsDialog.dispose()
 
     owner.dispose()
   }

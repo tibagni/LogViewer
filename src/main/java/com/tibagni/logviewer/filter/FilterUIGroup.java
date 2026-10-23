@@ -3,6 +3,8 @@ package com.tibagni.logviewer.filter;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
+import com.tibagni.logviewer.shortcuts.ShortcutAction;
+import com.tibagni.logviewer.shortcuts.ShortcutManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
@@ -45,6 +47,7 @@ class FilterUIGroup extends JPanel {
   private final Supplier<FiltersList.FiltersListener> listenerSupplier;
   private final Consumer<String> focusGainedCallback;
   private final LogViewerPreferences userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
+  private final ShortcutManager shortcutManager = ServiceLocator.INSTANCE.getShortcutManager();
 
   public FilterUIGroup(
       String groupName,
@@ -65,10 +68,8 @@ class FilterUIGroup extends JPanel {
     hideGroupBtn = new FlatButton(HIDE);
 
     prevBtn = new FlatButton(StringUtils.LEFT_BLACK_POINTER);
-    prevBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_PREV));
-
     nextBtn = new FlatButton(StringUtils.RIGHT_BLACK_POINTER);
-    nextBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_NEXT));
+    updateNavigationTooltips();
 
     addBtn = new FlatButton(StringUtils.PLUS);
     addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
@@ -222,26 +223,35 @@ class FilterUIGroup extends JPanel {
     list.addKeyListener(new KeyAdapter() {
       @Override
       public void keyPressed(KeyEvent e) {
-        // We only consider backspace if user is not searching
-        boolean backspace = e.getKeyCode() == KeyEvent.VK_BACK_SPACE && !listSearchHandler.isSearching();
-
-        if (!list.isSelectionEmpty() && list.getModel().getSize() > 0 &&
-            (e.getKeyCode() == KeyEvent.VK_DELETE || backspace)) {
-          deleteSelectedFilters();
-        } else if (e.getKeyCode() == KeyEvent.VK_ENTER && list.getSelectedIndices().length == 1) {
-          editSelectedFilter();
-        } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
           if (listSearchHandler.isSearching()) {
             listSearchHandler.cancelSearch();
           } else {
             list.clearSelection();
           }
-        } else if (e.getKeyChar() == ',' || e.getKeyChar() == '.') {
-          if (e.getKeyChar() == ',') {
-            navigatePrev();
-          } else {
-            navigateNext();
-          }
+          return;
+        }
+
+        if (listSearchHandler.isSearching()) {
+          return;
+        }
+
+        boolean backspace = e.getKeyCode() == KeyEvent.VK_BACK_SPACE;
+
+        if (!list.isSelectionEmpty() && list.getModel().getSize() > 0 &&
+            (shortcutManager.matches(e, ShortcutAction.FILTERS_DELETE_SELECTED) || backspace)) {
+          deleteSelectedFilters();
+        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_EDIT_SELECTED) &&
+            list.getSelectedIndices().length == 1) {
+          editSelectedFilter();
+        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_PREV_MATCH)) {
+          navigatePrev();
+        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_NEXT_MATCH)) {
+          navigateNext();
+        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_INLINE_SEARCH) &&
+            shortcutManager.getUnmodifiedTriggerChar(ShortcutAction.FILTERS_INLINE_SEARCH) == null) {
+          listSearchHandler.startSearch();
+          e.consume();
         }
       }
     });
@@ -319,8 +329,22 @@ class FilterUIGroup extends JPanel {
     }
   }
 
+  private void updateNavigationTooltips() {
+    String prevShortcut = ShortcutManager.formatKeyStroke(
+        shortcutManager.getKeyStroke(ShortcutAction.FILTERS_PREV_MATCH));
+    String nextShortcut = ShortcutManager.formatKeyStroke(
+        shortcutManager.getKeyStroke(ShortcutAction.FILTERS_NEXT_MATCH));
+    prevBtn.setToolTipText(prevShortcut.isEmpty()
+        ? I18n.get(I18n.FILTERS_TOOLTIP_PREV)
+        : I18n.format(I18n.FILTERS_TOOLTIP_PREV_FORMAT, prevShortcut));
+    nextBtn.setToolTipText(nextShortcut.isEmpty()
+        ? I18n.get(I18n.FILTERS_TOOLTIP_NEXT)
+        : I18n.format(I18n.FILTERS_TOOLTIP_NEXT_FORMAT, nextShortcut));
+  }
+
   public void updateActionPaneButtons() {
     if (list == null) return;
+    updateNavigationTooltips();
 
     Filter selectedFilter = list.getSelectedValue();
     boolean enableNavigation = list.getSelectedIndices().length == 1 &&

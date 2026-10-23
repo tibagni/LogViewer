@@ -83,6 +83,7 @@ jacocoTestReport {
                     'com/tibagni/logviewer/logger/*',
                     'com/tibagni/logviewer/preferences/AppearancePreferencePanel*',
                     'com/tibagni/logviewer/preferences/FiltersPreferencePanel*',
+                    'com/tibagni/logviewer/preferences/KeymapPreferencePanel*',
                     'com/tibagni/logviewer/preferences/LogViewerPreferencesDialog*',
                     'com/tibagni/logviewer/preferences/LogsPreferencePanel*',
                     'com/tibagni/logviewer/preferences/PreferencePanel*',
@@ -157,3 +158,19 @@ tasks.register('generateScreenshots', JavaExec) {
         args project.property('outputDir')
     }
 }
+
+tasks.register('updateReadmeShortcuts', JavaExec) {
+    description = 'Updates the Keyboard Shortcuts table in README.md from ShortcutAction definitions'
+    group = 'documentation'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.tibagni.logviewer.tools.ShortcutReadmeGenerator'
+}
+
+tasks.register('checkReadmeShortcuts', JavaExec) {
+    description = 'Validates that the Keyboard Shortcuts table in README.md matches ShortcutAction definitions'
+    group = 'verification'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.tibagni.logviewer.tools.ShortcutReadmeGenerator'
+    args '--check'
+}
+check.dependsOn checkReadmeShortcuts

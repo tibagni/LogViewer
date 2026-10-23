@@ -40,7 +40,7 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
 
   private lateinit var mainPanel: JPanel
   private lateinit var buttonsPane: ButtonsPane
-  private lateinit var categoriesList: JList<PreferencePanel>
+  internal lateinit var categoriesList: JList<PreferencePanel>
   private lateinit var categoriesListModel: DefaultListModel<PreferencePanel>
   private lateinit var cardsPanel: JPanel
   private val cardLayout = CardLayout()
@@ -54,7 +54,8 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
       AppearancePreferencePanel(userPrefs, themeManager),
       LogsPreferencePanel(this, userPrefs),
       FiltersPreferencePanel(this, userPrefs),
-      ToolsPreferencePanel(this, userPrefs)
+      ToolsPreferencePanel(this, userPrefs),
+      KeymapPreferencePanel(this, ServiceLocator.shortcutManager)
     )
   }
 
@@ -260,6 +261,14 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
     }
   }
 
+  fun selectCategory(categoryId: String) {
+    val index = preferencePanels.indexOfFirst { it.id == categoryId }
+    if (index >= 0) {
+      categoriesList.selectedIndex = index
+      cardLayout.show(cardsPanel, categoryId)
+    }
+  }
+
   override fun onCancel() {
     if (isSaving) return
     dispose()
@@ -269,8 +278,12 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
     private const val SAVING_CARD_ID = "pref.saving"
 
     @JvmStatic
-    fun showPreferencesDialog(parent: JFrame?) {
+    @JvmOverloads
+    fun showPreferencesDialog(parent: JFrame?, initialCategoryId: String? = null) {
       val dialog = LogViewerPreferencesDialog(parent)
+      if (initialCategoryId != null) {
+        dialog.selectCategory(initialCategoryId)
+      }
       dialog.pack()
       dialog.setLocationRelativeTo(parent)
       dialog.isVisible = true

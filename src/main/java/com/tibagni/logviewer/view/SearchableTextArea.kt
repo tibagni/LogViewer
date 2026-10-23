@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.view
 
+import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.shortcuts.ShortcutAction
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import java.awt.Component
@@ -49,9 +51,9 @@ class SearchableTextArea(hasScroll: Boolean = true) : JPanel() {
     searchText.isVisible = false
     textArea.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
-        when (e.keyCode) {
-          KeyEvent.VK_F -> if (e.isControlDown) showSearch()
-          KeyEvent.VK_ESCAPE -> hideSearch()
+        when {
+          ServiceLocator.shortcutManager.matches(e, ShortcutAction.SEARCH_FIND_IN_TABLE) -> showSearch()
+          e.keyCode == KeyEvent.VK_ESCAPE -> hideSearch()
         }
       }
     })

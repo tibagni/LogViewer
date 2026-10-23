@@ -14,11 +14,13 @@ import com.tibagni.logviewer.live.LiveLogsRepository
 import com.tibagni.logviewer.live.LiveLogsRepositoryImpl
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesImpl
+import com.tibagni.logviewer.shortcuts.ShortcutManager
 import com.tibagni.logviewer.theme.LogViewerThemeManager
 
 object ServiceLocator {
   val themeManager: LogViewerThemeManager = LogViewerThemeManager
   val logViewerPrefs: LogViewerPreferences = LogViewerPreferencesImpl
+  val shortcutManager: ShortcutManager by lazy { ShortcutManager(logViewerPrefs) }
   val logsRepository: LogsRepository by lazy { LogsRepositoryImpl() }
   val myLogsRepository: MyLogsRepository by lazy {MyLogsRepositoryImpl()}
   val filtersRepository: FiltersRepository by lazy { FiltersRepositoryImpl() }

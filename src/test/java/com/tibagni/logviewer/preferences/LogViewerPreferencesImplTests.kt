@@ -724,4 +724,46 @@ class LogViewerPreferencesImplTests {
         verify(mockListener, never()).onAccentColorChanged()
         assertEquals(LogViewerPreferencesImpl.DEFAULT_ACCENT_COLOR, returnedVal)
     }
+
+    @Test
+    fun testSetAndGetCustomShortcut() {
+        val actionId = "logs.open"
+        val key = LogViewerPreferencesImpl.CUSTOM_SHORTCUT_PREFIX + actionId
+        LogViewerPreferencesImpl.setCustomShortcut(actionId, "79:128")
+
+        verify(mockPrefs, times(1)).put(key, "79:128")
+        verify(mockListener, only()).onShortcutsChanged()
+
+        `when`(mockPrefs.get(key, null)).thenReturn("79:128")
+        assertEquals("79:128", LogViewerPreferencesImpl.getCustomShortcut(actionId))
+    }
+
+    @Test
+    fun testClearCustomShortcut() {
+        val actionId = "logs.open"
+        val key = LogViewerPreferencesImpl.CUSTOM_SHORTCUT_PREFIX + actionId
+        LogViewerPreferencesImpl.setCustomShortcut(actionId, null)
+
+        verify(mockPrefs, times(1)).remove(key)
+        verify(mockListener, only()).onShortcutsChanged()
+
+        `when`(mockPrefs.get(key, null)).thenReturn("")
+        assertNull(LogViewerPreferencesImpl.getCustomShortcut(actionId))
+    }
+
+    @Test
+    fun testApplyCustomShortcutsBatch() {
+        val keyOpen = LogViewerPreferencesImpl.CUSTOM_SHORTCUT_PREFIX + "logs.open"
+        val keyClose = LogViewerPreferencesImpl.CUSTOM_SHORTCUT_PREFIX + "logs.close"
+        LogViewerPreferencesImpl.applyCustomShortcuts(
+            mapOf(
+                "logs.open" to "79:128",
+                "logs.close" to null
+            )
+        )
+
+        verify(mockPrefs, times(1)).put(keyOpen, "79:128")
+        verify(mockPrefs, times(1)).remove(keyClose)
+        verify(mockListener, only()).onShortcutsChanged()
+    }
 }

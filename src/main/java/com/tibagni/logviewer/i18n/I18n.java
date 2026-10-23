@@ -56,6 +56,7 @@ public final class I18n {
   public static final String PREF_CATEGORY_LOGS = "pref.category.logs";
   public static final String PREF_CATEGORY_FILTERS = "pref.category.filters";
   public static final String PREF_CATEGORY_TOOLS = "pref.category.tools";
+  public static final String PREF_CATEGORY_KEYMAP = "pref.category.keymap";
   public static final String PREF_SAVING_CHANGES = "pref.saving_changes";
 
   // Main View & File Choosers
@@ -83,6 +84,7 @@ public final class I18n {
   public static final String MENU_ITEM_CLEAN_DUPLICATE_FILTERS = "main.menu.filters.clean.duplicates";
   public static final String MENU_STREAMS = "main.menu.streams";
   public static final String MENU_HELP = "main.menu.help";
+  public static final String MENU_ITEM_KEYBOARD_SHORTCUTS = "main.menu.help.shortcuts";
   public static final String MENU_ITEM_ABOUT = "main.menu.help.about";
   public static final String MENU_ITEM_USER_GUIDE = "main.menu.help.user.guide";
 
@@ -192,6 +194,8 @@ public final class I18n {
   // Filters List & Actions
   public static final String FILTERS_TOOLTIP_PREV = "filters.tooltip.prev";
   public static final String FILTERS_TOOLTIP_NEXT = "filters.tooltip.next";
+  public static final String FILTERS_TOOLTIP_PREV_FORMAT = "filters.tooltip.prev.format";
+  public static final String FILTERS_TOOLTIP_NEXT_FORMAT = "filters.tooltip.next.format";
   public static final String FILTERS_TOOLTIP_ADD = "filters.tooltip.add";
   public static final String FILTERS_TOOLTIP_SAVE = "filters.tooltip.save";
   public static final String FILTERS_TOOLTIP_CLOSE_GROUP = "filters.tooltip.close_group";
@@ -329,6 +333,49 @@ public final class I18n {
   public static final String UPDATES_NEW_VERSION_AVAILABLE = "updates.new_version_available";
   public static final String UPDATES_NEW_VERSION_LABEL = "updates.new_version_label";
   public static final String UPDATES_RELEASE_NOTES_LABEL = "updates.release_notes_label";
+
+  // Keyboard Shortcuts & Keymap Settings
+  public static final String SHORTCUT_CATEGORY_FILE = "shortcuts.category.file";
+  public static final String SHORTCUT_CATEGORY_NAVIGATION = "shortcuts.category.navigation";
+  public static final String SHORTCUT_CATEGORY_LOGS = "shortcuts.category.logs";
+  public static final String SHORTCUT_CATEGORY_FILTERS = "shortcuts.category.filters";
+  public static final String SHORTCUT_CATEGORY_SEARCH = "shortcuts.category.search";
+
+  public static final String SHORTCUT_ACTION_FILE_SETTINGS = "shortcuts.action.file.settings";
+  public static final String SHORTCUT_ACTION_LOGS_OPEN = "shortcuts.action.logs.open";
+  public static final String SHORTCUT_ACTION_LOGS_REFRESH = "shortcuts.action.logs.refresh";
+  public static final String SHORTCUT_ACTION_LOGS_CLOSE = "shortcuts.action.logs.close";
+  public static final String SHORTCUT_ACTION_LOGS_GOTO_TIMESTAMP = "shortcuts.action.logs.goto_timestamp";
+  public static final String SHORTCUT_ACTION_LOGS_INSPECT_LINE = "shortcuts.action.logs.inspect_line";
+  public static final String SHORTCUT_ACTION_LOGS_REMOVE_MY_LOG = "shortcuts.action.logs.remove_my_log";
+  public static final String SHORTCUT_ACTION_NAV_TAB_LOGS = "shortcuts.action.nav.tab_logs";
+  public static final String SHORTCUT_ACTION_NAV_TAB_BUGREPORT = "shortcuts.action.nav.tab_bugreport";
+  public static final String SHORTCUT_ACTION_NAV_TAB_LIVE_LOGS = "shortcuts.action.nav.tab_live_logs";
+  public static final String SHORTCUT_ACTION_FILTERS_OPEN = "shortcuts.action.filters.open";
+  public static final String SHORTCUT_ACTION_FILTERS_FIND_GLOBAL = "shortcuts.action.filters.find_global";
+  public static final String SHORTCUT_ACTION_FILTERS_INLINE_SEARCH = "shortcuts.action.filters.inline_search";
+  public static final String SHORTCUT_ACTION_FILTERS_TOGGLE_APPLIED = "shortcuts.action.filters.toggle_applied";
+  public static final String SHORTCUT_ACTION_FILTERS_PREV_MATCH = "shortcuts.action.filters.prev_match";
+  public static final String SHORTCUT_ACTION_FILTERS_NEXT_MATCH = "shortcuts.action.filters.next_match";
+  public static final String SHORTCUT_ACTION_FILTERS_EDIT_SELECTED = "shortcuts.action.filters.edit_selected";
+  public static final String SHORTCUT_ACTION_FILTERS_DELETE_SELECTED = "shortcuts.action.filters.delete_selected";
+  public static final String SHORTCUT_ACTION_SEARCH_FIND_IN_TABLE = "shortcuts.action.search.find_in_table";
+  public static final String SHORTCUT_ACTION_SEARCH_NEXT_MATCH = "shortcuts.action.search.next_match";
+  public static final String SHORTCUT_ACTION_SEARCH_PREV_MATCH = "shortcuts.action.search.prev_match";
+
+  public static final String KEYMAP_SEARCH_HINT = "keymap.search_hint";
+  public static final String KEYMAP_COL_CATEGORY = "keymap.col.category";
+  public static final String KEYMAP_COL_ACTION = "keymap.col.action";
+  public static final String KEYMAP_COL_SHORTCUT = "keymap.col.shortcut";
+  public static final String KEYMAP_BTN_CHANGE = "keymap.btn.change";
+  public static final String KEYMAP_BTN_RESET_SELECTED = "keymap.btn.reset_selected";
+  public static final String KEYMAP_BTN_RESET_ALL = "keymap.btn.reset_all";
+  public static final String KEYMAP_READ_ONLY_BADGE = "keymap.read_only_badge";
+  public static final String KEYMAP_CAPTURE_TITLE = "keymap.capture.title";
+  public static final String KEYMAP_CAPTURE_PROMPT = "keymap.capture.prompt";
+  public static final String KEYMAP_CONFLICT_TITLE = "keymap.conflict.title";
+  public static final String KEYMAP_CONFLICT_MSG = "keymap.conflict.msg";
+  public static final String KEYMAP_CONFLICT_READONLY_MSG = "keymap.conflict.readonly_msg";
 
   private I18n() {}
 

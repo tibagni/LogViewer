@@ -4,11 +4,11 @@ import com.jgoodies.forms.layout.CellConstraints
 import com.jgoodies.forms.layout.FormLayout
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
-import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JFileChooser
 import javax.swing.JLabel
@@ -23,14 +23,14 @@ class ToolsPreferencePanel(
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_TOOLS)
 
   private val preferredEditorPathTxt = createPathTextField()
-  private val preferredEditorPathBtn = JButton("...").apply {
+  private val preferredEditorPathBtn = FlatButton("...").apply {
     toolTipText = I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR)
   }
   private val adbPathTxt = createPathTextField()
-  private val adbPathBtn = JButton("...").apply {
+  private val adbPathBtn = FlatButton("...").apply {
     toolTipText = I18n.get(I18n.PREF_ADB_PATH)
   }
-  private val adbPathClearBtn = JButton(I18n.get(I18n.COMMON_CLEAR)).apply {
+  private val adbPathClearBtn = FlatButton(I18n.get(I18n.COMMON_CLEAR)).apply {
     toolTipText = I18n.get(I18n.COMMON_CLEAR)
   }
 

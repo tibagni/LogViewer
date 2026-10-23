@@ -4,12 +4,14 @@ import com.jgoodies.forms.builder.PanelBuilder
 import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.jgoodies.forms.factories.CC
 import com.jgoodies.forms.layout.FormLayout
+import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.filter.Filter
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.shortcuts.ShortcutAction
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
@@ -106,19 +108,28 @@ class SearchableTable @JvmOverloads constructor(
 
     table.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
-        when (e.keyCode) {
-          KeyEvent.VK_F -> if (e.isControlDown || e.isMetaDown) showSearch()
-          KeyEvent.VK_ESCAPE -> hideSearch()
+        val shortcutManager = ServiceLocator.shortcutManager
+        when {
+          shortcutManager.matches(e, ShortcutAction.SEARCH_FIND_IN_TABLE) -> showSearch()
+          shortcutManager.matches(e, ShortcutAction.SEARCH_NEXT_MATCH) -> {
+            if (searchOptionPanel.isVisible) searchInDirection(true)
+          }
+          shortcutManager.matches(e, ShortcutAction.SEARCH_PREV_MATCH) -> {
+            if (searchOptionPanel.isVisible) searchInDirection(false)
+          }
+          e.keyCode == KeyEvent.VK_ESCAPE -> hideSearch()
         }
       }
     })
 
     searchText.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
-        if (e.keyCode == KeyEvent.VK_ESCAPE) {
-          hideSearch()
-        } else if (e.keyCode == KeyEvent.VK_ENTER) {
-          searchInDirection(!e.isShiftDown)
+        val shortcutManager = ServiceLocator.shortcutManager
+        when {
+          e.keyCode == KeyEvent.VK_ESCAPE -> hideSearch()
+          e.keyCode == KeyEvent.VK_ENTER -> searchInDirection(!e.isShiftDown)
+          shortcutManager.matches(e, ShortcutAction.SEARCH_NEXT_MATCH) -> searchInDirection(true)
+          shortcutManager.matches(e, ShortcutAction.SEARCH_PREV_MATCH) -> searchInDirection(false)
         }
       }
     })

@@ -12,8 +12,11 @@ import com.tibagni.logviewer.live.LiveLogView
 import com.tibagni.logviewer.live.LiveLogViewImpl
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.preferences.KeymapPreferencePanel
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
+import com.tibagni.logviewer.shortcuts.ShortcutAction
+import com.tibagni.logviewer.shortcuts.ShortcutManager
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
@@ -108,6 +111,8 @@ class MainViewImpl(
 
   // Dynamic Menu items
   private var saveFilteredLogs: JMenuItem? = null
+  private val shortcutManager = ShortcutManager(userPrefs)
+  private val registeredTabStrokes = mutableListOf<KeyStroke>()
 
   private val tabs: List<MainViewTab>
   private val finishChain: List<View>
@@ -146,6 +151,11 @@ class MainViewImpl(
 
       override fun onDefaultLogsPathChanged() {
         logOpenFileChooser.currentDirectory = userPrefs.defaultLogsPath
+      }
+
+      override fun onShortcutsChanged() {
+        refreshMenuBar()
+        configureTabShortcuts()
       }
     })
 
@@ -288,28 +298,24 @@ class MainViewImpl(
   private fun configureMenuBar() {
     val menuBar = JMenuBar()
 
-    val menuShortcutMask = SwingUtils.getMenuShortcutKeyMask()
-
     val fileMenu = JMenu(I18n.get(I18n.MENU_FILE))
     fileMenu.setMnemonic('F')
     val settingsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_SETTINGS))
-    settingsItem.accelerator = KeyStroke.getKeyStroke(
-      KeyEvent.VK_COMMA, menuShortcutMask
-    )
+    shortcutManager.bindToMenuItem(settingsItem, ShortcutAction.FILE_SETTINGS)
     settingsItem.addActionListener { openUserPreferences() }
     fileMenu.add(settingsItem)
 
     val logsMenu = JMenu(I18n.get(I18n.MENU_LOGS))
     val openLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_LOGS))
-    openLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutMask)
+    shortcutManager.bindToMenuItem(openLogsItem, ShortcutAction.LOGS_OPEN)
     openLogsItem.addActionListener { logViewerView.handleOpenLogsMenu() }
     logsMenu.add(openLogsItem)
     val refreshLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_REFRESH))
-    refreshLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)
+    shortcutManager.bindToMenuItem(refreshLogsItem, ShortcutAction.LOGS_REFRESH)
     refreshLogsItem.addActionListener { logViewerView.handleRefreshLogsMenu() }
     logsMenu.add(refreshLogsItem)
     val closeLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLOSE_LOGS))
-    closeLogsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask)
+    shortcutManager.bindToMenuItem(closeLogsItem, ShortcutAction.LOGS_CLOSE)
     closeLogsItem.addActionListener { logViewerView.handleCloseLogsMenu() }
     logsMenu.add(closeLogsItem)
 
@@ -322,7 +328,7 @@ class MainViewImpl(
     logsMenu.add(saveFilteredLogs)
     logsMenu.addSeparator()
     val goToTimestampItem = JMenuItem(I18n.get(I18n.MENU_ITEM_GO_TO_TIMESTAMP))
-    goToTimestampItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK)
+    shortcutManager.bindToMenuItem(goToTimestampItem, ShortcutAction.LOGS_GO_TO_TIMESTAMP)
     goToTimestampItem.addActionListener { logViewerView.handleGoToTimestampMenu() }
     logsMenu.add(goToTimestampItem)
     logsMenu.addSeparator()
@@ -333,13 +339,11 @@ class MainViewImpl(
 
     val filtersMenu = JMenu(I18n.get(I18n.MENU_FILTERS))
     val openFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_FILTERS))
+    shortcutManager.bindToMenuItem(openFilterItem, ShortcutAction.FILTERS_OPEN)
     openFilterItem.addActionListener { filtersPanel.handleOpenFiltersMenu() }
     filtersMenu.add(openFilterItem)
     val findFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_FIND_FILTERS))
-    findFilterItem.accelerator = KeyStroke.getKeyStroke(
-      KeyEvent.VK_F,
-      menuShortcutMask or InputEvent.SHIFT_DOWN_MASK
-    )
+    shortcutManager.bindToMenuItem(findFilterItem, ShortcutAction.FILTERS_FIND_GLOBAL)
     findFilterItem.addActionListener { filtersPanel.showSearchFiltersDialog() }
     filtersMenu.add(findFilterItem)
     val cleanDuplicatesItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLEAN_DUPLICATE_FILTERS))
@@ -347,10 +351,13 @@ class MainViewImpl(
     filtersMenu.add(cleanDuplicatesItem)
 
     val helpMenu = JMenu(I18n.get(I18n.MENU_HELP))
+    val shortcutsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_KEYBOARD_SHORTCUTS))
     val aboutItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ABOUT))
     val onlineHelpItem = JMenuItem(I18n.get(I18n.MENU_ITEM_USER_GUIDE))
+    shortcutsItem.addActionListener { openKeyboardShortcuts() }
     aboutItem.addActionListener { AboutDialog.showAboutDialog(parent) }
     onlineHelpItem.addActionListener { openUserGuide() }
+    helpMenu.add(shortcutsItem)
     helpMenu.add(aboutItem)
     helpMenu.add(onlineHelpItem)
 
@@ -400,6 +407,35 @@ class MainViewImpl(
 
   private fun openUserPreferences() {
     LogViewerPreferencesDialog.showPreferencesDialog(parent)
+  }
+
+  private fun openKeyboardShortcuts() {
+    LogViewerPreferencesDialog.showPreferencesDialog(parent, KeymapPreferencePanel.ID)
+  }
+
+  private fun configureTabShortcuts() {
+    if (!::mainPanel.isInitialized || !::tabbedPane.isInitialized) return
+    registeredTabStrokes.forEach { mainPanel.unregisterKeyboardAction(it) }
+    registeredTabStrokes.clear()
+
+    val tabActions = listOf(
+      ShortcutAction.NAV_TAB_LOGS to 0,
+      ShortcutAction.NAV_TAB_BUGREPORT to 1,
+      ShortcutAction.NAV_TAB_LIVE_LOGS to 2
+    )
+    for ((action, tabIdx) in tabActions) {
+      val ks = shortcutManager.getKeyStroke(action)
+      mainPanel.registerKeyboardAction(
+        {
+          if (tabIdx in 0 until tabbedPane.tabCount) {
+            tabbedPane.selectedIndex = tabIdx
+          }
+        },
+        ks,
+        JComponent.WHEN_IN_FOCUSED_WINDOW
+      )
+      registeredTabStrokes.add(ks)
+    }
   }
 
   /**
@@ -454,5 +490,7 @@ class MainViewImpl(
         .withFill(GridBagConstraints.BOTH)
         .build()
     )
+
+    configureTabShortcuts()
   }
 }

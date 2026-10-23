@@ -82,6 +82,7 @@ Switch to the **Live Logs** tab, select your connected Android device, choose yo
 | **Bugreport Intelligence** | Dedicated inspectors for device properties (`getprop`), installed application packages, hidden system packages, carrier configs, and subscriptions. |
 | **High-Performance Architecture** | Parallel timestamp sorting, memory-efficient streaming, fast indexing, and zero-drop live buffer handling 80k+ lines effortlessly. |
 | **Modern Themes & Typography** | Clean Light and Dark themes, customizable monospaced fonts, font size scaling, and bold rendering. |
+| **Customizable Keymap** | View, search, and rebind keyboard shortcuts in `Settings > Keymap` (or `Help > Keyboard Shortcuts...`) with conflict detection and one-click reset to defaults. |
 | **Multi-Language Support** | Native support for English and Brazilian Portuguese (`pt-BR`). |
 
 ---
@@ -110,19 +111,29 @@ Switch to the **Live Logs** tab, select your connected Android device, choose yo
 <a id="keyboard-shortcuts"></a>
 ## ⌨ Keyboard Shortcuts
 
-| Shortcut (macOS / Linux & Windows) | Action |
-| :--- | :--- |
-| `Cmd+O` / `Ctrl+O` | Open log files |
-| `Cmd+W` / `Ctrl+W` | Close currently opened logs |
-| `Cmd+Shift+F` / `Ctrl+Shift+F` | Search across all filters |
-| `Cmd+F` / `Ctrl+F` | Find in active log table |
-| `F3` / `Shift+F3` | Next / previous search match |
-| `Enter` / `Shift+Enter` | Next / previous search match in find bar |
-| `Space` | Toggle selected filter(s) on/off |
-| `Cmd+I` / `Ctrl+I` | Inspect selected log line in detail |
-| `Cmd+1` / `Ctrl+1` | Switch to Main Logs tab |
-| `Cmd+2` / `Ctrl+2` | Switch to Bug Report tab |
-| `Cmd+3` / `Ctrl+3` | Switch to Live Logs tab |
+| Category | Shortcut (macOS / Linux & Windows) | Action |
+| :--- | :--- | :--- |
+| **File** | `Cmd+,` / `Ctrl+,` | Open Settings |
+| **Logs** | `Cmd+O` / `Ctrl+O` | Open log files |
+| **Logs** | `Cmd+R` / `F5` | Refresh opened logs |
+| **Logs** | `Cmd+W` / `Ctrl+W` | Close currently opened logs |
+| **Logs** | `Cmd+G` / `Ctrl+G` | Go to timestamp |
+| **Logs** | `Cmd+I` / `Ctrl+I` | Inspect selected log line in detail |
+| **Logs** | `Delete` | Remove selected line from My Logs |
+| **Filters** | `Cmd+Shift+O` / `Ctrl+Shift+O` | Open filter files |
+| **Filters** | `Cmd+Shift+F` / `Ctrl+Shift+F` | Search across all filters |
+| **Filters** | `/` | Quick inline search in filter list |
+| **Filters** | `, (<)` | Previous filter match in logs |
+| **Filters** | `. (>)` | Next filter match in logs |
+| **Filters** | `Space` | Toggle selected filter(s) on/off |
+| **Filters** | `Enter` | Edit selected filter |
+| **Filters** | `Delete` | Delete selected filter(s) |
+| **Search** | `Cmd+F` / `Ctrl+F` | Find in active log table |
+| **Search** | `F3` / `Enter` | Next search match |
+| **Search** | `Shift+F3` / `Shift+Enter` | Previous search match |
+| **Navigation** | `Cmd+1` / `Ctrl+1` | Switch to Main Logs tab |
+| **Navigation** | `Cmd+2` / `Ctrl+2` | Switch to Bug Report tab |
+| **Navigation** | `Cmd+3` / `Ctrl+3` | Switch to Live Logs tab |
 
 ---
 
@@ -210,6 +221,16 @@ To regenerate all screenshots used in `README.md` and the [User Guide (`gh-pages
 ./gradlew generateScreenshots -PoutputDir=/path/to/output
 ```
 The task renders the live Swing UI off-screen using your currently configured theme, accent color, and log font settings.
+
+### 8. Updating the Keyboard Shortcuts Table
+The [Keyboard Shortcuts](#keyboard-shortcuts) table in `README.md` is generated directly from `ShortcutAction` definitions. After adding or modifying any shortcut in `ShortcutAction.kt`, regenerate the table with:
+```bash
+# Update the shortcuts table in README.md:
+./gradlew updateReadmeShortcuts
+
+# Validate that README.md is in sync with ShortcutAction (also runs in CI):
+./gradlew checkReadmeShortcuts
+```
 
 ---
 
