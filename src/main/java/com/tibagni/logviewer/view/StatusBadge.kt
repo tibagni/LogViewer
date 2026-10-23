@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.view
 
+import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import java.awt.Color
@@ -14,13 +15,28 @@ import javax.swing.UIManager
 import kotlin.math.roundToInt
 
 /**
- * A lightweight, reusable status badge component displaying line count statistics
- * with a subtle rounded background pill and border stroke.
+ * A lightweight, reusable status pill badge component displaying line counts,
+ * search match statistics, or custom indicators with a subtle rounded background
+ * and boundary stroke.
  *
  * Dynamically resolves theme colors for background, border, and foreground,
  * adapting to Light, Dark, and FlatLaf theme changes.
  */
-class StatusBadge : JLabel() {
+class StatusBadge @JvmOverloads constructor(
+  initialVariant: Variant = Variant.DEFAULT
+) : JLabel() {
+
+  enum class Variant {
+    DEFAULT,
+    MUTED,
+    WARNING,
+    ERROR;
+
+    companion object {
+      @JvmField val NORMAL: Variant = DEFAULT
+      @JvmField val NO_RESULTS: Variant = MUTED
+    }
+  }
 
   companion object {
     /**
@@ -40,6 +56,33 @@ class StatusBadge : JLabel() {
     const val DEFAULT_ARC_DP: Int = 8
   }
 
+  var variant: Variant = initialVariant
+    set(value) {
+      field = value
+      applyPaddingAndTheme()
+      repaint()
+    }
+
+  var arcDp: Int = DEFAULT_ARC_DP
+    set(value) {
+      field = value
+      repaint()
+    }
+
+  var paddingHorizontalDp: Int = PADDING_HORIZONTAL_DP
+    set(value) {
+      field = value
+      applyPaddingAndTheme()
+      repaint()
+    }
+
+  var paddingVerticalDp: Int = PADDING_VERTICAL_DP
+    set(value) {
+      field = value
+      applyPaddingAndTheme()
+      repaint()
+    }
+
   init {
     isOpaque = false
     isVisible = false
@@ -50,60 +93,123 @@ class StatusBadge : JLabel() {
   /**
    * Applies the theme-based padding and foreground color.
    */
-  private fun applyPaddingAndTheme() {
+  internal fun applyPaddingAndTheme() {
+    val vPad = if (paddingVerticalDp > 0) paddingVerticalDp else PADDING_VERTICAL_DP
+    val hPad = if (paddingHorizontalDp > 0) paddingHorizontalDp else PADDING_HORIZONTAL_DP
     border = BorderFactory.createEmptyBorder(
-      UIScaleUtils.dip(PADDING_VERTICAL_DP),
-      UIScaleUtils.dip(PADDING_HORIZONTAL_DP),
-      UIScaleUtils.dip(PADDING_VERTICAL_DP),
-      UIScaleUtils.dip(PADDING_HORIZONTAL_DP)
+      UIScaleUtils.dip(vPad),
+      UIScaleUtils.dip(hPad),
+      UIScaleUtils.dip(vPad),
+      UIScaleUtils.dip(hPad)
     )
     foreground = resolveBadgeForeground()
   }
 
+  private fun isDarkTheme(): Boolean {
+    return try {
+      ServiceLocator.themeManager.isDark
+    } catch (_: Throwable) {
+      val bg = UIManager.getColor("Panel.background") ?: Color.WHITE
+      val lum = (0.299 * bg.red + 0.587 * bg.green + 0.114 * bg.blue) / 255.0
+      lum < 0.5
+    }
+  }
+
   /**
    * Resolves the badge background color from Look and Feel defaults,
-   * falling back to a subtle semi-transparent gray.
+   * adapting based on the active [variant].
    *
+   * @param targetVariant the [Variant] to resolve for, defaulting to [variant].
    * @return the [Color] to paint the badge background.
    */
-  internal fun resolveBadgeBackground(): Color {
-    return UIManager.getColor("Button.background") ?: Color(128, 128, 128, 40)
+  internal fun resolveBadgeBackground(targetVariant: Variant? = null): Color {
+    val active = targetVariant ?: variant ?: Variant.DEFAULT
+    val isDark = isDarkTheme()
+    return when (active) {
+      Variant.DEFAULT -> {
+        UIManager.getColor("Button.background")
+          ?: if (isDark) Color(70, 70, 70) else Color(128, 128, 128, 40)
+      }
+      Variant.MUTED -> {
+        if (isDark) Color(140, 50, 50, 45) else Color(245, 220, 220)
+      }
+      Variant.WARNING -> {
+        if (isDark) Color(150, 110, 40, 50) else Color(254, 240, 215)
+      }
+      Variant.ERROR -> {
+        if (isDark) Color(160, 50, 50, 60) else Color(255, 215, 215)
+      }
+    }
   }
 
   /**
    * Resolves the badge border stroke color from Look and Feel defaults,
-   * falling back to a subtle semi-transparent gray.
+   * adapting based on the active [variant].
    *
+   * @param targetVariant the [Variant] to resolve for, defaulting to [variant].
    * @return the [Color] to paint the badge boundary stroke.
    */
-  internal fun resolveBorderColor(): Color {
-    return UIManager.getColor("Component.borderColor") ?: Color(128, 128, 128, 60)
+  internal fun resolveBorderColor(targetVariant: Variant? = null): Color {
+    val active = targetVariant ?: variant ?: Variant.DEFAULT
+    val isDark = isDarkTheme()
+    return when (active) {
+      Variant.DEFAULT -> {
+        UIManager.getColor("Component.borderColor")
+          ?: if (isDark) Color(90, 90, 90) else Color(128, 128, 128, 60)
+      }
+      Variant.MUTED -> {
+        if (isDark) Color(200, 80, 80, 120) else Color(230, 140, 140)
+      }
+      Variant.WARNING -> {
+        if (isDark) Color(220, 150, 50, 140) else Color(235, 175, 75)
+      }
+      Variant.ERROR -> {
+        if (isDark) Color(230, 80, 80, 160) else Color(225, 100, 100)
+      }
+    }
   }
 
   /**
    * Resolves the badge foreground text color from Look and Feel defaults,
-   * falling back to disabled or regular text color.
+   * adapting based on the active [variant].
    *
+   * @param targetVariant the [Variant] to resolve for, defaulting to [variant].
    * @return the [Color] for text rendering.
    */
-  internal fun resolveBadgeForeground(): Color {
-    return UIManager.getColor("Label.disabledForeground")
-      ?: UIManager.getColor("Label.foreground")
-      ?: Color.GRAY
+  internal fun resolveBadgeForeground(targetVariant: Variant? = null): Color {
+    val active = targetVariant ?: variant ?: Variant.DEFAULT
+    val isDark = isDarkTheme()
+    return when (active) {
+      Variant.DEFAULT -> {
+        UIManager.getColor("Label.disabledForeground")
+          ?: UIManager.getColor("Label.foreground")
+          ?: if (isDark) Color(200, 200, 200) else Color.GRAY
+      }
+      Variant.MUTED -> {
+        if (isDark) Color(245, 140, 140) else Color(185, 45, 45)
+      }
+      Variant.WARNING -> {
+        if (isDark) Color(245, 185, 90) else Color(175, 100, 20)
+      }
+      Variant.ERROR -> {
+        if (isDark) Color(255, 130, 130) else Color(195, 30, 30)
+      }
+    }
   }
 
   /**
    * Resolves the corner arc radius in scaled pixels, honoring the Look and Feel
-   * "Component.arc" setting if present, or falling back to [DEFAULT_ARC_DP].
+   * "Component.arc" setting if present, or falling back to [arcDp].
    *
    * @return the scaled corner arc in pixels.
    */
   internal fun resolveArc(): Int {
     val themeArc = UIManager.getInt("Component.arc")
+    val defaultArc = if (arcDp > 0) arcDp else DEFAULT_ARC_DP
     return if (themeArc > 0) {
       UIScaleUtils.dip(themeArc)
     } else {
-      UIScaleUtils.dip(DEFAULT_ARC_DP)
+      UIScaleUtils.dip(defaultArc)
     }
   }
 
@@ -113,6 +219,64 @@ class StatusBadge : JLabel() {
   override fun updateUI() {
     super.updateUI()
     applyPaddingAndTheme()
+    repaint()
+  }
+
+  /**
+   * Updates the displayed single count with standard integer formatting.
+   *
+   * @param count the integer count to display.
+   * @param targetVariant visual styling variant for the badge.
+   */
+  @JvmOverloads
+  fun updateCount(
+    count: Int,
+    targetVariant: Variant = Variant.DEFAULT
+  ) {
+    this.variant = targetVariant
+    this.text = NumberFormat.getIntegerInstance().format(count)
+    this.isVisible = true
+    repaint()
+  }
+
+  /**
+   * Updates search result counts and styling state.
+   *
+   * @param currentMatch 1-based index of highlighted match, or 0.
+   * @param totalMatches total count of matches found.
+   * @param targetVariant visual styling variant for the badge.
+   * @param customMessage optional custom text to display.
+   */
+  @JvmOverloads
+  fun updateResult(
+    currentMatch: Int,
+    totalMatches: Int,
+    targetVariant: Variant = Variant.DEFAULT,
+    customMessage: String? = null
+  ) {
+    this.variant = targetVariant
+    this.text = when {
+      customMessage != null -> customMessage
+      targetVariant == Variant.WARNING || targetVariant == Variant.ERROR -> {
+        I18n.get(I18n.SEARCH_BAD_PATTERN)
+      }
+      targetVariant == Variant.MUTED || totalMatches == 0 -> {
+        I18n.format(I18n.SEARCH_RESULTS_COUNT, 0)
+      }
+      currentMatch > 0 -> "$currentMatch/$totalMatches"
+      else -> I18n.format(I18n.SEARCH_RESULTS_COUNT, totalMatches)
+    }
+    this.isVisible = text.isNotEmpty()
+    repaint()
+  }
+
+  /**
+   * Clears the badge text, resets to default variant, and hides it.
+   */
+  fun clear() {
+    this.variant = Variant.DEFAULT
+    this.text = ""
+    this.isVisible = false
     repaint()
   }
 
@@ -145,6 +309,7 @@ class StatusBadge : JLabel() {
       return
     }
 
+    this.variant = Variant.DEFAULT
     val numberFormat = NumberFormat.getIntegerInstance()
     val formattedTotal = numberFormat.format(totalLines)
     val hasDropped = droppedLines > 0L

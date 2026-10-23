@@ -28,21 +28,6 @@ public class FiltersList extends JPanel {
     return activeFilterContextTag;
   }
 
-  public FiltersList(LayoutManager layout, boolean isDoubleBuffered) {
-    super(layout, isDoubleBuffered);
-    initialize();
-  }
-
-  public FiltersList(LayoutManager layout) {
-    super(layout);
-    initialize();
-  }
-
-  public FiltersList(boolean isDoubleBuffered) {
-    super(isDoubleBuffered);
-    initialize();
-  }
-
   public FiltersList() {
     initialize();
   }

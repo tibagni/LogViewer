@@ -171,6 +171,10 @@ public final class SwingUtils {
     return new Color(source.getRed(), source.getGreen(), source.getBlue(), alpha);
   }
 
+  public static String toHexString(Color color) {
+    return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+  }
+
   public static ImageIcon tintImage(ImageIcon originalIcon, Color tintColor) {
     BufferedImage originalImage = new BufferedImage(
         originalIcon.getIconWidth(),
