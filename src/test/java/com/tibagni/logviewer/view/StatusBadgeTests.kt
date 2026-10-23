@@ -12,6 +12,7 @@ import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -576,5 +577,73 @@ class StatusBadgeTests {
     )
     assertFalse(badge.isVisible)
     assertEquals("", badge.text)
+  }
+
+  @Test
+  fun testUpdateCount() {
+    val badge = StatusBadge()
+    badge.updateCount(12345)
+    assertTrue(badge.isVisible)
+    assertEquals(NumberFormat.getIntegerInstance().format(12345), badge.text)
+
+    badge.updateCount(0)
+    assertTrue(badge.isVisible)
+    assertEquals("0", badge.text)
+  }
+
+  @Test
+  fun testUpdateResult() {
+    val badge = StatusBadge()
+
+    badge.updateResult(currentMatch = 3, totalMatches = 10)
+    assertTrue(badge.isVisible)
+    assertEquals("3/10", badge.text)
+
+    badge.updateResult(currentMatch = 0, totalMatches = 5)
+    assertTrue(badge.isVisible)
+    assertEquals(I18n.format(I18n.SEARCH_RESULTS_COUNT, 5), badge.text)
+
+    badge.updateResult(currentMatch = 0, totalMatches = 0, targetVariant = StatusBadge.Variant.NO_RESULTS)
+    assertTrue(badge.isVisible)
+    assertEquals(I18n.format(I18n.SEARCH_RESULTS_COUNT, 0), badge.text)
+
+    badge.updateResult(currentMatch = 0, totalMatches = 0, targetVariant = StatusBadge.Variant.ERROR)
+    assertTrue(badge.isVisible)
+    assertEquals(I18n.get(I18n.SEARCH_BAD_PATTERN), badge.text)
+
+    badge.updateResult(currentMatch = 0, totalMatches = 0, customMessage = "Custom Msg")
+    assertTrue(badge.isVisible)
+    assertEquals("Custom Msg", badge.text)
+  }
+
+  @Test
+  fun testClear() {
+    val badge = StatusBadge()
+    badge.updateCount(42)
+    assertTrue(badge.isVisible)
+    assertEquals("42", badge.text)
+
+    badge.clear()
+    assertFalse(badge.isVisible)
+    assertEquals("", badge.text)
+    assertEquals(StatusBadge.Variant.DEFAULT, badge.variant)
+  }
+
+  @Test
+  fun testVariantColors() {
+    val badge = StatusBadge()
+    val defaultBg = badge.resolveBadgeBackground(StatusBadge.Variant.DEFAULT)
+    val errorBg = badge.resolveBadgeBackground(StatusBadge.Variant.ERROR)
+    val warningBg = badge.resolveBadgeBackground(StatusBadge.Variant.WARNING)
+    val mutedBg = badge.resolveBadgeBackground(StatusBadge.Variant.MUTED)
+
+    assertNotNull(defaultBg)
+    assertNotNull(errorBg)
+    assertNotNull(warningBg)
+    assertNotNull(mutedBg)
+    assertNotEquals(defaultBg, errorBg)
+
+    badge.variant = StatusBadge.Variant.WARNING
+    assertEquals(StatusBadge.Variant.WARNING, badge.variant)
   }
 }

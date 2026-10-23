@@ -426,7 +426,7 @@ class FilterNameCellRenderer(private val tableModel: SearchFiltersTableModel) : 
 
     val truncated = FiltersSearchLogic.truncateAndHighlight(filterName, query, maxLength = 60)
     val verbosity = filter.verbosity?.toString()?.firstOrNull() ?: 'V'
-    val verbosityColor = if (ServiceLocator.themeManager.isDark) "#CCC" else "#555"
+    val verbosityColor = ServiceLocator.themeManager.mutedTextForegroundHex
 
     comp.text = StringUtils.wrapHtml("<nobr><small color=\"$verbosityColor\">[$verbosity]</small> $truncated</nobr>")
     comp.toolTipText = "${filter.name} (${filter.patternString})" // no-i18n

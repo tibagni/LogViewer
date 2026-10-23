@@ -203,4 +203,28 @@ class LogViewerThemeManagerTests {
       LogViewerThemeManager.getColorForAccent("NonExistentColor")
     )
   }
+
+  @Test
+  fun testTextForegroundProperties() {
+    LogViewerThemeManager.currentTheme = "Light"
+    val lightFg = LogViewerThemeManager.textForeground
+    val lightHex = LogViewerThemeManager.textForegroundHex
+    val lightMutedHex = LogViewerThemeManager.mutedTextForegroundHex
+
+    assertTrue(lightHex.startsWith("#"))
+    assertEquals(7, lightHex.length)
+    assertTrue(lightMutedHex.startsWith("#"))
+    assertEquals(7, lightMutedHex.length)
+
+    LogViewerThemeManager.currentTheme = "Dark"
+    val darkFg = LogViewerThemeManager.textForeground
+    val darkHex = LogViewerThemeManager.textForegroundHex
+    val darkMutedHex = LogViewerThemeManager.mutedTextForegroundHex
+
+    assertTrue(darkHex.startsWith("#"))
+    assertEquals(7, darkHex.length)
+    assertTrue(darkMutedHex.startsWith("#"))
+    assertEquals(7, darkMutedHex.length)
+    org.junit.Assert.assertNotEquals(lightFg, darkFg)
+  }
 }

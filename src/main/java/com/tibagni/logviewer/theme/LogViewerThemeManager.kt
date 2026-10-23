@@ -8,6 +8,7 @@ import com.formdev.flatlaf.FlatLightLaf
 import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import com.formdev.flatlaf.themes.FlatMacLightLaf
 import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import java.awt.Color
 import java.awt.Dimension
@@ -100,6 +101,32 @@ object LogViewerThemeManager {
    */
   val isDark: Boolean
     get() = installedTheme.isDark
+
+  /**
+   * Returns the standard text foreground color for labels and list items.
+   */
+  val textForeground: Color
+    get() = UIManager.getColor("Label.foreground")
+      ?: if (isDark) Color.WHITE else Color.BLACK
+
+  /**
+   * Returns the hex string representation (e.g. "#ffffff") of [textForeground].
+   */
+  val textForegroundHex: String
+    get() = SwingUtils.toHexString(textForeground)
+
+  /**
+   * Returns the secondary/muted text foreground color for the active theme.
+   */
+  val mutedTextForeground: Color
+    get() = UIManager.getColor("Label.disabledForeground")
+      ?: if (isDark) Color(180, 180, 180) else Color(120, 120, 120)
+
+  /**
+   * Returns the hex string representation of [mutedTextForeground].
+   */
+  val mutedTextForegroundHex: String
+    get() = SwingUtils.toHexString(mutedTextForeground)
 
   /**
    * Sets the accent color for FlatLaf themes and refreshes the UI.
