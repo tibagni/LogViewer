@@ -615,6 +615,205 @@ Looks great!
         args = ai_review.parse_args(["--timezone", "America/New_York"])
         self.assertEqual(args.timezone, "America/New_York")
 
+    def test_parse_args_no_two_pass_flag(self):
+        args = ai_review.parse_args(["--no-two-pass"])
+        self.assertTrue(args.no_two_pass)
+
+    def test_preferred_models_include_gemini_4(self):
+        self.assertIn("gemini-4-flash", ai_review.PREFERRED_MODELS_ORDER)
+        self.assertIn("gemini-4-argon", ai_review.PREFERRED_MODELS_ORDER)
+        self.assertIn("gemini-4-pro", ai_review.PREFERRED_MODELS_ORDER)
+
+    def test_parse_context_requests(self):
+        text = """Here is my initial review.
+```context-requests
+src/main/java/com/tibagni/logviewer/MainView.kt
+- src/main/java/com/tibagni/logviewer/ServiceLocator.kt
+`src/main/java/com/tibagni/logviewer/MainView.kt`
+# This is a comment line
+```
+Overall Verdict: Needs Work
+"""
+        reqs = ai_review.parse_context_requests(text)
+        self.assertEqual(
+            reqs,
+            [
+                "src/main/java/com/tibagni/logviewer/MainView.kt",
+                "src/main/java/com/tibagni/logviewer/ServiceLocator.kt"
+            ]
+        )
+
+    def test_parse_context_requests_empty_or_missing(self):
+        self.assertEqual(ai_review.parse_context_requests("Review without requests block"), [])
+        self.assertEqual(ai_review.parse_context_requests("```context-requests\n\n```"), [])
+
+    def test_strip_context_requests(self):
+        text = """Header
+
+```context-requests
+src/FileA.kt
+```
+
+Body content."""
+        cleaned = ai_review.strip_context_requests(text)
+        self.assertNotIn("context-requests", cleaned)
+        self.assertNotIn("src/FileA.kt", cleaned)
+        self.assertIn("Header", cleaned)
+        self.assertIn("Body content.", cleaned)
+
+    def test_fetch_file_context(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_a = os.path.join(tmpdir, "FileA.kt")
+            file_bin = os.path.join(tmpdir, "image.png")
+            with open(file_a, "w") as f:
+                f.write("class FileA {\n  fun test() = true\n}\n")
+            with open(file_bin, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\n")
+
+            # Normal read
+            res = ai_review.fetch_file_context(tmpdir, ["FileA.kt", "nonexistent.kt", "image.png"])
+            self.assertIn("FileA.kt", res)
+            self.assertIn("class FileA", res["FileA.kt"])
+            self.assertNotIn("nonexistent.kt", res)
+            self.assertNotIn("image.png", res)
+
+            # Path traversal protection
+            traversal_res = ai_review.fetch_file_context(tmpdir, ["../../etc/passwd"])
+            self.assertEqual(traversal_res, {})
+
+            # Truncation check
+            long_file = os.path.join(tmpdir, "Long.kt")
+            with open(long_file, "w") as f:
+                for i in range(50):
+                    f.write(f"val line{i} = {i}\n")
+            truncated_res = ai_review.fetch_file_context(tmpdir, ["Long.kt"], max_lines=10)
+            self.assertIn("truncated", truncated_res["Long.kt"])
+
+    def test_build_second_pass_prompt(self):
+        prompt = ai_review.build_second_pass_prompt(
+            guidelines="Review guidelines",
+            diff="+ fun test()",
+            first_pass_review="Provisional review: Needs Work",
+            file_contexts={"src/FileA.kt": "class FileA"},
+            title="My PR",
+            description="PR description"
+        )
+        self.assertIn("Review guidelines", prompt)
+        self.assertIn("+ fun test()", prompt)
+        self.assertIn("Provisional review: Needs Work", prompt)
+        self.assertIn("### File: `src/FileA.kt`", prompt)
+        self.assertIn("class FileA", prompt)
+        self.assertIn("Second-Pass Verification Instructions", prompt)
+        self.assertIn("**Title**: My PR", prompt)
+
+    @patch("scripts.ai_pr_review.call_llm_api")
+    @patch("scripts.ai_pr_review.get_pr_diff")
+    @patch("scripts.ai_pr_review.get_pr_metadata")
+    @patch("scripts.ai_pr_review.fetch_file_context")
+    def test_main_two_pass_flow_success(
+        self,
+        mock_fetch_file_context,
+        mock_get_pr_meta,
+        mock_get_pr_diff,
+        mock_call_llm_api
+    ):
+        mock_get_pr_diff.return_value = "--- a/F.kt\n+++ b/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n"
+        mock_get_pr_meta.return_value = {"title": "T", "body": "B"}
+        mock_fetch_file_context.return_value = {"src/Extra.kt": "class Extra"}
+
+        pass1_output = """### Overall Verdict
+⚠️ LGTM with Suggestions
+
+```context-requests
+src/Extra.kt
+```
+"""
+        pass2_output = """### Overall Verdict
+✅ LGTM
+
+Summary: Clean after context check.
+"""
+        mock_call_llm_api.side_effect = [
+            (pass1_output, "gemini-4-flash"),
+            (pass2_output, "gemini-4-flash")
+        ]
+
+        with patch.dict(os.environ, {"LLM_API_KEY": "test-key"}):
+            with patch("sys.stdout"):
+                code = ai_review.main(["--dry-run", "--pr", "101"])
+                self.assertEqual(code, 0)
+
+        self.assertEqual(mock_call_llm_api.call_count, 2)
+        mock_fetch_file_context.assert_called_once()
+
+    @patch("scripts.ai_pr_review.call_llm_api")
+    @patch("scripts.ai_pr_review.get_pr_diff")
+    @patch("scripts.ai_pr_review.get_pr_metadata")
+    @patch("scripts.ai_pr_review.fetch_file_context")
+    def test_main_two_pass_fallback_on_second_pass_error(
+        self,
+        mock_fetch_file_context,
+        mock_get_pr_meta,
+        mock_get_pr_diff,
+        mock_call_llm_api
+    ):
+        mock_get_pr_diff.return_value = "--- a/F.kt\n+++ b/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n"
+        mock_get_pr_meta.return_value = {"title": "T", "body": "B"}
+        mock_fetch_file_context.return_value = {"src/Extra.kt": "class Extra"}
+
+        pass1_output = """### Overall Verdict
+✅ LGTM
+
+```context-requests
+src/Extra.kt
+```
+"""
+        # Pass 1 succeeds, Pass 2 raises exception
+        mock_call_llm_api.side_effect = [
+            (pass1_output, "gemini-4-flash"),
+            RuntimeError("Pass 2 API timeout")
+        ]
+
+        with patch.dict(os.environ, {"LLM_API_KEY": "test-key"}):
+            with patch("sys.stdout"):
+                code = ai_review.main(["--dry-run", "--pr", "101"])
+                self.assertEqual(code, 0)
+
+        # Should attempt 2 calls and gracefully finish
+        self.assertEqual(mock_call_llm_api.call_count, 2)
+
+    @patch("scripts.ai_pr_review.call_llm_api")
+    @patch("scripts.ai_pr_review.get_pr_diff")
+    @patch("scripts.ai_pr_review.get_pr_metadata")
+    @patch("scripts.ai_pr_review.fetch_file_context")
+    def test_main_two_pass_disabled_flag(
+        self,
+        mock_fetch_file_context,
+        mock_get_pr_meta,
+        mock_get_pr_diff,
+        mock_call_llm_api
+    ):
+        mock_get_pr_diff.return_value = "--- a/F.kt\n+++ b/F.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n"
+        mock_get_pr_meta.return_value = {"title": "T", "body": "B"}
+
+        pass1_output = """### Overall Verdict
+✅ LGTM
+
+```context-requests
+src/Extra.kt
+```
+"""
+        mock_call_llm_api.return_value = (pass1_output, "gemini-flash-latest")
+
+        with patch.dict(os.environ, {"LLM_API_KEY": "test-key"}):
+            with patch("sys.stdout"):
+                code = ai_review.main(["--dry-run", "--pr", "101", "--no-two-pass"])
+                self.assertEqual(code, 0)
+
+        # Only 1 call because two-pass was explicitly disabled
+        self.assertEqual(mock_call_llm_api.call_count, 1)
+        mock_fetch_file_context.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

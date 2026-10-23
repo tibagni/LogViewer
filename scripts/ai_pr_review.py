@@ -63,8 +63,10 @@ EXCLUDED_EXTENSIONS = (
 )
 
 PREFERRED_MODELS_ORDER = [
-    # Tier 1: Primary Gemini Flash models (top speed and high-grade reasoning)
+    # Tier 1: Primary Gemini Flash & Frontier Reasoning models
     "gemini-flash-latest",
+    "gemini-4-flash",
+    "gemini-4-argon",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -76,10 +78,16 @@ PREFERRED_MODELS_ORDER = [
     "gemini-3.1-flash-lite",
 
     # Tier 3: Gemini Preview & Pro models
+    "gemini-4-pro",
     "gemini-3-flash-preview",
     "gemini-3.1-pro-preview",
     "gemini-pro-latest",
 ]
+
+MAX_CONTEXT_FILES = 3
+MAX_CONTEXT_FILE_LINES = 600
+MAX_CONTEXT_FILE_BYTES = 50 * 1024  # 50 KB
+CONTEXT_REQUESTS_PATTERN = r"```(?:context-requests|context_requests)\s*([\s\S]*?)\s*```"
 
 
 def get_project_root() -> str:
@@ -246,6 +254,71 @@ def extract_inline_comments(text: str) -> Tuple[str, List[Dict]]:
     except Exception as e:
         print(f"Notice: Could not parse inline comments JSON: {e}")
     return clean_text, []
+
+
+def parse_context_requests(review_text: str) -> List[str]:
+    """Extracts requested file paths from ```context-requests code block."""
+    match = re.search(CONTEXT_REQUESTS_PATTERN, review_text, re.IGNORECASE)
+    if not match:
+        return []
+    raw_block = match.group(1).strip()
+    files: List[str] = []
+    for line in raw_block.splitlines():
+        line = line.strip().strip("-*` ")
+        if line and not line.startswith("#"):
+            normalized = normalize_path(line)
+            if normalized and normalized not in files:
+                files.append(normalized)
+    return files
+
+
+def strip_context_requests(text: str) -> str:
+    """Removes any ```context-requests ... ``` blocks from the review text."""
+    cleaned = re.sub(CONTEXT_REQUESTS_PATTERN, "", text, flags=re.IGNORECASE)
+    return re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+
+
+def fetch_file_context(
+    repo_root: str,
+    requested_files: List[str],
+    max_files: int = MAX_CONTEXT_FILES,
+    max_lines: int = MAX_CONTEXT_FILE_LINES,
+    max_bytes: int = MAX_CONTEXT_FILE_BYTES
+) -> Dict[str, str]:
+    """Safely reads requested files from the repository root with strict bounds."""
+    results: Dict[str, str] = {}
+    normalized_root = os.path.realpath(repo_root)
+
+    for raw_path in requested_files[:max_files]:
+        clean_path = normalize_path(raw_path.strip().strip("'\"`"))
+        if not clean_path:
+            continue
+
+        candidate_path = os.path.realpath(os.path.join(normalized_root, clean_path))
+        if not candidate_path.startswith(normalized_root):
+            print(f"Warning: Rejected context file outside repo root: {clean_path}")
+            continue
+
+        if not os.path.isfile(candidate_path):
+            print(f"Notice: Requested context file not found: {clean_path}")
+            continue
+
+        _, ext = os.path.splitext(candidate_path)
+        if ext.lower() in EXCLUDED_EXTENSIONS:
+            print(f"Notice: Skipping binary or excluded file: {clean_path}")
+            continue
+
+        try:
+            with open(candidate_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read(max_bytes)
+                lines = content.splitlines()
+                if len(lines) > max_lines:
+                    content = "\n".join(lines[:max_lines]) + f"\n\n// ... [truncated after {max_lines} lines for context limits] ..."
+                results[clean_path] = content
+        except Exception as e:
+            print(f"Warning: Could not read context file '{clean_path}': {e}")
+
+    return results
 
 
 def filter_inline_comments(
@@ -419,7 +492,8 @@ def build_prompt(
     title: Optional[str] = None,
     description: Optional[str] = None,
     commits: Optional[List[str]] = None,
-    comments: Optional[List[Dict[str, str]]] = None
+    comments: Optional[List[Dict[str, str]]] = None,
+    allow_context_requests: bool = True
 ) -> str:
     """Assembles the system guidelines, PR context, and code diff into the LLM review prompt."""
     sections = [guidelines.strip(), "\n---"]
@@ -438,6 +512,20 @@ def build_prompt(
             comments_text = "\n".join(f"- @{c.get('author', 'user')}: {c.get('body', '').strip()}" for c in comments)
             sections.append(f"### Existing Discussion:\n{comments_text}")
         sections.append("\n---")
+
+    if allow_context_requests:
+        context_request_instructions = """### 📂 Optional Context Request (Two-Pass Review):
+If you need to verify method signatures, interface contracts, or class implementations from unmodified files in the repository before finalizing your findings, you may request up to 3 files using a ```context-requests``` code block:
+```context-requests
+path/to/File1.kt
+path/to/File2.java
+```
+Rules for context requests:
+- Specify exact repository-relative paths (e.g. `src/main/java/com/tibagni/logviewer/MainView.kt`).
+- Only request files whose declarations or contracts you directly need to verify.
+- Maximum 3 files.
+- Always provide your best provisional review in this response regardless of whether you request context."""
+        sections.append(context_request_instructions)
 
     inline_instructions = """### 💬 Optional Inline Comments:
 If you have specific line-level recommendations for modified code lines, you may include an optional JSON block at the very end of your review inside a ```inline-comments``` code block:
@@ -459,6 +547,68 @@ Rules for inline comments:
 
     sections.append(inline_instructions)
     sections.append(f"## Pull Request Code Diff to Review:\n\n```diff\n{diff.strip()}\n```")
+    return "\n\n".join(sections)
+
+
+def build_second_pass_prompt(
+    guidelines: str,
+    diff: str,
+    first_pass_review: str,
+    file_contexts: Dict[str, str],
+    title: Optional[str] = None,
+    description: Optional[str] = None
+) -> str:
+    """Assembles the second-pass prompt including original diff, draft review, and requested file contents."""
+    sections = [guidelines.strip(), "\n---"]
+
+    if title or description:
+        sections.append("## Pull Request Context:")
+        if title:
+            sections.append(f"- **Title**: {title.strip()}")
+        if description and description.strip():
+            sections.append(f"- **Description**:\n{description.strip()}")
+        sections.append("\n---")
+
+    sections.append(f"## Pull Request Code Diff:\n\n```diff\n{diff.strip()}\n```\n\n---")
+
+    sections.append("## Your Provisional Draft Review (Pass 1):\n\n" + first_pass_review.strip() + "\n\n---")
+
+    files_section = ["## Requested Repository File Context:"]
+    for path, content in sorted(file_contexts.items()):
+        files_section.append(f"### File: `{path}`\n```\n{content}\n```")
+    sections.append("\n\n".join(files_section) + "\n\n---")
+
+    inline_instructions = """### 💬 Optional Inline Comments:
+If you have specific line-level recommendations for modified code lines, you may include an optional JSON block at the very end of your review inside a ```inline-comments``` code block:
+```inline-comments
+[
+  {
+    "path": "path/to/File.kt",
+    "line": 42,
+    "body": "Specific recommendation for this line"
+  }
+]
+```
+Rules for inline comments:
+- Only reference files and line numbers that appear within the provided code diff hunks.
+- Only emit inline comments for genuine logic defects, concurrency violations, or high-risk design flaws.
+- Never emit inline comments for cosmetic preferences, pixel dimensions, defensive null checks, or speculative nitpicks.
+- Keep the comment body concise, polite, and actionable.
+- If there are no specific line-level issues, omit the ```inline-comments``` block completely."""
+
+    pass2_instructions = f"""## Second-Pass Verification Instructions:
+You previously generated the draft review above and requested additional repository file context to verify method signatures, interface contracts, or class implementations. The exact contents of the requested files are provided above.
+
+Review Directives:
+1. **Contract & API Verification**: Cross-reference any findings, suggested method calls, properties, or lifecycle assumptions in your draft against the confirmed declarations in the provided file context.
+2. **Eliminate Ungrounded Assumptions**: If any method, property, or lifecycle behavior you recommended in your draft does not actually exist in the provided source code, eliminate or adjust that finding.
+3. **Refine Findings**: Update your Overall Verdict, Key Findings, and inline comments based on confirmed codebase realities. If all concerns are resolved and the code is sound, elevate your verdict to ✅ LGTM.
+4. **Finalized Output**: Output your complete, finalized review in the required GitHub Flavored Markdown format.
+5. Do not include any ```context-requests``` block in this second-pass response.
+
+{inline_instructions}"""
+
+    sections.append(pass2_instructions)
     return "\n\n".join(sections)
 
 
@@ -853,6 +1003,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         default=".env",
         help="Path to local .env file (default: '.env')."
     )
+    parser.add_argument(
+        "--no-two-pass",
+        action="store_true",
+        help="Disable two-pass context retrieval (forces single-pass review)."
+    )
     return parser.parse_args(argv)
 
 
@@ -916,6 +1071,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             post_or_update_review_comment(pr_number, repo, review_body)
         return 0
 
+    two_pass_enabled = not (
+        args.no_two_pass or
+        os.environ.get("AI_REVIEW_DISABLE_TWO_PASS", "").strip().lower() in ("1", "true", "yes")
+    )
+
     print(f"Extracted diff ({len(diff)} characters). Loading review guidelines...")
     valid_diff_lines = parse_valid_diff_lines(diff)
     guidelines, source_description = load_review_guidelines()
@@ -925,17 +1085,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         title=title,
         description=description,
         commits=commits,
-        comments=comments
+        comments=comments,
+        allow_context_requests=two_pass_enabled
     )
 
     if args.verbose:
         print("\n" + "=" * 80)
-        print("VERBOSE: Full Prompt Sent to LLM")
+        print("VERBOSE: Full Prompt Sent to LLM" + (" (Pass 1)" if two_pass_enabled else ""))
         print("=" * 80)
         print(prompt)
         print("=" * 80 + "\n")
 
-    print("Requesting code review from LLM API...")
+    print("Requesting code review from LLM API" + (" (Pass 1)..." if two_pass_enabled else "..."))
     llm_output = call_llm_api(api_key, prompt, preferred_model=preferred_model)
     if isinstance(llm_output, tuple):
         raw_review_output, model_used = llm_output
@@ -943,7 +1104,49 @@ def main(argv: Optional[List[str]] = None) -> int:
         raw_review_output = llm_output
         model_used = preferred_model or "unknown"
 
+    verified_files: List[str] = []
+    if two_pass_enabled:
+        requested_files = parse_context_requests(raw_review_output)
+        if requested_files:
+            print(f"Reviewer requested additional context for {len(requested_files)} file(s): {', '.join(requested_files)}")
+            file_contexts = fetch_file_context(get_project_root(), requested_files)
+            if file_contexts:
+                print(f"Loaded {len(file_contexts)} context file(s). Executing Pass 2 verification...")
+                try:
+                    pass2_prompt = build_second_pass_prompt(
+                        guidelines=guidelines,
+                        diff=diff,
+                        first_pass_review=raw_review_output,
+                        file_contexts=file_contexts,
+                        title=title,
+                        description=description
+                    )
+                    if args.verbose:
+                        print("\n" + "=" * 80)
+                        print("VERBOSE: Pass 2 Prompt Sent to LLM")
+                        print("=" * 80)
+                        print(pass2_prompt)
+                        print("=" * 80 + "\n")
+
+                    pass2_output = call_llm_api(
+                        api_key=api_key,
+                        prompt=pass2_prompt,
+                        preferred_model=preferred_model or model_used
+                    )
+                    if isinstance(pass2_output, tuple):
+                        raw_review_output, model_used = pass2_output
+                    else:
+                        raw_review_output = pass2_output
+                    verified_files = sorted(file_contexts.keys())
+                    print(f"Pass 2 verification completed successfully using {model_used}.")
+                except Exception as e:
+                    print(f"Warning: Pass 2 verification failed: {e}. Falling back to Pass 1 review.")
+            else:
+                print("Notice: None of the requested context files could be loaded. Proceeding with Pass 1 review.")
+
+    raw_review_output = strip_context_requests(raw_review_output)
     clean_review_text, raw_inline_comments = extract_inline_comments(raw_review_output)
+    clean_review_text = strip_context_requests(clean_review_text)
     valid_inline, discarded_inline = filter_inline_comments(raw_inline_comments, valid_diff_lines)
 
     if discarded_inline:
@@ -964,7 +1167,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         is_lgtm
     )
 
-    model_attribution = f" (`{model_used}`)" if model_used else ""
+    context_note = f", context-verified: {', '.join(f'`{f}`' for f in verified_files)}" if verified_files else ""
+    model_attribution = f" (`{model_used}`{context_note})" if model_used else ""
     timestamp_str = get_review_timestamp(tz_name=args.timezone, commit_sha=head_sha)
     formatted_review = f"""### 🤖 AI Code Review
 
