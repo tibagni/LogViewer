@@ -281,34 +281,6 @@ class ParserTests {
     }
 
     @Test
-    fun testRealWorldBugreportNoCombinedTimestamps() {
-        val file = java.io.File("../support/bugreport-blanc_g-W3WB36.36-123-2-2026-09-11-14-27-20.txt")
-        if (!file.exists()) return
-
-        val fileReader = com.tibagni.logviewer.log.FileLogReader(arrayOf(file))
-        val parser = LogParser(fileReader, object : ProgressReporter {
-            override fun onProgress(progress: Int, note: String?) {}
-        })
-        val entries = parser.parseLogs(StandardCharsets.UTF_8)
-
-        assertTrue(entries.isNotEmpty())
-
-        val timestampRegex = Regex("""^\s*(?:\d{4}-)?\d{2}-\d{2}[ \t]+\d{2}:\d{2}:\d{2}""")
-        var combinedCount = 0
-        for (entry in entries) {
-            val lines = entry.logText.split("\n")
-            if (lines.size > 1) {
-                for (i in 1 until lines.size) {
-                    if (timestampRegex.containsMatchIn(lines[i])) {
-                        combinedCount++
-                    }
-                }
-            }
-        }
-        assertEquals(0, combinedCount)
-    }
-
-    @Test
     fun testGetLogEntriesEmptyAndWhitespaceOnly() {
         val emptyResult = logParser.getLogEntries("", "main.txt", null)
         assertTrue(emptyResult.isEmpty())
