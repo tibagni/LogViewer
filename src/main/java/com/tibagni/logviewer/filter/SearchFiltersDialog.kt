@@ -1,13 +1,16 @@
 package com.tibagni.logviewer.filter
 
+import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
+import com.tibagni.logviewer.view.StatusBadge
 import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.*
 import java.awt.event.*
@@ -16,22 +19,40 @@ import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 
 class SearchFiltersDialog(
-  private val owner: Frame,
+  private val owner: Frame? = null,
   private val presenter: FiltersPresenter,
   private val filtersRepository: FiltersRepository,
   private val onFilterSelected: (group: String, filter: Filter) -> Unit
 ) : JDialog(owner, I18n.get(I18n.SEARCH_FILTERS_DIALOG_TITLE), true) {
 
-  private val tableModel = SearchFiltersTableModel(presenter)
-  private val resultsTable = JTable(tableModel)
-  private val searchField = HintTextField(I18n.get(I18n.SEARCH_FILTERS_SEARCH_HINT))
-  private val clearBtn = FlatButton(I18n.get(I18n.COMMON_CLEAR))
-  private val matchesLabel = JLabel("")
+  @VisibleForTesting
+  internal val tableModel = SearchFiltersTableModel(presenter)
 
-  private val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP))
-  private val editBtn = JButton(I18n.get(I18n.COMMON_EDIT))
-  private val deleteBtn = JButton(I18n.get(I18n.COMMON_DELETE))
-  private val closeBtn = JButton(I18n.get(I18n.COMMON_CLOSE))
+  @VisibleForTesting
+  internal val resultsTable = JTable(tableModel)
+
+  @VisibleForTesting
+  internal val searchField =
+    HintTextField(I18n.get(I18n.SEARCH_FILTERS_SEARCH_HINT))
+
+  @VisibleForTesting
+  internal val matchesBadge = StatusBadge(StatusBadge.Variant.NORMAL)
+
+  @VisibleForTesting
+  internal val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP))
+
+  @VisibleForTesting
+  internal val editBtn = FlatButton(I18n.get(I18n.COMMON_EDIT))
+
+  @VisibleForTesting
+  internal val deleteBtn = FlatButton(I18n.get(I18n.COMMON_DELETE))
+
+  @VisibleForTesting
+  internal val closeBtn = FlatButton(I18n.get(I18n.COMMON_CLOSE))
+
+  @VisibleForTesting
+  internal val hintLabel =
+    JLabel(I18n.get(I18n.SEARCH_FILTERS_HINT_SHORTCUTS))
 
   init {
     layout = BorderLayout()
@@ -53,6 +74,10 @@ class SearchFiltersDialog(
         UIScaleUtils.dip(6), UIScaleUtils.dip(10)
       )
 
+      searchField.putClientProperty(
+        FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON,
+        true
+      )
       add(
         searchField,
         GBConstraintsBuilder()
@@ -62,24 +87,13 @@ class SearchFiltersDialog(
           .build()
       )
 
-      clearBtn.toolTipText = I18n.get(I18n.SEARCH_FILTERS_TOOLTIP_CLEAR)
       add(
-        clearBtn,
-        GBConstraintsBuilder()
-          .withGridx(1).withGridy(0)
-          .withAnchor(GridBagConstraints.EAST)
-          .build()
-      )
-
-      matchesLabel.border = BorderFactory.createEmptyBorder(UIScaleUtils.dip(4), 0, 0, 0)
-      matchesLabel.foreground = if (ServiceLocator.themeManager.isDark) Color(170, 170, 170) else Color(100, 100, 100)
-      add(
-        matchesLabel,
+        matchesBadge,
         GBConstraintsBuilder()
           .withGridx(0).withGridy(1)
-          .withGridWidth(2)
           .withWeightx(1.0)
           .withAnchor(GridBagConstraints.WEST)
+          .withInsets(Insets(UIScaleUtils.dip(4), 0, 0, 0))
           .build()
       )
     }
@@ -87,7 +101,11 @@ class SearchFiltersDialog(
     resultsTable.apply {
       setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
       rowHeight = UIScaleUtils.dip(24)
+      showHorizontalLines = true
+      showVerticalLines = false
+      intercellSpacing = Dimension(0, 1)
       tableHeader.reorderingAllowed = false
+      tableHeader.resizingAllowed = true
 
       columnModel.getColumn(0).apply {
         preferredWidth = UIScaleUtils.dip(65)
@@ -112,7 +130,12 @@ class SearchFiltersDialog(
       ?: Color(128, 128, 128, 80)
     val tableScrollPane = JScrollPane(resultsTable).apply {
       border = BorderFactory.createCompoundBorder(
-        BorderFactory.createEmptyBorder(0, UIScaleUtils.dip(10), 0, UIScaleUtils.dip(10)),
+        BorderFactory.createEmptyBorder(
+          0,
+          UIScaleUtils.dip(10),
+          0,
+          UIScaleUtils.dip(10)
+        ),
         BorderFactory.createLineBorder(tableBorderColor)
       )
     }
@@ -123,12 +146,20 @@ class SearchFiltersDialog(
         UIScaleUtils.dip(10), UIScaleUtils.dip(10)
       )
 
-      val hintLabel = JLabel(I18n.get(I18n.SEARCH_FILTERS_HINT_SHORTCUTS))
-      hintLabel.font = hintLabel.font.deriveFont(UIScaleUtils.scaleFont(11).toFloat())
-      hintLabel.foreground = if (ServiceLocator.themeManager.isDark) Color(150, 150, 150) else Color(120, 120, 120)
+      hintLabel.font = hintLabel.font.deriveFont(
+        UIScaleUtils.scaleFont(11).toFloat()
+      )
+      hintLabel.foreground = UIManager.getColor("Label.disabledForeground")
+        ?: if (ServiceLocator.themeManager.isDark) {
+          Color(150, 150, 150)
+        } else {
+          Color(120, 120, 120)
+        }
       add(hintLabel, BorderLayout.WEST)
 
-      val buttonsPanel = JPanel(FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(5), 0)).apply {
+      val buttonsPanel = JPanel(
+        FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(5), 0)
+      ).apply {
         add(jumpBtn)
         add(editBtn)
         add(deleteBtn)
@@ -146,11 +177,6 @@ class SearchFiltersDialog(
 
   private fun setupActions() {
     searchField.whenTextChanges { performSearch(searchField.text) }
-
-    clearBtn.addActionListener {
-      searchField.text = ""
-      searchField.requestFocusInWindow()
-    }
 
     searchField.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
@@ -244,7 +270,9 @@ class SearchFiltersDialog(
         val editItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_EDIT)).apply {
           addActionListener { editSelectedFilter() }
         }
-        val deleteItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_DELETE)).apply {
+        val deleteItem = JMenuItem(
+          I18n.get(I18n.SEARCH_FILTERS_MENU_DELETE)
+        ).apply {
           addActionListener { deleteSelectedFilter() }
         }
         add(jumpItem)
@@ -256,7 +284,8 @@ class SearchFiltersDialog(
     }
   }
 
-  private fun performSearch(query: String) {
+  @VisibleForTesting
+  internal fun performSearch(query: String) {
     val allFilters = filtersRepository.currentlyOpenedFilters
     val totalFilters = allFilters.values.sumOf { it.size }
     val matchedResults = FiltersSearchLogic.search(allFilters, query)
@@ -264,9 +293,34 @@ class SearchFiltersDialog(
     tableModel.setItems(matchedResults, query)
 
     if (query.isBlank()) {
-      matchesLabel.text = I18n.format(I18n.SEARCH_FILTERS_SHOWING_ALL, totalFilters)
+      matchesBadge.updateResult(
+        totalFilters,
+        totalFilters,
+        StatusBadge.Variant.NORMAL,
+        customMessage = I18n.format(I18n.SEARCH_FILTERS_SHOWING_ALL, totalFilters)
+      )
+    } else if (matchedResults.isNotEmpty()) {
+      matchesBadge.updateResult(
+        matchedResults.size,
+        totalFilters,
+        StatusBadge.Variant.NORMAL,
+        customMessage = I18n.format(
+          I18n.SEARCH_FILTERS_SHOWING_MATCHES,
+          matchedResults.size,
+          totalFilters
+        )
+      )
     } else {
-      matchesLabel.text = I18n.format(I18n.SEARCH_FILTERS_SHOWING_MATCHES, matchedResults.size, totalFilters)
+      matchesBadge.updateResult(
+        0,
+        totalFilters,
+        StatusBadge.Variant.NO_RESULTS,
+        customMessage = I18n.format(
+          I18n.SEARCH_FILTERS_SHOWING_MATCHES,
+          0,
+          totalFilters
+        )
+      )
     }
 
     if (matchedResults.isNotEmpty()) {
@@ -275,7 +329,8 @@ class SearchFiltersDialog(
     updateButtonStates()
   }
 
-  private fun updateButtonStates() {
+  @VisibleForTesting
+  internal fun updateButtonStates() {
     val hasSelection = resultsTable.selectedRow >= 0
     jumpBtn.isEnabled = hasSelection
     editBtn.isEnabled = hasSelection
@@ -304,7 +359,10 @@ class SearchFiltersDialog(
     val row = resultsTable.selectedRow
     val item = getSelectedItem() ?: return
 
-    val edited = EditFilterDialog.showEditFilterDialog(owner, item.filter) { pattern, caseSensitive ->
+    val edited = EditFilterDialog.showEditFilterDialog(
+      owner,
+      item.filter
+    ) { pattern, caseSensitive ->
       presenter.findDuplicateFilter(pattern, caseSensitive, item.filter)
     }
     if (edited != null) {
@@ -317,14 +375,19 @@ class SearchFiltersDialog(
     val item = getSelectedItem() ?: return
     val confirm = JOptionPane.showConfirmDialog(
       this,
-      I18n.format(I18n.SEARCH_FILTERS_DELETE_CONFIRM_MSG, item.filter.name, item.group),
+      I18n.format(
+        I18n.SEARCH_FILTERS_DELETE_CONFIRM_MSG,
+        item.filter.name,
+        item.group
+      ),
       I18n.get(I18n.SEARCH_FILTERS_DELETE_CONFIRM_TITLE),
       JOptionPane.YES_NO_OPTION,
       JOptionPane.WARNING_MESSAGE
     )
     if (confirm != JOptionPane.YES_OPTION) return
 
-    val groupFilters = filtersRepository.currentlyOpenedFilters[item.group] ?: emptyList()
+    val groupFilters =
+      filtersRepository.currentlyOpenedFilters[item.group] ?: emptyList()
     val index = groupFilters.indexOf(item.filter)
     if (index >= 0) {
       presenter.removeFilters(item.group, intArrayOf(index))
@@ -334,7 +397,7 @@ class SearchFiltersDialog(
 
   companion object {
     fun show(
-      owner: Frame,
+      owner: Frame?,
       presenter: FiltersPresenter,
       filtersRepository: FiltersRepository,
       onFilterSelected: (group: String, filter: Filter) -> Unit
