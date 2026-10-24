@@ -10,6 +10,7 @@ import com.tibagni.logviewer.shortcuts.ShortcutManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
+import com.tibagni.logviewer.view.CommonIcons;
 import com.tibagni.logviewer.view.FlatButton;
 import com.tibagni.logviewer.view.ReorderableCheckBoxList;
 import com.tibagni.logviewer.view.TriStateCheckbox;
@@ -90,18 +91,24 @@ class FilterUIGroup extends JPanel {
     cellRenderer = new FilterCellRenderer(contextTagSupplier);
 
     hideGroupBtn = createToolbarComponent(new FlatButton());
-    prevBtn = createToolbarComponent(new FlatButton(StringUtils.LEFT_BLACK_POINTER));
-    nextBtn = createToolbarComponent(new FlatButton(StringUtils.RIGHT_BLACK_POINTER));
+
+    prevBtn = createToolbarComponent(new FlatButton());
+    prevBtn.setIcon(CommonIcons.chevronLeftIcon(14));
+
+    nextBtn = createToolbarComponent(new FlatButton());
+    nextBtn.setIcon(CommonIcons.chevronRightIcon(14));
     updateNavigationTooltips();
 
-    addBtn = createToolbarComponent(new FlatButton(StringUtils.PLUS));
+    addBtn = createToolbarComponent(new FlatButton());
+    addBtn.setIcon(CommonIcons.plusIcon(14));
     addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
 
     saveBtn = createToolbarComponent(new FlatButton(I18n.get(I18n.COMMON_SAVE)));
     saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
     saveBtn.setVisible(false);
 
-    closeBtn = createToolbarComponent(new FlatButton(StringUtils.DELETE));
+    closeBtn = createToolbarComponent(new FlatButton());
+    closeBtn.setIcon(CommonIcons.closeIcon(14));
     closeBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_GROUP));
 
     selectAllCb = createToolbarComponent(new TriStateCheckbox());
@@ -554,6 +561,18 @@ class FilterUIGroup extends JPanel {
     if (selectAllCb != null) {
       selectAllCb.updateUI();
     }
+    if (prevBtn != null) {
+      prevBtn.setIcon(CommonIcons.chevronLeftIcon(14));
+    }
+    if (nextBtn != null) {
+      nextBtn.setIcon(CommonIcons.chevronRightIcon(14));
+    }
+    if (addBtn != null) {
+      addBtn.setIcon(CommonIcons.plusIcon(14));
+    }
+    if (closeBtn != null) {
+      closeBtn.setIcon(CommonIcons.closeIcon(14));
+    }
     updateCardMargin();
     updateHeaderStyle();
     updateGroupHeader();
@@ -803,9 +822,10 @@ class FilterUIGroup extends JPanel {
     if (hideGroupBtn == null || list == null) return;
 
     int count = list.getModel() != null ? list.getModel().getSize() : 0;
-    String arrow = isGroupVisible()
-        ? StringUtils.DOWN_ARROW_HEAD
-        : StringUtils.RIGHT_ARROW_HEAD;
-    hideGroupBtn.setText(arrow + " " + groupName + " (" + count + ")");
+    hideGroupBtn.setIcon(isGroupVisible()
+        ? CommonIcons.chevronDownIcon(14)
+        : CommonIcons.chevronRightIcon(14));
+    hideGroupBtn.setIconTextGap(UIScaleUtils.dip(4));
+    hideGroupBtn.setText(groupName + " (" + count + ")");
   }
 }

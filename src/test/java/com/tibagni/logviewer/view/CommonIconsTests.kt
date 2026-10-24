@@ -364,6 +364,175 @@ class CommonIconsTests {
   }
 
   /**
+   * Verifies that [CommonIcons.chevronRightIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testChevronRightIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.chevronRightIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue(
+      "chevronRightIcon should have painted pixels",
+      hasPaintedPixels
+    )
+
+    val customIcon = CommonIcons.chevronRightIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.chevronRightIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testChevronRightIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.GREEN)
+      val icon = CommonIcons.chevronRightIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasGreenPixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val green = (rgb ushr 8) and 0xFF
+          alpha > 0 && green > 100
+        }
+      }
+      assertTrue(
+        "chevronRightIcon should paint with theme color",
+        hasGreenPixel
+      )
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
+
+  /**
+   * Verifies that [CommonIcons.chevronLeftIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testChevronLeftIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.chevronLeftIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("chevronLeftIcon should have painted pixels", hasPaintedPixels)
+
+    val customIcon = CommonIcons.chevronLeftIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.chevronLeftIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testChevronLeftIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.BLUE)
+      val icon = CommonIcons.chevronLeftIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasBluePixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val blue = rgb and 0xFF
+          alpha > 0 && blue > 100
+        }
+      }
+      assertTrue(
+        "chevronLeftIcon should paint with theme color",
+        hasBluePixel
+      )
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
+
+  /**
+   * Verifies that [CommonIcons.plusIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testPlusIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.plusIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("plusIcon should have painted pixels", hasPaintedPixels)
+
+    val customIcon = CommonIcons.plusIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.plusIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testPlusIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.MAGENTA)
+      val icon = CommonIcons.plusIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasMagentaPixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val red = (rgb ushr 16) and 0xFF
+          val blue = rgb and 0xFF
+          alpha > 0 && red > 100 && blue > 100
+        }
+      }
+      assertTrue("plusIcon should paint with theme color", hasMagentaPixel)
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
+
+  /**
    * Verifies that vector icons paint with component foreground when supplied.
    */
   @Test

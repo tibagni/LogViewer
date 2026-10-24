@@ -62,27 +62,32 @@ class FilterUIGroupTests {
   fun testHeaderDisplaysGroupNameWithFilterCount() {
     val group = createGroup("MyFilters", arrayOf(filterA, filterB, filterC))
     val text = group.hideGroupBtn.text
-    assertTrue(text.startsWith(StringUtils.DOWN_ARROW_HEAD))
-    assertTrue(text.contains("MyFilters"))
-    assertTrue(text.endsWith("(3)"))
+    assertEquals("MyFilters (3)", text)
+    assertNotNull(group.hideGroupBtn.icon)
+    assertEquals(UIScaleUtils.dip(4), group.hideGroupBtn.iconTextGap)
   }
 
   @Test
   fun testHeaderUpdatesChevronAndCountOnToggleVisibility() {
     val group = createGroup("Network", arrayOf(filterA, filterB))
     assertTrue(group.isGroupVisible)
-    assertTrue(group.hideGroupBtn.text.contains(StringUtils.DOWN_ARROW_HEAD))
+    assertEquals("Network (2)", group.hideGroupBtn.text)
+    assertNotNull(group.hideGroupBtn.icon)
+    assertEquals(14, group.hideGroupBtn.icon.iconWidth)
+    assertEquals(14, group.hideGroupBtn.icon.iconHeight)
 
     group.toggleGroupVisibility()
     assertFalse(group.isGroupVisible)
-    assertTrue(group.hideGroupBtn.text.contains(StringUtils.RIGHT_ARROW_HEAD))
-    assertTrue(group.hideGroupBtn.text.endsWith("(2)"))
+    assertEquals("Network (2)", group.hideGroupBtn.text)
+    assertNotNull(group.hideGroupBtn.icon)
+    assertEquals(14, group.hideGroupBtn.icon.iconWidth)
     verify(listener).onGroupVisibilityChanged("Network")
 
     group.toggleGroupVisibility()
     assertTrue(group.isGroupVisible)
-    assertTrue(group.hideGroupBtn.text.contains(StringUtils.DOWN_ARROW_HEAD))
-    assertTrue(group.hideGroupBtn.text.endsWith("(2)"))
+    assertEquals("Network (2)", group.hideGroupBtn.text)
+    assertNotNull(group.hideGroupBtn.icon)
+    assertEquals(14, group.hideGroupBtn.icon.iconWidth)
   }
 
   @Test
@@ -90,11 +95,13 @@ class FilterUIGroupTests {
     val group = createGroup("Silent", arrayOf(filterA))
     group.forceGroupVisibilitySilently(false)
     assertFalse(group.isGroupVisible)
-    assertTrue(group.hideGroupBtn.text.contains(StringUtils.RIGHT_ARROW_HEAD))
+    assertEquals("Silent (1)", group.hideGroupBtn.text)
+    assertNotNull(group.hideGroupBtn.icon)
 
     group.forceGroupVisibilitySilently(true)
     assertTrue(group.isGroupVisible)
-    assertTrue(group.hideGroupBtn.text.contains(StringUtils.DOWN_ARROW_HEAD))
+    assertEquals("Silent (1)", group.hideGroupBtn.text)
+    assertNotNull(group.hideGroupBtn.icon)
   }
 
   @Test
@@ -119,6 +126,27 @@ class FilterUIGroupTests {
     assertNotNull(group.optionsPane.background)
     assertNotNull(group.optionsPane.border)
     assertNotNull(group.border)
+  }
+
+  @Test
+  fun testActionButtonsVectorIconsConfigured() {
+    val group = createGroup()
+
+    assertNotNull(group.prevBtn.icon)
+    assertEquals(14, group.prevBtn.icon.iconWidth)
+    assertEquals(14, group.prevBtn.icon.iconHeight)
+
+    assertNotNull(group.nextBtn.icon)
+    assertEquals(14, group.nextBtn.icon.iconWidth)
+    assertEquals(14, group.nextBtn.icon.iconHeight)
+
+    assertNotNull(group.addBtn.icon)
+    assertEquals(14, group.addBtn.icon.iconWidth)
+    assertEquals(14, group.addBtn.icon.iconHeight)
+
+    assertNotNull(group.closeBtn.icon)
+    assertEquals(14, group.closeBtn.icon.iconWidth)
+    assertEquals(14, group.closeBtn.icon.iconHeight)
   }
 
   @Test
@@ -226,6 +254,11 @@ class FilterUIGroupTests {
     assertNotNull(group.optionsPane.border)
     assertNotNull(group.border)
     assertTrue(group.hideGroupBtn.text.contains("TestGroup"))
+    assertNotNull(group.hideGroupBtn.icon)
+    assertNotNull(group.prevBtn.icon)
+    assertNotNull(group.nextBtn.icon)
+    assertNotNull(group.addBtn.icon)
+    assertNotNull(group.closeBtn.icon)
   }
 
   @Test

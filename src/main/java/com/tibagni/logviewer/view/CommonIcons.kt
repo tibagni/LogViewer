@@ -179,6 +179,8 @@ object CommonIcons {
    * @param size icon width and height in pixels (defaults to 16)
    * @return theme-aware [ImageIcon] that dynamically resolves theme colors
    */
+  @JvmStatic
+  @JvmOverloads
   fun chevronUpIcon(size: Int = 16): ImageIcon = ChevronUpIcon(size)
 
   /**
@@ -187,7 +189,41 @@ object CommonIcons {
    * @param size icon width and height in pixels (defaults to 16)
    * @return theme-aware [ImageIcon] that dynamically resolves theme colors
    */
+  @JvmStatic
+  @JvmOverloads
   fun chevronDownIcon(size: Int = 16): ImageIcon = ChevronDownIcon(size)
+
+  /**
+   * Creates a theme-aware vector chevron right icon with smooth rounded
+   * stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun chevronRightIcon(size: Int = 16): ImageIcon = ChevronRightIcon(size)
+
+  /**
+   * Creates a theme-aware vector chevron left icon with smooth rounded
+   * stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun chevronLeftIcon(size: Int = 16): ImageIcon = ChevronLeftIcon(size)
+
+  /**
+   * Creates a theme-aware vector plus icon with smooth rounded stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun plusIcon(size: Int = 16): ImageIcon = PlusIcon(size)
 
   /**
    * Creates a theme-aware vector close cross icon with smooth rounded stroke.
@@ -195,6 +231,8 @@ object CommonIcons {
    * @param size icon width and height in pixels (defaults to 16)
    * @return theme-aware [ImageIcon] that dynamically resolves theme colors
    */
+  @JvmStatic
+  @JvmOverloads
   fun closeIcon(size: Int = 16): ImageIcon = CloseIcon(size)
 
   /**
@@ -652,6 +690,69 @@ object CommonIcons {
       path.lineTo(s * 0.50, s * 0.62)
       path.lineTo(s * 0.72, s * 0.38)
       g2d.draw(path)
+    }
+  }
+
+  private class ChevronRightIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.stroke = BasicStroke(
+        1.8f,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+      val path = Path2D.Double()
+      path.moveTo(s * 0.38, s * 0.28)
+      path.lineTo(s * 0.62, s * 0.50)
+      path.lineTo(s * 0.38, s * 0.72)
+      g2d.draw(path)
+    }
+  }
+
+  private class ChevronLeftIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.stroke = BasicStroke(
+        1.8f,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+      val path = Path2D.Double()
+      path.moveTo(s * 0.62, s * 0.28)
+      path.lineTo(s * 0.38, s * 0.50)
+      path.lineTo(s * 0.62, s * 0.72)
+      g2d.draw(path)
+    }
+  }
+
+  private class PlusIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.stroke = BasicStroke(
+        1.8f,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+      val mid = s / 2.0
+      val start = s * 0.28
+      val end = s * 0.72
+      g2d.draw(Line2D.Double(start, mid, end, mid))
+      g2d.draw(Line2D.Double(mid, start, mid, end))
     }
   }
 

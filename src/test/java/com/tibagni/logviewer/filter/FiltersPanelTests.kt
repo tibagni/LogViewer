@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter
 
+import com.formdev.flatlaf.ui.FlatLineBorder
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.log.LogLevel
@@ -9,6 +10,8 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
 import java.awt.FlowLayout
 import javax.swing.JButton
+import javax.swing.border.EmptyBorder
+import javax.swing.border.TitledBorder
 import org.junit.Assert.*
 import org.junit.Assume.assumeFalse
 import org.junit.Before
@@ -59,6 +62,88 @@ class FiltersPanelTests {
 
     panel.configureFiltersList(map)
     assertFalse(panel.isEmpty)
+  }
+
+  @Test
+  fun testFiltersPanelRoundedTitledBorder() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    assertTrue(panel.border is TitledBorder)
+    val titledBorder = panel.border as TitledBorder
+    assertEquals(
+      I18n.get(I18n.FILTERS_PANEL_TITLE),
+      titledBorder.title
+    )
+    val insideBorder = titledBorder.border
+    assertTrue(insideBorder is FlatLineBorder)
+    val flatLineBorder = insideBorder as FlatLineBorder
+    assertEquals(UIScaleUtils.dip(8), flatLineBorder.arc)
+    assertEquals(1f, flatLineBorder.lineThickness, 0.001f)
+    assertNotNull(flatLineBorder.lineColor)
+  }
+
+  @Test
+  fun testBorderlessScrollPane() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    assertNotNull(panel.scrollPane)
+    assertTrue(panel.scrollPane.border is javax.swing.border.EmptyBorder)
+    assertNull(panel.scrollPane.viewportBorder)
+    assertFalse(panel.scrollPane.isOpaque)
+    assertFalse(panel.scrollPane.viewport.isOpaque)
+    assertEquals(16, panel.scrollPane.verticalScrollBar.unitIncrement)
+  }
+
+  @Test
+  fun testCollapseExpandButtonIconAndText() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    assertEquals(
+      I18n.get(I18n.COMMON_ALL),
+      panel.collapseExpandAllGroupsBtn.text
+    )
+    assertEquals(
+      UIScaleUtils.dip(4),
+      panel.collapseExpandAllGroupsBtn.iconTextGap
+    )
+    assertNotNull(panel.collapseExpandAllGroupsBtn.icon)
+    assertEquals(14, panel.collapseExpandAllGroupsBtn.icon.iconWidth)
+    assertEquals(14, panel.collapseExpandAllGroupsBtn.icon.iconHeight)
+  }
+
+  @Test
+  fun testCollapseExpandButtonStateReflectsGroupVisibility() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    val filter = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
+    panel.configureFiltersList(mapOf("Group1" to listOf(filter)))
+
+    assertTrue(panel.filtersPane.hasAtLeastOneGroupVisible())
+    panel.updateCollapseExpandButtonState()
+    assertEquals(
+      I18n.get(I18n.COMMON_ALL),
+      panel.collapseExpandAllGroupsBtn.text
+    )
+    assertNotNull(panel.collapseExpandAllGroupsBtn.icon)
+
+    panel.collapseAllGroups()
+    assertFalse(panel.filtersPane.hasAtLeastOneGroupVisible())
+    assertEquals(
+      I18n.get(I18n.COMMON_ALL),
+      panel.collapseExpandAllGroupsBtn.text
+    )
+    assertNotNull(panel.collapseExpandAllGroupsBtn.icon)
+  }
+
+  @Test
+  fun testOnThemeChangedUpdatesStateAndIcons() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    panel.onThemeChanged()
+    assertTrue(panel.border is TitledBorder)
+    val titledBorder = panel.border as TitledBorder
+    assertTrue(titledBorder.border is FlatLineBorder)
+    assertEquals(
+      I18n.get(I18n.COMMON_ALL),
+      panel.collapseExpandAllGroupsBtn.text
+    )
+    assertNotNull(panel.collapseExpandAllGroupsBtn.icon)
   }
 
   @Test

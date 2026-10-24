@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.filter
 
+import com.formdev.flatlaf.FlatLaf
+import com.formdev.flatlaf.ui.FlatLineBorder
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.annotation.VisibleForTesting
@@ -8,12 +10,14 @@ import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.MultipleChoiceDialog
 import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.Toast
 import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.Frame
@@ -109,6 +113,8 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   internal lateinit var applyDivider: ToolbarDivider
   @VisibleForTesting
   internal lateinit var filterActionButtonsPane: JPanel
+  @VisibleForTesting
+  internal lateinit var scrollPane: JScrollPane
   val filtersPane: FiltersList = FiltersList()
 
   var listener: FiltersPanelListener? = null
@@ -121,9 +127,31 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     presenter.init()
   }
 
+  /**
+   * Resolves the border color for the main filters panel titled border.
+   */
+  fun resolvePanelBorderColor(): Color {
+    return UIManager.getColor("Component.borderColor")
+      ?: UIManager.getColor("Separator.foreground")
+      ?: if (FlatLaf.isLafDark()) Color(255, 255, 255, 40) else Color(0, 0, 0, 40)
+  }
+
+  /**
+   * Creates the titled panel border styled with a subtle rounded [FlatLineBorder].
+   */
+  private fun createPanelBorder(): javax.swing.border.Border {
+    val lineBorder = FlatLineBorder(
+      Insets(UIScaleUtils.dip(4), UIScaleUtils.dip(4), UIScaleUtils.dip(4), UIScaleUtils.dip(4)),
+      resolvePanelBorderColor(),
+      1f,
+      UIScaleUtils.dip(8)
+    )
+    return BorderFactory.createTitledBorder(lineBorder, I18n.get(I18n.FILTERS_PANEL_TITLE))
+  }
+
   private fun buildUi() {
     layout = GridBagLayout()
-    border = BorderFactory.createTitledBorder(I18n.get(I18n.FILTERS_PANEL_TITLE))
+    border = createPanelBorder()
 
     val emptyPane = JPanel()
     emptyPane.layout = FlowLayout(FlowLayout.CENTER, 5, 5)
@@ -137,8 +165,15 @@ open class FiltersPanel @VisibleForTesting internal constructor(
         .build()
     )
 
+    scrollPane = JScrollPane(filtersPane).apply {
+      verticalScrollBar.unitIncrement = 16
+      border = BorderFactory.createEmptyBorder()
+      viewportBorder = null
+      isOpaque = false
+      viewport.isOpaque = false
+    }
     add(
-      JScrollPane(filtersPane).also { it.verticalScrollBar.unitIncrement = 16 },
+      scrollPane,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(1)
@@ -363,11 +398,14 @@ open class FiltersPanel @VisibleForTesting internal constructor(
 
   fun updateCollapseExpandButtonState() {
     val allText = I18n.get(I18n.COMMON_ALL)
-    collapseExpandAllGroupsBtn.text = if (filtersPane.hasAtLeastOneGroupVisible()) {
-      "${StringUtils.DOWN_ARROW_HEAD} $allText"
+    val hasVisible = filtersPane.hasAtLeastOneGroupVisible()
+    collapseExpandAllGroupsBtn.icon = if (hasVisible) {
+      CommonIcons.chevronDownIcon(14)
     } else {
-      "${StringUtils.RIGHT_ARROW_HEAD} $allText"
+      CommonIcons.chevronRightIcon(14)
     }
+    collapseExpandAllGroupsBtn.text = allText
+    collapseExpandAllGroupsBtn.iconTextGap = UIScaleUtils.dip(4)
   }
 
   fun addGroup(initializeFilter: Boolean = true): String? {
@@ -591,6 +629,8 @@ open class FiltersPanel @VisibleForTesting internal constructor(
 
   fun onThemeChanged() {
     SwingUtilities.updateComponentTreeUI(filtersPane)
+    border = createPanelBorder()
+    updateCollapseExpandButtonState()
     collapseExpandAllGroupsBtn.updateUI()
     addNewFilterGroupBtn.updateUI()
     moreFilterOptionsBtn.updateUI()
