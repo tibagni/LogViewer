@@ -1,12 +1,16 @@
 package com.tibagni.logviewer.filter
 
+import com.formdev.flatlaf.FlatLaf
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.StatusBadge
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.Component
+import java.awt.Graphics
+import java.awt.Graphics2D
 import java.awt.GridBagLayout
 import java.awt.font.TextAttribute
 import java.io.Serializable
@@ -17,6 +21,7 @@ import javax.swing.JCheckBox
 import javax.swing.JList
 import javax.swing.JPanel
 import javax.swing.ListCellRenderer
+import javax.swing.UIManager
 import javax.swing.border.Border
 import javax.swing.border.EmptyBorder
 
@@ -30,10 +35,10 @@ class FilterCellRenderer @JvmOverloads constructor(
 
   companion object {
     private val DEFAULT_NO_FOCUS_BORDER: Border = EmptyBorder(
-      UIScaleUtils.dip(1),
-      UIScaleUtils.dip(1),
-      UIScaleUtils.dip(1),
-      UIScaleUtils.dip(1)
+      UIScaleUtils.dip(3),
+      UIScaleUtils.dip(6),
+      UIScaleUtils.dip(3),
+      UIScaleUtils.dip(6)
     )
   }
 
@@ -47,6 +52,12 @@ class FilterCellRenderer @JvmOverloads constructor(
   }
 
   var highlightedText: String? = null
+
+  /**
+   * Whether to render a hairline divider line at the bottom of this row.
+   * Set to true when this row is followed by another filter item.
+   */
+  var showDivider: Boolean = false
 
   val text: String
     get() = checkBox.text
@@ -74,6 +85,61 @@ class FilterCellRenderer @JvmOverloads constructor(
     }
   }
 
+  /**
+   * Resolves the divider line color separating filter rows.
+   *
+   * Honors theme [Component.borderColor] and [Separator.foreground] (softened
+   * to a subtle translucent tone if opaque), falling back to a delicate
+   * semi-transparent tone matching the theme.
+   */
+  fun resolveDividerColor(): Color {
+    val borderColor = UIManager.getColor("Component.borderColor")
+    if (borderColor != null) {
+      return if (borderColor.alpha < 255) {
+        borderColor
+      } else {
+        SwingUtils.changeColorAlpha(borderColor, 35)
+      }
+    }
+    val sepColor = UIManager.getColor("Separator.foreground")
+    if (sepColor != null) {
+      return if (sepColor.alpha < 255) {
+        sepColor
+      } else {
+        SwingUtils.changeColorAlpha(sepColor, 35)
+      }
+    }
+    val isDark = try {
+      ServiceLocator.themeManager.isDark
+    } catch (t: Throwable) {
+      FlatLaf.isLafDark()
+    }
+    return if (isDark) {
+      Color(255, 255, 255, 24)
+    } else {
+      Color(0, 0, 0, 20)
+    }
+  }
+
+  override fun paint(g: Graphics) {
+    super.paint(g)
+    if (showDivider && height > 0 && width > 0) {
+      val g2 = g.create() as Graphics2D
+      try {
+        g2.color = resolveDividerColor()
+        val y = height - 1
+        val inset = UIScaleUtils.dip(8)
+        val startX = inset
+        val endX = width - inset - 1
+        if (endX > startX) {
+          g2.drawLine(startX, y, endX, y)
+        }
+      } finally {
+        g2.dispose()
+      }
+    }
+  }
+
   override fun getListCellRendererComponent(
     list: JList<*>,
     value: Any,
@@ -84,8 +150,15 @@ class FilterCellRenderer @JvmOverloads constructor(
     val filter = value as Filter
     var text = filter.name
 
+    val modelSize = list.model?.size ?: 0
+    showDivider = index in 0 until (modelSize - 1)
+
     val hlText = highlightedText?.takeIf { it.isNotEmpty() }
-    val hlStart = if (hlText != null) text.indexOf(hlText, ignoreCase = true) else -1
+    val hlStart = if (hlText != null) {
+      text.indexOf(hlText, ignoreCase = true)
+    } else {
+      -1
+    }
 
     text = if (hlStart >= 0 && hlText != null) {
       val hlEnd = hlStart + hlText.length
@@ -133,7 +206,8 @@ class FilterCellRenderer @JvmOverloads constructor(
     checkBox.text = text
     checkBox.isEnabled = list.isEnabled
     checkBox.font = font
-    toolTipText = StringUtils.wrapHtml("${filter.patternString}<br>${filter.verbosity}")
+    val toolTip = "${filter.patternString}<br>${filter.verbosity}"
+    toolTipText = StringUtils.wrapHtml(toolTip)
 
     return this
   }
