@@ -16,11 +16,12 @@ import kotlin.math.roundToInt
 
 /**
  * A lightweight, reusable status pill badge component displaying line counts,
- * search match statistics, or custom indicators with a subtle rounded background
- * and boundary stroke.
+ * search match statistics, or custom indicators with a subtle rounded
+ * background and boundary stroke.
  *
  * Dynamically resolves theme colors for background, border, and foreground,
- * adapting to Light, Dark, and FlatLaf theme changes.
+ * adapting to Light, Dark, FlatLaf theme changes, and elevated surface
+ * variants.
  */
 class StatusBadge @JvmOverloads constructor(
   initialVariant: Variant = Variant.DEFAULT
@@ -30,11 +31,13 @@ class StatusBadge @JvmOverloads constructor(
     DEFAULT,
     MUTED,
     WARNING,
-    ERROR;
+    ERROR,
+    ELEVATED;
 
     companion object {
       @JvmField val NORMAL: Variant = DEFAULT
       @JvmField val NO_RESULTS: Variant = MUTED
+      @JvmField val SURFACE: Variant = ELEVATED
     }
   }
 
@@ -54,29 +57,86 @@ class StatusBadge @JvmOverloads constructor(
      * defined by the theme.
      */
     const val DEFAULT_ARC_DP: Int = 8
+
+    /**
+     * Vertical padding for elevated surface variant in density-independent
+     * pixels.
+     */
+    const val ELEVATED_PADDING_VERTICAL_DP: Int = 8
+
+    /**
+     * Horizontal padding for elevated surface variant in
+     * density-independent pixels.
+     */
+    const val ELEVATED_PADDING_HORIZONTAL_DP: Int = 16
+
+    /**
+     * Corner arc radius for elevated surface variant in
+     * density-independent pixels.
+     */
+    const val ELEVATED_ARC_DP: Int = 16
+
+    /**
+     * Gap between icon and text in density-independent pixels.
+     */
+    const val ICON_TEXT_GAP_DP: Int = 8
   }
 
   var variant: Variant = initialVariant
     set(value) {
+      val prev = field
       field = value
+      if (value == Variant.ELEVATED && prev != Variant.ELEVATED) {
+        if (arcDp == DEFAULT_ARC_DP) {
+          arcDp = ELEVATED_ARC_DP
+        }
+        if (paddingHorizontalDp == PADDING_HORIZONTAL_DP) {
+          paddingHorizontalDp = ELEVATED_PADDING_HORIZONTAL_DP
+        }
+        if (paddingVerticalDp == PADDING_VERTICAL_DP) {
+          paddingVerticalDp = ELEVATED_PADDING_VERTICAL_DP
+        }
+      } else if (value != Variant.ELEVATED && prev == Variant.ELEVATED) {
+        if (arcDp == ELEVATED_ARC_DP) {
+          arcDp = DEFAULT_ARC_DP
+        }
+        if (paddingHorizontalDp == ELEVATED_PADDING_HORIZONTAL_DP) {
+          paddingHorizontalDp = PADDING_HORIZONTAL_DP
+        }
+        if (paddingVerticalDp == ELEVATED_PADDING_VERTICAL_DP) {
+          paddingVerticalDp = PADDING_VERTICAL_DP
+        }
+      }
       applyPaddingAndTheme()
       repaint()
     }
 
-  var arcDp: Int = DEFAULT_ARC_DP
+  var arcDp: Int = if (initialVariant == Variant.ELEVATED) {
+    ELEVATED_ARC_DP
+  } else {
+    DEFAULT_ARC_DP
+  }
     set(value) {
       field = value
       repaint()
     }
 
-  var paddingHorizontalDp: Int = PADDING_HORIZONTAL_DP
+  var paddingHorizontalDp: Int = if (initialVariant == Variant.ELEVATED) {
+    ELEVATED_PADDING_HORIZONTAL_DP
+  } else {
+    PADDING_HORIZONTAL_DP
+  }
     set(value) {
       field = value
       applyPaddingAndTheme()
       repaint()
     }
 
-  var paddingVerticalDp: Int = PADDING_VERTICAL_DP
+  var paddingVerticalDp: Int = if (initialVariant == Variant.ELEVATED) {
+    ELEVATED_PADDING_VERTICAL_DP
+  } else {
+    PADDING_VERTICAL_DP
+  }
     set(value) {
       field = value
       applyPaddingAndTheme()
@@ -87,6 +147,7 @@ class StatusBadge @JvmOverloads constructor(
     isOpaque = false
     isVisible = false
     horizontalAlignment = SwingConstants.CENTER
+    iconTextGap = UIScaleUtils.dip(ICON_TEXT_GAP_DP)
     applyPaddingAndTheme()
   }
 
@@ -94,8 +155,26 @@ class StatusBadge @JvmOverloads constructor(
    * Applies the theme-based padding and foreground color.
    */
   internal fun applyPaddingAndTheme() {
-    val vPad = if (paddingVerticalDp > 0) paddingVerticalDp else PADDING_VERTICAL_DP
-    val hPad = if (paddingHorizontalDp > 0) paddingHorizontalDp else PADDING_HORIZONTAL_DP
+    val defaultVPad = if (variant == Variant.ELEVATED) {
+      ELEVATED_PADDING_VERTICAL_DP
+    } else {
+      PADDING_VERTICAL_DP
+    }
+    val defaultHPad = if (variant == Variant.ELEVATED) {
+      ELEVATED_PADDING_HORIZONTAL_DP
+    } else {
+      PADDING_HORIZONTAL_DP
+    }
+    val vPad = if (paddingVerticalDp > 0) {
+      paddingVerticalDp
+    } else {
+      defaultVPad
+    }
+    val hPad = if (paddingHorizontalDp > 0) {
+      paddingHorizontalDp
+    } else {
+      defaultHPad
+    }
     border = BorderFactory.createEmptyBorder(
       UIScaleUtils.dip(vPad),
       UIScaleUtils.dip(hPad),
@@ -117,95 +196,126 @@ class StatusBadge @JvmOverloads constructor(
 
   /**
    * Resolves the badge background color from Look and Feel defaults,
-   * adapting based on the active [variant].
+   * adapting based on the active [variant] and theme mode.
    *
    * @param targetVariant the [Variant] to resolve for, defaulting to [variant].
+   * @param isDark optional dark mode override, defaulting to current theme.
    * @return the [Color] to paint the badge background.
    */
-  internal fun resolveBadgeBackground(targetVariant: Variant? = null): Color {
+  @Suppress("USELESS_ELVIS")
+  internal fun resolveBadgeBackground(
+    targetVariant: Variant? = null,
+    isDark: Boolean? = null
+  ): Color {
     val active = targetVariant ?: variant ?: Variant.DEFAULT
-    val isDark = isDarkTheme()
+    val dark = isDark ?: isDarkTheme()
     return when (active) {
       Variant.DEFAULT -> {
         UIManager.getColor("Button.background")
-          ?: if (isDark) Color(70, 70, 70) else Color(128, 128, 128, 40)
+          ?: if (dark) Color(70, 70, 70) else Color(128, 128, 128, 40)
       }
       Variant.MUTED -> {
-        if (isDark) Color(140, 50, 50, 45) else Color(245, 220, 220)
+        if (dark) Color(140, 50, 50, 45) else Color(245, 220, 220)
       }
       Variant.WARNING -> {
-        if (isDark) Color(150, 110, 40, 50) else Color(254, 240, 215)
+        if (dark) Color(150, 110, 40, 50) else Color(254, 240, 215)
       }
       Variant.ERROR -> {
-        if (isDark) Color(160, 50, 50, 60) else Color(255, 215, 215)
+        if (dark) Color(160, 50, 50, 60) else Color(255, 215, 215)
+      }
+      Variant.ELEVATED -> {
+        if (dark) Color(48, 50, 56) else Color(255, 255, 255)
       }
     }
   }
 
   /**
    * Resolves the badge border stroke color from Look and Feel defaults,
-   * adapting based on the active [variant].
+   * adapting based on the active [variant] and theme mode.
    *
    * @param targetVariant the [Variant] to resolve for, defaulting to [variant].
+   * @param isDark optional dark mode override, defaulting to current theme.
    * @return the [Color] to paint the badge boundary stroke.
    */
-  internal fun resolveBorderColor(targetVariant: Variant? = null): Color {
+  @Suppress("USELESS_ELVIS")
+  internal fun resolveBorderColor(
+    targetVariant: Variant? = null,
+    isDark: Boolean? = null
+  ): Color {
     val active = targetVariant ?: variant ?: Variant.DEFAULT
-    val isDark = isDarkTheme()
+    val dark = isDark ?: isDarkTheme()
     return when (active) {
       Variant.DEFAULT -> {
         UIManager.getColor("Component.borderColor")
-          ?: if (isDark) Color(90, 90, 90) else Color(128, 128, 128, 60)
+          ?: if (dark) Color(90, 90, 90) else Color(128, 128, 128, 60)
       }
       Variant.MUTED -> {
-        if (isDark) Color(200, 80, 80, 120) else Color(230, 140, 140)
+        if (dark) Color(200, 80, 80, 120) else Color(230, 140, 140)
       }
       Variant.WARNING -> {
-        if (isDark) Color(220, 150, 50, 140) else Color(235, 175, 75)
+        if (dark) Color(220, 150, 50, 140) else Color(235, 175, 75)
       }
       Variant.ERROR -> {
-        if (isDark) Color(230, 80, 80, 160) else Color(225, 100, 100)
+        if (dark) Color(230, 80, 80, 160) else Color(225, 100, 100)
+      }
+      Variant.ELEVATED -> {
+        UIManager.getColor("Component.borderColor")
+          ?: if (dark) Color(255, 255, 255, 36) else Color(0, 0, 0, 45)
       }
     }
   }
 
   /**
    * Resolves the badge foreground text color from Look and Feel defaults,
-   * adapting based on the active [variant].
+   * adapting based on the active [variant] and theme mode.
    *
    * @param targetVariant the [Variant] to resolve for, defaulting to [variant].
+   * @param isDark optional dark mode override, defaulting to current theme.
    * @return the [Color] for text rendering.
    */
-  internal fun resolveBadgeForeground(targetVariant: Variant? = null): Color {
+  @Suppress("USELESS_ELVIS")
+  internal fun resolveBadgeForeground(
+    targetVariant: Variant? = null,
+    isDark: Boolean? = null
+  ): Color {
     val active = targetVariant ?: variant ?: Variant.DEFAULT
-    val isDark = isDarkTheme()
+    val dark = isDark ?: isDarkTheme()
     return when (active) {
       Variant.DEFAULT -> {
         UIManager.getColor("Label.disabledForeground")
           ?: UIManager.getColor("Label.foreground")
-          ?: if (isDark) Color(200, 200, 200) else Color.GRAY
+          ?: if (dark) Color(200, 200, 200) else Color.GRAY
       }
       Variant.MUTED -> {
-        if (isDark) Color(245, 140, 140) else Color(185, 45, 45)
+        if (dark) Color(245, 140, 140) else Color(185, 45, 45)
       }
       Variant.WARNING -> {
-        if (isDark) Color(245, 185, 90) else Color(175, 100, 20)
+        if (dark) Color(245, 185, 90) else Color(175, 100, 20)
       }
       Variant.ERROR -> {
-        if (isDark) Color(255, 130, 130) else Color(195, 30, 30)
+        if (dark) Color(255, 130, 130) else Color(195, 30, 30)
+      }
+      Variant.ELEVATED -> {
+        if (dark) Color(245, 245, 245) else Color(33, 37, 41)
       }
     }
   }
 
   /**
-   * Resolves the corner arc radius in scaled pixels, honoring the Look and Feel
-   * "Component.arc" setting if present, or falling back to [arcDp].
+   * Resolves the corner arc radius in scaled pixels, honoring the Look and
+   * Feel "Component.arc" setting if present, or falling back to [arcDp].
    *
    * @return the scaled corner arc in pixels.
    */
   internal fun resolveArc(): Int {
     val themeArc = UIManager.getInt("Component.arc")
-    val defaultArc = if (arcDp > 0) arcDp else DEFAULT_ARC_DP
+    val defaultArc = if (arcDp > 0) {
+      arcDp
+    } else if (variant == Variant.ELEVATED) {
+      ELEVATED_ARC_DP
+    } else {
+      DEFAULT_ARC_DP
+    }
     return if (themeArc > 0) {
       UIScaleUtils.dip(themeArc)
     } else {
@@ -218,6 +328,7 @@ class StatusBadge @JvmOverloads constructor(
    */
   override fun updateUI() {
     super.updateUI()
+    iconTextGap = UIScaleUtils.dip(ICON_TEXT_GAP_DP)
     applyPaddingAndTheme()
     repaint()
   }
@@ -276,6 +387,7 @@ class StatusBadge @JvmOverloads constructor(
   fun clear() {
     this.variant = Variant.DEFAULT
     this.text = ""
+    this.icon = null
     this.isVisible = false
     repaint()
   }
@@ -291,7 +403,8 @@ class StatusBadge @JvmOverloads constructor(
    *   - When [filteredLines] > 0: displays [I18n.LOGS_STATUS_FILTERED].
    * - When [droppedLines] > 0:
    *   - When [filteredLines] <= 0: displays [I18n.LOGS_STATUS_ALL_DROPPED].
-   *   - When [filteredLines] > 0: displays [I18n.LOGS_STATUS_FILTERED_DROPPED].
+   *   - When [filteredLines] > 0: displays
+   *     [I18n.LOGS_STATUS_FILTERED_DROPPED].
    *
    * @param totalLines total number of log lines loaded.
    * @param filteredLines number of lines matching currently active filters.
@@ -356,8 +469,8 @@ class StatusBadge @JvmOverloads constructor(
   }
 
   /**
-   * Paints the subtle rounded background and boundary stroke before painting
-   * label text.
+   * Paints the subtle rounded background and boundary stroke before
+   * painting label text.
    *
    * @param g the [Graphics] context to paint with.
    */

@@ -603,15 +603,27 @@ class StatusBadgeTests {
     assertTrue(badge.isVisible)
     assertEquals(I18n.format(I18n.SEARCH_RESULTS_COUNT, 5), badge.text)
 
-    badge.updateResult(currentMatch = 0, totalMatches = 0, targetVariant = StatusBadge.Variant.NO_RESULTS)
+    badge.updateResult(
+      currentMatch = 0,
+      totalMatches = 0,
+      targetVariant = StatusBadge.Variant.NO_RESULTS
+    )
     assertTrue(badge.isVisible)
     assertEquals(I18n.format(I18n.SEARCH_RESULTS_COUNT, 0), badge.text)
 
-    badge.updateResult(currentMatch = 0, totalMatches = 0, targetVariant = StatusBadge.Variant.ERROR)
+    badge.updateResult(
+      currentMatch = 0,
+      totalMatches = 0,
+      targetVariant = StatusBadge.Variant.ERROR
+    )
     assertTrue(badge.isVisible)
     assertEquals(I18n.get(I18n.SEARCH_BAD_PATTERN), badge.text)
 
-    badge.updateResult(currentMatch = 0, totalMatches = 0, customMessage = "Custom Msg")
+    badge.updateResult(
+      currentMatch = 0,
+      totalMatches = 0,
+      customMessage = "Custom Msg"
+    )
     assertTrue(badge.isVisible)
     assertEquals("Custom Msg", badge.text)
   }
@@ -636,14 +648,177 @@ class StatusBadgeTests {
     val errorBg = badge.resolveBadgeBackground(StatusBadge.Variant.ERROR)
     val warningBg = badge.resolveBadgeBackground(StatusBadge.Variant.WARNING)
     val mutedBg = badge.resolveBadgeBackground(StatusBadge.Variant.MUTED)
+    val elevatedBg = badge.resolveBadgeBackground(StatusBadge.Variant.ELEVATED)
 
     assertNotNull(defaultBg)
     assertNotNull(errorBg)
     assertNotNull(warningBg)
     assertNotNull(mutedBg)
+    assertNotNull(elevatedBg)
     assertNotEquals(defaultBg, errorBg)
 
     badge.variant = StatusBadge.Variant.WARNING
     assertEquals(StatusBadge.Variant.WARNING, badge.variant)
+  }
+
+  /**
+   * Verifies that [StatusBadge.Variant.ELEVATED] configures default 16dp arc
+   * and 8dp/16dp vertical/horizontal padding.
+   */
+  @Test
+  fun testElevatedVariantDefaults() {
+    val badge = StatusBadge(StatusBadge.Variant.ELEVATED)
+    assertEquals(StatusBadge.Variant.ELEVATED, badge.variant)
+    assertEquals(16, badge.arcDp)
+    assertEquals(16, badge.paddingHorizontalDp)
+    assertEquals(8, badge.paddingVerticalDp)
+
+    val insets = badge.border.getBorderInsets(badge)
+    assertEquals(UIScaleUtils.dip(8), insets.top)
+    assertEquals(UIScaleUtils.dip(8), insets.bottom)
+    assertEquals(UIScaleUtils.dip(16), insets.left)
+    assertEquals(UIScaleUtils.dip(16), insets.right)
+  }
+
+  /**
+   * Verifies that [StatusBadge.Variant.SURFACE] is an alias for ELEVATED.
+   */
+  @Test
+  fun testVariantElevatedSurfaceAlias() {
+    assertEquals(StatusBadge.Variant.ELEVATED, StatusBadge.Variant.SURFACE)
+    val badge = StatusBadge(StatusBadge.Variant.SURFACE)
+    assertEquals(StatusBadge.Variant.ELEVATED, badge.variant)
+    assertEquals(16, badge.arcDp)
+    assertEquals(16, badge.paddingHorizontalDp)
+    assertEquals(8, badge.paddingVerticalDp)
+  }
+
+  /**
+   * Verifies that transitioning to and from ELEVATED variant adjusts padding
+   * and arc radius dynamically.
+   */
+  @Test
+  fun testVariantTransitionToElevatedUpdatesPaddingAndArc() {
+    val badge = StatusBadge(StatusBadge.Variant.DEFAULT)
+    assertEquals(8, badge.arcDp)
+    assertEquals(8, badge.paddingHorizontalDp)
+    assertEquals(2, badge.paddingVerticalDp)
+
+    badge.variant = StatusBadge.Variant.ELEVATED
+    assertEquals(16, badge.arcDp)
+    assertEquals(16, badge.paddingHorizontalDp)
+    assertEquals(8, badge.paddingVerticalDp)
+
+    badge.variant = StatusBadge.Variant.DEFAULT
+    assertEquals(8, badge.arcDp)
+    assertEquals(8, badge.paddingHorizontalDp)
+    assertEquals(2, badge.paddingVerticalDp)
+  }
+
+  /**
+   * Verifies background and foreground color resolution for ELEVATED variant
+   * in both light and dark modes.
+   */
+  @Test
+  fun testElevatedVariantColorsInLightAndDarkMode() {
+    val badge = StatusBadge(StatusBadge.Variant.ELEVATED)
+
+    // Background
+    val lightBg = badge.resolveBadgeBackground(
+      StatusBadge.Variant.ELEVATED,
+      isDark = false
+    )
+    val darkBg = badge.resolveBadgeBackground(
+      StatusBadge.Variant.ELEVATED,
+      isDark = true
+    )
+    assertEquals(Color(255, 255, 255), lightBg)
+    assertEquals(Color(48, 50, 56), darkBg)
+
+    // Foreground
+    val lightFg = badge.resolveBadgeForeground(
+      StatusBadge.Variant.ELEVATED,
+      isDark = false
+    )
+    val darkFg = badge.resolveBadgeForeground(
+      StatusBadge.Variant.ELEVATED,
+      isDark = true
+    )
+    assertEquals(Color(33, 37, 41), lightFg)
+    assertEquals(Color(245, 245, 245), darkFg)
+  }
+
+  /**
+   * Verifies border color resolution for ELEVATED variant honoring theme
+   * Component.borderColor or fallback values.
+   */
+  @Test
+  fun testElevatedVariantBorderColorRespectsThemeOrFallback() {
+    val badge = StatusBadge(StatusBadge.Variant.ELEVATED)
+    val origBorder = UIManager.get("Component.borderColor")
+    val origDefaultsBorder = UIManager.getDefaults()["Component.borderColor"]
+    try {
+      UIManager.put("Component.borderColor", null)
+      UIManager.getDefaults().remove("Component.borderColor")
+      val lightBorder = badge.resolveBorderColor(
+        StatusBadge.Variant.ELEVATED,
+        isDark = false
+      )
+      val darkBorder = badge.resolveBorderColor(
+        StatusBadge.Variant.ELEVATED,
+        isDark = true
+      )
+      assertEquals(Color(0, 0, 0, 45), lightBorder)
+      assertEquals(Color(255, 255, 255, 36), darkBorder)
+
+      val customColor = Color(12, 34, 56)
+      UIManager.put("Component.borderColor", customColor)
+      assertEquals(
+        customColor,
+        badge.resolveBorderColor(StatusBadge.Variant.ELEVATED, isDark = false)
+      )
+      assertEquals(
+        customColor,
+        badge.resolveBorderColor(StatusBadge.Variant.ELEVATED, isDark = true)
+      )
+    } finally {
+      UIManager.put("Component.borderColor", origBorder)
+      if (origDefaultsBorder != null) {
+        UIManager.getDefaults()["Component.borderColor"] = origDefaultsBorder
+      }
+    }
+  }
+
+  /**
+   * Verifies that ELEVATED variant paints cleanly onto an off-screen buffer
+   * without headless exceptions.
+   */
+  @Test
+  fun testElevatedVariantHeadlessPainting() {
+    val badge = StatusBadge(StatusBadge.Variant.ELEVATED)
+    badge.text = "Toast Message"
+    val w = UIScaleUtils.dip(150)
+    val h = UIScaleUtils.dip(36)
+    badge.setSize(w, h)
+
+    val image = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
+    val g = image.createGraphics()
+    try {
+      badge.paintComponent(g)
+    } finally {
+      g.dispose()
+    }
+
+    var hasPaintedPixel = false
+    val midX = w / 2
+    for (y in 0 until h) {
+      val argb = image.getRGB(midX, y)
+      val alpha = (argb ushr 24) and 0xFF
+      if (alpha > 0) {
+        hasPaintedPixel = true
+        break
+      }
+    }
+    assertTrue(hasPaintedPixel)
   }
 }
