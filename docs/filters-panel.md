@@ -24,27 +24,34 @@ You can organize filters into logical groups (for example: *Telephony*, *Bluetoo
 
 ## Global Filter Search
 
-When managing dozens of specialized filters across multiple groups, you can quickly locate and toggle any filter using keyboard search:
+When managing dozens of specialized filters across multiple groups, you can quickly locate and manage any filter using global keyboard search:
 
 [![Global Filter Search](images/filter-search.png)](images/filter-search.png)
 
 * Press ++cmd+shift+f++ (macOS) or ++ctrl+shift+f++ (Linux & Windows).
 * Type keywords to filter the list instantly across all groups.
-* Use arrow keys and press ++space++ or ++enter++ to activate the filter.
+* Use the keyboard directly in the results table:
+    * ++space++: Toggle the selected filter on or off.
+    * ++e++: Edit the selected filter.
+    * ++delete++: Delete the selected filter.
+    * ++enter++: Jump directly to the filter in its group.
+
+### Quick Inline Search
+When a filter group list is focused in the Filters panel, press ++slash++ (`/`) and start typing to highlight matching filters inline within that group. Press ++escape++ to clear the inline search.
 
 ---
 
 ## Filter Statistics & Occurrence Navigation
 
-When a filter is applied, LogViewer displays real-time match statistics and navigation shortcuts directly beside the filter name:
+When a filter is applied, LogViewer displays real-time match counts in a pill badge on the right side of each filter row and provides occurrence navigation controls:
 
 [![Filter Details](images/filter-details.png)](images/filter-details.png)
 
-In the example above (`ClassLoader {905} ❙ ← (,) / → (.)`):
-* **`{905}`**: The total number of matching log lines found in the active log set.
-* **`← (,)`**: Press ++comma++ to jump backward to the previous matching occurrence in the All Logs view.
-* **`→ (.)`**: Press ++period++ to jump forward to the next matching occurrence in the All Logs view.
-* **Navigation Buttons**: Click the `<` and `>` buttons to step through matches sequentially.
+In the example above (`Performance.filter (4)`):
+* **Group Count `(4)`**: Shows the total number of filters inside the group header.
+* **Match Count Badge (`90`, `1`, `2`, `0`)**: Displays the total number of matching log lines found in the active log set for each applied filter.
+* **Previous Match (`◀` / ++comma++)**: Select an applied filter and press ++comma++ (or click `◀` on the group header) to jump backward to the previous matching occurrence in the Filtered Logs view.
+* **Next Match (`▶` / ++period++)**: Select an applied filter and press ++period++ (or click `▶` on the group header) to jump forward to the next matching occurrence in the Filtered Logs view.
 
 ---
 

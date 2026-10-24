@@ -42,17 +42,17 @@ Whether you are debugging a live device over USB/Wi-Fi, analyzing a 100MB+ multi
 
     Inspect device properties (`getprop`), installed packages, permissions, carrier configurations, and background services in dedicated, searchable inspector tabs.
 
--   :material-bookmark-multiple: **"My Logs" Bookmarking**
+-   :material-bookmark-multiple: **"My Logs" & Elapsed Time**
 
     ---
 
-    Save critical log lines to a persistent bookmark list for targeted deep-dive analysis without clutter.
+    Bookmark critical log milestones into a dedicated timeline and select any two lines to measure exact elapsed duration or copy formatted incident snippets.
 
--   :material-theme-light-dark: **Modern Light & Dark Modes**
+-   :material-theme-light-dark: **Themes, Accent Colors & Keymap**
 
     ---
 
-    Seamless FlatLaf themes, customizable typography, and full keyboard navigation.
+    Seamless Light and Dark FlatLaf themes, accent color personalization, customizable typography, and a configurable Keymap editor.
 
 </div>
 

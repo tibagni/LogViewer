@@ -70,9 +70,23 @@ Right-clicking on any log line provides instant contextual actions:
 
 [![Log Context Menu](images/log-context-menu.png)](images/log-context-menu.png)
 
-* **Filter by PID**: Automatically generates and applies a new filter for the selected log line's process ID, instantly isolating all logs emitted by that specific app process.
+* **Filter by PID / Filter by Tag**: Automatically generates and applies a new filter for the selected log line's process ID or tag, instantly isolating all logs emitted by that specific process or component.
 * **Create Filter from this line...**: Opens the Filter Editor pre-filled with the selected line's text and tags.
 * **Add to My Logs**: Pins the log entry into the [My Logs](my-logs.md) bookmark list.
 * **Inspect Line**: Opens the detailed inspector dialog.
-* **Copy / Copy Message**: Copies the raw line or just the message payload to your clipboard.
+* **Copy**: Copies the selected log line(s) to your clipboard.
 * **Ignore Logs Before / After**: Sets active [Time Window](limiting-time-window.md) boundaries.
+
+---
+
+## Measuring Elapsed Time Between Log Lines
+
+When investigating performance bottlenecks, ANRs, or slow startup sequences, you can measure the exact time delta between any two log entries:
+
+[![Elapsed Time Measurement](images/elapsed-time-menu.png)](images/elapsed-time-menu.png)
+
+1. Select any **two log lines** in **All Logs**, **Filtered Logs**, or **My Logs** (using ++cmd++ / ++ctrl++ + click, or ++shift++ + click for adjacent lines).
+2. Right-click to immediately see the calculated **Elapsed Time** between the two timestamps in the context menu.
+3. Hover over **Elapsed Time** to copy the result to your clipboard:
+    * **Copy Snippet (Lines + Duration)**: Copies both log lines along with the formatted elapsed time delta—ideal for pasting directly into bug reports, pull requests, or issue tickets.
+    * **Copy Duration Only**: Copies just the formatted duration string (e.g., `5s 360ms (5.360s)`).
