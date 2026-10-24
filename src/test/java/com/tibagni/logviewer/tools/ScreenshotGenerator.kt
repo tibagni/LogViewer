@@ -562,8 +562,8 @@ object ScreenshotGenerator {
     if (resultsTable.rowCount > 0) {
       resultsTable.setRowSelectionInterval(0, 0)
     }
-    val matchesLabel = getPrivateField<JLabel>(searchFiltersDialog, "matchesLabel")
-    matchesLabel.text = "Showing all 355 filter(s)"
+    val matchesBadge = getPrivateField<JLabel>(searchFiltersDialog, "matchesBadge")
+    matchesBadge.text = "Showing all 355 filter(s)"
     realizeWindow(searchFiltersDialog)
     saveWindowImage(searchFiltersDialog, File(outputDir, "filter-search.png"))
     searchFiltersDialog.dispose()
