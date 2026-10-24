@@ -439,6 +439,11 @@ class LogViewerViewImpl(
       currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
     }
     headerPanel.repaint()
+    if (::logList.isInitialized) {
+      logList.onThemeChanged()
+      filteredLogList.onThemeChanged()
+      myLogsList.onThemeChanged()
+    }
   }
 
   override fun requestFinish(doFinish: () -> Unit) {

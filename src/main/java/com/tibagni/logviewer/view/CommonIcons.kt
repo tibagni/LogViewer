@@ -44,7 +44,12 @@ object CommonIcons {
     g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
     // Diagonal slash
     val slashOffset = r * 0.7071
-    g2d.draw(Line2D.Double(cx - slashOffset, cy - slashOffset, cx + slashOffset, cy + slashOffset))
+    g2d.draw(
+      Line2D.Double(
+        cx - slashOffset, cy - slashOffset,
+        cx + slashOffset, cy + slashOffset
+      )
+    )
   }
 
   fun autoScrollIcon(): ImageIcon = createIcon { g2d, size, color ->
@@ -167,6 +172,30 @@ object CommonIcons {
    */
   fun statusIndicatorIcon(active: Boolean, size: Int = 16): ImageIcon =
     StatusIndicatorIcon(active, size)
+
+  /**
+   * Creates a theme-aware vector chevron up icon with smooth rounded stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  fun chevronUpIcon(size: Int = 16): ImageIcon = ChevronUpIcon(size)
+
+  /**
+   * Creates a theme-aware vector chevron down icon with smooth rounded stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  fun chevronDownIcon(size: Int = 16): ImageIcon = ChevronDownIcon(size)
+
+  /**
+   * Creates a theme-aware vector close cross icon with smooth rounded stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  fun closeIcon(size: Int = 16): ImageIcon = CloseIcon(size)
 
   /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
@@ -518,6 +547,129 @@ object CommonIcons {
           line2Y
         )
       )
+    }
+  }
+
+  private abstract class DynamicVectorIcon(
+    protected val iconSize: Int
+  ) : ImageIcon() {
+    override fun getIconWidth(): Int = iconSize
+    override fun getIconHeight(): Int = iconSize
+
+    override fun getImage(): java.awt.Image {
+      val image = BufferedImage(
+        iconSize,
+        iconSize,
+        BufferedImage.TYPE_INT_ARGB
+      )
+      val g2d = image.createGraphics()
+      try {
+        setupHints(g2d)
+        paintIconContent(g2d, iconSize, resolveColor(null))
+      } finally {
+        g2d.dispose()
+      }
+      return image
+    }
+
+    override fun paintIcon(
+      c: java.awt.Component?,
+      g: java.awt.Graphics,
+      x: Int,
+      y: Int
+    ) {
+      val g2d = g.create() as? Graphics2D ?: return
+      try {
+        g2d.translate(x, y)
+        setupHints(g2d)
+        paintIconContent(g2d, iconSize, resolveColor(c))
+      } finally {
+        g2d.dispose()
+      }
+    }
+
+    protected fun setupHints(g2d: Graphics2D) {
+      g2d.setRenderingHint(
+        RenderingHints.KEY_ANTIALIASING,
+        RenderingHints.VALUE_ANTIALIAS_ON
+      )
+      g2d.setRenderingHint(
+        RenderingHints.KEY_STROKE_CONTROL,
+        RenderingHints.VALUE_STROKE_PURE
+      )
+    }
+
+    protected fun resolveColor(c: java.awt.Component?): Color {
+      return c?.foreground
+        ?: UIManager.getColor("Label.foreground")
+        ?: UIManager.getColor("Component.foreground")
+        ?: Color(128, 128, 128)
+    }
+
+    protected abstract fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    )
+  }
+
+  private class ChevronUpIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.stroke = BasicStroke(
+        1.8f,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+      val path = Path2D.Double()
+      path.moveTo(s * 0.28, s * 0.62)
+      path.lineTo(s * 0.50, s * 0.38)
+      path.lineTo(s * 0.72, s * 0.62)
+      g2d.draw(path)
+    }
+  }
+
+  private class ChevronDownIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.stroke = BasicStroke(
+        1.8f,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+      val path = Path2D.Double()
+      path.moveTo(s * 0.28, s * 0.38)
+      path.lineTo(s * 0.50, s * 0.62)
+      path.lineTo(s * 0.72, s * 0.38)
+      g2d.draw(path)
+    }
+  }
+
+  private class CloseIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.stroke = BasicStroke(
+        1.8f,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+      g2d.draw(Line2D.Double(s * 0.30, s * 0.30, s * 0.70, s * 0.70))
+      g2d.draw(Line2D.Double(s * 0.70, s * 0.30, s * 0.30, s * 0.70))
     }
   }
 
