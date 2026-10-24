@@ -12,7 +12,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Container panel displaying groups of filters with actions to add, remove, and reorder filters.
+ * Container panel displaying groups of filters with actions to add, remove,
+ * and reorder filters.
  */
 public class FiltersList extends JPanel {
   private FiltersListener listener;
@@ -35,6 +36,7 @@ public class FiltersList extends JPanel {
   @Override
   public void updateUI() {
     super.updateUI();
+    setOpaque(false);
     if (filterUIGroups != null) {
       for (FilterUIGroup group : filterUIGroups.values()) {
         group.updateUI();
@@ -53,6 +55,7 @@ public class FiltersList extends JPanel {
 
   private void initialize() {
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+    setOpaque(false);
     filterUIGroups = new HashMap<>();
     filters = new HashMap<>();
   }
@@ -187,7 +190,8 @@ public class FiltersList extends JPanel {
   }
 
   private void onFilterUIGroupFocusChanged(String currentFocus) {
-    // Whenever the focus is changed to a different filter group, make sure to clean the search of all others
+    // Whenever focus changes to a different filter group,
+    // make sure to clean the search of all others.
     for (Map.Entry<String, FilterUIGroup> entry : filterUIGroups.entrySet()) {
       if (!StringUtils.areEquals(currentFocus, entry.getKey())) {
         entry.getValue().cancelSearch();
