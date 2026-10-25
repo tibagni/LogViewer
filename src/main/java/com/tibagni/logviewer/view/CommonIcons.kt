@@ -236,6 +236,16 @@ object CommonIcons {
   fun closeIcon(size: Int = 16): ImageIcon = CloseIcon(size)
 
   /**
+   * Creates a theme-aware vector folder icon with smooth rounded stroke.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun folderIcon(size: Int = 16): ImageIcon = FolderIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -771,6 +781,52 @@ object CommonIcons {
       g2d.color = color
       g2d.draw(Line2D.Double(s * 0.30, s * 0.30, s * 0.70, s * 0.70))
       g2d.draw(Line2D.Double(s * 0.70, s * 0.30, s * 0.30, s * 0.70))
+    }
+  }
+
+  /**
+   * Dynamic theme-aware [ImageIcon] that paints a folder icon
+   * using current Look and Feel colors directly at paint time.
+   */
+  private class FolderIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.09f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val left = s * 0.12
+      val right = s * 0.88
+      val top = s * 0.20
+      val bottom = s * 0.82
+      val tabW = s * 0.32
+      val tabH = s * 0.15
+      val arc = (s * 0.10).coerceAtLeast(1.5)
+
+      val path = Path2D.Double()
+      path.moveTo(left, top + tabH)
+      path.lineTo(left, bottom - arc)
+      path.quadTo(left, bottom, left + arc, bottom)
+      path.lineTo(right - arc, bottom)
+      path.quadTo(right, bottom, right, bottom - arc)
+      path.lineTo(right, top + tabH + arc)
+      path.quadTo(right, top + tabH, right - arc, top + tabH)
+      path.lineTo(left + tabW + arc, top + tabH)
+      path.lineTo(left + tabW, top + arc)
+      path.quadTo(left + tabW - arc * 0.5, top, left + tabW - arc, top)
+      path.lineTo(left + arc, top)
+      path.quadTo(left, top, left, top + arc)
+      path.closePath()
+
+      g2d.draw(path)
     }
   }
 

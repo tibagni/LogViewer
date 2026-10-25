@@ -2,12 +2,15 @@ package com.tibagni.logviewer.preferences
 
 import com.jgoodies.forms.layout.CellConstraints
 import com.jgoodies.forms.layout.FormLayout
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
+import java.awt.Cursor
 import java.io.File
 import javax.swing.JComponent
 import javax.swing.JFileChooser
@@ -22,16 +25,30 @@ class ToolsPreferencePanel(
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_TOOLS)
 
-  private val preferredEditorPathTxt = createPathTextField()
-  private val preferredEditorPathBtn = FlatButton("...").apply {
-    toolTipText = I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR)
-  }
-  private val adbPathTxt = createPathTextField()
-  private val adbPathBtn = FlatButton("...").apply {
-    toolTipText = I18n.get(I18n.PREF_ADB_PATH)
-  }
-  private val adbPathClearBtn = FlatButton(I18n.get(I18n.COMMON_CLEAR)).apply {
+  @VisibleForTesting
+  internal val preferredEditorPathTxt = createPathTextField()
+
+  @VisibleForTesting
+  internal val preferredEditorPathBtn = createBrowseButton(
+    I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
+    CommonIcons.fileDocumentIcon()
+  )
+
+  @VisibleForTesting
+  internal val adbPathTxt = createPathTextField()
+
+  @VisibleForTesting
+  internal val adbPathBtn = createBrowseButton(
+    I18n.get(I18n.PREF_ADB_PATH),
+    CommonIcons.fileDocumentIcon()
+  )
+
+  @VisibleForTesting
+  internal val adbPathClearBtn = FlatButton(
+    I18n.get(I18n.COMMON_CLEAR)
+  ).apply {
     toolTipText = I18n.get(I18n.COMMON_CLEAR)
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
 
   private var selectedEditorPath: File? = userPrefs.preferredTextEditor
@@ -46,10 +63,11 @@ class ToolsPreferencePanel(
     updatePathText(adbPathTxt, selectedAdbPath?.absolutePath)
 
     preferredEditorPathBtn.addActionListener {
-      val chooser = preferredEditorFileChooser ?: JFileChooserExt(selectedEditorPath).apply {
-        dialogTitle = I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR)
-        preferredEditorFileChooser = this
-      }
+      val chooser = preferredEditorFileChooser
+        ?: JFileChooserExt(selectedEditorPath).apply {
+          dialogTitle = I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR)
+          preferredEditorFileChooser = this
+        }
       chooser.selectedFile = selectedEditorPath
       if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) {
         val file = chooser.selectedFile
@@ -59,10 +77,11 @@ class ToolsPreferencePanel(
     }
 
     adbPathBtn.addActionListener {
-      val chooser = adbFileChooser ?: JFileChooserExt(selectedAdbPath?.parentFile).apply {
-        dialogTitle = I18n.get(I18n.PREF_ADB_PATH)
-        adbFileChooser = this
-      }
+      val chooser = adbFileChooser
+        ?: JFileChooserExt(selectedAdbPath?.parentFile).apply {
+          dialogTitle = I18n.get(I18n.PREF_ADB_PATH)
+          adbFileChooser = this
+        }
       chooser.selectedFile = selectedAdbPath
       if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) {
         val file = chooser.selectedFile

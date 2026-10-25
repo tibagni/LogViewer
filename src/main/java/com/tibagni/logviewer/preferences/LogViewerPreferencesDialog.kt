@@ -1,19 +1,26 @@
 package com.tibagni.logviewer.preferences
 
+import com.formdev.flatlaf.FlatClientProperties
+import com.formdev.flatlaf.FlatLaf
+import com.formdev.flatlaf.ui.FlatLineBorder
 import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.theme.LogViewerThemeManager
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
+import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.LoadingSpinner
 import com.tibagni.logviewer.view.PaddingListCellRenderer
 import java.awt.BorderLayout
 import java.awt.CardLayout
+import java.awt.Color
 import java.awt.Component
 import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.GridBagLayout
+import java.awt.Insets
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import java.awt.event.WindowAdapter
@@ -35,14 +42,30 @@ import javax.swing.ListSelectionModel
 import javax.swing.ScrollPaneConstants
 import javax.swing.Scrollable
 import javax.swing.Timer
+import javax.swing.UIManager
+import javax.swing.border.Border
 
-class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane.Listener {
+class LogViewerPreferencesDialog(
+  parent: JFrame?
+) : JDialog(parent), ButtonsPane.Listener {
 
   private lateinit var mainPanel: JPanel
   private lateinit var buttonsPane: ButtonsPane
+
+  @VisibleForTesting
   internal lateinit var categoriesList: JList<PreferencePanel>
+
   private lateinit var categoriesListModel: DefaultListModel<PreferencePanel>
-  private lateinit var cardsPanel: JPanel
+
+  @VisibleForTesting
+  internal lateinit var cardsPanel: JPanel
+
+  @VisibleForTesting
+  internal lateinit var sidebarScrollPane: JScrollPane
+
+  @VisibleForTesting
+  internal lateinit var splitPane: JSplitPane
+
   private val cardLayout = CardLayout()
   private var isSaving = false
 
@@ -89,6 +112,28 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
     )
   }
 
+  /**
+   * Resolves the border color for the preferences card container.
+   *
+   * @return theme-adaptive [Color] for the container card border
+   */
+  @VisibleForTesting
+  internal fun resolveCardBorderColor(): Color =
+    CardBorderUtils.resolveCardBorderColor()
+
+  /**
+   * Creates a theme-adaptive rounded card border for the preferences dialog.
+   *
+   * @return 8dp rounded [Border]
+   */
+  @VisibleForTesting
+  internal fun createCardBorder(): Border {
+    val pad = UIScaleUtils.dip(1)
+    return CardBorderUtils.createCardBorder(
+      insets = Insets(pad, pad, pad, pad)
+    )
+  }
+
   private fun buildUi() {
     mainPanel = JPanel(BorderLayout()).apply {
       border = BorderFactory.createEmptyBorder(
@@ -104,6 +149,11 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
       preferencePanels.forEach { addElement(it) }
     }
     categoriesList = JList(categoriesListModel).apply {
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+      putClientProperty(
+        FlatClientProperties.STYLE,
+        "selectionArc: 8; selectionInsets: 2,6,2,6"
+      )
       cellRenderer = object : PaddingListCellRenderer(
         UIScaleUtils.dip(8),
         UIScaleUtils.dip(14),
@@ -117,7 +167,13 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
           isSelected: Boolean,
           cellHasFocus: Boolean
         ): Component {
-          val c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+          val c = super.getListCellRendererComponent(
+            list,
+            value,
+            index,
+            isSelected,
+            cellHasFocus
+          )
           if (value is PreferencePanel) {
             text = value.title
           }
@@ -128,10 +184,20 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
       selectedIndex = 0
     }
 
-    val sidebarScrollPane = JScrollPane(categoriesList).apply {
-      border = BorderFactory.createEmptyBorder()
-      horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+    sidebarScrollPane = JScrollPane(categoriesList).apply {
+      border = BorderFactory.createEmptyBorder(
+        UIScaleUtils.dip(4),
+        UIScaleUtils.dip(4),
+        UIScaleUtils.dip(4),
+        UIScaleUtils.dip(4)
+      )
+      horizontalScrollBarPolicy =
+        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
       viewport.background = categoriesList.background
+      putClientProperty(
+        FlatClientProperties.SCROLL_PANE_SMOOTH_SCROLLING,
+        true
+      )
     }
 
     // Cards panel setup
@@ -146,16 +212,21 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
 
     categoriesList.addListSelectionListener { e ->
       if (e.valueIsAdjusting || isSaving) return@addListSelectionListener
-      val selected = categoriesList.selectedValue ?: return@addListSelectionListener
+      val selected = categoriesList.selectedValue
+        ?: return@addListSelectionListener
       cardLayout.show(cardsPanel, selected.id)
     }
 
     // Split pane holding category navigation on left and settings cards on right
-    val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarScrollPane, cardsPanel).apply {
+    splitPane = JSplitPane(
+      JSplitPane.HORIZONTAL_SPLIT,
+      sidebarScrollPane,
+      cardsPanel
+    ).apply {
       dividerSize = UIScaleUtils.dip(1)
       dividerLocation = UIScaleUtils.dip(170)
       isContinuousLayout = true
-      border = BorderFactory.createEtchedBorder()
+      border = createCardBorder()
     }
 
     // Bottom action buttons (OK / Cancel)
@@ -167,11 +238,15 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
     mainPanel.add(buttonsPane, BorderLayout.SOUTH)
   }
 
-  private fun createCardPanel(title: String, formContent: JComponent): JPanel {
+  private fun createCardPanel(
+    title: String,
+    formContent: JComponent
+  ): JPanel {
     val card = JPanel(BorderLayout())
 
     // Category Header
     val headerPanel = JPanel(BorderLayout()).apply {
+      isOpaque = false
       val titleLabel = JLabel(title).apply {
         font = font.deriveFont(Font.BOLD, font.size2D + UIScaleUtils.dip(2))
         border = BorderFactory.createEmptyBorder(
@@ -181,16 +256,25 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
           UIScaleUtils.dip(16)
         )
       }
-      add(titleLabel, BorderLayout.NORTH)
+      add(titleLabel, BorderLayout.CENTER)
       add(JSeparator(), BorderLayout.SOUTH)
     }
     card.add(headerPanel, BorderLayout.NORTH)
 
     // Form content wrapper implementing Scrollable to track viewport width
     val contentWrapper = object : JPanel(BorderLayout()), Scrollable {
-      override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
-      override fun getScrollableUnitIncrement(r: Rectangle?, o: Int, d: Int): Int = UIScaleUtils.dip(16)
-      override fun getScrollableBlockIncrement(r: Rectangle?, o: Int, d: Int): Int = UIScaleUtils.dip(32)
+      override fun getPreferredScrollableViewportSize(): Dimension =
+        preferredSize
+      override fun getScrollableUnitIncrement(
+        r: Rectangle?,
+        o: Int,
+        d: Int
+      ): Int = UIScaleUtils.dip(16)
+      override fun getScrollableBlockIncrement(
+        r: Rectangle?,
+        o: Int,
+        d: Int
+      ): Int = UIScaleUtils.dip(32)
       override fun getScrollableTracksViewportWidth(): Boolean = true
       override fun getScrollableTracksViewportHeight(): Boolean = false
     }.apply {
@@ -205,8 +289,13 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
 
     val scrollPane = JScrollPane(contentWrapper).apply {
       border = BorderFactory.createEmptyBorder()
-      horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+      horizontalScrollBarPolicy =
+        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
       verticalScrollBar.unitIncrement = UIScaleUtils.dip(16)
+      putClientProperty(
+        FlatClientProperties.SCROLL_PANE_SMOOTH_SCROLLING,
+        true
+      )
     }
 
     card.add(scrollPane, BorderLayout.CENTER)
@@ -224,7 +313,14 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
         }
         val label = JLabel(I18n.get(I18n.PREF_SAVING_CHANGES)).apply {
           alignmentX = Component.CENTER_ALIGNMENT
-          border = BorderFactory.createEmptyBorder(UIScaleUtils.dip(12), 0, 0, 0)
+          foreground = UIManager.getColor("Label.disabledForeground")
+            ?: Color.GRAY
+          border = BorderFactory.createEmptyBorder(
+            UIScaleUtils.dip(12),
+            0,
+            0,
+            0
+          )
         }
         add(spinner)
         add(label)
@@ -279,7 +375,10 @@ class LogViewerPreferencesDialog(parent: JFrame?) : JDialog(parent), ButtonsPane
 
     @JvmStatic
     @JvmOverloads
-    fun showPreferencesDialog(parent: JFrame?, initialCategoryId: String? = null) {
+    fun showPreferencesDialog(
+      parent: JFrame?,
+      initialCategoryId: String? = null
+    ) {
       val dialog = LogViewerPreferencesDialog(parent)
       if (initialCategoryId != null) {
         dialog.selectCategory(initialCategoryId)

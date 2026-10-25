@@ -1,10 +1,13 @@
 package com.tibagni.logviewer.preferences
 
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CommonIcons
+import com.tibagni.logviewer.view.FlatButton
 import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.Icon
 import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JLabel
@@ -54,4 +57,22 @@ internal fun bindLabelToCheckbox(label: JLabel, checkbox: JCheckBox) {
       }
     }
   })
+}
+
+/**
+ * Creates a modern styled browse button with a folder or document icon,
+ * hand cursor, and tooltip text.
+ *
+ * @param tooltipText the tooltip text describing the browse target
+ * @param icon the icon to display; defaults to [CommonIcons.folderIcon]
+ * @return configured [FlatButton] with icon, tooltip, and hand cursor
+ */
+internal fun createBrowseButton(
+  tooltipText: String,
+  icon: Icon = CommonIcons.folderIcon()
+): FlatButton {
+  return FlatButton(icon).apply {
+    toolTipText = tooltipText
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+  }
 }

@@ -2,8 +2,10 @@ package com.tibagni.logviewer.preferences
 
 import com.jgoodies.forms.layout.CellConstraints
 import com.jgoodies.forms.layout.FormLayout
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
@@ -23,10 +25,14 @@ class FiltersPreferencePanel(
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_FILTERS)
 
-  private val filtersPathTxt = createPathTextField()
-  private val filtersPathBtn = FlatButton("...").apply {
-    toolTipText = I18n.get(I18n.PREF_DEFAULT_FILTERS_PATH)
-  }
+  @VisibleForTesting
+  internal val filtersPathTxt = createPathTextField()
+
+  @VisibleForTesting
+  internal val filtersPathBtn = createBrowseButton(
+    I18n.get(I18n.PREF_DEFAULT_FILTERS_PATH),
+    CommonIcons.folderIcon()
+  )
   private val openLastFilterChbx = JCheckBox()
   private val applyFiltersAfterEditChbx = JCheckBox()
   private val rememberAppliedFiltersChbx = JCheckBox()
@@ -47,11 +53,12 @@ class FiltersPreferencePanel(
     applyFiltersOnCheckChbx.isSelected = userPrefs.applyFilterOnCheck
 
     filtersPathBtn.addActionListener {
-      val chooser = filterFolderChooser ?: JFileChooserExt(selectedFiltersPath).apply {
-        dialogTitle = I18n.get(I18n.PREF_DEFAULT_FILTERS_PATH)
-        fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-        filterFolderChooser = this
-      }
+      val chooser = filterFolderChooser
+        ?: JFileChooserExt(selectedFiltersPath).apply {
+          dialogTitle = I18n.get(I18n.PREF_DEFAULT_FILTERS_PATH)
+          fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+          filterFolderChooser = this
+        }
       chooser.selectedFile = selectedFiltersPath
       if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) {
         val file = chooser.selectedFile
@@ -87,7 +94,10 @@ class FiltersPreferencePanel(
     val form = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
-        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow"
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
+          "top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
+          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
+          "top:4dlu:noGrow,center:d:noGrow"
       )
     ).apply { isOpaque = false }
 

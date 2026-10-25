@@ -1,13 +1,20 @@
 package com.tibagni.logviewer.preferences
 
+import com.formdev.flatlaf.FlatLaf
+import com.formdev.flatlaf.ui.FlatLineBorder
 import com.jgoodies.forms.layout.CellConstraints
 import com.jgoodies.forms.layout.FormLayout
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.theme.LogViewerThemeManager
 import com.tibagni.logviewer.util.LogFontManager
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
+import java.awt.Insets
+import javax.swing.BorderFactory
 import javax.swing.JCheckBox
 import javax.swing.JComboBox
 import javax.swing.JComponent
@@ -15,6 +22,8 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JSeparator
 import javax.swing.JTextField
+import javax.swing.UIManager
+import javax.swing.border.Border
 
 class AppearancePreferencePanel(
   private val userPrefs: LogViewerPreferences,
@@ -29,21 +38,34 @@ class AppearancePreferencePanel(
   private val logFontSizeCbx = JComboBox<Int>()
   private val logFontFamilyCbx = JComboBox<String>()
   private val boldLogTextChbx = JCheckBox()
-  private val fontPreviewTxt = object :
-    JTextField("Preview: 0123456789 ABCabc") { // no-i18n
+
+  @VisibleForTesting
+  internal val fontPreviewTxt = object :
+    JTextField(SAMPLE_PREVIEW_TEXT) {
     override fun getMinimumSize(): Dimension {
       val min = super.getMinimumSize()
-      min.width = UIScaleUtils.dip(80)
+      min.width = UIScaleUtils.dip(100)
       return min
     }
 
     override fun getPreferredSize(): Dimension {
       val pref = super.getPreferredSize()
-      pref.width = UIScaleUtils.dip(150)
+      pref.width = UIScaleUtils.dip(200)
       return pref
+    }
+
+    override fun updateUI() {
+      super.updateUI()
+      try {
+        border = createPreviewCompoundBorder()
+      } catch (_: Exception) {
+        // Fallback during super-constructor initialization
+      }
     }
   }.apply {
     isEditable = false
+    horizontalAlignment = JTextField.CENTER
+    border = createPreviewCompoundBorder()
   }
 
   /**
@@ -54,6 +76,33 @@ class AppearancePreferencePanel(
     set(value) {
       accentColorPicker.selectedAccentColor = value
     }
+
+  /**
+   * Resolves the border color for the typography preview card.
+   *
+   * @return theme-adaptive [Color] for the preview card border
+   */
+  internal fun resolvePreviewBorderColor(): Color =
+    CardBorderUtils.resolveCardBorderColor()
+
+  /**
+   * Creates a compound border for the font preview card consisting of
+   * an 8dp rounded [Border] and subtle [EmptyBorder] padding.
+   *
+   * @return configured compound [Border]
+   */
+  internal fun createPreviewCompoundBorder(): Border {
+    val roundedBorder = CardBorderUtils.createCardBorder(
+      insets = Insets(0, 0, 0, 0)
+    )
+    val paddingBorder = BorderFactory.createEmptyBorder(
+      UIScaleUtils.dip(10),
+      UIScaleUtils.dip(14),
+      UIScaleUtils.dip(10),
+      UIScaleUtils.dip(14)
+    )
+    return BorderFactory.createCompoundBorder(roundedBorder, paddingBorder)
+  }
 
   override val panel: JComponent = buildPanel()
 
@@ -75,7 +124,8 @@ class AppearancePreferencePanel(
   }
 
   /**
-   * Initializes the accent color picker and selects the currently configured accent color.
+   * Initializes the accent color picker and selects the currently
+   * configured accent color.
    */
   private fun initAccentColor() {
     accentColorPicker.selectedAccentColor = userPrefs.accentColor
@@ -138,7 +188,7 @@ class AppearancePreferencePanel(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
         "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
           "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
-          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
+          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:6dlu:noGrow," +
           "center:d:noGrow"
       )
     ).apply { isOpaque = false }
@@ -186,6 +236,13 @@ class AppearancePreferencePanel(
 
   companion object {
     const val ID = "appearance"
+
+    /**
+     * Standard readable pangram sample text displayed in the font preview card.
+     */
+    const val SAMPLE_PREVIEW_TEXT =
+      "The quick brown fox jumps over the lazy dog 0123456789"
+
     private val SUPPORTED_FONT_SIZES = arrayOf(
       8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32
     )
