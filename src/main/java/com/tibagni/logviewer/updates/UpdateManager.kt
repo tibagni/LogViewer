@@ -8,14 +8,14 @@ import org.json.JSONObject
 import java.net.URL
 import java.nio.charset.Charset
 
-class UpdateManager(private val listener: UpdateListener) {
+open class UpdateManager(private val listener: UpdateListener) {
   interface UpdateListener {
     fun onUpdateFound(newRelease: ReleaseInfo)
     fun onUpToDate()
     fun onFailedToCheckForUpdate(tr: Throwable)
   }
 
-  fun checkForUpdates() {
+  open fun checkForUpdates() {
     // If we fail to read the current version for some reason, do not proceed
     val currentVersion = AppInfo.currentVersionObject
     if (currentVersion == null) {
@@ -32,7 +32,10 @@ class UpdateManager(private val listener: UpdateListener) {
     }
   }
 
-  private fun notifyIfUpdateAvailable(latest: ReleaseInfo, listener: UpdateListener) {
+  private fun notifyIfUpdateAvailable(
+    latest: ReleaseInfo,
+    listener: UpdateListener
+  ) {
     val currentVersion = AppInfo.currentVersionObject
     if (currentVersion == null) {
       Logger.error("Current version is invalid")
