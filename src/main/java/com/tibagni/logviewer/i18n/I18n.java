@@ -317,8 +317,13 @@ public final class I18n {
 
   // Visible Logs Configuration (VisibleLogsConfigurationDialog)
   public static final String VISIBLE_LOGS_TITLE = "visible_logs.title";
+  public static final String VISIBLE_LOGS_INSTRUCTION = "visible_logs.instruction";
   public static final String VISIBLE_LOGS_FIRST_LABEL = "visible_logs.first_log_label";
   public static final String VISIBLE_LOGS_LAST_LABEL = "visible_logs.last_log_label";
+  public static final String VISIBLE_LOGS_NO_STARTING_POINT = "visible_logs.no_starting_point";
+  public static final String VISIBLE_LOGS_NO_ENDING_POINT = "visible_logs.no_ending_point";
+  public static final String VISIBLE_LOGS_STATUS_ACTIVE = "visible_logs.status_active";
+  public static final String VISIBLE_LOGS_STATUS_NOT_SET = "visible_logs.status_not_set";
 
   // Bugreport View & Sections
   public static final String BUGREPORT_OPEN_HINT = "bugreport.open_hint";
