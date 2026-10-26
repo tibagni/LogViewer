@@ -193,6 +193,8 @@ public final class I18n {
   public static final String FILTER_DEDUP_KEEP_IN_GROUP = "filters.dedup.keep_in_group";
   public static final String FILTER_DEDUP_SAME_GROUP_INFO = "filters.dedup.same_group_info";
   public static final String FILTER_DEDUP_CROSS_GROUP_ITEM = "filters.dedup.cross_group_item";
+  public static final String FILTER_DEDUP_BADGE_CROSS_GROUP = "filters.dedup.badge_cross_group";
+  public static final String FILTER_DEDUP_BADGE_SAME_GROUP = "filters.dedup.badge_same_group";
 
   // Filters List & Actions
   public static final String FILTERS_TOOLTIP_PREV = "filters.tooltip.prev";
