@@ -558,12 +558,10 @@ object ScreenshotGenerator {
       onFilterSelected = { _, _ -> }
     )
     searchFiltersDialog.isModal = false
-    val resultsTable = getPrivateField<JTable>(searchFiltersDialog, "resultsTable")
-    if (resultsTable.rowCount > 0) {
-      resultsTable.setRowSelectionInterval(0, 0)
+    if (searchFiltersDialog.resultsTable.rowCount > 0) {
+      searchFiltersDialog.resultsTable.setRowSelectionInterval(0, 0)
     }
-    val matchesLabel = getPrivateField<JLabel>(searchFiltersDialog, "matchesLabel")
-    matchesLabel.text = "Showing all 355 filter(s)"
+    searchFiltersDialog.matchesBadge.text = "Showing all 355 filter(s)"
     realizeWindow(searchFiltersDialog)
     saveWindowImage(searchFiltersDialog, File(outputDir, "filter-search.png"))
     searchFiltersDialog.dispose()
