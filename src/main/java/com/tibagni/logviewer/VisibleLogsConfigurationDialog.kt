@@ -1,35 +1,115 @@
 package com.tibagni.logviewer
 
+import com.formdev.flatlaf.FlatLaf
+import com.formdev.flatlaf.ui.FlatLineBorder
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
+import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.view.StatusBadge
+import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Font
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
 import java.awt.event.KeyEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.Box
+import javax.swing.JComponent
+import javax.swing.JDialog
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.KeyStroke
+import javax.swing.UIManager
+import javax.swing.border.EmptyBorder
 
-class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogConfiguration) :
-  JDialog(owner),
-  ButtonsPane.Listener {
-  private val buttonsPane = ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this)
+/**
+ * Dialog for reviewing and adjusting the starting and ending points of
+ * visible logs. Styled with Material 3 Expressive FlatLaf rounded cards,
+ * [StatusBadge] state indicators, and borderless [FlatButton] actions.
+ *
+ * @param owner the parent frame owning this modal dialog.
+ * @param configuration the initial visible log boundary configuration.
+ */
+class VisibleLogsConfigurationDialog(
+  owner: JFrame?,
+  configuration: VisibleLogConfiguration
+) : JDialog(owner), ButtonsPane.Listener {
+
+  private val buttonsPane = ButtonsPane(
+    ButtonsPane.ButtonsMode.OK_CANCEL,
+    this
+  )
   private val contentPane = JPanel()
 
-  private val startingPointLogText = JTextArea(3, 30)
-  private val endingPointLogText = JTextArea(3, 30)
-  private val clearStartingPointBtn = JButton(I18n.get(I18n.COMMON_CLEAR))
-  private val clearEndingPointBtn = JButton(I18n.get(I18n.COMMON_CLEAR))
+  @VisibleForTesting
+  internal val instructionLabel = JLabel(
+    I18n.get(I18n.VISIBLE_LOGS_INSTRUCTION)
+  )
 
-  private var startingLog: LogEntry? = configuration.startingLog
-  private var endingLog: LogEntry? = configuration.endingLog
-  private var returnConfiguration: VisibleLogConfiguration? = null
+  @VisibleForTesting
+  internal val startingBadge = StatusBadge()
+
+  @VisibleForTesting
+  internal val endingBadge = StatusBadge()
+
+  @VisibleForTesting
+  internal val clearStartingPointBtn = FlatButton(
+    I18n.get(I18n.COMMON_CLEAR)
+  )
+
+  @VisibleForTesting
+  internal val clearEndingPointBtn = FlatButton(
+    I18n.get(I18n.COMMON_CLEAR)
+  )
+
+  @VisibleForTesting
+  internal val startingPointLogText = JTextArea(3, 30)
+
+  @VisibleForTesting
+  internal val endingPointLogText = JTextArea(3, 30)
+
+  @VisibleForTesting
+  internal lateinit var startingCard: JPanel
+
+  @VisibleForTesting
+  internal lateinit var endingCard: JPanel
+
+  @VisibleForTesting
+  internal lateinit var startingScrollPane: JScrollPane
+
+  @VisibleForTesting
+  internal lateinit var endingScrollPane: JScrollPane
+
+  @VisibleForTesting
+  internal var startingLog: LogEntry? = configuration.startingLog
+
+  @VisibleForTesting
+  internal var endingLog: LogEntry? = configuration.endingLog
+
+  @VisibleForTesting
+  internal var returnConfiguration: VisibleLogConfiguration? = null
 
   companion object {
+    /**
+     * Displays the visible logs configuration dialog relative to the
+     * provided parent frame and returns the chosen configuration or null
+     * if cancelled.
+     *
+     * @param parent the hosting frame.
+     * @param configuration the initial boundary log entries.
+     * @return updated [VisibleLogConfiguration] on confirmation, or null.
+     */
     fun showIgnoredLogsConfigurationDialog(
       parent: JFrame?,
       configuration: VisibleLogConfiguration
@@ -50,7 +130,6 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     buttonsPane.setDefaultButtonOk()
     buttonsPane.setDefaultButtonCancel()
 
-    // call onCancel() when cross is clicked
     defaultCloseOperation = DO_NOTHING_ON_CLOSE
     addWindowListener(object : WindowAdapter() {
       override fun windowClosing(e: WindowEvent) {
@@ -58,7 +137,6 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
       }
     })
 
-    // call onCancel() on ESCAPE
     contentPane.registerKeyboardAction(
       { onCancel() },
       KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
@@ -77,152 +155,250 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
     updateVisibleLogsState()
   }
 
-  private fun updateVisibleLogsState() {
+  /**
+   * Updates visual badges, text areas, and clear button states based on
+   * current boundary logs.
+   */
+  @VisibleForTesting
+  internal fun updateVisibleLogsState() {
     val localStartingLog = startingLog
     val localEndingLog = endingLog
 
-    startingPointLogText.text = localStartingLog?.logText ?: "There is no \"starting point\" set for the visible logs"
-    endingPointLogText.text = localEndingLog?.logText ?: "There is no \"ending point\" set for the visible logs"
+    if (localStartingLog != null) {
+      startingPointLogText.text = localStartingLog.logText
+      startingPointLogText.foreground = resolveDefaultTextForeground()
+      startingBadge.variant = StatusBadge.Variant.NORMAL
+      startingBadge.text = I18n.get(I18n.VISIBLE_LOGS_STATUS_ACTIVE)
+      clearStartingPointBtn.isEnabled = true
+    } else {
+      startingPointLogText.text = I18n.get(
+        I18n.VISIBLE_LOGS_NO_STARTING_POINT
+      )
+      startingPointLogText.foreground = resolveDisabledForeground()
+      startingBadge.variant = StatusBadge.Variant.NO_RESULTS
+      startingBadge.text = I18n.get(I18n.VISIBLE_LOGS_STATUS_NOT_SET)
+      clearStartingPointBtn.isEnabled = false
+    }
+    startingBadge.isVisible = true
 
-    clearStartingPointBtn.isEnabled = localStartingLog != null
-    clearEndingPointBtn.isEnabled = localEndingLog != null
+    if (localEndingLog != null) {
+      endingPointLogText.text = localEndingLog.logText
+      endingPointLogText.foreground = resolveDefaultTextForeground()
+      endingBadge.variant = StatusBadge.Variant.NORMAL
+      endingBadge.text = I18n.get(I18n.VISIBLE_LOGS_STATUS_ACTIVE)
+      clearEndingPointBtn.isEnabled = true
+    } else {
+      endingPointLogText.text = I18n.get(
+        I18n.VISIBLE_LOGS_NO_ENDING_POINT
+      )
+      endingPointLogText.foreground = resolveDisabledForeground()
+      endingBadge.variant = StatusBadge.Variant.NO_RESULTS
+      endingBadge.text = I18n.get(I18n.VISIBLE_LOGS_STATUS_NOT_SET)
+      clearEndingPointBtn.isEnabled = false
+    }
+    endingBadge.isVisible = true
 
     startingPointLogText.caretPosition = 0
     endingPointLogText.caretPosition = 0
   }
 
+  /**
+   * Resolves the border color for cards and inner text scroll panes.
+   *
+   * @return the theme border color or dark/light fallback.
+   */
+  @VisibleForTesting
+  internal fun resolveBorderColor(): Color =
+    CardBorderUtils.resolveCardBorderColor()
+
+  /**
+   * Resolves the disabled text foreground for unset placeholders.
+   *
+   * @return the disabled label foreground color.
+   */
+  @VisibleForTesting
+  internal fun resolveDisabledForeground(): Color =
+    CardBorderUtils.resolveSecondaryLabelColor()
+
+  /**
+   * Resolves the primary foreground for active log text contents.
+   *
+   * @return the text area foreground or label foreground color.
+   */
+  @VisibleForTesting
+  internal fun resolveDefaultTextForeground(): Color {
+    return UIManager.getColor("TextArea.foreground")
+      ?: UIManager.getColor("Label.foreground")
+      ?: Color.DARK_GRAY
+  }
+
+  /**
+   * Builds the card container for either starting or ending log section.
+   *
+   * @param titleText header section title string.
+   * @param badge [StatusBadge] indicator component for the section.
+   * @param clearBtn [FlatButton] clear action for the section.
+   * @param textArea [JTextArea] log display area.
+   * @return pair containing the card [JPanel] and its [JScrollPane].
+   */
+  private fun createSectionCard(
+    titleText: String,
+    badge: StatusBadge,
+    clearBtn: FlatButton,
+    textArea: JTextArea
+  ): Pair<JPanel, JScrollPane> {
+    val card = JPanel(BorderLayout(0, UIScaleUtils.dip(8))).apply {
+      border = CardBorderUtils.createCardBorder(
+        insets = UIScaleUtils.scaleInsets(Insets(10, 10, 10, 10))
+      )
+    }
+
+    val headerPanel = JPanel(GridBagLayout()).apply {
+      isOpaque = false
+      val titleLabel = JLabel(titleText).apply {
+        font = font.deriveFont(Font.BOLD)
+      }
+      add(
+        titleLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(0)
+          .withAnchor(GridBagConstraints.WEST)
+          .build()
+      )
+      add(
+        badge,
+        GBConstraintsBuilder()
+          .withGridx(1).withGridy(0)
+          .withAnchor(GridBagConstraints.WEST)
+          .withInsets(UIScaleUtils.scaleInsets(Insets(0, 8, 0, 0)))
+          .build()
+      )
+      val spacer = Box.createHorizontalGlue()
+      add(
+        spacer,
+        GBConstraintsBuilder()
+          .withGridx(2).withGridy(0)
+          .withWeightx(1.0)
+          .withFill(GridBagConstraints.HORIZONTAL)
+          .build()
+      )
+      add(
+        clearBtn,
+        GBConstraintsBuilder()
+          .withGridx(3).withGridy(0)
+          .withAnchor(GridBagConstraints.EAST)
+          .build()
+      )
+    }
+
+    clearBtn.toolTipText = I18n.get(I18n.COMMON_CLEAR)
+
+    textArea.apply {
+      font = Font(Font.MONOSPACED, Font.PLAIN, font.size)
+      isEditable = false
+      lineWrap = true
+      wrapStyleWord = true
+      border = EmptyBorder(
+        UIScaleUtils.dip(6),
+        UIScaleUtils.dip(8),
+        UIScaleUtils.dip(6),
+        UIScaleUtils.dip(8)
+      )
+    }
+
+    val scrollPane = JScrollPane(textArea).apply {
+      border = CardBorderUtils.createCardBorder(
+        arc = 4,
+        insets = UIScaleUtils.scaleInsets(Insets(1, 1, 1, 1))
+      )
+    }
+
+    card.add(headerPanel, BorderLayout.NORTH)
+    card.add(scrollPane, BorderLayout.CENTER)
+
+    return Pair(card, scrollPane)
+  }
+
+  /**
+   * Assembles dialog views, section cards, and action buttons pane.
+   */
   private fun buildUi() {
     contentPane.layout = GridBagLayout()
     contentPane.border = BorderFactory.createEmptyBorder(
-      UIScaleUtils.dip(10), UIScaleUtils.dip(10),
-      UIScaleUtils.dip(10),
-      UIScaleUtils.dip(10)
-    )
-    contentPane.add(
-      buttonsPane,
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(1)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.BOTH)
-        .build()
+      UIScaleUtils.dip(12),
+      UIScaleUtils.dip(12),
+      UIScaleUtils.dip(12),
+      UIScaleUtils.dip(12)
     )
 
-    val positionsPane = JPanel()
-    positionsPane.layout = GridBagLayout()
-    positionsPane.add(
-      JLabel(
-        "<html>Below you can check the starting and ending points of the \"visible\" logs.<br>" +
-            "\"Visible logs\" are all the logs that are not ignored.<br><br>" +
-            "You can ignore parts of the log you are not interested in and focus only on what matters<br></html>"
-      ),
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(1)
-        .withGridWidth(GridBagConstraints.REMAINDER)
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
-    positionsPane.add(
-      JSeparator(),
-      GBConstraintsBuilder()
-        .withGridy(2)
-        .withGridWidth(GridBagConstraints.REMAINDER)
-        .withInsets(UIScaleUtils.scaleInsets(Insets(15, 5, 15, 5)))
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
+    instructionLabel.foreground = resolveDisabledForeground()
 
-    positionsPane.add(
-      JLabel(I18n.get(I18n.VISIBLE_LOGS_FIRST_LABEL)),
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(3)
-        .withGridWidth(2)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
-
-    val borderColor = if (ServiceLocator.themeManager.isDark) Color.LIGHT_GRAY else Color.DARK_GRAY
-    startingPointLogText.isEditable = false
-    startingPointLogText.border = BorderFactory.createDashedBorder(borderColor)
-    startingPointLogText.lineWrap = true
-    positionsPane.add(
-      JScrollPane(startingPointLogText),
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(4)
-        .withGridWidth(1)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
-
-    positionsPane.add(
+    val (startCardPanel, startScroll) = createSectionCard(
+      I18n.get(I18n.VISIBLE_LOGS_FIRST_LABEL),
+      startingBadge,
       clearStartingPointBtn,
-      GBConstraintsBuilder()
-        .withGridx(1)
-        .withGridy(4)
-        .withInsets(UIScaleUtils.scaleInsets(Insets(0, 5, 0, 0)))
-        .withFill(GridBagConstraints.NONE)
-        .build()
+      startingPointLogText
     )
+    startingCard = startCardPanel
+    startingScrollPane = startScroll
 
-    positionsPane.add(
-      JSeparator(),
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(5)
-        .withGridWidth(GridBagConstraints.REMAINDER)
-        .withInsets(UIScaleUtils.scaleInsets(Insets(15, 5, 15, 5)))
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
-
-    positionsPane.add(
-      JLabel(I18n.get(I18n.VISIBLE_LOGS_LAST_LABEL)),
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(6)
-        .withGridWidth(2)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
-
-    endingPointLogText.isEditable = false
-    endingPointLogText.border = BorderFactory.createDashedBorder(borderColor)
-    endingPointLogText.lineWrap = true
-    positionsPane.add(
-      JScrollPane(endingPointLogText),
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(7)
-        .withGridWidth(1)
-        .withWeightx(1.0)
-        .withFill(GridBagConstraints.HORIZONTAL)
-        .build()
-    )
-
-    positionsPane.add(
+    val (endCardPanel, endScroll) = createSectionCard(
+      I18n.get(I18n.VISIBLE_LOGS_LAST_LABEL),
+      endingBadge,
       clearEndingPointBtn,
-      GBConstraintsBuilder()
-        .withGridx(1)
-        .withGridy(7)
-        .withInsets(UIScaleUtils.scaleInsets(Insets(0, 5, 0, 0)))
-        .withFill(GridBagConstraints.NONE)
-        .build()
+      endingPointLogText
     )
+    endingCard = endCardPanel
+    endingScrollPane = endScroll
+
+    val positionsPane = JPanel(GridBagLayout()).apply {
+      add(
+        instructionLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(0)
+          .withWeightx(1.0)
+          .withFill(GridBagConstraints.HORIZONTAL)
+          .withInsets(UIScaleUtils.scaleInsets(Insets(0, 0, 10, 0)))
+          .build()
+      )
+      add(
+        startingCard,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(1)
+          .withWeightx(1.0)
+          .withWeighty(0.5)
+          .withFill(GridBagConstraints.BOTH)
+          .withInsets(UIScaleUtils.scaleInsets(Insets(0, 0, 10, 0)))
+          .build()
+      )
+      add(
+        endingCard,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(2)
+          .withWeightx(1.0)
+          .withWeighty(0.5)
+          .withFill(GridBagConstraints.BOTH)
+          .build()
+      )
+    }
 
     contentPane.add(
       positionsPane,
       GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(0)
+        .withGridx(0).withGridy(0)
         .withWeightx(1.0)
         .withWeighty(1.0)
         .withFill(GridBagConstraints.BOTH)
+        .build()
+    )
+
+    contentPane.add(
+      buttonsPane,
+      GBConstraintsBuilder()
+        .withGridx(0).withGridy(1)
+        .withWeightx(1.0)
+        .withFill(GridBagConstraints.HORIZONTAL)
+        .withInsets(UIScaleUtils.scaleInsets(Insets(10, 0, 0, 0)))
         .build()
     )
   }
@@ -238,4 +414,13 @@ class VisibleLogsConfigurationDialog(owner: JFrame?, configuration: VisibleLogCo
   }
 }
 
-data class VisibleLogConfiguration(val startingLog: LogEntry?, val endingLog: LogEntry?)
+/**
+ * Encapsulates the visible boundary log entries selected by the user.
+ *
+ * @property startingLog the first visible log entry, or null if unset.
+ * @property endingLog the last visible log entry, or null if unset.
+ */
+data class VisibleLogConfiguration(
+  val startingLog: LogEntry?,
+  val endingLog: LogEntry?
+)
