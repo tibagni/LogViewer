@@ -160,6 +160,9 @@ public final class I18n {
   public static final String REGEX_EDITOR_LABEL_FLAGS = "regex.editor.flags";
   public static final String REGEX_EDITOR_CASE_SENSITIVE = "regex.editor.case_sensitive";
   public static final String REGEX_EDITOR_SAMPLE_TEXT = "regex.editor.sample_text";
+  public static final String REGEX_EDITOR_MATCHES_COUNT = "regex.editor.matches_count";
+  public static final String REGEX_EDITOR_NO_MATCHES = "regex.editor.no_matches";
+  public static final String REGEX_EDITOR_INVALID_REGEX = "regex.editor.invalid_regex";
 
   // Search Filters Dialog
   public static final String SEARCH_FILTERS_DIALOG_TITLE = "filters.search.title";

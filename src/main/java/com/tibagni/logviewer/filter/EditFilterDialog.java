@@ -12,6 +12,9 @@ import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.view.ButtonsPane;
+import com.tibagni.logviewer.view.CardBorderUtils;
+import com.tibagni.logviewer.view.CommonIcons;
+import com.tibagni.logviewer.view.FlatButton;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -61,7 +64,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private JCheckBox caseSensitiveCbx;
   private JLabel verbosityLbl;
   private JComboBox<LogLevel> verbosityCombo;
-  private JButton regexEditorBtn;
+  private FlatButton regexEditorBtn;
   private JColorChooser colorChooser;
 
   @FunctionalInterface
@@ -75,28 +78,30 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private String previewText;
   private final LogViewerThemeManager themeManager;
 
-  private final DocumentListener regexDocumentListener = new DocumentListener() {
-    @Override
-    public void insertUpdate(DocumentEvent e) {
-      nameTxt.setText(regexTxt.getText());
-    }
+  private final DocumentListener regexDocumentListener =
+      new DocumentListener() {
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+          nameTxt.setText(regexTxt.getText());
+        }
 
-    @Override
-    public void removeUpdate(DocumentEvent e) {
-      nameTxt.setText(regexTxt.getText());
-    }
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+          nameTxt.setText(regexTxt.getText());
+        }
 
-    @Override
-    public void changedUpdate(DocumentEvent e) {
-      nameTxt.setText(regexTxt.getText());
-    }
-  };
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+          nameTxt.setText(regexTxt.getText());
+        }
+      };
 
   EditFilterDialog(Frame owner, Filter editingFilter) {
     this(owner, editingFilter, null, null);
   }
 
-  EditFilterDialog(Frame owner, Filter editingFilter, DuplicateCheckCallback duplicateCheckCallback) {
+  EditFilterDialog(Frame owner, Filter editingFilter,
+      DuplicateCheckCallback duplicateCheckCallback) {
     this(owner, editingFilter, null, duplicateCheckCallback);
   }
 
@@ -104,13 +109,15 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     this(owner, editingFilter, preDefinedText, null);
   }
 
-  EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText, DuplicateCheckCallback duplicateCheckCallback) {
+  EditFilterDialog(Frame owner, Filter editingFilter, String preDefinedText,
+      DuplicateCheckCallback duplicateCheckCallback) {
     super(owner);
     this.editingFilter = editingFilter;
     this.duplicateCheckCallback = duplicateCheckCallback;
     previewText = preDefinedText;
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
-    setTitle(I18n.get(editingFilter != null ? I18n.FILTER_DIALOG_EDIT_TITLE : I18n.FILTER_DIALOG_NEW_TITLE));
+    setTitle(I18n.get(editingFilter != null ?
+        I18n.FILTER_DIALOG_EDIT_TITLE : I18n.FILTER_DIALOG_NEW_TITLE));
     buildUi();
 
     setContentPane(contentPane);
@@ -130,7 +137,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     });
 
     // call onCancel() on ESCAPE
-    contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+    contentPane.registerKeyboardAction(e -> onCancel(),
+        KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
         JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
     boolean nameIsPattern = true;
@@ -152,7 +160,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
         @Override
         public void mouseClicked(MouseEvent e) {
           if (!nameTxt.isEnabled()) {
-            regexTxt.getDocument().removeDocumentListener(regexDocumentListener);
+            regexTxt.getDocument()
+                .removeDocumentListener(regexDocumentListener);
             nameTxt.setEnabled(true);
             nameTxt.requestFocus();
             nameTxt.selectAll();
@@ -187,7 +196,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     boolean caseSensitive = caseSensitiveCbx.isSelected();
     LogLevel verbosity = (LogLevel) verbosityCombo.getSelectedItem();
 
-    FilterMatch duplicateMatch = checkForDuplicateFilter(pattern, caseSensitive);
+    FilterMatch duplicateMatch =
+        checkForDuplicateFilter(pattern, caseSensitive);
     if (duplicateMatch != null) {
       String message = I18n.format(
           I18n.FILTER_DUPLICATE_WARNING_MSG,
@@ -201,7 +211,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
           JOptionPane.YES_NO_OPTION,
           JOptionPane.WARNING_MESSAGE,
           null,
-          new Object[]{I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY), I18n.get(I18n.COMMON_CANCEL)},
+          new Object[]{I18n.get(I18n.FILTER_DUPLICATE_ADD_ANYWAY),
+              I18n.get(I18n.COMMON_CANCEL)},
           I18n.get(I18n.COMMON_CANCEL)
       );
       if (choice != JOptionPane.YES_OPTION) {
@@ -211,12 +222,15 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
     try {
       if (filter == null) {
-        filter = new Filter(name, pattern, selectedColor, verbosity, caseSensitive);
+        filter = new Filter(name, pattern, selectedColor,
+            verbosity, caseSensitive);
       } else {
-        filter.updateFilter(name, pattern, selectedColor, verbosity, caseSensitive);
+        filter.updateFilter(name, pattern, selectedColor,
+            verbosity, caseSensitive);
       }
     } catch (FilterException e) {
-      JOptionPane.showConfirmDialog(this, e.getMessage(), I18n.get(I18n.COMMON_ERROR),
+      JOptionPane.showConfirmDialog(this, e.getMessage(),
+          I18n.get(I18n.COMMON_ERROR),
           JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
       return;
     }
@@ -224,7 +238,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     dispose();
   }
 
-  FilterMatch checkForDuplicateFilter(String newPattern, boolean caseSensitive) {
+  FilterMatch checkForDuplicateFilter(String newPattern,
+      boolean caseSensitive) {
     if (duplicateCheckCallback != null) {
       return duplicateCheckCallback.check(newPattern, caseSensitive);
     }
@@ -238,8 +253,9 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   }
 
   private void onEditRegex() {
-    RegexEditorDialog.Result edited = RegexEditorDialog.showEditRegexDialog(this, this,
-        regexTxt.getText(), previewText, caseSensitiveCbx.isSelected());
+    RegexEditorDialog.Result edited =
+        RegexEditorDialog.showEditRegexDialog(this, this,
+            regexTxt.getText(), previewText, caseSensitiveCbx.isSelected());
 
     if (edited != null) {
       regexTxt.setText(edited.pattern);
@@ -247,9 +263,11 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     }
   }
 
-  private AbstractColorChooserPanel getSwatchPanel(AbstractColorChooserPanel[] panels) {
+  private AbstractColorChooserPanel getSwatchPanel(
+      AbstractColorChooserPanel[] panels) {
     for (AbstractColorChooserPanel colorPanel : panels) {
-      if (colorPanel.getClass().getName().contains("DefaultSwatchChooserPanel")) {
+      if (colorPanel.getClass().getName().contains(
+          "DefaultSwatchChooserPanel")) {
         return colorPanel;
       }
     }
@@ -267,8 +285,10 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     return getRandomColor(themeManager.isDark());
   }
 
-  public static Filter showEditFilterDialog(Frame parent, Filter editingFilter, DuplicateCheckCallback duplicateCheckCallback) {
-    EditFilterDialog dialog = new EditFilterDialog(parent, editingFilter, duplicateCheckCallback);
+  public static Filter showEditFilterDialog(Frame parent,
+      Filter editingFilter, DuplicateCheckCallback duplicateCheckCallback) {
+    EditFilterDialog dialog =
+        new EditFilterDialog(parent, editingFilter, duplicateCheckCallback);
     dialog.pack();
     dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
@@ -276,11 +296,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     return dialog.filter;
   }
 
-  public static Filter showEditFilterDialog(Frame parent, Filter editingFilter) {
+  public static Filter showEditFilterDialog(Frame parent,
+      Filter editingFilter) {
     return showEditFilterDialog(parent, editingFilter, null);
   }
 
-  public static Filter showEditFilterDialog(Frame parent, DuplicateCheckCallback duplicateCheckCallback) {
+  public static Filter showEditFilterDialog(Frame parent,
+      DuplicateCheckCallback duplicateCheckCallback) {
     return showEditFilterDialog(parent, null, duplicateCheckCallback);
   }
 
@@ -290,8 +312,10 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
   // This is used to create a Filter from an existing predefined String
   // It will open the Edit Dialog directly on the RegEx Editor
-  public static Filter showEditFilterDialogWithText(Frame parent, String preDefinedText, DuplicateCheckCallback duplicateCheckCallback) {
-    EditFilterDialog dialog = new EditFilterDialog(parent, null, preDefinedText, duplicateCheckCallback);
+  public static Filter showEditFilterDialogWithText(Frame parent,
+      String preDefinedText, DuplicateCheckCallback duplicateCheckCallback) {
+    EditFilterDialog dialog = new EditFilterDialog(parent, null,
+        preDefinedText, duplicateCheckCallback);
     dialog.pack();
     dialog.setLocationRelativeTo(parent);
     dialog.setVisible(true);
@@ -299,17 +323,19 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     return dialog.filter;
   }
 
-  public static Filter showEditFilterDialogWithText(Frame parent, String preDefinedText) {
+  public static Filter showEditFilterDialogWithText(Frame parent,
+      String preDefinedText) {
     return showEditFilterDialogWithText(parent, preDefinedText, null);
   }
 
   private void buildUi() {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
-    contentPane.setBorder(BorderFactory.createEmptyBorder(UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10),
-            UIScaleUtils.dip(10)));
+    contentPane.setBorder(BorderFactory.createEmptyBorder(
+        UIScaleUtils.dip(10),
+        UIScaleUtils.dip(10),
+        UIScaleUtils.dip(10),
+        UIScaleUtils.dip(10)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,
@@ -333,8 +359,12 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private JPanel buildEditPane() {
     final JPanel editPane = new JPanel();
     editPane.setLayout(new FormLayout(
-        "fill:d:noGrow,left:4dlu:noGrow,fill:d:grow,left:4dlu:noGrow,fill:max(d;4px):noGrow",
-        "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow"));
+        "fill:d:noGrow,left:4dlu:noGrow,fill:d:grow,"
+            + "left:4dlu:noGrow,fill:max(d;4px):noGrow",
+        "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,"
+            + "top:3dlu:noGrow,center:max(d;4px):noGrow,"
+            + "top:3dlu:noGrow,center:max(d;4px):noGrow,"
+            + "top:3dlu:noGrow,center:max(d;4px):noGrow"));
 
     nameLbl = new JLabel();
     nameLbl.setText(I18n.get(I18n.FILTER_LABEL_NAME));
@@ -343,26 +373,36 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     editPane.add(nameLbl, cc.xy(1, 1));
     nameTxt = new JTextField();
     nameTxt.setEnabled(true);
-    nameTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
-    editPane.add(nameTxt, cc.xy(3, 1, CellConstraints.FILL, CellConstraints.DEFAULT));
+    nameTxt.putClientProperty(
+        FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
+    editPane.add(nameTxt,
+        cc.xy(3, 1, CellConstraints.FILL, CellConstraints.DEFAULT));
 
     regexLbl = new JLabel();
     regexLbl.setText(I18n.get(I18n.FILTER_LABEL_REGEX));
     regexLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX));
     editPane.add(regexLbl, cc.xy(1, 3));
     regexTxt = new JTextField();
-    regexTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
-    editPane.add(regexTxt, cc.xy(3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
-    regexEditorBtn = new JButton();
+    regexTxt.putClientProperty(
+        FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
+    regexTxt.setFont(new Font(Font.MONOSPACED, Font.PLAIN,
+        regexTxt.getFont().getSize()));
+    editPane.add(regexTxt,
+        cc.xy(3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+    regexEditorBtn = new FlatButton();
     regexEditorBtn.setText(I18n.get(I18n.FILTER_BTN_REGEX_EDITOR));
-    regexEditorBtn.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX_EDITOR));
+    regexEditorBtn.setIcon(CommonIcons.chevronRightIcon(14));
+    regexEditorBtn.setIconTextGap(UIScaleUtils.dip(4));
+    regexEditorBtn.setToolTipText(
+        I18n.get(I18n.FILTER_TOOLTIP_REGEX_EDITOR));
     editPane.add(regexEditorBtn, cc.xy(5, 3));
 
     caseSensitiveLbl = new JLabel();
     caseSensitiveLbl.setText(I18n.get(I18n.FILTER_LABEL_CASE_SENSITIVE));
     editPane.add(caseSensitiveLbl, cc.xy(1, 5));
     caseSensitiveCbx = new JCheckBox();
-    caseSensitiveCbx.setText(I18n.get(I18n.FILTER_LABEL_ENABLE_CASE_SENSITIVE));
+    caseSensitiveCbx.setText(
+        I18n.get(I18n.FILTER_LABEL_ENABLE_CASE_SENSITIVE));
     editPane.add(caseSensitiveCbx, cc.xy(3, 5));
 
     verbosityLbl = new JLabel();
@@ -378,17 +418,97 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     colorLbl.setText(I18n.get(I18n.FILTER_LABEL_COLOR));
     colorLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_COLOR));
     editPane.add(colorLbl, cc.xy(1, 9));
+
+    Color secondaryColor = CardBorderUtils.resolveSecondaryLabelColor();
+    nameLbl.setForeground(secondaryColor);
+    regexLbl.setForeground(secondaryColor);
+    caseSensitiveLbl.setForeground(secondaryColor);
+    verbosityLbl.setForeground(secondaryColor);
+    colorLbl.setForeground(secondaryColor);
+
     colorChooser = new JColorChooser();
 
     // Show a simple text field for preview
     JTextField preview = new JTextField(I18n.get(I18n.FILTER_PREVIEW_COLOR));
     preview.setBorder(new EmptyBorder(UIScaleUtils.dip(5),
-            UIScaleUtils.dip(15),
-            UIScaleUtils.dip(5),
-            UIScaleUtils.dip(15)));
+        UIScaleUtils.dip(15),
+        UIScaleUtils.dip(5),
+        UIScaleUtils.dip(15)));
     colorChooser.setPreviewPanel(preview);
     editPane.add(colorChooser, cc.xy(3, 9));
 
     return editPane;
+  }
+
+  /**
+   * Returns the regex editor flat button.
+   *
+   * @return the regex editor button
+   */
+  public FlatButton getRegexEditorBtn() {
+    return regexEditorBtn;
+  }
+
+  /**
+   * Returns the regex pattern input field.
+   *
+   * @return the regex text field
+   */
+  public JTextField getRegexTxt() {
+    return regexTxt;
+  }
+
+  /**
+   * Returns the filter name input field.
+   *
+   * @return the name text field
+   */
+  public JTextField getNameTxt() {
+    return nameTxt;
+  }
+
+  /**
+   * Returns the name label.
+   *
+   * @return the name label
+   */
+  public JLabel getNameLbl() {
+    return nameLbl;
+  }
+
+  /**
+   * Returns the regex label.
+   *
+   * @return the regex label
+   */
+  public JLabel getRegexLbl() {
+    return regexLbl;
+  }
+
+  /**
+   * Returns the case sensitive label.
+   *
+   * @return the case sensitive label
+   */
+  public JLabel getCaseSensitiveLbl() {
+    return caseSensitiveLbl;
+  }
+
+  /**
+   * Returns the verbosity label.
+   *
+   * @return the verbosity label
+   */
+  public JLabel getVerbosityLbl() {
+    return verbosityLbl;
+  }
+
+  /**
+   * Returns the color label.
+   *
+   * @return the color label
+   */
+  public JLabel getColorLbl() {
+    return colorLbl;
   }
 }
