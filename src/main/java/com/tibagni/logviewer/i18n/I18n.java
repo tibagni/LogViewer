@@ -350,6 +350,7 @@ public final class I18n {
   public static final String UPDATES_NEW_VERSION_AVAILABLE = "updates.new_version_available";
   public static final String UPDATES_NEW_VERSION_LABEL = "updates.new_version_label";
   public static final String UPDATES_RELEASE_NOTES_LABEL = "updates.release_notes_label";
+  public static final String UPDATES_BTN_DOWNLOAD = "updates.btn_download";
 
   // Keyboard Shortcuts & Keymap Settings
   public static final String SHORTCUT_CATEGORY_FILE = "shortcuts.category.file";
