@@ -9,6 +9,7 @@ import com.tibagni.logviewer.shortcuts.ShortcutAction;
 import com.tibagni.logviewer.shortcuts.ShortcutManager;
 import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
+import com.tibagni.logviewer.view.CardBorderUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
 import com.tibagni.logviewer.view.CommonIcons;
 import com.tibagni.logviewer.view.FlatButton;
@@ -663,17 +664,7 @@ class FilterUIGroup extends JPanel {
    * @return the card border [Color].
    */
   Color resolveCardBorderColor() {
-    Color borderColor = UIManager.getColor("Component.borderColor");
-    if (borderColor != null) {
-      return borderColor;
-    }
-    Color sepColor = UIManager.getColor("Separator.foreground");
-    if (sepColor != null) {
-      return sepColor;
-    }
-    return isDarkTheme()
-        ? new Color(255, 255, 255, 40)
-        : new Color(0, 0, 0, 40);
+    return CardBorderUtils.resolveCardBorderColor();
   }
 
   /**
