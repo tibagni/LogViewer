@@ -7,6 +7,7 @@ import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.layout.WrapLayout
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.view.TriStateCheckbox
@@ -96,14 +97,14 @@ class LiveLogDevicesPanel(
   }
 
   private fun updateBuffersCardStyle(card: JPanel = buffersCard) {
-    val borderColor = UIManager.getColor("Component.borderColor")
-      ?: UIManager.getColor("Separator.foreground")
-      ?: Color(200, 200, 200)
-    val cardBg = UIManager.getColor("Table.background") ?: UIManager.getColor("Panel.background")
+    val padV = UIScaleUtils.dip(8)
+    val padH = UIScaleUtils.dip(14)
+    val cardBg = UIManager.getColor("Table.background")
+      ?: UIManager.getColor("Panel.background")
 
     card.border = BorderFactory.createCompoundBorder(
-      BorderFactory.createLineBorder(borderColor, 1),
-      EmptyBorder(UIScaleUtils.dip(8), UIScaleUtils.dip(14), UIScaleUtils.dip(8), UIScaleUtils.dip(14))
+      CardBorderUtils.createCardBorder(insets = Insets(0, 0, 0, 0)),
+      EmptyBorder(padV, padH, padV, padH)
     )
     card.background = cardBg
   }
@@ -131,21 +132,21 @@ class LiveLogDevicesPanel(
     deviceItemsContainer.removeAll()
     activeStartButtons.clear()
 
-    val borderColor = UIManager.getColor("Component.borderColor")
-      ?: UIManager.getColor("Separator.foreground")
-      ?: Color(200, 200, 200)
     val hoverBorderColor = UIManager.getColor("Component.focusedBorderColor")
       ?: UIManager.getColor("Tree.selectionBackground")
       ?: Color(0, 120, 215)
-    val cardBg = UIManager.getColor("Table.background") ?: UIManager.getColor("Panel.background")
+    val cardBg = UIManager.getColor("Table.background")
+      ?: UIManager.getColor("Panel.background")
 
+    val padV = UIScaleUtils.dip(10)
+    val padH = UIScaleUtils.dip(16)
     val normalBorder = BorderFactory.createCompoundBorder(
-      BorderFactory.createLineBorder(borderColor, 1),
-      EmptyBorder(UIScaleUtils.dip(10), UIScaleUtils.dip(16), UIScaleUtils.dip(10), UIScaleUtils.dip(16))
+      CardBorderUtils.createCardBorder(insets = Insets(0, 0, 0, 0)),
+      EmptyBorder(padV, padH, padV, padH)
     )
     val hoverBorder = BorderFactory.createCompoundBorder(
-      BorderFactory.createLineBorder(hoverBorderColor, 1),
-      EmptyBorder(UIScaleUtils.dip(10), UIScaleUtils.dip(16), UIScaleUtils.dip(10), UIScaleUtils.dip(16))
+      CardBorderUtils.createCardBorder(insets = Insets(0, 0, 0, 0), lineColor = hoverBorderColor),
+      EmptyBorder(padV, padH, padV, padH)
     )
 
     for (device in devices) {
@@ -305,7 +306,6 @@ class LiveLogDevicesPanel(
             0 -> TriStateCheckbox.SelectionState.NOT_SELECTED
             else -> TriStateCheckbox.SelectionState.PARTIALLY_SELECTED
           }
-          allCb.updateUI()
           updateStartButtonsState(getSelectedBuffers().isNotEmpty())
         }
       }
@@ -320,7 +320,6 @@ class LiveLogDevicesPanel(
       0 -> TriStateCheckbox.SelectionState.NOT_SELECTED
       else -> TriStateCheckbox.SelectionState.PARTIALLY_SELECTED
     }
-    allCb.updateUI()
 
     return card to allCb
   }
@@ -330,9 +329,12 @@ class LiveLogDevicesPanel(
     buffersCard = card
     selectAllCb = allCb
     val toolbar = JPanel(GridBagLayout()).apply {
+      val borderCol = CardBorderUtils.resolveCardBorderColor()
+      val padV = UIScaleUtils.dip(8)
+      val padH = UIScaleUtils.dip(16)
       border = BorderFactory.createCompoundBorder(
-        BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground") ?: Color.LIGHT_GRAY),
-        EmptyBorder(UIScaleUtils.dip(8), UIScaleUtils.dip(16), UIScaleUtils.dip(8), UIScaleUtils.dip(16))
+        BorderFactory.createMatteBorder(0, 0, UIScaleUtils.dip(1), 0, borderCol),
+        EmptyBorder(padV, padH, padV, padH)
       )
     }
 
@@ -340,14 +342,12 @@ class LiveLogDevicesPanel(
       font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(14).toFloat())
     }
 
-    refreshDevicesBtn = FlatButton(
-      I18n.get(I18n.LIVE_LOGS_REFRESH)
-    ).apply {
+    refreshDevicesBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_REFRESH)).apply {
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       addActionListener { presenter.loadDevices() }
     }
-    restartServerBtn = FlatButton(
-      I18n.get(I18n.LIVE_LOGS_RESTART_SERVER)
-    ).apply {
+    restartServerBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_RESTART_SERVER)).apply {
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       addActionListener { presenter.restartAdbServer() }
     }
     toolbarDivider = ToolbarDivider()
