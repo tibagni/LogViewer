@@ -33,6 +33,7 @@ public final class I18n {
   public static final String COMMON_REMOVE = "common.remove";
   public static final String COMMON_CONFIRM_TITLE = "common.confirm_title";
   public static final String COMMON_SELECT_UNSELECT_ALL = "common.select_unselect_all";
+  public static final String COMMON_LOADING = "common.loading";
 
   // Preferences Dialog
   public static final String PREF_DIALOG_TITLE = "pref.dialog.title";
