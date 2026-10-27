@@ -20,7 +20,6 @@ import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
-import java.awt.Cursor
 import java.awt.FlowLayout
 import java.awt.Frame
 import java.awt.GridBagConstraints
@@ -184,37 +183,29 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     filterActionButtonsPane = JPanel(
       FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(4), 0)
     )
-    collapseExpandAllGroupsBtn = FlatButton().apply {
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-    }
+    collapseExpandAllGroupsBtn = FlatButton()
     updateCollapseExpandButtonState()
     addNewFilterGroupBtn = FlatButton().apply {
       actionCommand = "Add"
       text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
       icon = CommonIcons.plusIcon(14)
       iconTextGap = UIScaleUtils.dip(4)
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     }
     moreFilterOptionsBtn = FlatButton().apply {
       toolTipText = I18n.get(
         I18n.FILTERS_TOOLTIP_MORE_OPTIONS
       )
       text = StringUtils.THREE_LINES
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     }
-    applyFiltersBtn = FlatButton(
-      I18n.get(I18n.FILTERS_BTN_APPLY)
-    ).apply {
+    applyFiltersBtn = FlatButton(I18n.get(I18n.FILTERS_BTN_APPLY)).apply {
       actionCommand = "Apply"
       toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     }
     applyDivider = ToolbarDivider()
     findFiltersBtn = FlatButton().apply {
       actionCommand = "Find"
       text = I18n.get(I18n.FILTERS_BTN_FIND)
       toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     }
 
     filterActionButtonsPane.add(applyFiltersBtn)
