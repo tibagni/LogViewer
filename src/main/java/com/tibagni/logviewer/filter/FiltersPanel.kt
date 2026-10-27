@@ -10,6 +10,7 @@ import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.MultipleChoiceDialog
@@ -19,6 +20,7 @@ import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
+import java.awt.Cursor
 import java.awt.FlowLayout
 import java.awt.Frame
 import java.awt.GridBagConstraints
@@ -130,23 +132,18 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   /**
    * Resolves the border color for the main filters panel titled border.
    */
-  fun resolvePanelBorderColor(): Color {
-    return UIManager.getColor("Component.borderColor")
-      ?: UIManager.getColor("Separator.foreground")
-      ?: if (FlatLaf.isLafDark()) Color(255, 255, 255, 40) else Color(0, 0, 0, 40)
-  }
+  fun resolvePanelBorderColor(): Color =
+    CardBorderUtils.resolveCardBorderColor()
 
   /**
-   * Creates the titled panel border styled with a subtle rounded [FlatLineBorder].
+   * Creates the titled panel border styled with a subtle rounded card border.
    */
   private fun createPanelBorder(): javax.swing.border.Border {
-    val lineBorder = FlatLineBorder(
-      Insets(UIScaleUtils.dip(4), UIScaleUtils.dip(4), UIScaleUtils.dip(4), UIScaleUtils.dip(4)),
-      resolvePanelBorderColor(),
-      1f,
-      UIScaleUtils.dip(8)
+    val pad = UIScaleUtils.dip(4)
+    return CardBorderUtils.createTitledCardBorder(
+      title = I18n.get(I18n.FILTERS_PANEL_TITLE),
+      insets = Insets(pad, pad, pad, pad)
     )
-    return BorderFactory.createTitledBorder(lineBorder, I18n.get(I18n.FILTERS_PANEL_TITLE))
   }
 
   private fun buildUi() {
@@ -187,27 +184,38 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     filterActionButtonsPane = JPanel(
       FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(4), 0)
     )
-    collapseExpandAllGroupsBtn = FlatButton()
+    collapseExpandAllGroupsBtn = FlatButton().apply {
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    }
     updateCollapseExpandButtonState()
-    addNewFilterGroupBtn = FlatButton()
-    addNewFilterGroupBtn.actionCommand = "Add"
-    addNewFilterGroupBtn.text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
-    moreFilterOptionsBtn = FlatButton()
-    moreFilterOptionsBtn.toolTipText = I18n.get(
-      I18n.FILTERS_TOOLTIP_MORE_OPTIONS
-    )
-    moreFilterOptionsBtn.text = StringUtils.THREE_LINES
+    addNewFilterGroupBtn = FlatButton().apply {
+      actionCommand = "Add"
+      text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
+      icon = CommonIcons.plusIcon(14)
+      iconTextGap = UIScaleUtils.dip(4)
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    }
+    moreFilterOptionsBtn = FlatButton().apply {
+      toolTipText = I18n.get(
+        I18n.FILTERS_TOOLTIP_MORE_OPTIONS
+      )
+      text = StringUtils.THREE_LINES
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    }
     applyFiltersBtn = FlatButton(
       I18n.get(I18n.FILTERS_BTN_APPLY)
     ).apply {
       actionCommand = "Apply"
       toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     }
     applyDivider = ToolbarDivider()
-    findFiltersBtn = FlatButton()
-    findFiltersBtn.actionCommand = "Find"
-    findFiltersBtn.text = I18n.get(I18n.FILTERS_BTN_FIND)
-    findFiltersBtn.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
+    findFiltersBtn = FlatButton().apply {
+      actionCommand = "Find"
+      text = I18n.get(I18n.FILTERS_BTN_FIND)
+      toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    }
 
     filterActionButtonsPane.add(applyFiltersBtn)
     filterActionButtonsPane.add(applyDivider)

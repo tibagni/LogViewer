@@ -646,8 +646,7 @@ class LogViewerViewImpl(
         0,
         UIScaleUtils.dip(1),
         0,
-        UIManager.getColor("Component.borderColor")
-          ?: Color(128, 128, 128, 60)
+        CardBorderUtils.resolveCardBorderColor()
       ),
       BorderFactory.createEmptyBorder(
         UIScaleUtils.dip(4),

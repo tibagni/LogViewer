@@ -8,8 +8,10 @@ import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
+import java.awt.Cursor
 import java.awt.FlowLayout
 import javax.swing.JButton
+import javax.swing.border.CompoundBorder
 import javax.swing.border.EmptyBorder
 import javax.swing.border.TitledBorder
 import org.junit.Assert.*
@@ -67,8 +69,11 @@ class FiltersPanelTests {
   @Test
   fun testFiltersPanelRoundedTitledBorder() {
     val panel = FiltersPanel(mockHost) { mockPresenter }
-    assertTrue(panel.border is TitledBorder)
-    val titledBorder = panel.border as TitledBorder
+    val titledBorder = if (panel.border is CompoundBorder) {
+      (panel.border as CompoundBorder).outsideBorder as TitledBorder
+    } else {
+      panel.border as TitledBorder
+    }
     assertEquals(
       I18n.get(I18n.FILTERS_PANEL_TITLE),
       titledBorder.title
@@ -136,8 +141,11 @@ class FiltersPanelTests {
   fun testOnThemeChangedUpdatesStateAndIcons() {
     val panel = FiltersPanel(mockHost) { mockPresenter }
     panel.onThemeChanged()
-    assertTrue(panel.border is TitledBorder)
-    val titledBorder = panel.border as TitledBorder
+    val titledBorder = if (panel.border is CompoundBorder) {
+      (panel.border as CompoundBorder).outsideBorder as TitledBorder
+    } else {
+      panel.border as TitledBorder
+    }
     assertTrue(titledBorder.border is FlatLineBorder)
     assertEquals(
       I18n.get(I18n.COMMON_ALL),
@@ -414,6 +422,30 @@ class FiltersPanelTests {
     listener.onApplyFiltersOnCheckChanged()
     assertFalse(panel.applyFiltersBtn.isVisible)
     assertFalse(panel.applyDivider.isVisible)
+  }
+
+  /**
+   * Tests that the new filter group button has the vector plus icon configured
+   * and all toolbar action buttons have the hand cursor set.
+   */
+  @Test
+  fun testToolbarButtonsModernStylingAndIcons() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+
+    val handCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    assertEquals(handCursor, panel.addNewFilterGroupBtn.cursor)
+    assertEquals(handCursor, panel.applyFiltersBtn.cursor)
+    assertEquals(handCursor, panel.findFiltersBtn.cursor)
+    assertEquals(handCursor, panel.moreFilterOptionsBtn.cursor)
+    assertEquals(handCursor, panel.collapseExpandAllGroupsBtn.cursor)
+
+    assertNotNull(panel.addNewFilterGroupBtn.icon)
+    assertEquals(14, panel.addNewFilterGroupBtn.icon.iconWidth)
+    assertEquals(14, panel.addNewFilterGroupBtn.icon.iconHeight)
+    assertEquals(
+      UIScaleUtils.dip(4),
+      panel.addNewFilterGroupBtn.iconTextGap
+    )
   }
 
   private fun <T : Any> captureNonNull(

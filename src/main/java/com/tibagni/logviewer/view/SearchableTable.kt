@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.view
 
+import com.formdev.flatlaf.FlatClientProperties
 import com.jgoodies.forms.builder.PanelBuilder
 import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.jgoodies.forms.factories.CC
@@ -69,26 +70,41 @@ class SearchableTable @JvmOverloads constructor(
     }
   }
 
-  internal val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT))
+  internal val searchText = HintTextField(
+    I18n.get(I18n.SEARCH_HINT)
+  ).apply {
+    putClientProperty(
+      FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON,
+      true
+    )
+  }
   @VisibleForTesting
   internal val searchResult = StatusBadge()
   @VisibleForTesting
   internal val searchLast = FlatButton("").apply {
     icon = CommonIcons.chevronUpIcon()
     toolTipText = I18n.get(I18n.SEARCH_PREV_MATCH)
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
   @VisibleForTesting
   internal val searchNext = FlatButton("").apply {
     icon = CommonIcons.chevronDownIcon()
     toolTipText = I18n.get(I18n.SEARCH_NEXT_MATCH)
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
   @VisibleForTesting
   internal val searchNavDivider = ToolbarDivider()
-  private val matchCaseOption = JCheckBox(I18n.get(I18n.SEARCH_MATCH_CASE))
+  @VisibleForTesting
+  internal val matchCaseOption = JCheckBox(
+    I18n.get(I18n.SEARCH_MATCH_CASE)
+  ).apply {
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+  }
   @VisibleForTesting
   internal val close = FlatButton("").apply {
     icon = CommonIcons.closeIcon()
     toolTipText = I18n.get(I18n.SEARCH_TOOLTIP_HIDE)
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
 
   val table = JTable(dm, cm, sm)
@@ -394,8 +410,7 @@ class SearchableTable @JvmOverloads constructor(
     return BorderFactory.createCompoundBorder(
       BorderFactory.createMatteBorder(
         UIScaleUtils.dip(1), 0, 0, 0,
-        UIManager.getColor("Component.borderColor")
-          ?: Color(128, 128, 128, 60)
+        CardBorderUtils.resolveCardBorderColor()
       ),
       BorderFactory.createEmptyBorder(
         UIScaleUtils.dip(4), UIScaleUtils.dip(6),
