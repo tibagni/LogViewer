@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
+import java.awt.Cursor
 import java.awt.event.KeyEvent
 import java.awt.image.BufferedImage
 import javax.swing.border.CompoundBorder
@@ -609,5 +610,25 @@ class SearchableTableTests {
     assertEquals(UIScaleUtils.dip(6), emptyInsets.left)
     assertEquals(UIScaleUtils.dip(4), emptyInsets.bottom)
     assertEquals(UIScaleUtils.dip(6), emptyInsets.right)
+  }
+
+  /**
+   * Tests that the search bar input has the native clear button enabled
+   * and action controls have a hand cursor configured.
+   */
+  @Test
+  fun testSearchBarModernControls() {
+    val table = SearchableTable(DefaultTableModel())
+
+    val showClear = table.searchText.getClientProperty(
+      FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON
+    )
+    assertEquals(true, showClear)
+
+    val handCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    assertEquals(handCursor, table.searchLast.cursor)
+    assertEquals(handCursor, table.searchNext.cursor)
+    assertEquals(handCursor, table.close.cursor)
+    assertEquals(handCursor, table.matchCaseOption.cursor)
   }
 }
