@@ -2,8 +2,10 @@ package com.tibagni.logviewer.preferences
 
 import com.jgoodies.forms.layout.CellConstraints
 import com.jgoodies.forms.layout.FormLayout
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
@@ -23,10 +25,14 @@ class LogsPreferencePanel(
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_LOGS)
 
-  private val logsPathTxt = createPathTextField()
-  private val logsPathBtn = FlatButton("...").apply {
-    toolTipText = I18n.get(I18n.PREF_DEFAULT_LOGS_PATH)
-  }
+  @VisibleForTesting
+  internal val logsPathTxt = createPathTextField()
+
+  @VisibleForTesting
+  internal val logsPathBtn = createBrowseButton(
+    I18n.get(I18n.PREF_DEFAULT_LOGS_PATH),
+    CommonIcons.folderIcon()
+  )
   private val showLineNumbersChbx = JCheckBox()
   private val showLogDividersChbx = JCheckBox()
 
@@ -72,7 +78,8 @@ class LogsPreferencePanel(
     val form = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
-        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow,center:d:noGrow"
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
+          "top:4dlu:noGrow,center:d:noGrow"
       )
     ).apply { isOpaque = false }
 
