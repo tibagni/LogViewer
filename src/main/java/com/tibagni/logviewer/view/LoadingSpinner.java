@@ -10,7 +10,11 @@ public class LoadingSpinner extends JComponent {
   private int angle = 0;
 
   public LoadingSpinner() {
-    int dim = Math.max(18, UIScaleUtils.dip(18));
+    this(18);
+  }
+
+  public LoadingSpinner(int size) {
+    int dim = Math.max(size, UIScaleUtils.dip(size));
     setPreferredSize(new Dimension(dim, dim));
     setMinimumSize(new Dimension(dim, dim));
     timer = new Timer(50, e -> {
