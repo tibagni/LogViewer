@@ -84,13 +84,11 @@ class SearchableTable @JvmOverloads constructor(
   internal val searchLast = FlatButton("").apply {
     icon = CommonIcons.chevronUpIcon()
     toolTipText = I18n.get(I18n.SEARCH_PREV_MATCH)
-    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
   @VisibleForTesting
   internal val searchNext = FlatButton("").apply {
     icon = CommonIcons.chevronDownIcon()
     toolTipText = I18n.get(I18n.SEARCH_NEXT_MATCH)
-    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
   @VisibleForTesting
   internal val searchNavDivider = ToolbarDivider()
@@ -104,7 +102,6 @@ class SearchableTable @JvmOverloads constructor(
   internal val close = FlatButton("").apply {
     icon = CommonIcons.closeIcon()
     toolTipText = I18n.get(I18n.SEARCH_TOOLTIP_HIDE)
-    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
 
   val table = JTable(dm, cm, sm)

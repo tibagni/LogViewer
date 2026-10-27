@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.theme.LogViewerThemeManager
 import org.junit.Assert.*
 import org.junit.Test
+import java.awt.Cursor
 import java.awt.GraphicsEnvironment
 import java.awt.event.MouseEvent
 import javax.swing.UIManager
@@ -17,6 +18,12 @@ class FlatButtonTests {
       FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON,
       button.getClientProperty(FlatClientProperties.BUTTON_TYPE)
     )
+  }
+
+  @Test
+  fun testInitialCursorIsHandCursor() {
+    val button = FlatButton("Test")
+    assertEquals(Cursor.HAND_CURSOR, button.cursor.type)
   }
 
   @Test

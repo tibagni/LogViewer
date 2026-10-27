@@ -343,11 +343,9 @@ class LiveLogDevicesPanel(
     }
 
     refreshDevicesBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_REFRESH)).apply {
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       addActionListener { presenter.loadDevices() }
     }
     restartServerBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_RESTART_SERVER)).apply {
-      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       addActionListener { presenter.restartAdbServer() }
     }
     toolbarDivider = ToolbarDivider()

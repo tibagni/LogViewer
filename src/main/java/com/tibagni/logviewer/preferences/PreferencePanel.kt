@@ -73,6 +73,5 @@ internal fun createBrowseButton(
 ): FlatButton {
   return FlatButton(icon).apply {
     toolTipText = tooltipText
-    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
 }

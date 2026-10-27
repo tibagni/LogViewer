@@ -10,7 +10,6 @@ import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
-import java.awt.Cursor
 import java.io.File
 import javax.swing.JComponent
 import javax.swing.JFileChooser
@@ -48,7 +47,6 @@ class ToolsPreferencePanel(
     I18n.get(I18n.COMMON_CLEAR)
   ).apply {
     toolTipText = I18n.get(I18n.COMMON_CLEAR)
-    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   }
 
   private var selectedEditorPath: File? = userPrefs.preferredTextEditor
