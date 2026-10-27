@@ -6,6 +6,7 @@ import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogListTableModel
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.SearchableTable
 import com.tibagni.logviewer.view.SideButtonsPanel
@@ -254,14 +255,8 @@ class LiveLogsPanel(
    * @return [Border] for the header panel bottom edge.
    */
   internal fun createHeaderBorder(): javax.swing.border.Border {
-    return BorderFactory.createMatteBorder(
-      0,
-      0,
-      UIScaleUtils.dip(1),
-      0,
-      UIManager.getColor("Component.borderColor")
-        ?: Color(128, 128, 128, 60)
-    )
+    val borderColor = CardBorderUtils.resolveCardBorderColor()
+    return BorderFactory.createMatteBorder(0, 0, UIScaleUtils.dip(1), 0, borderColor)
   }
 
   /**
