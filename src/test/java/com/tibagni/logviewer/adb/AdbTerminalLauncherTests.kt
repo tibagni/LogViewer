@@ -4,10 +4,23 @@ import com.tibagni.logviewer.util.PlatformUtils
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 
 class AdbTerminalLauncherTests {
+
+  private class FakeProcess : Process() {
+    override fun getOutputStream(): OutputStream = ByteArrayOutputStream()
+    override fun getInputStream(): InputStream = ByteArrayInputStream(ByteArray(0))
+    override fun getErrorStream(): InputStream = ByteArrayInputStream(ByteArray(0))
+    override fun waitFor(): Int = 0
+    override fun exitValue(): Int = 0
+    override fun destroy() {}
+  }
 
   @After
   fun tearDown() {
@@ -32,7 +45,7 @@ class AdbTerminalLauncherTests {
     val launcher = WindowsAdbTerminalLauncher(
       processLauncher = { cmd ->
         launchedCommands.add(cmd)
-        ProcessBuilder("echo").start()
+        FakeProcess()
       }
     )
 
@@ -62,7 +75,7 @@ class AdbTerminalLauncherTests {
     val launcher = MacAdbTerminalLauncher(
       processLauncher = { cmd ->
         launchedCommands.add(cmd)
-        ProcessBuilder("echo").start()
+        FakeProcess()
       }
     )
 
@@ -91,7 +104,7 @@ class AdbTerminalLauncherTests {
     val launcher = LinuxAdbTerminalLauncher(
       processLauncher = { cmd ->
         launchedCommands.add(cmd)
-        ProcessBuilder("echo").start()
+        FakeProcess()
       }
     )
 
@@ -116,7 +129,7 @@ class AdbTerminalLauncherTests {
           throw IOException("Binary not found: ${cmd.first()}")
         }
         launchedCommands.add(cmd)
-        ProcessBuilder("echo").start()
+        FakeProcess()
       }
     )
 

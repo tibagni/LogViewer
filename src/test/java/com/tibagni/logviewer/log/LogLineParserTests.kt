@@ -107,7 +107,7 @@ class LogLineParserTests {
         assertNotNull(info)
         assertEquals(file, info!!.sourceFile)
         assertEquals("logcat.txt", info.fileName)
-        assertEquals("/tmp/logcat.txt", info.filePath)
+        assertEquals(file.absolutePath, info.filePath)
         assertEquals(105, info.lineNumber)
         assertEquals("105", info.formattedLineNumber)
         assertEquals(LogStream.MAIN, info.logStream)
