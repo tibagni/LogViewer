@@ -89,13 +89,13 @@ class FiltersPresenterImpl(
   override fun addFilter(group: String, newFilter: Filter, ignoreReapply: Boolean) {
     if (group.isNotEmpty()) {
       filtersRepository.addFilter(group, newFilter)
-      view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
-      checkForUnsavedChanges()
 
       if (!ignoreReapply && userPrefs.reapplyFiltersAfterEdit) {
         newFilter.isApplied = true
         applyFilters()
       }
+      view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
+      checkForUnsavedChanges()
     }
   }
 
