@@ -329,6 +329,8 @@ public final class I18n {
   public static final String VISIBLE_LOGS_STATUS_NOT_SET = "visible_logs.status_not_set";
 
   // Bugreport View & Sections
+  public static final String BUGREPORT_SECTIONS_TITLE = "bugreport.sections_title";
+  public static final String BUGREPORT_NO_SECTION_SELECTED = "bugreport.no_section_selected";
   public static final String BUGREPORT_OPEN_HINT = "bugreport.open_hint";
   public static final String BUGREPORT_SUBS_SERVICE_DUMP = "bugreport.subs.service_dump";
   public static final String BUGREPORT_SUBS_ACTIVE = "bugreport.subs.active";

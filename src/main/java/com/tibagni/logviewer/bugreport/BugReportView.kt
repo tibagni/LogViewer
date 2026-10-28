@@ -2,8 +2,9 @@ package com.tibagni.logviewer.bugreport
 
 import com.tibagni.logviewer.AsyncPresenter
 import com.tibagni.logviewer.MainView
+import com.tibagni.logviewer.MainViewTab
 import com.tibagni.logviewer.ServiceLocator
-import com.tibagni.logviewer.View
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.bugreport.section.EmptyBugReportSection
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanel
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanelFactory
@@ -11,12 +12,16 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
-import com.tibagni.logviewer.view.PaddingListCellRenderer
+import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
+import java.awt.BorderLayout
+import java.awt.Component
+import java.awt.Dimension
+import java.awt.Font
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
-
-import com.tibagni.logviewer.MainViewTab
+import javax.swing.border.EmptyBorder
 
 interface BugReportView : MainViewTab {
   fun onBugReportLoaded(bugreportPath: String, bugreportText: String)
@@ -28,12 +33,23 @@ interface BugReportPresenterView : AsyncPresenter.AsyncPresenterView {
   fun showErrorMessage(message: String?)
 }
 
+/**
+ * Bugreport tab view showing a sidebar of parsed bugreport sections on the left
+ * and detailed section panels on the right within a split pane.
+ */
 class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugReportPresenterView {
   override val contentPane: JPanel = JPanel()
 
-  private lateinit var sectionsList: JList<String>
-  private lateinit var sectionsListModel: DefaultListModel<String>
-  private lateinit var mainSplitPane: JSplitPane
+  @VisibleForTesting
+  internal lateinit var sectionsList: JList<String>
+  @VisibleForTesting
+  internal lateinit var sectionsListModel: DefaultListModel<String>
+  @VisibleForTesting
+  internal lateinit var mainSplitPane: JSplitPane
+  @VisibleForTesting
+  internal lateinit var sidebarPanel: JPanel
+  @VisibleForTesting
+  internal lateinit var sidebarHeaderLabel: JLabel
 
   private val sectionPanels = mutableMapOf<String, SectionPanel>()
   private var bugReport: BugReport? = null
@@ -41,7 +57,8 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
   private val presenter: BugReportPresenter
 
-  private val emptyPane = JPanel()
+  @VisibleForTesting
+  internal val emptyPane = JPanel()
 
   init {
     buildUi()
@@ -56,12 +73,19 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
   override fun onBugReportClosed() {
     presenter.closeBugReport()
     sectionsListModel.clear()
+    sectionPanels.clear()
     this.bugReport = null
+    currentlySelectedSection = -1
+    mainSplitPane.rightComponent = emptyPane
   }
 
   override fun onThemeChanged() {
     // Force panels to be recreated since theme changed
     sectionPanels.clear()
+    sidebarHeaderLabel.icon = CommonIcons.viewListIcon()
+    sectionsList.cellRenderer = SectionListCellRenderer()
+    contentPane.revalidate()
+    contentPane.repaint()
   }
 
   override fun showBugReport(bugReport: BugReport) {
@@ -73,7 +97,8 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
   override fun showStartLoading() = mainView.showStartLoading("BR")
 
-  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress("BR", progress, note)
+  override fun showLoadingProgress(progress: Int, note: String?) =
+    mainView.showLoadingProgress("BR", progress, note)
 
   override fun finishLoading() = mainView.finishLoading("BR")
 
@@ -87,14 +112,11 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
     if (selected < 0) {
       // If there is nothing selected on sections list, show empty pane
+      currentlySelectedSection = -1
       mainSplitPane.rightComponent = emptyPane
       return
     }
 
-    // This callback will be called twice when the selection is changed:
-    // once for the newly selected item
-    // and again for the unselected item
-    // To avoid executing the same thing twice here, keep track of the last selected section
     if (selected != currentlySelectedSection) {
       currentlySelectedSection = selected
       val sectionName = sectionsListModel[selected]
@@ -102,6 +124,12 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     }
   }
 
+  /**
+   * Swaps the right component of [mainSplitPane] to the panel corresponding to
+   * [sectionName], instantiating the [SectionPanel] lazily if needed.
+   *
+   * @param sectionName the name of the parsed bugreport section to display.
+   */
   private fun swapSectionPanel(sectionName: String) {
     bugReport?.let {
       if (sectionName !in sectionPanels) {
@@ -109,9 +137,6 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
         sectionPanels[sectionName] = SectionPanelFactory.createPanelFor(sectionName, section)
       }
 
-      // Here we remember the divider position before we set the right panel, and set it again once the panel is added
-      // This is a hack so that the left pane does not keep resizing everytime the right panel changes
-      // Also, we don't want to set the divider size on first swap as it is not the right value yet
       val dividerLocation = mainSplitPane.dividerLocation
       val isFirstSwap = (mainSplitPane.rightComponent == emptyPane)
 
@@ -120,25 +145,59 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
       if (!isFirstSwap) {
         mainSplitPane.dividerLocation = dividerLocation
       }
-
     }
   }
 
   override fun showErrorMessage(message: String?) {
-    JOptionPane.showMessageDialog(contentPane, message, I18n.get(I18n.COMMON_ERROR), JOptionPane.ERROR_MESSAGE)
+    JOptionPane.showMessageDialog(
+      contentPane,
+      message,
+      I18n.get(I18n.COMMON_ERROR),
+      JOptionPane.ERROR_MESSAGE
+    )
   }
 
   private fun buildUi() {
     sectionsListModel = DefaultListModel()
-    sectionsList = JList(sectionsListModel)
-    sectionsList.cellRenderer = PaddingListCellRenderer(UIScaleUtils.dip(5))
-    sectionsList.selectionMode = ListSelectionModel.SINGLE_SELECTION
+    sectionsList = JList(sectionsListModel).apply {
+      cellRenderer = SectionListCellRenderer()
+      selectionMode = ListSelectionModel.SINGLE_SELECTION
+    }
+
+    val headerPanel = JPanel(BorderLayout()).apply {
+      border = EmptyBorder(
+        UIScaleUtils.dip(10),
+        UIScaleUtils.dip(12),
+        UIScaleUtils.dip(8),
+        UIScaleUtils.dip(12)
+      )
+      sidebarHeaderLabel = JLabel(I18n.get(I18n.BUGREPORT_SECTIONS_TITLE)).apply {
+        icon = CommonIcons.viewListIcon()
+        font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(13).toFloat())
+      }
+      add(sidebarHeaderLabel, BorderLayout.WEST)
+    }
+
+    val scrollPane = JScrollPane(sectionsList).apply {
+      border = BorderFactory.createEmptyBorder()
+      viewportBorder = null
+      verticalScrollBar.unitIncrement = 16
+    }
+
+    sidebarPanel = JPanel(BorderLayout()).apply {
+      add(headerPanel, BorderLayout.NORTH)
+      add(scrollPane, BorderLayout.CENTER)
+      minimumSize = Dimension(UIScaleUtils.dip(180), UIScaleUtils.dip(150))
+      preferredSize = Dimension(UIScaleUtils.dip(220), UIScaleUtils.dip(400))
+    }
 
     contentPane.layout = GridBagLayout()
-    mainSplitPane = JSplitPane()
-    mainSplitPane.dividerSize = UIScaleUtils.dip(4)
-    mainSplitPane.isOneTouchExpandable = true
-    mainSplitPane.resizeWeight = 0.05
+    mainSplitPane = JSplitPane().apply {
+      dividerSize = UIScaleUtils.dip(5)
+      isOneTouchExpandable = true
+      resizeWeight = 0.15
+    }
+
     contentPane.add(
       mainSplitPane,
       GBConstraintsBuilder()
@@ -151,17 +210,71 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     )
 
     emptyPane.layout = GridBagLayout()
+    val emptyContainer = JPanel().apply {
+      layout = BoxLayout(this, BoxLayout.Y_AXIS)
+      isOpaque = false
+      val emptyIcon = JLabel(CommonIcons.fileDocumentIcon(UIScaleUtils.dip(40))).apply {
+        alignmentX = Component.CENTER_ALIGNMENT
+      }
+      val emptyTitle = JLabel(I18n.get(I18n.BUGREPORT_NO_SECTION_SELECTED)).apply {
+        font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(14).toFloat())
+        alignmentX = Component.CENTER_ALIGNMENT
+        border = EmptyBorder(UIScaleUtils.dip(10), 0, UIScaleUtils.dip(6), 0)
+      }
+      val emptyHint = JLabel(StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_OPEN_HINT))).apply {
+        foreground = CardBorderUtils.resolveSecondaryLabelColor()
+        alignmentX = Component.CENTER_ALIGNMENT
+      }
+      add(emptyIcon)
+      add(emptyTitle)
+      add(emptyHint)
+    }
+
     emptyPane.add(
-      JLabel(StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_OPEN_HINT))),
+      emptyContainer,
       GBConstraintsBuilder()
-        .withGridx(1)
-        .withGridy(1)
-        .withIpadx(UIScaleUtils.dip(10))
-        .withIpady(UIScaleUtils.dip(10))
+        .withGridx(0)
+        .withGridy(0)
+        .withAnchor(GridBagConstraints.CENTER)
         .build()
     )
 
-    mainSplitPane.leftComponent = sectionsList
+    mainSplitPane.leftComponent = sidebarPanel
     mainSplitPane.rightComponent = emptyPane
+  }
+}
+
+/**
+ * Modern list cell renderer for bugreport sections with file document vector icons
+ * and consistent spacing.
+ */
+private class SectionListCellRenderer : DefaultListCellRenderer() {
+  private val fileIcon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(15))
+  private val cellBorder = EmptyBorder(
+    UIScaleUtils.dip(6),
+    UIScaleUtils.dip(10),
+    UIScaleUtils.dip(6),
+    UIScaleUtils.dip(10)
+  )
+
+  override fun getListCellRendererComponent(
+    list: JList<*>?,
+    value: Any?,
+    index: Int,
+    isSelected: Boolean,
+    cellHasFocus: Boolean
+  ): Component {
+    val component = super.getListCellRendererComponent(
+      list,
+      value,
+      index,
+      isSelected,
+      cellHasFocus
+    )
+    if (component is JLabel) {
+      component.icon = fileIcon
+      component.border = cellBorder
+    }
+    return component
   }
 }

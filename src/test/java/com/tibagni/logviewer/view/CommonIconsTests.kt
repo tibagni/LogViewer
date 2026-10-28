@@ -614,4 +614,60 @@ class CommonIconsTests {
       UIManager.put("Label.foreground", origLabelFg)
     }
   }
+
+  /**
+   * Verifies that [CommonIcons.searchIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testSearchIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.searchIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("Icon should be backed by a BufferedImage", image)
+    val hasPaintedPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("searchIcon should have painted pixels", hasPaintedPixels)
+
+    val customIcon = CommonIcons.searchIcon(size = 24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.searchIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testSearchIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.GREEN)
+      val icon = CommonIcons.searchIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasGreenPixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val green = (rgb ushr 8) and 0xFF
+          alpha > 0 && green > 100
+        }
+      }
+      assertTrue(
+        "searchIcon should paint with theme color",
+        hasGreenPixel
+      )
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
 }
