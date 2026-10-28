@@ -9,7 +9,7 @@ buildscript {
         commonsio_version = '2.6'
         apache_commons_version = '3.0'
         flatlaf_version = '3.5.4'
-        jacoco_tool_version = '0.8.7'
+        jacoco_tool_version = JavaVersion.current().isJava11Compatible() ? '0.8.11' : '0.8.7'
         shadowjar_version = '8.1.1'
         testlogger_version = '3.2.0'
         coveralls_version = '2.12.2'

@@ -168,13 +168,14 @@ class AdbLogStreamerTests {
   fun testStreamCommandIncludesSerialWhenProvided() = runBlocking {
     val fakeProcess = FakeProcess("05-12 13:45:26.123  1234  5678 D Tag: Line\n".byteInputStream())
     val runner = FakeCommandRunner { fakeProcess }
-    val streamer = AdbLogStreamerImpl(FakeAdbManager(File("/custom/adb")), runner, continuationTimeout = 10.milliseconds)
+    val adb = File("/custom/adb")
+    val streamer = AdbLogStreamerImpl(FakeAdbManager(adb), runner, continuationTimeout = 10.milliseconds)
 
     streamer.startStream("deviceXYZ").toList()
 
     assertEquals(1, runner.executedCommands.size)
     assertEquals(
-      listOf("/custom/adb", "-s", "deviceXYZ", "logcat", "-v", "threadtime", "-b", "main,system,crash,events"),
+      listOf(adb.absolutePath, "-s", "deviceXYZ", "logcat", "-v", "threadtime", "-b", "main,system,crash,events"),
       runner.executedCommands[0]
     )
   }
@@ -183,13 +184,14 @@ class AdbLogStreamerTests {
   fun testStreamCommandOmitsSerialWhenBlank() = runBlocking {
     val fakeProcess = FakeProcess("05-12 13:45:26.123  1234  5678 D Tag: Line\n".byteInputStream())
     val runner = FakeCommandRunner { fakeProcess }
-    val streamer = AdbLogStreamerImpl(FakeAdbManager(File("/custom/adb")), runner, continuationTimeout = 10.milliseconds)
+    val adb = File("/custom/adb")
+    val streamer = AdbLogStreamerImpl(FakeAdbManager(adb), runner, continuationTimeout = 10.milliseconds)
 
     streamer.startStream("").toList()
 
     assertEquals(1, runner.executedCommands.size)
     assertEquals(
-      listOf("/custom/adb", "logcat", "-v", "threadtime", "-b", "main,system,crash,events"),
+      listOf(adb.absolutePath, "logcat", "-v", "threadtime", "-b", "main,system,crash,events"),
       runner.executedCommands[0]
     )
   }
@@ -198,13 +200,14 @@ class AdbLogStreamerTests {
   fun testStreamCommandIncludesCustomBuffersWhenProvided() = runBlocking {
     val fakeProcess = FakeProcess("05-12 13:45:26.123  1234  5678 D Tag: Line\n".byteInputStream())
     val runner = FakeCommandRunner { fakeProcess }
-    val streamer = AdbLogStreamerImpl(FakeAdbManager(File("/custom/adb")), runner, continuationTimeout = 10.milliseconds)
+    val adb = File("/custom/adb")
+    val streamer = AdbLogStreamerImpl(FakeAdbManager(adb), runner, continuationTimeout = 10.milliseconds)
 
     streamer.startStream("deviceXYZ", listOf("events", "system")).toList()
 
     assertEquals(1, runner.executedCommands.size)
     assertEquals(
-      listOf("/custom/adb", "-s", "deviceXYZ", "logcat", "-v", "threadtime", "-b", "events,system"),
+      listOf(adb.absolutePath, "-s", "deviceXYZ", "logcat", "-v", "threadtime", "-b", "events,system"),
       runner.executedCommands[0]
     )
   }

@@ -5,11 +5,17 @@ import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.io.IOException
 
 class AdbManagerTests {
+
+  @Before
+  fun setUp() {
+    PlatformUtils.propertyProvider = { if (it == "os.name") "Linux" else null }
+  }
 
   @After
   fun tearDown() {
@@ -306,7 +312,7 @@ class AdbManagerTests {
     val dummyAdb = File("/mock/bin/adb")
     val mockRunner = object : CommandRunner {
       override fun exec(command: List<String>): CommandResult {
-        assertEquals(listOf("/mock/bin/adb", "devices", "-l"), command)
+        assertEquals(listOf(dummyAdb.absolutePath, "devices", "-l"), command)
         return CommandResult(
           exitCode = 0,
           output = """
@@ -398,8 +404,8 @@ class AdbManagerTests {
     val result = manager.restartServer()
     assertTrue(result)
     assertEquals(2, commandsRun.size)
-    assertEquals(listOf("/mock/bin/adb", "kill-server"), commandsRun[0])
-    assertEquals(listOf("/mock/bin/adb", "start-server"), commandsRun[1])
+    assertEquals(listOf(dummyAdb.absolutePath, "kill-server"), commandsRun[0])
+    assertEquals(listOf(dummyAdb.absolutePath, "start-server"), commandsRun[1])
   }
 
   @Test

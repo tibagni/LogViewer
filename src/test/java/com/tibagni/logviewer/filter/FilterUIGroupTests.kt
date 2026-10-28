@@ -62,7 +62,7 @@ class FilterUIGroupTests {
   fun testHeaderDisplaysGroupNameWithFilterCount() {
     val group = createGroup("MyFilters", arrayOf(filterA, filterB, filterC))
     val text = group.hideGroupBtn.text
-    assertEquals("MyFilters (3)", text)
+    assertEquals("MyFilters (2 / 3)", text)
     assertNotNull(group.hideGroupBtn.icon)
     assertEquals(UIScaleUtils.dip(4), group.hideGroupBtn.iconTextGap)
   }
@@ -71,21 +71,21 @@ class FilterUIGroupTests {
   fun testHeaderUpdatesChevronAndCountOnToggleVisibility() {
     val group = createGroup("Network", arrayOf(filterA, filterB))
     assertTrue(group.isGroupVisible)
-    assertEquals("Network (2)", group.hideGroupBtn.text)
+    assertEquals("Network (2 / 2)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
     assertEquals(14, group.hideGroupBtn.icon.iconWidth)
     assertEquals(14, group.hideGroupBtn.icon.iconHeight)
 
     group.toggleGroupVisibility()
     assertFalse(group.isGroupVisible)
-    assertEquals("Network (2)", group.hideGroupBtn.text)
+    assertEquals("Network (2 / 2)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
     assertEquals(14, group.hideGroupBtn.icon.iconWidth)
     verify(listener).onGroupVisibilityChanged("Network")
 
     group.toggleGroupVisibility()
     assertTrue(group.isGroupVisible)
-    assertEquals("Network (2)", group.hideGroupBtn.text)
+    assertEquals("Network (2 / 2)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
     assertEquals(14, group.hideGroupBtn.icon.iconWidth)
   }
@@ -95,22 +95,22 @@ class FilterUIGroupTests {
     val group = createGroup("Silent", arrayOf(filterA))
     group.forceGroupVisibilitySilently(false)
     assertFalse(group.isGroupVisible)
-    assertEquals("Silent (1)", group.hideGroupBtn.text)
+    assertEquals("Silent (1 / 1)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
 
     group.forceGroupVisibilitySilently(true)
     assertTrue(group.isGroupVisible)
-    assertEquals("Silent (1)", group.hideGroupBtn.text)
+    assertEquals("Silent (1 / 1)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
   }
 
   @Test
   fun testHeaderUpdatesCountWhenListDataChanges() {
     val group = createGroup("Dynamic", arrayOf(filterA))
-    assertTrue(group.hideGroupBtn.text.endsWith("(1)"))
+    assertTrue(group.hideGroupBtn.text.endsWith("(1 / 1)"))
 
     group.setListData(arrayOf(filterA, filterB, filterC))
-    assertTrue(group.hideGroupBtn.text.endsWith("(3)"))
+    assertTrue(group.hideGroupBtn.text.endsWith("(2 / 3)"))
 
     group.setListData(emptyArray())
     assertTrue(group.hideGroupBtn.text.endsWith("(0)"))
@@ -266,7 +266,7 @@ class FilterUIGroupTests {
     val group = createGroup()
     val origArc = UIManager.get("Component.arc")
     try {
-      UIManager.put("Component.arc", null)
+      UIManager.put("Component.arc", 0)
       assertEquals(UIScaleUtils.dip(8), group.resolveCardArc())
 
       UIManager.put("Component.arc", 16)
@@ -344,5 +344,17 @@ class FilterUIGroupTests {
     val headerCenterY = group.optionsPane.y + (group.optionsPane.height / 2)
     val headerAlpha = (image.getRGB(headerCenterX, headerCenterY) ushr 24) and 0xFF
     assertTrue(headerAlpha > 0)
+  }
+
+  @Test
+  fun testSelectAllTogglingUpdatesGroupHeaderCount() {
+    val group = createGroup("Batch", arrayOf(filterA, filterB, filterC))
+    assertEquals("Batch (2 / 3)", group.hideGroupBtn.text)
+
+    group.selectAllCb.doClick()
+    assertEquals("Batch (3 / 3)", group.hideGroupBtn.text)
+
+    group.selectAllCb.doClick()
+    assertEquals("Batch (0 / 3)", group.hideGroupBtn.text)
   }
 }
