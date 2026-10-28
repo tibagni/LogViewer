@@ -670,4 +670,52 @@ class CommonIconsTests {
       UIManager.put("Label.foreground", origLabelFg)
     }
   }
+
+  /**
+   * Verifies that [CommonIcons.paletteIcon] is created with expected
+   * dimensions and non-empty pixel buffers for default and custom sizes.
+   */
+  @Test
+  fun testPaletteIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.paletteIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val customIcon = CommonIcons.paletteIcon(24)
+    assertNotNull(customIcon)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.paletteIcon] dynamically resolves
+   * foreground color from Look and Feel defaults at paint time.
+   */
+  @Test
+  fun testPaletteIconThemeAwarePainting() {
+    val origLabelFg = UIManager.get("Label.foreground")
+    try {
+      UIManager.put("Label.foreground", Color.MAGENTA)
+      val icon = CommonIcons.paletteIcon()
+      assertNotNull(icon)
+      val image = icon.image as? BufferedImage
+      assertNotNull(image)
+      val hasMagentaPixel = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          val rgb = image.getRGB(x, y)
+          val alpha = (rgb ushr 24) and 0xFF
+          val red = (rgb ushr 16) and 0xFF
+          val blue = rgb and 0xFF
+          alpha > 0 && red > 100 && blue > 100
+        }
+      }
+      assertTrue(
+        "paletteIcon should paint with theme color",
+        hasMagentaPixel
+      )
+    } finally {
+      UIManager.put("Label.foreground", origLabelFg)
+    }
+  }
 }

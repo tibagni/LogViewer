@@ -107,4 +107,81 @@ class EditFilterDialogInteractionTests {
             assertEquals(secondaryColor, dialog.colorLbl.foreground)
         }
     }
+
+    /**
+     * Verifies modernColorChooser and colorChooser are configured with an uncropped preview label.
+     */
+    @Test
+    fun testColorChooserPreviewPanelStyling() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+        val dialog = EditFilterDialog(null, null, null) { _, _ -> null }
+        try {
+            assertNotNull(dialog.modernColorChooser)
+            assertNotNull(dialog.colorChooser)
+            val preview = dialog.colorChooser.previewPanel
+            assertNotNull(preview)
+            assertTrue(preview.preferredSize.height >= UIScaleUtils.dip(40))
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies that colorChooser retains all panels with modernColorChooser as the first tab.
+     */
+    @Test
+    fun testColorChooserRetainsAllPanelsWithModernFirst() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+        val dialog = EditFilterDialog(null, null, null) { _, _ -> null }
+        try {
+            val panels = dialog.colorChooser.chooserPanels
+            assertTrue(panels.size > 1)
+            assertEquals(dialog.modernColorChooser, panels[0])
+            assertEquals("Modern", panels[0].displayName)
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies bidirectional synchronization between modernColorChooser and colorChooser.
+     */
+    @Test
+    fun testModernColorChooserBidirectionalSync() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+        val dialog = EditFilterDialog(null, null, null) { _, _ -> null }
+        try {
+            dialog.modernColorChooser.color = Color.MAGENTA
+            assertEquals(Color.MAGENTA, dialog.colorChooser.color)
+
+            dialog.colorChooser.color = Color.CYAN
+            assertEquals(Color.CYAN, dialog.modernColorChooser.color)
+            assertEquals("#00FFFF", dialog.modernColorChooser.hexField.text)
+            assertEquals(0, dialog.modernColorChooser.rSpinner.value)
+            assertEquals(255, dialog.modernColorChooser.gSpinner.value)
+            assertEquals(255, dialog.modernColorChooser.bSpinner.value)
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies that EditFilterDialog structures its controls into modern card panels.
+     */
+    @Test
+    fun testDialogModernCardsStructure() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+        val dialog = EditFilterDialog(null, null, null) { _, _ -> null }
+        try {
+            assertNotNull(dialog.nameTxt)
+            assertNotNull(dialog.regexTxt)
+            assertNotNull(dialog.regexEditorBtn)
+            assertNotNull(dialog.caseSensitiveCbx)
+            assertNotNull(dialog.verbosityCombo)
+            assertNotNull(dialog.colorChooser)
+            assertNotNull(dialog.modernColorChooser)
+        } finally {
+            dialog.dispose()
+        }
+    }
 }

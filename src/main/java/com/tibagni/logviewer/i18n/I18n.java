@@ -150,6 +150,7 @@ public final class I18n {
   public static final String FILTER_LABEL_COLOR = "filter.dialog.color";
   public static final String FILTER_TOOLTIP_COLOR = "filter.dialog.color.tooltip";
   public static final String FILTER_PREVIEW_COLOR = "filter.dialog.preview_color";
+  public static final String COLOR_CHOOSER_PRESETS = "color.chooser.presets";
   public static final String FILTER_DUPLICATE_WARNING_TITLE = "filter.dialog.duplicate.title";
   public static final String FILTER_DUPLICATE_WARNING_MSG = "filter.dialog.duplicate.msg";
   public static final String FILTER_DUPLICATE_ADD_ANYWAY = "filter.dialog.duplicate.add_anyway";
