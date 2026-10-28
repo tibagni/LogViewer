@@ -246,6 +246,16 @@ object CommonIcons {
   fun folderIcon(size: Int = 16): ImageIcon = FolderIcon(size)
 
   /**
+   * Returns a theme-aware search (magnifying glass) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun searchIcon(size: Int = 16): ImageIcon = SearchIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -827,6 +837,44 @@ object CommonIcons {
       path.closePath()
 
       g2d.draw(path)
+    }
+  }
+
+  /**
+   * Dynamic theme-aware [ImageIcon] that paints a search magnifying glass
+   * icon using current Look and Feel foreground colors directly at paint time.
+   */
+  private class SearchIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.11f).coerceAtLeast(1.5f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val r = s * 0.28
+      val cx = s * 0.42
+      val cy = s * 0.42
+      g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
+
+      val handleLen = s * 0.30
+      val startX = cx + r * 0.7071
+      val startY = cy + r * 0.7071
+      g2d.draw(
+        Line2D.Double(
+          startX,
+          startY,
+          startX + handleLen * 0.7071,
+          startY + handleLen * 0.7071
+        )
+      )
     }
   }
 

@@ -8,7 +8,17 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 
-abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : SectionPanel(title, isSearchable) {
+/**
+ * Base panel for bugreport sections displaying a selectable list on top
+ * and detailed [SearchableTextArea] content below within a vertical split pane.
+ *
+ * @param title section title.
+ * @param isSearchable whether the section contains a search input field.
+ */
+abstract class ListSectionPanel(
+  title: String,
+  isSearchable: Boolean = true
+) : SectionPanel(title, isSearchable) {
   private lateinit var listModel: DefaultListModel<String>
   private lateinit var list: JList<String>
   private lateinit var splitPane: JSplitPane
@@ -41,13 +51,18 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
 
   private fun buildUi() {
     listModel = DefaultListModel()
-    list = JList(listModel)
-    list.selectionMode = ListSelectionModel.SINGLE_SELECTION
-    list.cellRenderer = PaddingListCellRenderer(UIScaleUtils.dip(2))
+    list = JList(listModel).apply {
+      selectionMode = ListSelectionModel.SINGLE_SELECTION
+      cellRenderer = PaddingListCellRenderer(UIScaleUtils.dip(3))
+    }
 
-    splitPane = JSplitPane()
-    splitPane.orientation = JSplitPane.VERTICAL_SPLIT
-    splitPane.resizeWeight = 0.5
+    splitPane = JSplitPane().apply {
+      orientation = JSplitPane.VERTICAL_SPLIT
+      resizeWeight = 0.4
+      dividerSize = UIScaleUtils.dip(5)
+      isOneTouchExpandable = true
+    }
+
     add(
       splitPane,
       GBConstraintsBuilder()
@@ -59,11 +74,13 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
         .build()
     )
 
-    val detailsPane = JPanel()
-    detailsPane.layout = GridBagLayout()
-    detailsText = SearchableTextArea()
-    detailsText.isEditable = false
-    detailsText.wrapStyleWord = true
+    val detailsPane = JPanel().apply {
+      layout = GridBagLayout()
+    }
+    detailsText = SearchableTextArea().apply {
+      isEditable = false
+      wrapStyleWord = true
+    }
     detailsPane.add(
       detailsText,
       GBConstraintsBuilder()
@@ -75,7 +92,11 @@ abstract class ListSectionPanel(title: String, isSearchable: Boolean = true) : S
         .build()
     )
 
-    splitPane.leftComponent = JScrollPane(list) // Left or above (above in this case)
+    val scrollPane = JScrollPane(list).apply {
+      border = BorderFactory.createEmptyBorder()
+      verticalScrollBar.unitIncrement = 16
+    }
+    splitPane.leftComponent = scrollPane // Left or above (above in this case)
     splitPane.rightComponent = detailsPane
   }
 }

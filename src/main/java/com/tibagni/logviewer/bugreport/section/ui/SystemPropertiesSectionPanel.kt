@@ -3,10 +3,19 @@ package com.tibagni.logviewer.bugreport.section.ui
 import com.tibagni.logviewer.bugreport.section.SystemPropertiesSection
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import java.awt.GridBagConstraints
-import javax.swing.*
+import javax.swing.JScrollPane
+import javax.swing.JTable
+import javax.swing.SwingUtilities
 import javax.swing.table.DefaultTableModel
 
-class SystemPropertiesSectionPanel(private val section: SystemPropertiesSection) : SectionPanel(section.sectionName, true) {
+/**
+ * Panel displaying system properties key-value pairs parsed from bugreports.
+ *
+ * @param section system properties section model containing property entries.
+ */
+class SystemPropertiesSectionPanel(
+  private val section: SystemPropertiesSection
+) : SectionPanel(section.sectionName, true) {
   private val headerTitles = arrayOf("Property", "Value")
   private lateinit var tableModel: SysPropTableModel
 
@@ -14,28 +23,38 @@ class SystemPropertiesSectionPanel(private val section: SystemPropertiesSection)
     buildUi()
   }
 
-  override fun onSearch(searchText: String) {
-    val filteredRows =
-      section.configs.filterKeys { it.contains(searchText) }.map { arrayOf(it.key, it.value) }
-        .toTypedArray()
-    tableModel.setDataVector(filteredRows, arrayOf("Property", "Value"))
+  public override fun onSearch(searchText: String) {
+    val filteredRows = section.configs
+      .filter { (key, value) ->
+        key.contains(searchText, ignoreCase = true) ||
+            value.contains(searchText, ignoreCase = true)
+      }
+      .map { arrayOf(it.key, it.value) }
+      .toTypedArray()
+    if (SwingUtilities.isEventDispatchThread()) {
+      tableModel.setDataVector(filteredRows, headerTitles)
+    } else {
+      SwingUtilities.invokeLater {
+        tableModel.setDataVector(filteredRows, headerTitles)
+      }
+    }
   }
 
   private fun buildUi() {
-    val container = JPanel()
-    container.layout = BoxLayout(container, BoxLayout.Y_AXIS)
+    val rows = section.configs.entries
+      .map { arrayOf(it.key, it.value) }
+      .toTypedArray()
 
-    val rows = section.configs.entries.map { arrayOf(it.key, it.value) }.toTypedArray()
-
-    val table = JTable()
-    tableModel = SysPropTableModel(rows, headerTitles)
-    table.model = tableModel
-    table.tableHeader.resizingAllowed = true
-
-    container.add(table)
+    val table = JTable().apply {
+      model = SysPropTableModel(rows, headerTitles).also { tableModel = it }
+      tableHeader.resizingAllowed = true
+      fillsViewportHeight = true
+    }
 
     add(
-      JScrollPane(container).also { it.verticalScrollBar.unitIncrement = 16 },
+      JScrollPane(table).apply {
+        verticalScrollBar.unitIncrement = 16
+      },
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(2)
@@ -47,6 +66,9 @@ class SystemPropertiesSectionPanel(private val section: SystemPropertiesSection)
   }
 }
 
-private class SysPropTableModel(data: Array<Array<String>>, cols: Array<String>) : DefaultTableModel(data, cols) {
+private class SysPropTableModel(
+  data: Array<Array<String>>,
+  cols: Array<String>
+) : DefaultTableModel(data, cols) {
   override fun isCellEditable(row: Int, column: Int) = false
 }
