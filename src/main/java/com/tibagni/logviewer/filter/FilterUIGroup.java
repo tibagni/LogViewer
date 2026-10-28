@@ -432,6 +432,7 @@ class FilterUIGroup extends JPanel {
           }
           list.updateUI();
           listener.onFiltersApplied();
+          updateGroupHeader();
         }
       }
     });
@@ -445,6 +446,7 @@ class FilterUIGroup extends JPanel {
         listener.onFiltersApplied();
       }
       updateActionPaneButtons();
+      updateGroupHeader();
     });
   }
 
@@ -494,8 +496,7 @@ class FilterUIGroup extends JPanel {
 
     boolean hasAtLeastOneFilterApplied = false;
     ListModel<Filter> listModel = list.getModel();
-    boolean hasItems = listModel.getSize() > 0;
-    boolean allFiltersApplied = hasItems;
+    boolean allFiltersApplied = listModel.getSize() > 0;
     for (int i = 0; i < listModel.getSize(); i++) {
       Filter filter = listModel.getElementAt(i);
       hasAtLeastOneFilterApplied |= filter.isApplied();
@@ -812,11 +813,24 @@ class FilterUIGroup extends JPanel {
   private void updateGroupHeader() {
     if (hideGroupBtn == null || list == null) return;
 
-    int count = list.getModel() != null ? list.getModel().getSize() : 0;
+    ListModel<Filter> listModel = list.getModel();
+    int count = 0;
+    int selectedCount = 0;
+
+    if (listModel != null) {
+      count = listModel.getSize();
+      for (int i = 0; i < count; i++) {
+        if (listModel.getElementAt(i).isApplied()) {
+          selectedCount++;
+        }
+      }
+    }
+
+    String filtersCount = count == 0 ? "(0)" : "(" + selectedCount + " / " + count + ")";
     hideGroupBtn.setIcon(isGroupVisible()
         ? CommonIcons.chevronDownIcon(14)
         : CommonIcons.chevronRightIcon(14));
     hideGroupBtn.setIconTextGap(UIScaleUtils.dip(4));
-    hideGroupBtn.setText(groupName + " (" + count + ")");
+    hideGroupBtn.setText(groupName + " " + filtersCount);
   }
 }
