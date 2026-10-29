@@ -10,22 +10,29 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
 import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.StatusBadge
+import java.awt.BasicStroke
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
+import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.Frame
+import java.awt.Graphics
+import java.awt.Graphics2D
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
+import java.awt.RenderingHints
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.awt.geom.Ellipse2D
 import javax.swing.BorderFactory
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JCheckBox
 import javax.swing.JComboBox
+import javax.swing.JComponent
 import javax.swing.JDialog
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -33,6 +40,7 @@ import javax.swing.JScrollPane
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.border.Border
+import javax.swing.border.EmptyBorder
 
 /**
  * Deduplication resolution calculation logic for duplicate filter clusters.
@@ -122,6 +130,9 @@ class FilterDeduplicationDialog(
 
   @VisibleForTesting
   val clusterBadges = mutableMapOf<Int, StatusBadge>()
+
+  @VisibleForTesting
+  val resolutionBadges = mutableMapOf<Int, List<StatusBadge>>()
 
   var isApplied: Boolean = false
     private set
@@ -314,53 +325,122 @@ class FilterDeduplicationDialog(
 
       var groupCombo: JComboBox<String>? = null
       if (cluster.isCrossGroup) {
-        val groupChoicePanel = JPanel().apply {
-          layout = BoxLayout(this, BoxLayout.X_AXIS)
+        val groupChoicePanel = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
           isOpaque = false
         }
-        val keepLabel = JLabel(
-          I18n.get(I18n.FILTER_DEDUP_KEEP_IN_GROUP)
-        ).apply {
-          foreground = UIManager.getColor("Label.disabledForeground")
-            ?: Color.GRAY
+        val keepLabel = JLabel(I18n.get(I18n.FILTER_DEDUP_KEEP_IN_GROUP)).apply {
+          foreground = CardBorderUtils.resolveSecondaryLabelColor()
+          font = font.deriveFont(Font.BOLD)
         }
         groupChoicePanel.add(keepLabel)
-        groupChoicePanel.add(
-          Box.createRigidArea(Dimension(UIScaleUtils.dip(6), 0))
-        )
-        groupCombo = JComboBox(cluster.affectedGroups.toTypedArray())
-        groupChoicePanel.add(groupCombo)
+        groupChoicePanel.add(Box.createHorizontalStrut(UIScaleUtils.dip(8)))
+        val combo = JComboBox(cluster.affectedGroups.toTypedArray())
+        groupCombo = combo
+        groupChoicePanel.add(combo)
 
         clusterBox.add(
           groupChoicePanel,
           GBConstraintsBuilder()
             .withGridx(0).withGridy(1)
             .withWeightx(1.0)
-            .withAnchor(GridBagConstraints.WEST)
-            .withInsets(Insets(0, 0, UIScaleUtils.dip(4), 0))
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(Insets(0, 0, UIScaleUtils.dip(8), 0))
             .build()
         )
 
-        val detailsText = cluster.matches.joinToString("<br>") { match ->
-          I18n.format(
-            I18n.FILTER_DEDUP_CROSS_GROUP_ITEM,
-            match.group,
-            match.filter.patternString
-          )
+        // Resolution Chips Container: one clean card row per match
+        val chipsContainer = JPanel().apply {
+          layout = BoxLayout(this, BoxLayout.Y_AXIS)
+          isOpaque = false
         }
-        val detailsLabel = JLabel(
-          StringUtils.wrapHtml("<small>$detailsText</small>")
-        )
+
+        val matchBadges = mutableListOf<Pair<FilterMatch, StatusBadge>>()
+        cluster.matches.forEach { match ->
+          val matchCard = JPanel(BorderLayout(UIScaleUtils.dip(8), 0)).apply {
+            isOpaque = false
+            border = BorderFactory.createCompoundBorder(
+              CardBorderUtils.createCardBorder(arc = 6),
+              EmptyBorder(
+                UIScaleUtils.dip(4), UIScaleUtils.dip(8),
+                UIScaleUtils.dip(4), UIScaleUtils.dip(8)
+              )
+            )
+          }
+
+          val leftInfo = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
+            isOpaque = false
+            add(ColorSwatchDot(match.filter.color))
+            add(Box.createHorizontalStrut(UIScaleUtils.dip(8)))
+
+            val groupBadge = JLabel("[${match.group}]").apply { // i18n:ignore
+              font = font.deriveFont(Font.BOLD)
+              foreground = CardBorderUtils.resolveSecondaryLabelColor()
+            }
+            add(groupBadge)
+            add(Box.createHorizontalStrut(UIScaleUtils.dip(8)))
+
+            val filterText = JLabel(match.filter.name.ifEmpty {
+              match.filter.patternString
+            }).apply {
+              font = Font(Font.MONOSPACED, Font.PLAIN, font.size)
+            }
+            add(filterText)
+          }
+
+          val actionBadge = StatusBadge(StatusBadge.Variant.NORMAL)
+          matchBadges.add(match to actionBadge)
+
+          matchCard.add(leftInfo, BorderLayout.CENTER)
+          matchCard.add(actionBadge, BorderLayout.EAST)
+
+          chipsContainer.add(matchCard)
+          chipsContainer.add(Box.createVerticalStrut(UIScaleUtils.dip(4)))
+        }
+
+        val updateMatchBadges = {
+          val selectedGroup = combo.selectedItem as? String ?: cluster.affectedGroups.first()
+          val isClusterEnabled = enableCb.isSelected
+          var keptInSelectedGroup = false
+          matchBadges.forEach { (match, badge) ->
+            if (!isClusterEnabled) {
+              badge.updateResult(0, 0, StatusBadge.Variant.SURFACE, "-")
+            } else if (match.group == selectedGroup && !keptInSelectedGroup) {
+              keptInSelectedGroup = true
+              badge.updateResult(
+                1, 1,
+                StatusBadge.Variant.NORMAL,
+                I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP)
+              )
+            } else {
+              badge.updateResult(
+                0, 0,
+                StatusBadge.Variant.NO_RESULTS,
+                I18n.get(I18n.COMMON_REMOVE)
+              )
+            }
+          }
+        }
+
+        combo.addActionListener { updateMatchBadges() }
+        enableCb.addActionListener { updateMatchBadges() }
+        updateMatchBadges()
+        resolutionBadges[index] = matchBadges.map { it.second }
+
         clusterBox.add(
-          detailsLabel,
+          chipsContainer,
           GBConstraintsBuilder()
             .withGridx(0).withGridy(2)
             .withWeightx(1.0)
-            .withAnchor(GridBagConstraints.WEST)
+            .withFill(GridBagConstraints.HORIZONTAL)
             .build()
         )
       } else {
         val groupName = cluster.affectedGroups.first()
+        val sameGroupContainer = JPanel().apply {
+          layout = BoxLayout(this, BoxLayout.Y_AXIS)
+          isOpaque = false
+        }
+
         val infoLabel = JLabel(
           StringUtils.wrapHtml(
             I18n.format(
@@ -369,13 +449,86 @@ class FilterDeduplicationDialog(
               cluster.matches.size
             )
           )
-        )
+        ).apply {
+          foreground = CardBorderUtils.resolveSecondaryLabelColor()
+        }
+        sameGroupContainer.add(infoLabel)
+        sameGroupContainer.add(Box.createVerticalStrut(UIScaleUtils.dip(6)))
+
+        val matchBadges = mutableListOf<Pair<Int, StatusBadge>>()
+        cluster.matches.forEachIndexed { matchIdx, match ->
+          val matchCard = JPanel(BorderLayout(UIScaleUtils.dip(8), 0)).apply {
+            isOpaque = false
+            border = BorderFactory.createCompoundBorder(
+              CardBorderUtils.createCardBorder(arc = 6),
+              EmptyBorder(
+                UIScaleUtils.dip(4), UIScaleUtils.dip(8),
+                UIScaleUtils.dip(4), UIScaleUtils.dip(8)
+              )
+            )
+          }
+
+          val leftInfo = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
+            isOpaque = false
+            add(ColorSwatchDot(match.filter.color))
+            add(Box.createHorizontalStrut(UIScaleUtils.dip(8)))
+
+            val filterText = JLabel(match.filter.name.ifEmpty {
+              match.filter.patternString
+            }).apply {
+              font = Font(Font.MONOSPACED, Font.PLAIN, font.size)
+            }
+            add(filterText)
+          }
+
+          val actionBadge = StatusBadge(
+            if (matchIdx == 0) StatusBadge.Variant.NORMAL else StatusBadge.Variant.NO_RESULTS
+          ).apply {
+            text = if (matchIdx == 0) {
+              I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP)
+            } else {
+              I18n.get(I18n.COMMON_REMOVE)
+            }
+          }
+          matchBadges.add(matchIdx to actionBadge)
+
+          matchCard.add(leftInfo, BorderLayout.CENTER)
+          matchCard.add(actionBadge, BorderLayout.EAST)
+
+          sameGroupContainer.add(matchCard)
+          sameGroupContainer.add(Box.createVerticalStrut(UIScaleUtils.dip(4)))
+        }
+
+        val updateSameGroupBadges = {
+          val isClusterEnabled = enableCb.isSelected
+          matchBadges.forEach { (idx, badge) ->
+            if (!isClusterEnabled) {
+              badge.updateResult(0, 0, StatusBadge.Variant.SURFACE, "-")
+            } else if (idx == 0) {
+              badge.updateResult(
+                1, 1,
+                StatusBadge.Variant.NORMAL,
+                I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP)
+              )
+            } else {
+              badge.updateResult(
+                0, 0,
+                StatusBadge.Variant.NO_RESULTS,
+                I18n.get(I18n.COMMON_REMOVE)
+              )
+            }
+          }
+        }
+        enableCb.addActionListener { updateSameGroupBadges() }
+        updateSameGroupBadges()
+        resolutionBadges[index] = matchBadges.map { it.second }
+
         clusterBox.add(
-          infoLabel,
+          sameGroupContainer,
           GBConstraintsBuilder()
             .withGridx(0).withGridy(1)
             .withWeightx(1.0)
-            .withAnchor(GridBagConstraints.WEST)
+            .withFill(GridBagConstraints.HORIZONTAL)
             .build()
         )
       }
@@ -423,6 +576,45 @@ class FilterDeduplicationDialog(
   override fun onCancel() {
     isApplied = false
     dispose()
+  }
+
+  /**
+   * Compact circular color swatch dot rendering a filter's assigned color.
+   *
+   * @param swatchColor color displayed inside the swatch dot
+   * @param size dimension in pixels for swatch width and height
+   */
+  internal class ColorSwatchDot(
+    var swatchColor: Color,
+    private val size: Int = UIScaleUtils.dip(10)
+  ) : JComponent() {
+    init {
+      isOpaque = false
+      preferredSize = Dimension(size, size)
+      minimumSize = Dimension(size, size)
+    }
+
+    /**
+     * Paints a circular anti-aliased swatch dot with a subtle boundary border.
+     *
+     * @param g the [Graphics] context to paint with
+     */
+    override fun paintComponent(g: Graphics?) {
+      if (g == null || width <= 0 || height <= 0) return
+      val g2 = g.create() as? Graphics2D ?: return
+      try {
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        val s = width.coerceAtMost(height) - 2f
+        val circle = Ellipse2D.Float(1f, 1f, s, s)
+        g2.color = swatchColor
+        g2.fill(circle)
+        g2.color = Color(0, 0, 0, 50)
+        g2.stroke = BasicStroke(1f)
+        g2.draw(circle)
+      } finally {
+        g2.dispose()
+      }
+    }
   }
 
   companion object {

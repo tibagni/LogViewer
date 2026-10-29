@@ -197,6 +197,7 @@ public final class I18n {
   public static final String FILTER_DEDUP_CROSS_GROUP_ITEM = "filters.dedup.cross_group_item";
   public static final String FILTER_DEDUP_BADGE_CROSS_GROUP = "filters.dedup.badge_cross_group";
   public static final String FILTER_DEDUP_BADGE_SAME_GROUP = "filters.dedup.badge_same_group";
+  public static final String FILTER_DEDUP_ACTION_KEEP = "filters.dedup.action_keep";
 
   // Filters List & Actions
   public static final String FILTERS_TOOLTIP_PREV = "filters.tooltip.prev";
