@@ -20,6 +20,7 @@ import com.tibagni.logviewer.shortcuts.ShortcutManager
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.JFileChooserExt
 import com.tibagni.logviewer.view.ProgressDialog
 import java.awt.*
@@ -461,10 +462,30 @@ class MainViewImpl(
     )
     tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_TAB_SEPARATORS, true)
     tabbedPane.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false)
+    tabbedPane.putClientProperty(
+      FlatClientProperties.TABBED_PANE_TAB_INSETS,
+      Insets(UIScaleUtils.dip(6), UIScaleUtils.dip(12), UIScaleUtils.dip(6), UIScaleUtils.dip(12))
+    )
+    tabbedPane.putClientProperty(
+      FlatClientProperties.TABBED_PANE_TAB_AREA_INSETS,
+      Insets(UIScaleUtils.dip(2), UIScaleUtils.dip(4), 0, UIScaleUtils.dip(4))
+    )
 
-    tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LOGS), logViewerView.contentPane)
-    tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_BUG_REPORT), bugReportView.contentPane)
-    tabbedPane.addTab(I18n.get(I18n.MAIN_TAB_LIVE_LOGS), liveLogView.contentPane)
+    tabbedPane.addTab(
+      I18n.get(I18n.MAIN_TAB_LOGS),
+      CommonIcons.logsTabIcon(UIScaleUtils.dip(16)),
+      logViewerView.contentPane
+    )
+    tabbedPane.addTab(
+      I18n.get(I18n.MAIN_TAB_BUG_REPORT),
+      CommonIcons.bugReportTabIcon(UIScaleUtils.dip(16)),
+      bugReportView.contentPane
+    )
+    tabbedPane.addTab(
+      I18n.get(I18n.MAIN_TAB_LIVE_LOGS),
+      CommonIcons.liveLogsTabIcon(UIScaleUtils.dip(16)),
+      liveLogView.contentPane
+    )
 
     // Ensure the initial tab (Logs) has the filters panel properly attached
     logViewerView.attachFiltersPanel(filtersPanel)
