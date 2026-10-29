@@ -238,4 +238,169 @@ class FilterDeduplicationDialogTests {
       dialog.dispose()
     }
   }
+
+  @Test
+  fun testColorSwatchDotPainting() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val dot = FilterDeduplicationDialog.ColorSwatchDot(Color.RED)
+    assertNotNull(dot)
+    val img = java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+    val g = img.createGraphics()
+    try {
+      dot.size = java.awt.Dimension(16, 16)
+      dot.paint(g)
+      val hasPixels = (0 until img.width).any { x ->
+        (0 until img.height).any { y ->
+          (img.getRGB(x, y) ushr 24 and 0xFF) > 0
+        }
+      }
+      assertTrue("ColorSwatchDot should render non-empty pixels", hasPixels)
+    } finally {
+      g.dispose()
+    }
+  }
+
+  @Test
+  fun testCrossGroupResolutionChipsDynamicallyUpdate() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val f1 = Filter("f1", "AudioFlinger", Color.RED, LogLevel.DEBUG)
+    val f2 = Filter("f2", "AudioFlinger", Color.BLUE, LogLevel.DEBUG)
+    val crossCluster = DuplicateCluster(
+      f1,
+      listOf(FilterMatch("GroupA", f1, 0), FilterMatch("GroupB", f2, 0))
+    )
+
+    val dialog = FilterDeduplicationDialog(null, listOf(crossCluster))
+    try {
+      val (enableCb, groupCombo) = dialog.clusterSelections[0]!!
+      assertNotNull(groupCombo)
+
+      val badges = dialog.resolutionBadges[0]
+      assertNotNull(badges)
+      assertEquals(2, badges!!.size)
+
+      // Initial selection is GroupA: GroupA keeps, GroupB removes
+      assertEquals("GroupA", groupCombo!!.selectedItem)
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[0].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[0].variant)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[1].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[1].variant)
+
+      // Switch selection to GroupB: GroupA removes, GroupB keeps
+      groupCombo.selectedItem = "GroupB"
+      val removals = dialog.removalsByGroup
+      assertEquals(1, removals.size)
+      assertEquals(listOf(f1), removals["GroupA"])
+      assertNull(removals["GroupB"])
+
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[0].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[0].variant)
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[1].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[1].variant)
+
+      // Disable cluster: both badges show '-' with SURFACE variant
+      enableCb.doClick()
+      assertFalse(enableCb.isSelected)
+      assertEquals("-", badges[0].text)
+      assertEquals(StatusBadge.Variant.SURFACE, badges[0].variant)
+      assertEquals("-", badges[1].text)
+      assertEquals(StatusBadge.Variant.SURFACE, badges[1].variant)
+
+      // Re-enable cluster: resolution chips are restored
+      enableCb.doClick()
+      assertTrue(enableCb.isSelected)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[0].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[0].variant)
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[1].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[1].variant)
+    } finally {
+      dialog.dispose()
+    }
+  }
+
+  @Test
+  fun testCrossGroupWithIntraGroupDuplicatesResolutionChips() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val f1 = Filter("f1", "AudioFlinger", Color.RED, LogLevel.DEBUG)
+    val f2 = Filter("f2", "AudioFlinger", Color.BLUE, LogLevel.DEBUG)
+    val f3 = Filter("f3", "AudioFlinger", Color.GREEN, LogLevel.DEBUG)
+    val cluster = DuplicateCluster(
+      f1,
+      listOf(
+        FilterMatch("GroupA", f1, 0),
+        FilterMatch("GroupA", f2, 1),
+        FilterMatch("GroupB", f3, 0)
+      )
+    )
+
+    val dialog = FilterDeduplicationDialog(null, listOf(cluster))
+    try {
+      val (_, groupCombo) = dialog.clusterSelections[0]!!
+      val badges = dialog.resolutionBadges[0]!!
+      assertEquals(3, badges.size)
+
+      // GroupA is retaining: first match in GroupA is Keep, second is Remove, GroupB is Remove
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[0].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[0].variant)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[1].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[1].variant)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[2].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[2].variant)
+
+      // Switch retaining group to GroupB: both GroupA matches become Remove, GroupB is Keep
+      groupCombo!!.selectedItem = "GroupB"
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[0].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[0].variant)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[1].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[1].variant)
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[2].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[2].variant)
+    } finally {
+      dialog.dispose()
+    }
+  }
+
+  @Test
+  fun testSameGroupResolutionChipsAndDisableToggle() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val f1 = Filter("f1", "CameraService", Color.RED, LogLevel.DEBUG)
+    val f2 = Filter("f2", "CameraService", Color.BLUE, LogLevel.DEBUG)
+    val sameGroupCluster = DuplicateCluster(
+      f1,
+      listOf(FilterMatch("Group1", f1, 0), FilterMatch("Group1", f2, 1))
+    )
+
+    val dialog = FilterDeduplicationDialog(null, listOf(sameGroupCluster))
+    try {
+      val (enableCb, _) = dialog.clusterSelections[0]!!
+      val badges = dialog.resolutionBadges[0]!!
+      assertEquals(2, badges.size)
+
+      // First match is Keep, second is Remove
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[0].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[0].variant)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[1].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[1].variant)
+
+      // Disable cluster: both badges show '-' with SURFACE variant
+      enableCb.doClick()
+      assertEquals("-", badges[0].text)
+      assertEquals(StatusBadge.Variant.SURFACE, badges[0].variant)
+      assertEquals("-", badges[1].text)
+      assertEquals(StatusBadge.Variant.SURFACE, badges[1].variant)
+
+      // Re-enable
+      enableCb.doClick()
+      assertEquals(I18n.get(I18n.FILTER_DEDUP_ACTION_KEEP), badges[0].text)
+      assertEquals(StatusBadge.Variant.NORMAL, badges[0].variant)
+      assertEquals(I18n.get(I18n.COMMON_REMOVE), badges[1].text)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, badges[1].variant)
+    } finally {
+      dialog.dispose()
+    }
+  }
 }
