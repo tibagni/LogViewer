@@ -266,6 +266,36 @@ object CommonIcons {
   fun paletteIcon(size: Int = 16): ImageIcon = PaletteIcon(size)
 
   /**
+   * Returns a theme-aware logs tab icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun logsTabIcon(size: Int = 16): ImageIcon = fileDocumentIcon(size)
+
+  /**
+   * Returns a theme-aware bug report tab icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun bugReportTabIcon(size: Int = 16): ImageIcon = BugReportTabIcon(size)
+
+  /**
+   * Returns a theme-aware live logs streaming tab icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun liveLogsTabIcon(size: Int = 16): ImageIcon = LiveLogsTabIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -916,6 +946,101 @@ object CommonIcons {
       g2d.fill(Ellipse2D.Double(s * 0.36 - dotR, s * 0.36 - dotR, 2 * dotR, 2 * dotR))
       g2d.fill(Ellipse2D.Double(s * 0.64 - dotR, s * 0.36 - dotR, 2 * dotR, 2 * dotR))
       g2d.fill(Ellipse2D.Double(s * 0.50 - dotR, s * 0.64 - dotR, 2 * dotR, 2 * dotR))
+    }
+  }
+
+  /**
+   * Dynamic theme-aware [ImageIcon] that paints a bug / diagnostic report icon
+   * using current Look and Feel foreground colors directly at paint time.
+   */
+  private class BugReportTabIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val cx = s * 0.50
+      val cy = s * 0.54
+      val rw = s * 0.22
+      val rh = s * 0.28
+
+      // Body ellipse
+      g2d.draw(Ellipse2D.Double(cx - rw, cy - rh, rw * 2.0, rh * 2.0))
+
+      // Head arc
+      val headR = s * 0.14
+      g2d.draw(Ellipse2D.Double(cx - headR, s * 0.18, headR * 2.0, headR * 2.0))
+
+      // Antennae
+      g2d.draw(Line2D.Double(cx - headR * 0.5, s * 0.20, cx - headR * 1.5, s * 0.08))
+      g2d.draw(Line2D.Double(cx + headR * 0.5, s * 0.20, cx + headR * 1.5, s * 0.08))
+
+      // 3 Pairs of Legs
+      // Top legs
+      g2d.draw(Line2D.Double(cx - rw, cy - rh * 0.4, cx - s * 0.38, cy - rh * 0.8))
+      g2d.draw(Line2D.Double(cx + rw, cy - rh * 0.4, cx + s * 0.38, cy - rh * 0.8))
+
+      // Middle legs
+      g2d.draw(Line2D.Double(cx - rw, cy, cx - s * 0.42, cy))
+      g2d.draw(Line2D.Double(cx + rw, cy, cx + s * 0.42, cy))
+
+      // Bottom legs
+      g2d.draw(Line2D.Double(cx - rw, cy + rh * 0.4, cx - s * 0.38, cy + rh * 0.8))
+      g2d.draw(Line2D.Double(cx + rw, cy + rh * 0.4, cx + s * 0.38, cy + rh * 0.8))
+    }
+  }
+
+  /**
+   * Dynamic theme-aware [ImageIcon] that paints a live streaming / radio waves icon
+   * using current Look and Feel foreground colors directly at paint time.
+   */
+  private class LiveLogsTabIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.09f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val cx = s * 0.50
+      val cy = s * 0.65
+
+      // Center transmission dot
+      val dotR = (s * 0.08).coerceAtLeast(1.2)
+      g2d.fill(Ellipse2D.Double(cx - dotR, cy - dotR, dotR * 2.0, dotR * 2.0))
+
+      // Inner radio wave arc
+      val r1 = s * 0.24
+      val arc1 = java.awt.geom.Arc2D.Double(
+        cx - r1, cy - r1, r1 * 2.0, r1 * 2.0, 45.0, 90.0, java.awt.geom.Arc2D.OPEN
+      )
+      g2d.draw(arc1)
+
+      // Outer radio wave arc
+      val r2 = s * 0.40
+      val arc2 = java.awt.geom.Arc2D.Double(
+        cx - r2, cy - r2, r2 * 2.0, r2 * 2.0, 40.0, 100.0, java.awt.geom.Arc2D.OPEN
+      )
+      g2d.draw(arc2)
+
+      // Base antenna stem
+      g2d.draw(Line2D.Double(cx, cy, cx, s * 0.88))
     }
   }
 

@@ -718,4 +718,57 @@ class CommonIconsTests {
       UIManager.put("Label.foreground", origLabelFg)
     }
   }
+
+  /**
+   * Verifies that [CommonIcons.logsTabIcon] is created with expected dimensions.
+   */
+  @Test
+  fun testLogsTabIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.logsTabIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.bugReportTabIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testBugReportTabIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.bugReportTabIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("bugReportTabIcon should have painted pixels", hasPixels)
+  }
+
+  /**
+   * Verifies that [CommonIcons.liveLogsTabIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testLiveLogsTabIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.liveLogsTabIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("liveLogsTabIcon should have painted pixels", hasPixels)
+  }
 }
