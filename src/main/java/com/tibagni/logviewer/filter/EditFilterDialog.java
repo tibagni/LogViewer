@@ -1,9 +1,8 @@
 package com.tibagni.logviewer.filter;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.annotation.VisibleForTesting;
 import com.tibagni.logviewer.filter.regex.RegexEditorDialog;
 import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.log.LogLevel;
@@ -15,6 +14,7 @@ import com.tibagni.logviewer.view.ButtonsPane;
 import com.tibagni.logviewer.view.CardBorderUtils;
 import com.tibagni.logviewer.view.CommonIcons;
 import com.tibagni.logviewer.view.FlatButton;
+import com.tibagni.logviewer.view.color.ModernColorChooserPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -25,6 +25,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Random;
 
+/**
+ * Dialog for creating and editing log filters.
+ *
+ * Provides filter name, regular expression input with embedded editor, case sensitivity,
+ * verbosity constraints, and a full-featured color chooser with an uncropped text preview.
+ */
 public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private static final Color[] INITIAL_COLORS_LIGHT = new Color[]{
       Color.darkGray,
@@ -66,6 +72,7 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   private JComboBox<LogLevel> verbosityCombo;
   private FlatButton regexEditorBtn;
   private JColorChooser colorChooser;
+  private ModernColorChooserPanel modernColorChooser;
 
   @FunctionalInterface
   public interface DuplicateCheckCallback {
@@ -126,11 +133,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
     regexEditorBtn.addActionListener(e -> onEditRegex());
 
-    colorChooser.setColor(getInitialColor());
+    Color initialColor = getInitialColor();
+    colorChooser.setColor(initialColor);
 
     // call onCancel() when cross is clicked
     setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
     addWindowListener(new WindowAdapter() {
+      @Override
       public void windowClosing(WindowEvent e) {
         onCancel();
       }
@@ -168,10 +177,6 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
           }
         }
       });
-
-      // Adjust the size according to the content after everything is populated
-      contentPane.setPreferredSize(contentPane.getPreferredSize());
-      contentPane.validate();
     }
 
     SwingUtilities.invokeLater(() -> regexTxt.requestFocus());
@@ -189,7 +194,6 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
 
   @Override
   public void onOk() {
-    // add your code here
     Color selectedColor = colorChooser.getColor();
     String name = nameTxt.getText();
     String pattern = regexTxt.getText();
@@ -263,18 +267,6 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     }
   }
 
-  private AbstractColorChooserPanel getSwatchPanel(
-      AbstractColorChooserPanel[] panels) {
-    for (AbstractColorChooserPanel colorPanel : panels) {
-      if (colorPanel.getClass().getName().contains(
-          "DefaultSwatchChooserPanel")) {
-        return colorPanel;
-      }
-    }
-
-    return null;
-  }
-
   public static Color getRandomColor(boolean isDark) {
     Random r = new Random();
     Color[] colors = isDark ? INITIAL_COLORS_DARK : INITIAL_COLORS_LIGHT;
@@ -332,10 +324,10 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     contentPane = new JPanel();
     contentPane.setLayout(new GridBagLayout());
     contentPane.setBorder(BorderFactory.createEmptyBorder(
-        UIScaleUtils.dip(10),
-        UIScaleUtils.dip(10),
-        UIScaleUtils.dip(10),
-        UIScaleUtils.dip(10)));
+        UIScaleUtils.dip(12),
+        UIScaleUtils.dip(14),
+        UIScaleUtils.dip(12),
+        UIScaleUtils.dip(14)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,
@@ -343,7 +335,8 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
             .withGridx(0)
             .withGridy(1)
             .withWeightx(1.0)
-            .withFill(GridBagConstraints.BOTH)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(UIScaleUtils.dip(10), 0, 0, 0))
             .build());
 
     contentPane.add(buildEditPane(),
@@ -356,88 +349,216 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
             .build());
   }
 
+  /**
+   * Constructs the main editing panel containing the rules and color cards.
+   *
+   * @return the editing container panel
+   */
   private JPanel buildEditPane() {
-    final JPanel editPane = new JPanel();
-    editPane.setLayout(new FormLayout(
-        "fill:d:noGrow,left:4dlu:noGrow,fill:d:grow,"
-            + "left:4dlu:noGrow,fill:max(d;4px):noGrow",
-        "center:d:noGrow,top:3dlu:noGrow,center:max(d;4px):noGrow,"
-            + "top:3dlu:noGrow,center:max(d;4px):noGrow,"
-            + "top:3dlu:noGrow,center:max(d;4px):noGrow,"
-            + "top:3dlu:noGrow,center:max(d;4px):noGrow"));
+    final JPanel editPane = new JPanel(new GridBagLayout());
+    editPane.setOpaque(false);
 
-    nameLbl = new JLabel();
-    nameLbl.setText(I18n.get(I18n.FILTER_LABEL_NAME));
+    editPane.add(buildFilterRulesCard(),
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(0)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(8), 0))
+            .build());
+
+    editPane.add(buildColorCard(),
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(1)
+            .withWeightx(1.0).withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+    return editPane;
+  }
+
+  /**
+   * Constructs the filter rules card with name, regex, and options inputs.
+   *
+   * @return the filter rules card panel
+   */
+  private JPanel buildFilterRulesCard() {
+    final JPanel card = new JPanel(new GridBagLayout());
+    card.setOpaque(false);
+    card.setBorder(BorderFactory.createCompoundBorder(
+        CardBorderUtils.createCardBorder(),
+        new EmptyBorder(
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(12),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(12))));
+
+    Color secondaryColor = CardBorderUtils.resolveSecondaryLabelColor();
+
+    nameLbl = new JLabel(I18n.get(I18n.FILTER_LABEL_NAME));
     nameLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_NAME));
-    CellConstraints cc = new CellConstraints();
-    editPane.add(nameLbl, cc.xy(1, 1));
+    nameLbl.setForeground(secondaryColor);
+
     nameTxt = new JTextField();
     nameTxt.setEnabled(true);
-    nameTxt.putClientProperty(
-        FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
-    editPane.add(nameTxt,
-        cc.xy(3, 1, CellConstraints.FILL, CellConstraints.DEFAULT));
+    nameTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
 
-    regexLbl = new JLabel();
-    regexLbl.setText(I18n.get(I18n.FILTER_LABEL_REGEX));
+    regexLbl = new JLabel(I18n.get(I18n.FILTER_LABEL_REGEX));
     regexLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX));
-    editPane.add(regexLbl, cc.xy(1, 3));
+    regexLbl.setForeground(secondaryColor);
+
     regexTxt = new JTextField();
+    regexTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
     regexTxt.putClientProperty(
-        FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
-    regexTxt.setFont(new Font(Font.MONOSPACED, Font.PLAIN,
-        regexTxt.getFont().getSize()));
-    editPane.add(regexTxt,
-        cc.xy(3, 3, CellConstraints.FILL, CellConstraints.DEFAULT));
+        FlatClientProperties.TEXT_FIELD_LEADING_ICON, CommonIcons.searchIcon(14));
+    regexTxt.setFont(new Font(Font.MONOSPACED, Font.PLAIN, regexTxt.getFont().getSize()));
+
     regexEditorBtn = new FlatButton();
     regexEditorBtn.setText(I18n.get(I18n.FILTER_BTN_REGEX_EDITOR));
     regexEditorBtn.setIcon(CommonIcons.chevronRightIcon(14));
     regexEditorBtn.setIconTextGap(UIScaleUtils.dip(4));
-    regexEditorBtn.setToolTipText(
-        I18n.get(I18n.FILTER_TOOLTIP_REGEX_EDITOR));
-    editPane.add(regexEditorBtn, cc.xy(5, 3));
+    regexEditorBtn.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX_EDITOR));
 
-    caseSensitiveLbl = new JLabel();
-    caseSensitiveLbl.setText(I18n.get(I18n.FILTER_LABEL_CASE_SENSITIVE));
-    editPane.add(caseSensitiveLbl, cc.xy(1, 5));
-    caseSensitiveCbx = new JCheckBox();
-    caseSensitiveCbx.setText(
-        I18n.get(I18n.FILTER_LABEL_ENABLE_CASE_SENSITIVE));
-    editPane.add(caseSensitiveCbx, cc.xy(3, 5));
+    caseSensitiveLbl = new JLabel(I18n.get(I18n.FILTER_LABEL_CASE_SENSITIVE));
+    caseSensitiveLbl.setForeground(secondaryColor);
 
-    verbosityLbl = new JLabel();
-    verbosityLbl.setText(I18n.get(I18n.FILTER_LABEL_VERBOSITY));
-    editPane.add(verbosityLbl, cc.xy(1, 7));
+    caseSensitiveCbx = new JCheckBox(I18n.get(I18n.FILTER_LABEL_ENABLE_CASE_SENSITIVE));
+    caseSensitiveCbx.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+    verbosityLbl = new JLabel(I18n.get(I18n.FILTER_LABEL_VERBOSITY));
+    verbosityLbl.setForeground(secondaryColor);
+
     verbosityCombo = new JComboBox<>();
     for (LogLevel level : LogLevel.values()) {
       verbosityCombo.addItem(level);
     }
-    editPane.add(verbosityCombo, cc.xy(3, 7));
 
-    colorLbl = new JLabel();
-    colorLbl.setText(I18n.get(I18n.FILTER_LABEL_COLOR));
+    // Row 0: Name
+    card.add(nameLbl,
+        new GBConstraintsBuilder().withGridx(0).withGridy(0)
+            .withAnchor(GridBagConstraints.WEST)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), UIScaleUtils.dip(8)))
+            .build());
+    card.add(nameTxt,
+        new GBConstraintsBuilder().withGridx(1).withGridy(0)
+            .withGridWidth(2)
+            .withWeightx(1.0).withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), 0))
+            .build());
+
+    // Row 1: RegEx
+    card.add(regexLbl,
+        new GBConstraintsBuilder().withGridx(0).withGridy(1)
+            .withAnchor(GridBagConstraints.WEST)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), UIScaleUtils.dip(8)))
+            .build());
+    card.add(regexTxt,
+        new GBConstraintsBuilder().withGridx(1).withGridy(1)
+            .withWeightx(1.0).withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), UIScaleUtils.dip(6)))
+            .build());
+    card.add(regexEditorBtn,
+        new GBConstraintsBuilder().withGridx(2).withGridy(1)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), 0))
+            .build());
+
+    // Row 2: Options (Case Sensitive & Verbosity)
+    card.add(caseSensitiveLbl,
+        new GBConstraintsBuilder().withGridx(0).withGridy(2)
+            .withAnchor(GridBagConstraints.WEST)
+            .withInsets(new Insets(0, 0, 0, UIScaleUtils.dip(8)))
+            .build());
+
+    JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+    optionsPanel.setOpaque(false);
+    optionsPanel.add(caseSensitiveCbx);
+    optionsPanel.add(Box.createHorizontalStrut(UIScaleUtils.dip(16)));
+    optionsPanel.add(verbosityLbl);
+    optionsPanel.add(Box.createHorizontalStrut(UIScaleUtils.dip(6)));
+    optionsPanel.add(verbosityCombo);
+
+    card.add(optionsPanel,
+        new GBConstraintsBuilder().withGridx(1).withGridy(2)
+            .withGridWidth(2)
+            .withWeightx(1.0).withFill(GridBagConstraints.HORIZONTAL)
+            .build());
+
+    return card;
+  }
+
+  /**
+   * Constructs the color chooser card with modern and legacy panels and preview.
+   *
+   * @return the color selection card panel
+   */
+  private JPanel buildColorCard() {
+    final JPanel card = new JPanel(new BorderLayout(0, UIScaleUtils.dip(6)));
+    card.setOpaque(false);
+    card.setBorder(BorderFactory.createCompoundBorder(
+        CardBorderUtils.createCardBorder(),
+        new EmptyBorder(
+            UIScaleUtils.dip(8),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(8),
+            UIScaleUtils.dip(10))));
+
+    colorLbl = new JLabel(I18n.get(I18n.FILTER_LABEL_COLOR));
     colorLbl.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_COLOR));
-    editPane.add(colorLbl, cc.xy(1, 9));
-
-    Color secondaryColor = CardBorderUtils.resolveSecondaryLabelColor();
-    nameLbl.setForeground(secondaryColor);
-    regexLbl.setForeground(secondaryColor);
-    caseSensitiveLbl.setForeground(secondaryColor);
-    verbosityLbl.setForeground(secondaryColor);
-    colorLbl.setForeground(secondaryColor);
+    colorLbl.setForeground(CardBorderUtils.resolveSecondaryLabelColor());
+    colorLbl.setFont(colorLbl.getFont().deriveFont(Font.BOLD));
+    card.add(colorLbl, BorderLayout.NORTH);
 
     colorChooser = new JColorChooser();
+    modernColorChooser = new ModernColorChooserPanel(getInitialColor(), themeManager, false);
 
-    // Show a simple text field for preview
-    JTextField preview = new JTextField(I18n.get(I18n.FILTER_PREVIEW_COLOR));
-    preview.setBorder(new EmptyBorder(UIScaleUtils.dip(5),
-        UIScaleUtils.dip(15),
-        UIScaleUtils.dip(5),
-        UIScaleUtils.dip(15)));
+    // Keep all legacy chooser panels (Swatches, HSV, HSL, RGB, CMYK) and prepend Modern panel
+    AbstractColorChooserPanel[] existingPanels = colorChooser.getChooserPanels();
+    AbstractColorChooserPanel[] allPanels =
+        new AbstractColorChooserPanel[existingPanels.length + 1];
+    allPanels[0] = modernColorChooser;
+    System.arraycopy(existingPanels, 0, allPanels, 1, existingPanels.length);
+    colorChooser.setChooserPanels(allPanels);
+
+    // Show an uncropped text label for preview across all panels
+    JLabel preview = new JLabel(I18n.get(I18n.FILTER_PREVIEW_COLOR), SwingConstants.CENTER) {
+      @Override
+      public Dimension getPreferredSize() {
+        Dimension d = super.getPreferredSize();
+        return new Dimension(d.width, Math.max(d.height, UIScaleUtils.dip(42)));
+      }
+    };
+    preview.setFont(preview.getFont().deriveFont(Font.BOLD, UIScaleUtils.dipf(13f)));
+    preview.setBorder(BorderFactory.createCompoundBorder(
+        CardBorderUtils.createCardBorder(),
+        new EmptyBorder(
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(18),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(18))));
+    preview.setForeground(getInitialColor());
     colorChooser.setPreviewPanel(preview);
-    editPane.add(colorChooser, cc.xy(3, 9));
+    colorChooser.getSelectionModel().addChangeListener(e ->
+        preview.setForeground(colorChooser.getColor()));
 
-    return editPane;
+    card.add(colorChooser, BorderLayout.CENTER);
+    return card;
+  }
+
+  /**
+   * Returns the modern color chooser component.
+   *
+   * @return the modern color chooser
+   */
+  public ModernColorChooserPanel getModernColorChooser() {
+    return modernColorChooser;
+  }
+
+  /**
+   * Returns the color chooser component.
+   *
+   * @return the color chooser
+   */
+  public JColorChooser getColorChooser() {
+    return colorChooser;
   }
 
   /**
@@ -510,5 +631,25 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
    */
   public JLabel getColorLbl() {
     return colorLbl;
+  }
+
+  /**
+   * Returns the case sensitive checkbox.
+   *
+   * @return the case sensitive checkbox
+   */
+  @VisibleForTesting
+  public JCheckBox getCaseSensitiveCbx() {
+    return caseSensitiveCbx;
+  }
+
+  /**
+   * Returns the verbosity combobox.
+   *
+   * @return the verbosity combobox
+   */
+  @VisibleForTesting
+  public JComboBox<LogLevel> getVerbosityCombo() {
+    return verbosityCombo;
   }
 }
