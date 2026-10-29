@@ -104,7 +104,7 @@ class RegexEditorDialogTests {
                 badge.text
             )
 
-            // Invalid pattern -> NO_RESULTS variant with invalid_regex
+            // Invalid pattern -> NO_RESULTS variant with invalid_regex and error tooltip
             dialog.regexEdit.text = "[unclosed"
             assertTrue(badge.isVisible)
             assertEquals(StatusBadge.Variant.NO_RESULTS, badge.variant)
@@ -112,10 +112,12 @@ class RegexEditorDialogTests {
                 I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX),
                 badge.text
             )
+            assertNotNull(badge.toolTipText)
 
-            // Transition back to empty pattern -> hidden
+            // Transition back to empty pattern -> hidden and tooltip cleared
             dialog.regexEdit.text = ""
             assertFalse(badge.isVisible)
+            assertNull(badge.toolTipText)
         } finally {
             dialog.dispose()
         }
@@ -165,6 +167,27 @@ class RegexEditorDialogTests {
                 assertEquals(secondaryColor, dialog.regexLbl.foreground)
                 assertEquals(secondaryColor, dialog.previewLbl.foreground)
             }
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies that the dialog initializes with modern card structure and controls.
+     */
+    @Test
+    fun testModernCardStructure() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+
+        val dialog = RegexEditorDialog(null)
+        try {
+            assertNotNull(dialog.regexEdit)
+            assertNotNull(dialog.regexPreview)
+            assertNotNull(dialog.caseSensitive)
+            assertNotNull(dialog.matchStatusBadge)
+            assertNotNull(dialog.flagsLbl)
+            assertNotNull(dialog.regexLbl)
+            assertNotNull(dialog.previewLbl)
         } finally {
             dialog.dispose()
         }

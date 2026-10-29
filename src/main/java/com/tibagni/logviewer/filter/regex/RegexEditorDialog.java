@@ -1,8 +1,6 @@
 package com.tibagni.logviewer.filter.regex;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.theme.LogViewerThemeManager;
@@ -126,6 +124,7 @@ public class RegexEditorDialog extends JDialog
 
     isRegexValid = true;
     int count = 0;
+    String errorMessage = null;
     if (!StringUtils.isEmpty(regexPattern)) {
       try {
         int flags = caseSensitive.isSelected() ? 0 : Pattern.CASE_INSENSITIVE;
@@ -141,6 +140,7 @@ public class RegexEditorDialog extends JDialog
         isRegexValid = true;
       } catch (Exception e) {
         isRegexValid = false;
+        errorMessage = e.getMessage();
       }
     }
 
@@ -152,15 +152,19 @@ public class RegexEditorDialog extends JDialog
     if (matchStatusBadge != null) {
       if (StringUtils.isEmpty(regexPattern)) {
         matchStatusBadge.setVisible(false);
+        matchStatusBadge.setToolTipText(null);
       } else if (!isRegexValid) {
         matchStatusBadge.updateResult(0, 0, StatusBadge.Variant.NO_RESULTS,
             I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX));
+        matchStatusBadge.setToolTipText(errorMessage);
       } else if (count > 0) {
         matchStatusBadge.updateResult(count, count, StatusBadge.Variant.NORMAL,
             I18n.format(I18n.REGEX_EDITOR_MATCHES_COUNT, count));
+        matchStatusBadge.setToolTipText(null);
       } else {
         matchStatusBadge.updateResult(0, 0, StatusBadge.Variant.NO_RESULTS,
             I18n.get(I18n.REGEX_EDITOR_NO_MATCHES));
+        matchStatusBadge.setToolTipText(null);
       }
     }
   }
@@ -265,14 +269,16 @@ public class RegexEditorDialog extends JDialog
     return dialog.result;
   }
 
+  /**
+   * Constructs and lays out the dialog interface.
+   */
   private void buildUi() {
-    contentPane = new JPanel();
-    contentPane.setLayout(new GridBagLayout());
+    contentPane = new JPanel(new GridBagLayout());
     contentPane.setBorder(BorderFactory.createEmptyBorder(
-        UIScaleUtils.dip(10),
-        UIScaleUtils.dip(10),
-        UIScaleUtils.dip(10),
-        UIScaleUtils.dip(10)));
+        UIScaleUtils.dip(12),
+        UIScaleUtils.dip(14),
+        UIScaleUtils.dip(12),
+        UIScaleUtils.dip(14)));
 
     buttonsPane = new ButtonsPane(ButtonsPane.ButtonsMode.OK_CANCEL, this);
     contentPane.add(buttonsPane,
@@ -280,7 +286,8 @@ public class RegexEditorDialog extends JDialog
             .withGridx(0)
             .withGridy(1)
             .withWeightx(1.0)
-            .withFill(GridBagConstraints.BOTH)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(UIScaleUtils.dip(10), 0, 0, 0))
             .build());
 
     contentPane.add(buildRegexPane(),
@@ -293,71 +300,152 @@ public class RegexEditorDialog extends JDialog
             .build());
   }
 
+  /**
+   * Constructs the main panel composed of the pattern card and the preview card.
+   *
+   * @return the container panel holding both editor cards
+   */
   private JPanel buildRegexPane() {
-    final JPanel regexPane = new JPanel();
-    regexPane.setLayout(new FormLayout(
-        "fill:d:noGrow,left:4dlu:noGrow,fill:d:grow",
-        "center:max(d;4px):noGrow,top:3dlu:noGrow,center:d:noGrow,"
-            + "top:3dlu:noGrow,center:max(d;4px):noGrow"));
+    final JPanel regexPane = new JPanel(new GridBagLayout());
+    regexPane.setOpaque(false);
 
-    flagsLbl = new JLabel();
-    flagsLbl.setText(I18n.get(I18n.REGEX_EDITOR_LABEL_FLAGS));
-    CellConstraints cc = new CellConstraints();
-    regexPane.add(flagsLbl, cc.xy(1, 1));
+    regexPane.add(buildPatternCard(),
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(0)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(8), 0))
+            .build());
 
-    caseSensitive = new JCheckBox();
-    caseSensitive.setText(I18n.get(I18n.REGEX_EDITOR_CASE_SENSITIVE));
-    regexPane.add(caseSensitive, cc.xy(3, 1));
+    regexPane.add(buildPreviewCard(),
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(1)
+            .withWeightx(1.0).withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
 
-    regexLbl = new JLabel();
-    regexLbl.setText(I18n.get(I18n.REGEX_EDITOR_LABEL_REGEX));
-    regexPane.add(regexLbl, cc.xy(1, 3));
+    return regexPane;
+  }
+
+  /**
+   * Constructs the regular expression input card with flags and match status badge.
+   *
+   * @return the pattern card panel
+   */
+  private JPanel buildPatternCard() {
+    final JPanel card = new JPanel(new GridBagLayout());
+    card.setOpaque(false);
+    card.setBorder(BorderFactory.createCompoundBorder(
+        CardBorderUtils.createCardBorder(),
+        new EmptyBorder(
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(12),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(12))));
+
+    Color secondaryColor = CardBorderUtils.resolveSecondaryLabelColor();
+
+    regexLbl = new JLabel(I18n.get(I18n.REGEX_EDITOR_LABEL_REGEX));
+    regexLbl.setForeground(secondaryColor);
+    regexLbl.setFont(regexLbl.getFont().deriveFont(Font.BOLD));
+
+    flagsLbl = new JLabel(I18n.get(I18n.REGEX_EDITOR_LABEL_FLAGS));
+    flagsLbl.setForeground(secondaryColor);
+
+    caseSensitive = new JCheckBox(I18n.get(I18n.REGEX_EDITOR_CASE_SENSITIVE));
+    caseSensitive.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+    matchStatusBadge = new StatusBadge();
 
     regexEdit = new JTextArea(3, 50);
     regexEdit.setLineWrap(true);
     regexEdit.setRequestFocusEnabled(true);
-    regexEdit.setFont(new Font(Font.MONOSPACED, Font.PLAIN,
-        regexEdit.getFont().getSize()));
+    regexEdit.setFont(new Font(Font.MONOSPACED, Font.PLAIN, regexEdit.getFont().getSize()));
     regexEdit.setBorder(new EmptyBorder(
         UIScaleUtils.dip(4), UIScaleUtils.dip(6),
         UIScaleUtils.dip(4), UIScaleUtils.dip(6)));
 
-    matchStatusBadge = new StatusBadge();
+    JPanel headerPanel = new JPanel(new BorderLayout());
+    headerPanel.setOpaque(false);
+    headerPanel.add(regexLbl, BorderLayout.WEST);
 
-    JPanel regexContainer =
-        new JPanel(new BorderLayout(0, UIScaleUtils.dip(4)));
-    regexContainer.setOpaque(false);
-    regexContainer.add(new JScrollPane(regexEdit), BorderLayout.CENTER);
+    JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+    rightHeader.setOpaque(false);
+    rightHeader.add(flagsLbl);
+    rightHeader.add(Box.createHorizontalStrut(UIScaleUtils.dip(4)));
+    rightHeader.add(caseSensitive);
+    rightHeader.add(Box.createHorizontalStrut(UIScaleUtils.dip(8)));
+    rightHeader.add(matchStatusBadge);
+    headerPanel.add(rightHeader, BorderLayout.EAST);
 
-    JPanel badgePanel = new JPanel(new FlowLayout(FlowLayout.LEADING, 0, 0));
-    badgePanel.setOpaque(false);
-    badgePanel.add(matchStatusBadge);
-    regexContainer.add(badgePanel, BorderLayout.SOUTH);
+    card.add(headerPanel,
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(0)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), 0))
+            .build());
 
-    regexPane.add(regexContainer,
-        cc.xy(3, 3, CellConstraints.FILL, CellConstraints.FILL));
+    JScrollPane scrollPane = new JScrollPane(regexEdit);
+    scrollPane.setBorder(CardBorderUtils.createCardBorder());
+    card.add(scrollPane,
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(1)
+            .withWeightx(1.0).withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
 
-    previewLbl = new JLabel();
-    previewLbl.setText(I18n.get(I18n.REGEX_EDITOR_LABEL_PREVIEW));
-    regexPane.add(previewLbl, cc.xy(1, 5));
+    return card;
+  }
+
+  /**
+   * Constructs the sample text preview card with interactive highlight feedback.
+   *
+   * @return the preview card panel
+   */
+  private JPanel buildPreviewCard() {
+    final JPanel card = new JPanel(new GridBagLayout());
+    card.setOpaque(false);
+    card.setBorder(BorderFactory.createCompoundBorder(
+        CardBorderUtils.createCardBorder(),
+        new EmptyBorder(
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(12),
+            UIScaleUtils.dip(10),
+            UIScaleUtils.dip(12))));
+
+    Color secondaryColor = CardBorderUtils.resolveSecondaryLabelColor();
+
+    previewLbl = new JLabel(I18n.get(I18n.REGEX_EDITOR_LABEL_PREVIEW));
+    previewLbl.setForeground(secondaryColor);
+    previewLbl.setFont(previewLbl.getFont().deriveFont(Font.BOLD));
 
     regexPreview = new JTextArea(10, 50);
     regexPreview.setLineWrap(true);
     regexPreview.setText(I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT));
     regexPreview.setWrapStyleWord(true);
-    regexPreview.setFont(new Font(Font.MONOSPACED, Font.PLAIN,
-        regexPreview.getFont().getSize()));
+    regexPreview.setFont(new Font(Font.MONOSPACED, Font.PLAIN, regexPreview.getFont().getSize()));
     regexPreview.setBorder(new EmptyBorder(
         UIScaleUtils.dip(4), UIScaleUtils.dip(6),
         UIScaleUtils.dip(4), UIScaleUtils.dip(6)));
-    regexPane.add(new JScrollPane(regexPreview),
-        cc.xy(3, 5, CellConstraints.FILL, CellConstraints.FILL));
 
-    Color secondaryColor = CardBorderUtils.resolveSecondaryLabelColor();
-    flagsLbl.setForeground(secondaryColor);
-    regexLbl.setForeground(secondaryColor);
-    previewLbl.setForeground(secondaryColor);
+    card.add(previewLbl,
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(0)
+            .withWeightx(1.0)
+            .withFill(GridBagConstraints.HORIZONTAL)
+            .withInsets(new Insets(0, 0, UIScaleUtils.dip(6), 0))
+            .build());
 
-    return regexPane;
+    JScrollPane scrollPane = new JScrollPane(regexPreview);
+    scrollPane.setBorder(CardBorderUtils.createCardBorder());
+    card.add(scrollPane,
+        new GBConstraintsBuilder()
+            .withGridx(0).withGridy(1)
+            .withWeightx(1.0).withWeighty(1.0)
+            .withFill(GridBagConstraints.BOTH)
+            .build());
+
+    return card;
   }
 }
