@@ -144,6 +144,59 @@ class AdbManagerImpl(
   }
 
   companion object {
+    private val WHITESPACE_REGEX = "\\s+".toRegex()
+
+    /**
+     * Holds parsed optional key-value properties from an adb device line.
+     *
+     * @param product Device product name if present.
+     * @param model Device model name if present.
+     * @param device Device name if present.
+     * @param transportId Adb transport identifier if present.
+     */
+    private data class DeviceProperties(
+      val product: String? = null,
+      val model: String? = null,
+      val device: String? = null,
+      val transportId: String? = null
+    )
+
+    /**
+     * Parses optional key-value properties from whitespace-delimited device line tokens.
+     *
+     * @param tokens Whitespace-separated tokens from an adb device line.
+     * @return [DeviceProperties] containing any parsed optional properties.
+     */
+    private fun parseDeviceProperties(tokens: List<String>): DeviceProperties {
+      var product: String? = null
+      var model: String? = null
+      var device: String? = null
+      var transportId: String? = null
+
+      for (i in 2 until tokens.size) {
+        val token = tokens[i]
+        val colonIdx = token.indexOf(':')
+        if (colonIdx > 0 && colonIdx < token.length - 1) {
+          val key = token.substring(0, colonIdx)
+          val value = token.substring(colonIdx + 1)
+          when (key) {
+            "product" -> product = value
+            "model" -> model = value
+            "device" -> device = value
+            "transport_id" -> transportId = value
+          }
+        }
+      }
+
+      return DeviceProperties(product, model, device, transportId)
+    }
+
+    /**
+     * Parses the stdout of `adb devices -l` into a list of [AdbDevice] instances.
+     *
+     * @param output The raw stdout from `adb devices -l`.
+     * @return List of parsed [AdbDevice] objects.
+     */
     internal fun parseDevicesOutput(output: String): List<AdbDevice> {
       val devices = mutableListOf<AdbDevice>()
       var headerFound = false
@@ -162,33 +215,16 @@ class AdbManagerImpl(
 
         if (!headerFound) continue
 
-        val tokens = line.split("\\s+".toRegex())
+        val tokens = line.split(WHITESPACE_REGEX)
         if (tokens.size < 2) continue
 
         val serial = tokens[0]
         val state = DeviceState.fromString(tokens[1])
+        val props = parseDeviceProperties(tokens)
 
-        var product: String? = null
-        var model: String? = null
-        var device: String? = null
-        var transportId: String? = null
-
-        for (i in 2 until tokens.size) {
-          val token = tokens[i]
-          val colonIdx = token.indexOf(':')
-          if (colonIdx > 0 && colonIdx < token.length - 1) {
-            val key = token.substring(0, colonIdx)
-            val value = token.substring(colonIdx + 1)
-            when (key) {
-              "product" -> product = value
-              "model" -> model = value
-              "device" -> device = value
-              "transport_id" -> transportId = value
-            }
-          }
-        }
-
-        devices.add(AdbDevice(serial, state, product, model, device, transportId))
+        devices.add(
+          AdbDevice(serial, state, props.product, props.model, props.device, props.transportId)
+        )
       }
 
       return devices
