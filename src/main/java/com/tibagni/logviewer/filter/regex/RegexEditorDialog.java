@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.filter.regex;
 
+import org.jetbrains.annotations.Nullable;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.tibagni.logviewer.ServiceLocator;
 import com.tibagni.logviewer.i18n.I18n;
@@ -144,16 +145,33 @@ public class RegexEditorDialog extends JDialog
       }
     }
 
+    updateValidationFeedback(isRegexValid, count, errorMessage, regexPattern);
+  }
+
+  /**
+   * Updates UI feedback components including text area outline, background color,
+   * and match status badge based on regex validation state and match count.
+   * Configures error outline and tooltip on invalid syntax, normal badge on
+   * successful matches, no-results badge on zero matches, or hides the badge when empty.
+   *
+   * @param isValid whether the regex syntax is valid
+   * @param count number of matches found in preview text
+   * @param errorMessage error message if regex syntax is invalid, or {@code null}
+   * @param regexPattern the regex pattern string entered by the user
+   */
+  private void updateValidationFeedback(boolean isValid, int count,
+                                        @Nullable String errorMessage,
+                                        String regexPattern) {
     regexEdit.putClientProperty(FlatClientProperties.OUTLINE,
-        isRegexValid ? null : FlatClientProperties.OUTLINE_ERROR);
+        isValid ? null : FlatClientProperties.OUTLINE_ERROR);
     regexEdit.setBackground(
-        isRegexValid ? defaultRegexEditBg : errorRegexEditBg);
+        isValid ? defaultRegexEditBg : errorRegexEditBg);
 
     if (matchStatusBadge != null) {
       if (StringUtils.isEmpty(regexPattern)) {
         matchStatusBadge.setVisible(false);
         matchStatusBadge.setToolTipText(null);
-      } else if (!isRegexValid) {
+      } else if (!isValid) {
         matchStatusBadge.updateResult(0, 0, StatusBadge.Variant.NO_RESULTS,
             I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX));
         matchStatusBadge.setToolTipText(errorMessage);

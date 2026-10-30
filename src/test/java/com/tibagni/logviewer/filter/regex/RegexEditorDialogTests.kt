@@ -124,6 +124,50 @@ class RegexEditorDialogTests {
     }
 
     /**
+     * Verifies that validation feedback properly updates the match status badge
+     * and text area outline together for valid, empty, and invalid regex patterns.
+     */
+    @Test
+    fun testValidationFeedbackUpdatesBadgeAndOutline() {
+        if (GraphicsEnvironment.isHeadless()) return
+
+        val dialog = RegexEditorDialog(null)
+        try {
+            val badge = dialog.matchStatusBadge
+            assertNotNull(badge)
+
+            // 1. Valid regex with matches -> NORMAL badge and null outline
+            dialog.regexPreview.text = "Sample log text 123"
+            dialog.regexEdit.text = "\\d+"
+            assertTrue(badge.isVisible)
+            assertEquals(StatusBadge.Variant.NORMAL, badge.variant)
+            assertNull(dialog.regexEdit.getClientProperty(FlatClientProperties.OUTLINE))
+
+            // 2. Empty regex -> badge hidden and null outline
+            dialog.regexEdit.text = ""
+            assertFalse(badge.isVisible)
+            assertNull(badge.toolTipText)
+            assertNull(dialog.regexEdit.getClientProperty(FlatClientProperties.OUTLINE))
+
+            // 3. Invalid regex -> NO_RESULTS badge with tooltip and error outline
+            dialog.regexEdit.text = "(unclosed"
+            assertTrue(badge.isVisible)
+            assertEquals(StatusBadge.Variant.NO_RESULTS, badge.variant)
+            assertEquals(
+                I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX),
+                badge.text
+            )
+            assertNotNull(badge.toolTipText)
+            assertEquals(
+                FlatClientProperties.OUTLINE_ERROR,
+                dialog.regexEdit.getClientProperty(FlatClientProperties.OUTLINE)
+            )
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
      * Verifies monospace typography and padding on regex text components.
      */
     @Test
