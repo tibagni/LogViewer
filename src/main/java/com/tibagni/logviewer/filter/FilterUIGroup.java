@@ -7,7 +7,6 @@ import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.shortcuts.ShortcutAction;
 import com.tibagni.logviewer.shortcuts.ShortcutManager;
-import com.tibagni.logviewer.util.StringUtils;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.CardBorderUtils;
 import com.tibagni.logviewer.view.CheckBoxList;
@@ -22,10 +21,12 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -39,23 +40,26 @@ class FilterUIGroup extends JPanel {
   private static final int DEFAULT_CARD_ARC_DP = 8;
 
   private final String groupName;
-  private final JButton hideGroupBtn;
-  private final JButton prevBtn;
-  private final JButton nextBtn;
-  private final JButton addBtn;
-  private final JButton saveBtn;
-  private final JButton closeBtn;
-  private final TriStateCheckbox selectAllCb;
+  private final JButton hideGroupBtn = createToolbarComponent(new FlatButton());
+  private final JButton prevBtn = createToolbarComponent(new FlatButton());
+  private final JButton nextBtn = createToolbarComponent(new FlatButton());
+  private final JButton addBtn = createToolbarComponent(new FlatButton());
+  private final JButton saveBtn = createToolbarComponent(
+      new FlatButton(I18n.get(I18n.COMMON_SAVE)));
+  private final JButton closeBtn = createToolbarComponent(new FlatButton());
+  private final TriStateCheckbox selectAllCb = createToolbarComponent(
+      new TriStateCheckbox());
   private final JPanel optionsPane;
-  private final JPanel groupActionsPane;
   private final ReorderableCheckBoxList<Filter> list;
   private final FilterCellRenderer cellRenderer;
   private final FilterListSearchHandler listSearchHandler;
 
   private final Supplier<FiltersList.FiltersListener> listenerSupplier;
   private final Consumer<String> focusGainedCallback;
-  private final LogViewerPreferences userPrefs = ServiceLocator.INSTANCE.getLogViewerPrefs();
-  private final ShortcutManager shortcutManager = ServiceLocator.INSTANCE.getShortcutManager();
+  private final LogViewerPreferences userPrefs =
+      ServiceLocator.INSTANCE.getLogViewerPrefs();
+  private final ShortcutManager shortcutManager =
+      ServiceLocator.INSTANCE.getShortcutManager();
 
   /**
    * Helper utility that assigns toolbar button FlatLaf client properties to a component.
@@ -73,7 +77,7 @@ class FilterUIGroup extends JPanel {
    * @param groupName name of this filter group.
    * @param filters initial array of filters belonging to this group.
    * @param contextTagSupplier supplier of the active context tag.
-   * @param listenerSupplier supplier of the active [FiltersList.FiltersListener].
+   * @param listenerSupplier supplier of the active {@link FiltersList.FiltersListener}.
    * @param focusGainedCallback callback invoked when list gains focus.
    */
   public FilterUIGroup(
@@ -90,49 +94,11 @@ class FilterUIGroup extends JPanel {
     setOpaque(false);
 
     cellRenderer = new FilterCellRenderer(contextTagSupplier);
-
-    hideGroupBtn = createToolbarComponent(new FlatButton());
-
-    prevBtn = createToolbarComponent(new FlatButton());
-    prevBtn.setIcon(CommonIcons.chevronLeftIcon(14));
-
-    nextBtn = createToolbarComponent(new FlatButton());
-    nextBtn.setIcon(CommonIcons.chevronRightIcon(14));
-    updateNavigationTooltips();
-
-    addBtn = createToolbarComponent(new FlatButton());
-    addBtn.setIcon(CommonIcons.plusIcon(14));
-    addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
-
-    saveBtn = createToolbarComponent(new FlatButton(I18n.get(I18n.COMMON_SAVE)));
-    saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
-    saveBtn.setVisible(false);
-
-    closeBtn = createToolbarComponent(new FlatButton());
-    closeBtn.setIcon(CommonIcons.closeIcon(14));
-    closeBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_GROUP));
-
-    selectAllCb = createToolbarComponent(new TriStateCheckbox());
-    selectAllCb.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SELECT_ALL));
-    selectAllCb.setOpaque(false);
-
     list = new ReorderableCheckBoxList<>();
     list.setOpaque(false);
     list.setCellRenderer(cellRenderer);
 
-    optionsPane = new JPanel(new BorderLayout());
-    optionsPane.setOpaque(false);
-    optionsPane.add(hideGroupBtn, BorderLayout.WEST);
-
-    groupActionsPane = new JPanel(new FlowLayout(FlowLayout.TRAILING, UIScaleUtils.dip(2), 0));
-    groupActionsPane.setOpaque(false);
-    groupActionsPane.add(selectAllCb);
-    groupActionsPane.add(saveBtn);
-    groupActionsPane.add(addBtn);
-    groupActionsPane.add(prevBtn);
-    groupActionsPane.add(nextBtn);
-    groupActionsPane.add(closeBtn);
-    optionsPane.add(groupActionsPane, BorderLayout.EAST);
+    optionsPane = buildGroupHeaderToolbar();
 
     add(optionsPane, BorderLayout.NORTH);
     add(list, BorderLayout.CENTER);
@@ -140,13 +106,109 @@ class FilterUIGroup extends JPanel {
     updateCardMargin();
     updateHeaderStyle();
 
-    hideGroupBtn.addActionListener(l -> toggleGroupVisibility());
-
     listSearchHandler = new FilterListSearchHandler(list, cellRenderer);
 
     setListData(filters);
     configureContextActions();
     updateActionPaneButtons();
+  }
+
+  /**
+   * Builds the group header toolbar containing the group toggle button
+   * and action controls (select all, save, add, navigation, close).
+   *
+   * @return the configured toolbar {@link JPanel}.
+   */
+  private JPanel buildGroupHeaderToolbar() {
+    prevBtn.setIcon(CommonIcons.chevronLeftIcon(14));
+    nextBtn.setIcon(CommonIcons.chevronRightIcon(14));
+    updateNavigationTooltips();
+
+    addBtn.setIcon(CommonIcons.plusIcon(14));
+    addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
+
+    saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
+    saveBtn.setVisible(false);
+
+    closeBtn.setIcon(CommonIcons.closeIcon(14));
+    closeBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_GROUP));
+
+    selectAllCb.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SELECT_ALL));
+    selectAllCb.setOpaque(false);
+
+    configureToolbarButtonListeners();
+
+    JPanel groupActionsPane = new JPanel(
+        new FlowLayout(FlowLayout.TRAILING, UIScaleUtils.dip(2), 0));
+    groupActionsPane.setOpaque(false);
+    groupActionsPane.add(selectAllCb);
+    groupActionsPane.add(saveBtn);
+    groupActionsPane.add(addBtn);
+    groupActionsPane.add(prevBtn);
+    groupActionsPane.add(nextBtn);
+    groupActionsPane.add(closeBtn);
+
+    JPanel headerToolbar = new JPanel(new BorderLayout());
+    headerToolbar.setOpaque(false);
+    headerToolbar.add(hideGroupBtn, BorderLayout.WEST);
+    headerToolbar.add(groupActionsPane, BorderLayout.EAST);
+    return headerToolbar;
+  }
+
+  /**
+   * Configures action listeners for header toolbar buttons and select-all checkbox.
+   */
+  private void configureToolbarButtonListeners() {
+    hideGroupBtn.addActionListener(l -> toggleGroupVisibility());
+    prevBtn.addActionListener(l -> navigatePrev());
+    nextBtn.addActionListener(l -> navigateNext());
+    addBtn.addActionListener(l -> {
+      FiltersList.FiltersListener listener = listenerSupplier.get();
+      if (listener != null) {
+        listener.onAddFilter(groupName);
+      }
+    });
+    saveBtn.addActionListener(l -> {
+      FiltersList.FiltersListener listener = listenerSupplier.get();
+      if (listener != null) {
+        listener.onSaveFilters(groupName);
+      }
+    });
+    closeBtn.addActionListener(l -> {
+      FiltersList.FiltersListener listener = listenerSupplier.get();
+      if (listener != null) {
+        listener.onCloseGroup(groupName);
+      }
+    });
+    selectAllCb.addSelectionChangedListener(this::handleSelectAllChanged);
+  }
+
+  /**
+   * Handles selection state changes on the select-all checkbox, applying the state
+   * across all filters in this group.
+   *
+   * @param newSelectionState the new selection state from the checkbox.
+   */
+  private void handleSelectAllChanged(TriStateCheckbox.SelectionState newSelectionState) {
+    FiltersList.FiltersListener listener = listenerSupplier.get();
+    if (listener == null) return;
+
+    Boolean applied = null;
+    if (newSelectionState == TriStateCheckbox.SelectionState.SELECTED) {
+      applied = true;
+    } else if (newSelectionState == TriStateCheckbox.SelectionState.NOT_SELECTED) {
+      applied = false;
+    }
+
+    if (applied != null) {
+      ListModel<Filter> listModel = list.getModel();
+      for (int i = 0; i < listModel.getSize(); i++) {
+        listModel.getElementAt(i).setApplied(applied);
+      }
+      list.updateUI();
+      listener.onFiltersApplied();
+      updateGroupHeader();
+    }
   }
 
   /**
@@ -294,57 +356,82 @@ class FilterUIGroup extends JPanel {
     return list.isVisible();
   }
 
+  /**
+   * Recalculates maximum size based on preferred height to prevent unbounded vertical stretch.
+   */
   private void updatePreferredSize() {
     Dimension maximumSize = getMaximumSize();
     Dimension preferredSize = getPreferredSize();
     setMaximumSize(new Dimension(maximumSize.width, preferredSize.height));
   }
 
-  private void configureContextActions() {
+  /**
+   * Builds the context popup menu for the selected filter items.
+   *
+   * @param listener the active filters listener callback.
+   * @return the configured {@link JPopupMenu} with actions for delete, edit, duplicate, and move.
+   */
+  private JPopupMenu buildContextMenu(FiltersList.FiltersListener listener) {
+    int[] selectedIndices = list.getSelectedIndices();
+    int selectedFilters = selectedIndices.length;
+
     JPopupMenu popup = new JPopupMenu();
-    final JLabel menuTitle = new JLabel();
+    JLabel menuTitle = new JLabel(
+        I18n.format(I18n.FILTERS_MENU_ITEMS_SELECTED, selectedFilters));
     menuTitle.setBorder(new EmptyBorder(0, UIScaleUtils.dip(10), 0, 0));
     popup.add(menuTitle);
     popup.add(new JPopupMenu.Separator());
+
     JMenuItem deleteMenuItem = popup.add(I18n.get(I18n.COMMON_DELETE));
+    deleteMenuItem.addActionListener(e -> deleteSelectedFilters(listener));
+
     JMenuItem editMenuItem = popup.add(I18n.get(I18n.COMMON_EDIT));
+    editMenuItem.setVisible(selectedFilters == 1);
+    editMenuItem.addActionListener(e -> editSelectedFilter(listener));
+
     JMenuItem duplicateMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_DUPLICATE));
+    duplicateMenuItem.setVisible(selectedFilters == 1);
+    duplicateMenuItem.addActionListener(e -> duplicateSelectedFilter(listener));
+
     JMenuItem moveMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_MOVE));
+    moveMenuItem.addActionListener(e -> moveSelectedFilters(listener));
 
-    deleteMenuItem.addActionListener(e -> deleteSelectedFilters());
-    editMenuItem.addActionListener(e -> editSelectedFilter());
-    duplicateMenuItem.addActionListener(e -> duplicateSelectedFilter());
-    moveMenuItem.addActionListener(e -> moveSelectedFilters());
+    return popup;
+  }
 
-    list.addMouseListener(new MouseAdapter() {
+  /**
+   * Creates a mouse listener that handles context menu display on right click
+   * and editing on double click.
+   *
+   * @return the configured {@link MouseListener}.
+   */
+  private MouseListener createListMouseListener() {
+    return new MouseAdapter() {
+      @Override
       public void mouseClicked(MouseEvent me) {
         int indexClicked = list.locationToIndex(me.getPoint());
 
         if (SwingUtilities.isRightMouseButton(me) && !list.isSelectionEmpty()) {
           int[] selectedIndices = list.getSelectedIndices();
           if (IntStream.of(selectedIndices).anyMatch(i -> i == indexClicked)) {
-            int selectedFilters = selectedIndices.length;
-            menuTitle.setText(I18n.format(I18n.FILTERS_MENU_ITEMS_SELECTED, selectedFilters));
-            editMenuItem.setVisible(selectedFilters == 1);
-            duplicateMenuItem.setVisible(selectedFilters == 1);
-
+            JPopupMenu popup = buildContextMenu(listenerSupplier.get());
             popup.show(list, me.getX(), me.getY());
           }
         } else if (me.getClickCount() == 2) {
-          // Edit filter on double click
           editSelectedFilter();
         }
       }
-    });
+    };
+  }
 
-    list.addKeyListener(new KeyAdapter() {
-      @Override
-      public void keyTyped(KeyEvent e) {
-        listSearchHandler.handleKeyTyped(e.getKeyChar());
-      }
-    });
-
-    list.addFocusListener(new FocusAdapter() {
+  /**
+   * Creates a focus listener that notifies when the list gains focus and cancels
+   * active search when focus is lost.
+   *
+   * @return the configured {@link FocusListener}.
+   */
+  private FocusListener createListFocusListener() {
+    return new FocusAdapter() {
       @Override
       public void focusGained(FocusEvent e) {
         if (focusGainedCallback != null) {
@@ -356,84 +443,24 @@ class FilterUIGroup extends JPanel {
       public void focusLost(FocusEvent e) {
         listSearchHandler.cancelSearch();
       }
-    });
+    };
+  }
 
-    // Add the shortcuts for the context menu
+  /**
+   * Configures mouse, keyboard, focus, and selection listeners on the filter list.
+   */
+  private void configureContextActions() {
+    list.addMouseListener(createListMouseListener());
+    list.addFocusListener(createListFocusListener());
     list.addKeyListener(new KeyAdapter() {
       @Override
+      public void keyTyped(KeyEvent e) {
+        listSearchHandler.handleKeyTyped(e.getKeyChar());
+      }
+
+      @Override
       public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-          if (listSearchHandler.isSearching()) {
-            listSearchHandler.cancelSearch();
-          } else {
-            list.clearSelection();
-          }
-          return;
-        }
-
-        if (listSearchHandler.isSearching()) {
-          return;
-        }
-
-        boolean backspace = e.getKeyCode() == KeyEvent.VK_BACK_SPACE;
-
-        if (!list.isSelectionEmpty() && list.getModel().getSize() > 0 &&
-            (shortcutManager.matches(e, ShortcutAction.FILTERS_DELETE_SELECTED) || backspace)) {
-          deleteSelectedFilters();
-        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_EDIT_SELECTED) &&
-            list.getSelectedIndices().length == 1) {
-          editSelectedFilter();
-        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_PREV_MATCH)) {
-          navigatePrev();
-        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_NEXT_MATCH)) {
-          navigateNext();
-        } else if (shortcutManager.matches(e, ShortcutAction.FILTERS_INLINE_SEARCH) &&
-            shortcutManager.getUnmodifiedTriggerChar(ShortcutAction.FILTERS_INLINE_SEARCH) == null) {
-          listSearchHandler.startSearch();
-          e.consume();
-        }
-      }
-    });
-
-    prevBtn.addActionListener(l -> navigatePrev());
-    nextBtn.addActionListener(l -> navigateNext());
-    addBtn.addActionListener(l -> {
-      FiltersList.FiltersListener listener = listenerSupplier.get();
-      if (listener != null) {
-        listener.onAddFilter(groupName);
-      }
-    });
-    saveBtn.addActionListener(l -> {
-      FiltersList.FiltersListener listener = listenerSupplier.get();
-      if (listener != null) {
-        listener.onSaveFilters(groupName);
-      }
-    });
-    closeBtn.addActionListener(l -> {
-      FiltersList.FiltersListener listener = listenerSupplier.get();
-      if (listener != null) {
-        listener.onCloseGroup(groupName);
-      }
-    });
-    selectAllCb.addSelectionChangedListener(newSelectionState -> {
-      FiltersList.FiltersListener listener = listenerSupplier.get();
-      if (listener != null) {
-        Boolean applied = null;
-        if (newSelectionState == TriStateCheckbox.SelectionState.SELECTED) {
-          applied = true;
-        } else if (newSelectionState == TriStateCheckbox.SelectionState.NOT_SELECTED) {
-          applied = false;
-        }
-
-        if (applied != null) {
-          ListModel<Filter> listModel = list.getModel();
-          for (int i = 0; i < listModel.getSize(); i++) {
-            listModel.getElementAt(i).setApplied(applied);
-          }
-          list.updateUI();
-          listener.onFiltersApplied();
-          updateGroupHeader();
-        }
+        handleKeyShortcut(e, listenerSupplier.get());
       }
     });
 
@@ -450,8 +477,131 @@ class FilterUIGroup extends JPanel {
     });
   }
 
+  /**
+   * Handles keyboard shortcuts for filter actions such as delete, edit, navigation,
+   * and inline search.
+   *
+   * @param e the key event triggered on the list.
+   * @param listener the active filters listener callback.
+   * @return true if the shortcut was recognized and handled, false otherwise.
+   */
+  private boolean handleKeyShortcut(KeyEvent e, FiltersList.FiltersListener listener) {
+    if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+      return handleEscapeKey();
+    }
+
+    if (listSearchHandler.isSearching()) {
+      return false;
+    }
+
+    if (handleDeleteShortcut(e, listener)) {
+      return true;
+    }
+    if (handleEditShortcut(e, listener)) {
+      return true;
+    }
+    if (handleNavigationShortcut(e, listener)) {
+      return true;
+    }
+    return handleSearchShortcut(e);
+  }
+
+  /**
+   * Handles escape key by cancelling search if active, or clearing list selection.
+   *
+   * @return true indicating the escape key was processed.
+   */
+  private boolean handleEscapeKey() {
+    if (listSearchHandler.isSearching()) {
+      listSearchHandler.cancelSearch();
+    } else {
+      list.clearSelection();
+    }
+    return true;
+  }
+
+  /**
+   * Handles delete shortcut key or backspace to delete selected filters.
+   *
+   * @param e the key event.
+   * @param listener the active filters listener callback.
+   * @return true if the delete shortcut was triggered, false otherwise.
+   */
+  private boolean handleDeleteShortcut(KeyEvent e, FiltersList.FiltersListener listener) {
+    boolean backspace = e.getKeyCode() == KeyEvent.VK_BACK_SPACE;
+    boolean matchDelete = shortcutManager.matches(e, ShortcutAction.FILTERS_DELETE_SELECTED);
+    if ((matchDelete || backspace) && !list.isSelectionEmpty() && list.getModel().getSize() > 0) {
+      deleteSelectedFilters(listener);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Handles edit shortcut key when a single filter is selected.
+   *
+   * @param e the key event.
+   * @param listener the active filters listener callback.
+   * @return true if the edit shortcut was triggered, false otherwise.
+   */
+  private boolean handleEditShortcut(KeyEvent e, FiltersList.FiltersListener listener) {
+    if (shortcutManager.matches(e, ShortcutAction.FILTERS_EDIT_SELECTED)
+        && list.getSelectedIndices().length == 1) {
+      editSelectedFilter(listener);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Handles previous and next match navigation shortcuts.
+   *
+   * @param e the key event.
+   * @param listener the active filters listener callback.
+   * @return true if a navigation shortcut was triggered, false otherwise.
+   */
+  private boolean handleNavigationShortcut(KeyEvent e, FiltersList.FiltersListener listener) {
+    if (shortcutManager.matches(e, ShortcutAction.FILTERS_PREV_MATCH)) {
+      navigatePrev(listener);
+      return true;
+    }
+    if (shortcutManager.matches(e, ShortcutAction.FILTERS_NEXT_MATCH)) {
+      navigateNext(listener);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Handles inline search activation shortcut key.
+   *
+   * @param e the key event.
+   * @return true if search shortcut was triggered, false otherwise.
+   */
+  private boolean handleSearchShortcut(KeyEvent e) {
+    if (shortcutManager.matches(e, ShortcutAction.FILTERS_INLINE_SEARCH)
+        && shortcutManager.getUnmodifiedTriggerChar(
+            ShortcutAction.FILTERS_INLINE_SEARCH) == null) {
+      listSearchHandler.startSearch();
+      e.consume();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Navigates to the previous match for the currently selected filter using default listener.
+   */
   private void navigatePrev() {
-    FiltersList.FiltersListener listener = listenerSupplier.get();
+    navigatePrev(listenerSupplier.get());
+  }
+
+  /**
+   * Navigates to the previous match for the currently selected filter.
+   *
+   * @param listener the active filters listener callback.
+   */
+  private void navigatePrev(FiltersList.FiltersListener listener) {
     if (listener != null) {
       Filter selectedFilter = list.getSelectedValue();
       if (selectedFilter != null) {
@@ -460,8 +610,19 @@ class FilterUIGroup extends JPanel {
     }
   }
 
+  /**
+   * Navigates to the next match for the currently selected filter using default listener.
+   */
   private void navigateNext() {
-    FiltersList.FiltersListener listener = listenerSupplier.get();
+    navigateNext(listenerSupplier.get());
+  }
+
+  /**
+   * Navigates to the next match for the currently selected filter.
+   *
+   * @param listener the active filters listener callback.
+   */
+  private void navigateNext(FiltersList.FiltersListener listener) {
     if (listener != null) {
       Filter selectedFilter = list.getSelectedValue();
       if (selectedFilter != null) {
@@ -470,6 +631,9 @@ class FilterUIGroup extends JPanel {
     }
   }
 
+  /**
+   * Updates previous and next navigation button tooltips with their key shortcuts.
+   */
   private void updateNavigationTooltips() {
     String prevShortcut = ShortcutManager.formatKeyStroke(
         shortcutManager.getKeyStroke(ShortcutAction.FILTERS_PREV_MATCH));
@@ -483,65 +647,134 @@ class FilterUIGroup extends JPanel {
         : I18n.format(I18n.FILTERS_TOOLTIP_NEXT_FORMAT, nextShortcut));
   }
 
+  /**
+   * Updates toolbar button enabled states, navigation tooltips, and select-all
+   * checkbox selection state.
+   */
   public void updateActionPaneButtons() {
     if (list == null) return;
     updateNavigationTooltips();
 
     Filter selectedFilter = list.getSelectedValue();
-    boolean enableNavigation = list.getSelectedIndices().length == 1 &&
-        selectedFilter != null &&
-        selectedFilter.isApplied();
+    boolean enableNavigation = list.getSelectedIndices().length == 1
+        && selectedFilter != null
+        && selectedFilter.isApplied();
     prevBtn.setEnabled(enableNavigation);
     nextBtn.setEnabled(enableNavigation);
 
-    boolean hasAtLeastOneFilterApplied = false;
-    ListModel<Filter> listModel = list.getModel();
-    boolean allFiltersApplied = listModel.getSize() > 0;
-    for (int i = 0; i < listModel.getSize(); i++) {
-      Filter filter = listModel.getElementAt(i);
-      hasAtLeastOneFilterApplied |= filter.isApplied();
-      allFiltersApplied &= filter.isApplied();
-    }
-
-    TriStateCheckbox.SelectionState selectionState = TriStateCheckbox.SelectionState.NOT_SELECTED;
-    if (allFiltersApplied) {
-      selectionState = TriStateCheckbox.SelectionState.SELECTED;
-    } else if (hasAtLeastOneFilterApplied) {
-      selectionState = TriStateCheckbox.SelectionState.PARTIALLY_SELECTED;
-    }
-    selectAllCb.setSelectionState(selectionState);
+    selectAllCb.setSelectionState(calculateSelectionState(list.getModel()));
   }
 
+  /**
+   * Computes the tri-state checkbox selection state based on whether all, some,
+   * or none of the filters in the model are applied.
+   *
+   * @param listModel the list model containing current filters.
+   * @return the resolved {@link TriStateCheckbox.SelectionState}.
+   */
+  private TriStateCheckbox.SelectionState calculateSelectionState(
+      ListModel<Filter> listModel) {
+    if (listModel == null || listModel.getSize() == 0) {
+      return TriStateCheckbox.SelectionState.NOT_SELECTED;
+    }
+
+    boolean hasAtLeastOneFilterApplied = false;
+    boolean allFiltersApplied = true;
+    for (int i = 0; i < listModel.getSize(); i++) {
+      Filter filter = listModel.getElementAt(i);
+      boolean applied = filter.isApplied();
+      hasAtLeastOneFilterApplied |= applied;
+      allFiltersApplied &= applied;
+    }
+
+    if (allFiltersApplied) {
+      return TriStateCheckbox.SelectionState.SELECTED;
+    } else if (hasAtLeastOneFilterApplied) {
+      return TriStateCheckbox.SelectionState.PARTIALLY_SELECTED;
+    }
+    return TriStateCheckbox.SelectionState.NOT_SELECTED;
+  }
+
+  /**
+   * Deletes the currently selected filters using default listener.
+   */
   private void deleteSelectedFilters() {
-    FiltersList.FiltersListener listener = listenerSupplier.get();
+    deleteSelectedFilters(listenerSupplier.get());
+  }
+
+  /**
+   * Deletes the currently selected filters.
+   *
+   * @param listener the active filters listener callback.
+   */
+  private void deleteSelectedFilters(FiltersList.FiltersListener listener) {
     if (listener != null) {
       listener.onDeleteFilters(groupName, list.getSelectedIndices());
     }
   }
 
+  /**
+   * Opens the edit dialog for the currently selected filter using default listener.
+   */
   private void editSelectedFilter() {
-    FiltersList.FiltersListener listener = listenerSupplier.get();
+    editSelectedFilter(listenerSupplier.get());
+  }
+
+  /**
+   * Opens the edit dialog for the currently selected filter.
+   *
+   * @param listener the active filters listener callback.
+   */
+  private void editSelectedFilter(FiltersList.FiltersListener listener) {
     if (listener != null) {
       Filter filter = list.getSelectedValue();
       listener.onEditFilter(filter);
     }
   }
 
+  /**
+   * Duplicates the currently selected filter using default listener.
+   */
   private void duplicateSelectedFilter() {
-    FiltersList.FiltersListener listener = listenerSupplier.get();
+    duplicateSelectedFilter(listenerSupplier.get());
+  }
+
+  /**
+   * Duplicates the currently selected filter.
+   *
+   * @param listener the active filters listener callback.
+   */
+  private void duplicateSelectedFilter(FiltersList.FiltersListener listener) {
     if (listener != null) {
       Filter filter = list.getSelectedValue();
       listener.onDuplicateFilter(groupName, filter);
     }
   }
 
+  /**
+   * Moves the currently selected filters using default listener.
+   */
   private void moveSelectedFilters() {
-    FiltersList.FiltersListener listener = listenerSupplier.get();
+    moveSelectedFilters(listenerSupplier.get());
+  }
+
+  /**
+   * Moves the currently selected filters.
+   *
+   * @param listener the active filters listener callback.
+   */
+  private void moveSelectedFilters(FiltersList.FiltersListener listener) {
     if (listener != null) {
       listener.onMoveFilters(groupName, list.getSelectedIndices());
     }
   }
 
+  /**
+   * Notifies the listener when filters are reordered in the list.
+   *
+   * @param orig the original index.
+   * @param dest the destination index.
+   */
   private void reorderFilters(int orig, int dest) {
     FiltersList.FiltersListener listener = listenerSupplier.get();
     if (listener != null) {
@@ -634,7 +867,7 @@ class FilterUIGroup extends JPanel {
    * Resolves the card background color. Returns a clean elevated surface:
    * pure white / Table.background in light mode, #26282c in dark mode.
    *
-   * @return the card background [Color].
+   * @return the card background {@link Color}.
    */
   Color resolveCardBackground() {
     if (isDarkTheme()) {
@@ -648,7 +881,7 @@ class FilterUIGroup extends JPanel {
    * Resolves the subtle header background tint: ToolBar.background or
    * #f5f6f8 in light mode, #303238 in dark mode.
    *
-   * @return the header background [Color].
+   * @return the header background {@link Color}.
    */
   Color resolveHeaderBackground() {
     if (isDarkTheme()) {
@@ -662,7 +895,7 @@ class FilterUIGroup extends JPanel {
    * Resolves the card boundary stroke color: Component.borderColor or
    * subtle theme-aware border.
    *
-   * @return the card border [Color].
+   * @return the card border {@link Color}.
    */
   Color resolveCardBorderColor() {
     return CardBorderUtils.resolveCardBorderColor();
@@ -684,7 +917,7 @@ class FilterUIGroup extends JPanel {
   /**
    * Computes the rounded card shape based on current component dimensions and margins.
    *
-   * @return the [Shape] of the card, or null if width or height are non-positive.
+   * @return the {@link Shape} of the card, or null if width or height are non-positive.
    */
   private Shape getCardShape() {
     int vMargin = UIScaleUtils.dip(MARGIN_VERTICAL_DP);
@@ -707,7 +940,7 @@ class FilterUIGroup extends JPanel {
    * Paints the rounded rectangle card surface, optional header background
    * tint and divider with antialiasing.
    *
-   * @param g the [Graphics] context to paint with.
+   * @param g the {@link Graphics} context to paint with.
    */
   @Override
   protected void paintComponent(Graphics g) {
@@ -734,37 +967,53 @@ class FilterUIGroup extends JPanel {
       g2.setColor(resolveCardBackground());
       g2.fill(cardShape);
 
-      // When expanded (list.isVisible()): paints subtle header background
-      // tint clipped to the rounded card shape across optionsPane.getHeight(),
-      // and a hairline divider line between header and list.
-      if (list != null && list.isVisible()) {
-        int headerHeight = optionsPane != null
-            ? (optionsPane.getHeight() > 0
-                ? optionsPane.getHeight()
-                : optionsPane.getPreferredSize().height)
-            : 0;
-        if (headerHeight > 0) {
-          Shape originalClip = g2.getClip();
-          g2.clip(cardShape);
-          g2.setColor(resolveHeaderBackground());
-          g2.fillRect(cardX, cardY, cardW, headerHeight);
-
-          int dividerY = cardY + headerHeight;
-          g2.setColor(resolveCardBorderColor());
-          g2.drawLine(cardX, dividerY, cardX + cardW - 1, dividerY);
-          g2.setClip(originalClip);
-        }
-      }
+      paintHeaderBackgroundAndDivider(g2, cardShape, cardX, cardY, cardW);
     } finally {
       g2.dispose();
     }
   }
 
   /**
+   * Paints the subtle header background tint and divider line between header and list
+   * when the group is expanded.
+   *
+   * @param g2 the 2D graphics context.
+   * @param cardShape the clipping shape of the rounded card.
+   * @param cardX the card left x position.
+   * @param cardY the card top y position.
+   * @param cardW the card width.
+   */
+  private void paintHeaderBackgroundAndDivider(Graphics2D g2, Shape cardShape,
+      int cardX, int cardY, int cardW) {
+    if (list == null || !list.isVisible()) {
+      return;
+    }
+
+    int headerHeight = optionsPane != null
+        ? (optionsPane.getHeight() > 0
+            ? optionsPane.getHeight()
+            : optionsPane.getPreferredSize().height)
+        : 0;
+    if (headerHeight <= 0) {
+      return;
+    }
+
+    Shape originalClip = g2.getClip();
+    g2.clip(cardShape);
+    g2.setColor(resolveHeaderBackground());
+    g2.fillRect(cardX, cardY, cardW, headerHeight);
+
+    int dividerY = cardY + headerHeight;
+    g2.setColor(resolveCardBorderColor());
+    g2.drawLine(cardX, dividerY, cardX + cardW - 1, dividerY);
+    g2.setClip(originalClip);
+  }
+
+  /**
    * Paints child components clipped to the rounded card geometry so child backgrounds
    * do not bleed over the rounded bottom corners.
    *
-   * @param g the [Graphics] context to paint with.
+   * @param g the {@link Graphics} context to paint with.
    */
   @Override
   protected void paintChildren(Graphics g) {
@@ -785,7 +1034,7 @@ class FilterUIGroup extends JPanel {
   /**
    * Paints the rounded rectangle card border on top of child components with antialiasing.
    *
-   * @param g the [Graphics] context to paint with.
+   * @param g the {@link Graphics} context to paint with.
    */
   @Override
   protected void paintBorder(Graphics g) {
