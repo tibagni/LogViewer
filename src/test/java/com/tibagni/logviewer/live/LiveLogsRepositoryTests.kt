@@ -363,4 +363,70 @@ class LiveLogsRepositoryTests {
     repo.clear()
     assertNull(repo.allowedStreams)
   }
+
+  @Test
+  fun testAddLogEntriesEvictionDecrementsFilterLineCount() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 3)
+    val filter = createFilter("WarnFilter", "Warn")
+    repo.setLiveFilters(listOf(filter))
+
+    val e1 = createEntry("Warn 1")
+    val e2 = createEntry("Warn 2")
+    val e3 = createEntry("Info 3")
+    val e4 = createEntry("Info 4")
+
+    val batch = repo.addLogEntries(listOf(e1, e2, e3, e4))
+
+    assertEquals(3, repo.allLogsCount)
+    assertEquals(1, repo.filteredLogsCount)
+    assertEquals(1, batch.evictedAllCount)
+    assertEquals(1, batch.evictedFilteredCount)
+    assertEquals(1, filter.getContext(repo.filterContextTag)?.totalLinesFound)
+    assertEquals(listOf(e2), repo.filteredLogs)
+  }
+
+  @Test
+  fun testAddLogEntriesFilteredHeadEvictionReportedInEvictedFilteredCount() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 2)
+    val filter = createFilter("ErrorFilter", "Error")
+    repo.setLiveFilters(listOf(filter))
+
+    val e1 = createEntry("Error: 1")
+    val e2 = createEntry("Error: 2")
+    repo.addLogEntries(listOf(e1, e2))
+
+    assertEquals(2, repo.filteredLogsCount)
+
+    val e3 = createEntry("Error: 3")
+    val e4 = createEntry("Error: 4")
+    val batch = repo.addLogEntries(listOf(e3, e4))
+
+    assertEquals(2, batch.evictedAllCount)
+    assertEquals(2, batch.evictedFilteredCount)
+    assertEquals(2, repo.filteredLogsCount)
+    assertEquals(listOf(e3, e4), repo.filteredLogs)
+  }
+
+  @Test
+  fun testAddLogEntriesUnfilteredEvictionDoesNotIncrementEvictedFilteredCount() {
+    val repo = LiveLogsRepositoryImpl(maxCapacity = 2)
+    val filter = createFilter("ErrorFilter", "Error")
+    repo.setLiveFilters(listOf(filter))
+
+    val e1 = createEntry("Normal info 1")
+    val e2 = createEntry("Normal info 2")
+    repo.addLogEntries(listOf(e1, e2))
+
+    assertEquals(2, repo.allLogsCount)
+    assertEquals(0, repo.filteredLogsCount)
+
+    val e3 = createEntry("Error log 3")
+    val batch = repo.addLogEntries(listOf(e3))
+
+    assertEquals(2, repo.allLogsCount)
+    assertEquals(1, repo.filteredLogsCount)
+    assertEquals(1, batch.evictedAllCount)
+    assertEquals(0, batch.evictedFilteredCount)
+    assertEquals(listOf(e3), repo.filteredLogs)
+  }
 }
