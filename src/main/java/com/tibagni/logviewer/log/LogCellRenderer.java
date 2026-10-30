@@ -30,7 +30,8 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
   public static final String CLIENT_PROPERTY_SEARCH_FILTER = "LogCellRenderer.searchFilter";
   public static final String CLIENT_PROPERTY_HIGHLIGHT_LINE = "LogCellRenderer.highlightLine";
 
-  private final FontRenderContext fontRenderContext = new FontRenderContext(new AffineTransform(), true, true);
+  private final FontRenderContext fontRenderContext =
+      new FontRenderContext(new AffineTransform(), true, true);
 
   public LogCellRenderer() {
     themeManager = ServiceLocator.INSTANCE.getThemeManager();
@@ -73,7 +74,9 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       if (prefs.getLogFontFamily() != null) {
         fontFamily = prefs.getLogFontFamily();
       }
-    } catch (Exception ignored) {}
+    } catch (Exception e) {
+      Logger.debug("Could not determine log font family: " + e.getMessage());
+    }
     updateFont(prefs.getLogFontSize(), prefs.getLogFontBold(), fontFamily);
   }
 
@@ -90,7 +93,9 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
       if (prefs.getLogFontFamily() != null) {
         fontFamily = prefs.getLogFontFamily();
       }
-    } catch (Exception ignored) {}
+    } catch (Exception e) {
+      Logger.debug("Could not determine log font family: " + e.getMessage());
+    }
     updateFont(fontSize, isBold, fontFamily);
   }
 
@@ -163,17 +168,23 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
         Math.max(UIScaleUtils.dip(20), height)));
   }
 
+  /**
+   * Configures and returns the component used for drawing the cell.
+   *
+   * @param table the {@link JTable} that is asking the renderer to draw
+   * @param value the value of the cell to be rendered
+   * @param isSelected true if the cell is to be rendered with the selection highlighted
+   * @param hasFocus if true, render cell appropriately for focus
+   * @param row the row index of the cell being drawn
+   * @param column the column index of the cell being drawn
+   * @return the configured component for rendering
+   */
   @Override
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                  boolean hasFocus, int row, int column) {
-    LogEntry logEntry = (LogEntry) value;
+    LogEntry logEntry = resolveLogEntry(table, value, row, column);
     if (logEntry == null) {
-      Logger.debug("getTableCellRenderedComponent passed a null value at position (" + row + ", " + column + ")");
-      logEntry = (LogEntry) table.getModel().getValueAt(row, column);
-      if (logEntry == null) {
-        Logger.error("TableModel has a null value at position (" + row + ", " + column + ")");
-        return null;
-      }
+      return null;
     }
     // make the highlight line ui same as the select ui
     isSelected = isSelected || row == getHighlightLine(table);
@@ -190,46 +201,99 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
     colorIndicator.setBackground(getColorForLogLevel(logEntry.getLogLevel()));
     streamIndicator.setText(logEntry.getStream().getSymbol());
 
-    setSize(table.getColumnModel().getColumn(column).getWidth(), getPreferredSize().height);
-    if (table.getRowHeight(row) != getPreferredSize().height) {
-      table.setRowHeight(row, getPreferredSize().height);
-    }
+    configureCellDimensions(table, row, column);
+    applyCellColors(table, logEntry, isSelected, row);
 
-    if (isSelected) {
-      textView.setForeground(new Color(table.getSelectionForeground().getRGB()));
-      textView.setBackground(new Color(table.getSelectionBackground().getRGB()));
-    } else {
-      Color background = table.getBackground();
-      if (background == null || background instanceof javax.swing.plaf.UIResource) {
-        Color alternateColor = UIManager.getColor("Table.alternateRowColor");
-        if (alternateColor != null && row % 2 != 0) {
-          background = alternateColor;
-        }
-      }
-
-      textView.setForeground(table.getForeground());
-      textView.setBackground(background);
-    }
-
-    Filter appliedFilter = logEntry.getAppliedFilter();
-    Color filteredColor = appliedFilter != null ? appliedFilter.getColor() : null;
-    if (!isSelected && filteredColor != null) {
-      textView.setForeground(filteredColor);
-    }
     // Apply highlighting if needed
     highlightMatchedText(highlighter, logEntry, isSelected, getSearchFilter(table));
 
     return this;
   }
 
-  private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry, boolean isSelected, @Nullable Filter searchFilter) {
+  /**
+   * Resolves the {@link LogEntry} for the given cell, attempting to use {@code value}
+   * and falling back to retrieving it from the table model when null.
+   *
+   * @param table the table being rendered
+   * @param value the value object passed to the cell renderer
+   * @param row the row index of the cell
+   * @param column the column index of the cell
+   * @return the resolved {@link LogEntry}, or {@code null} if it could not be resolved
+   */
+  @Nullable
+  private LogEntry resolveLogEntry(JTable table, Object value, int row, int column) {
+    if (value instanceof LogEntry) {
+      return (LogEntry) value;
+    }
+
+    Logger.debug("getTableCellRenderedComponent passed a null value at position (" +
+        row + ", " + column + ")");
+    Object modelVal = table.getModel().getValueAt(row, column);
+    if (modelVal instanceof LogEntry) {
+      return (LogEntry) modelVal;
+    }
+
+    Logger.error("TableModel has a null value at position (" + row + ", " + column + ")");
+    return null;
+  }
+
+  /**
+   * Configures the component size based on the table column width and adjusts the row height
+   * if the cell's preferred height differs from the current row height.
+   *
+   * @param table the table being rendered
+   * @param row the row index of the cell
+   * @param column the column index of the cell
+   */
+  private void configureCellDimensions(JTable table, int row, int column) {
+    int preferredHeight = getPreferredSize().height;
+    setSize(table.getColumnModel().getColumn(column).getWidth(), preferredHeight);
+    if (table.getRowHeight(row) != preferredHeight) {
+      table.setRowHeight(row, preferredHeight);
+    }
+  }
+
+  /**
+   * Applies foreground and background colors to the text view based on selection state,
+   * alternating row striping, and applied log filter colors.
+   *
+   * @param table the table being rendered
+   * @param logEntry the log entry being displayed
+   * @param isSelected whether the cell is selected or highlighted
+   * @param row the row index of the cell
+   */
+  private void applyCellColors(JTable table, LogEntry logEntry, boolean isSelected, int row) {
+    if (isSelected) {
+      textView.setForeground(new Color(table.getSelectionForeground().getRGB()));
+      textView.setBackground(new Color(table.getSelectionBackground().getRGB()));
+      return;
+    }
+
+    Color background = table.getBackground();
+    if (background == null || background instanceof javax.swing.plaf.UIResource) {
+      Color alternateColor = UIManager.getColor("Table.alternateRowColor");
+      if (alternateColor != null && row % 2 != 0) {
+        background = alternateColor;
+      }
+    }
+
+    Filter appliedFilter = logEntry.getAppliedFilter();
+    Color filteredColor = appliedFilter != null ? appliedFilter.getColor() : null;
+    textView.setForeground(filteredColor != null ? filteredColor : table.getForeground());
+    textView.setBackground(background);
+  }
+
+  private void highlightMatchedText(Highlighter highlighter, LogEntry logEntry,
+                                    boolean isSelected, @Nullable Filter searchFilter) {
     highlightMatchedText(logEntry.getAppliedFilter(), highlighter, logEntry, isSelected, false);
     if (searchFilter != null) {
       highlightMatchedText(searchFilter, highlighter, logEntry, isSelected, true);
     }
   }
 
-  private void highlightMatchedText(Filter filter, Highlighter highlighter, LogEntry logEntry, boolean isSelected, boolean isForSearch) {
+  private void highlightMatchedText(Filter filter, Highlighter highlighter,
+                                    LogEntry logEntry, boolean isSelected,
+                                    boolean isForSearch) {
     if (filter != null) {
       try {
         Pattern pattern = filter.getPattern();
@@ -252,9 +316,11 @@ public class LogCellRenderer extends JPanel implements TableCellRenderer {
 
   private Color getColorForHighlightedText(boolean isSelected, boolean isForSearch) {
     if (themeManager.isDark()) {
-      return isSelected ? new Color(111, 43, 0) : isForSearch ? new Color(75,110,175) : new Color(83, 87, 10);
+      return isSelected ? new Color(111, 43, 0)
+          : isForSearch ? new Color(75, 110, 175) : new Color(83, 87, 10);
     } else {
-      return isSelected ? new Color(234, 115, 0) : isForSearch ? new Color(38,117,191) : new Color(250, 255, 162);
+      return isSelected ? new Color(234, 115, 0)
+          : isForSearch ? new Color(38, 117, 191) : new Color(250, 255, 162);
     }
   }
 
