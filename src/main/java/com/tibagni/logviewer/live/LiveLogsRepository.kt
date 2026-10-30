@@ -113,6 +113,57 @@ class LiveLogsRepositoryImpl(
     return addLogEntries(listOf(entry))
   }
 
+  /**
+   * Matches [entry] against active [liveFilters], updates filter line counts, and sets
+   * [LogEntry.appliedFilter] to the first matching filter.
+   *
+   * @param entry the log entry to evaluate against live filters
+   * @return the first matching [Filter], or null if no filters matched
+   */
+  private fun matchAndApplyFilters(entry: LogEntry): Filter? {
+    var firstMatchedFilter: Filter? = null
+    for (filter in liveFilters) {
+      if (filter.appliesTo(entry)) {
+        if (firstMatchedFilter == null) {
+          firstMatchedFilter = filter
+        }
+        val context = filter.getContext(filterContextTag) ?: filter.initContext(filterContextTag)
+        context.incrementLineCount(entry.logStream)
+      }
+    }
+    entry.appliedFilter = firstMatchedFilter
+    return firstMatchedFilter
+  }
+
+  /**
+   * Evicts the oldest log entry if [_allLogs] exceeds [maxCapacity], updating dropped counts,
+   * decrementing filter line counts, and removing from [_filteredLogs] if applicable.
+   *
+   * @return true if a filtered log was evicted, false otherwise
+   */
+  private fun evictOldestIfOverCapacity(): Boolean {
+    if (_allLogs.size <= maxCapacity) {
+      return false
+    }
+
+    val removed = _allLogs.removeFirst()
+    droppedLogsCount++
+
+    for (filter in liveFilters) {
+      if (filter.appliesTo(removed)) {
+        filter.getContext(filterContextTag)?.decrementLineCount(removed.logStream)
+      }
+    }
+
+    val headFiltered = _filteredLogs.isNotEmpty() && _filteredLogs.first() == removed
+    if (removed.appliedFilter != null && headFiltered) {
+      _filteredLogs.removeFirst()
+      return true
+    }
+
+    return false
+  }
+
   override fun addLogEntries(entries: Collection<LogEntry>): LiveLogBatch = synchronized(lock) {
     if (entries.isEmpty()) {
       return LiveLogBatch(emptyList(), emptyList(), 0, 0)
@@ -128,52 +179,22 @@ class LiveLogsRepositoryImpl(
       totalLogsReceived++
       _availableStreams.add(entry.logStream)
 
-      var firstMatchedFilter: Filter? = null
-      for (filter in liveFilters) {
-        if (filter.appliesTo(entry)) {
-          if (firstMatchedFilter == null) {
-            firstMatchedFilter = filter
-          }
-          val context = filter.getContext(filterContextTag) ?: filter.initContext(filterContextTag)
-          context.incrementLineCount(entry.logStream)
-        }
-      }
-
-      if (firstMatchedFilter != null) {
-        entry.appliedFilter = firstMatchedFilter
-        if (_allowedStreams?.contains(entry.logStream) ?: true) {
-          _filteredLogs.add(entry)
-          addedFiltered.add(entry)
-        }
+      val matchedFilter = matchAndApplyFilters(entry)
+      if (matchedFilter != null && (_allowedStreams?.contains(entry.logStream) ?: true)) {
+        _filteredLogs.add(entry)
+        addedFiltered.add(entry)
       }
 
       _allLogs.add(entry)
       addedAll.add(entry)
 
       if (_allLogs.size > maxCapacity) {
-        val removed = _allLogs.removeFirst()
-        droppedLogsCount++
         evictedAll++
-
-        for (filter in liveFilters) {
-          if (filter.appliesTo(removed)) {
-            filter.getContext(filterContextTag)?.decrementLineCount(removed.logStream)
-          }
-        }
-
-        if (removed.appliedFilter != null && _filteredLogs.isNotEmpty() && _filteredLogs.first() == removed) {
-          _filteredLogs.removeFirst()
-          evictedFiltered++
-        }
+        if (evictOldestIfOverCapacity()) evictedFiltered++
       }
     }
 
-    LiveLogBatch(
-      newAllLogs = addedAll,
-      newFilteredLogs = addedFiltered,
-      evictedAllCount = evictedAll,
-      evictedFilteredCount = evictedFiltered
-    )
+    LiveLogBatch(addedAll, addedFiltered, evictedAll, evictedFiltered)
   }
 
   override fun setLiveFilters(filters: Collection<Filter>, progressReporter: ProgressReporter?) = synchronized(lock) {
