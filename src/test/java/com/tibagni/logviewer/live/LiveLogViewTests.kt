@@ -19,6 +19,7 @@ import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.log.LogStream
 import java.awt.Frame
+import java.awt.GraphicsEnvironment
 import java.awt.Point
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
@@ -30,6 +31,7 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
 import javax.swing.JButton
 import javax.swing.JFrame
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import javax.swing.JSplitPane
@@ -822,5 +824,80 @@ class LiveLogViewTests {
     liveLogView.onThemeChanged()
     assertNotNull(liveLogView.deviceLabel.icon)
     assertNotNull(liveLogView.statusLabel.icon)
+  }
+
+  @Test
+  fun testShowLogsBatchAppendsLogsAndRecalculatesLineNumberWidth() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val leftPane = liveLogView.logRenderer.getComponent(0) as JPanel
+    val lineNumLabel = leftPane.components.filterIsInstance<JLabel>().first()
+    val initialWidth = lineNumLabel.preferredSize.width
+
+    val entry1 = LogEntry("First line", LogLevel.INFO, null, LogStream.MAIN).apply { index = 0 }
+    val entry2 = LogEntry("Second line", LogLevel.DEBUG, null, LogStream.MAIN).apply {
+      index = 10_000_000
+    }
+    val filteredEntry = LogEntry("Second line", LogLevel.DEBUG, null, LogStream.MAIN).apply {
+      index = 10_000_000
+    }
+
+    val batch = LiveLogBatch(
+      newAllLogs = listOf(entry1, entry2),
+      newFilteredLogs = listOf(filteredEntry),
+      evictedAllCount = 0,
+      evictedFilteredCount = 0
+    )
+
+    liveLogView.showLogsBatch(batch)
+
+    assertEquals(2, liveLogView.logListTableModel.rowCount)
+    assertEquals(entry1, liveLogView.logListTableModel.getEntry(0))
+    assertEquals(entry2, liveLogView.logListTableModel.getEntry(1))
+    assertEquals(1, liveLogView.filteredLogListTableModel.rowCount)
+    assertEquals(filteredEntry, liveLogView.filteredLogListTableModel.getEntry(0))
+
+    // Max line number 10_000_001 requires more horizontal width than default
+    assertTrue(lineNumLabel.preferredSize.width > initialWidth)
+  }
+
+  @Test
+  fun testShowLogsBatchCompensatesFilteredLogEvictionScroll() {
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    val panel = liveLogView.contentPane
+    panel.setSize(800, 600)
+    panel.doLayout()
+    liveLogView.filteredLogList.setSize(800, 300)
+    liveLogView.filteredLogList.doLayout()
+    liveLogView.filteredLogList.scrollPane.setSize(800, 300)
+    liveLogView.filteredLogList.scrollPane.doLayout()
+
+    val initialLogs = (1..50).map { LogEntry("Filtered $it", LogLevel.INFO, null) }
+    liveLogView.showFilteredLogs(initialLogs)
+
+    liveLogView.isAutoScrollActive = false
+    val viewport = liveLogView.filteredLogList.scrollPane.viewport
+    viewport.viewPosition = Point(0, 200)
+
+    val rowHeight = liveLogView.filteredLogList.table.rowHeight
+    val batchLogs = (51..55).map { LogEntry("Filtered $it", LogLevel.INFO, null) }
+    liveLogView.showLogsBatch(LiveLogBatch(emptyList(), batchLogs, 0, 5))
+
+    val expectedY = maxOf(0, 200 - (5 * rowHeight))
+    assertEquals(expectedY, viewport.viewPosition.y)
+    assertEquals(50, liveLogView.filteredLogListTableModel.rowCount)
+  }
+
+  @Test
+  fun testShowRestartServerResultFailureDialogHeadlessGuard() {
+    if (GraphicsEnvironment.isHeadless()) return;
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showRestartServerResult(false)
+  }
+
+  @Test
+  fun testShowOpenTerminalFailedDialogHeadlessGuard() {
+    if (GraphicsEnvironment.isHeadless()) return;
+    val liveLogView = LiveLogViewImpl { mockPresenter }
+    liveLogView.showOpenTerminalFailed()
   }
 }
