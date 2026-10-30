@@ -417,52 +417,56 @@ class LiveLogViewImpl(
     statusBadge.updateStats(allCount, filteredCount, droppedCount)
   }
 
+  /**
+   * Compensates viewport scrolling position when logs are evicted from the top.
+   *
+   * @param scrollPane the scroll pane whose viewport should be adjusted.
+   * @param rowHeight height of each row in pixels.
+   * @param evictedCount number of log entries evicted from the top.
+   */
+  private fun compensateEvictionScroll(scrollPane: JScrollPane, rowHeight: Int, evictedCount: Int) {
+    if (evictedCount <= 0 || isAutoScrollActive) return
+    val evictedHeight = evictedCount * rowHeight
+    val newY = maxOf(0, scrollPane.viewport.viewPosition.y - evictedHeight)
+    scrollPane.viewport.viewPosition = Point(scrollPane.viewport.viewPosition.x, newY)
+  }
+
+  /**
+   * Appends batch logs to the table model and scrolls to bottom if auto-scroll is active.
+   *
+   * @param tableModel the model to which the new logs should be added.
+   * @param table the table displaying the logs.
+   * @param newLogs the list of new log entries to add.
+   */
+  private fun appendBatchLogs(
+    tableModel: LogListTableModel,
+    table: JTable,
+    newLogs: List<LogEntry>
+  ) {
+    if (newLogs.isEmpty()) return
+    tableModel.addLogs(newLogs)
+    if (isAutoScrollActive && tableModel.rowCount > 0) {
+      val lastRow = tableModel.rowCount - 1
+      table.scrollRectToVisible(table.getCellRect(lastRow, 0, true))
+    }
+  }
+
   override fun showLogsBatch(batch: LiveLogBatch) {
     if (batch.evictedAllCount > 0) {
-      val viewPositionBeforeEviction = logList.scrollPane.viewport.viewPosition
-      val evictedHeight = batch.evictedAllCount * logList.table.rowHeight
+      compensateEvictionScroll(logList.scrollPane, logList.table.rowHeight, batch.evictedAllCount)
       logListTableModel.removeFirstLogs(batch.evictedAllCount)
-
-      // When rows are removed from the top, all remaining rows shift up by
-      // `evictedHeight` pixels in the table coordinate space. If auto-scroll is disabled,
-      // JViewport.viewPosition remains unchanged by default, causing visible rows to jump
-      // upward. We need to compensate by adjusting viewPosition.y upward by the
-      // same amount so the currently visible log lines remain visually in the same place.
-      if (!isAutoScrollActive) {
-        val newY = maxOf(0, viewPositionBeforeEviction.y - evictedHeight)
-        logList.scrollPane.viewport.viewPosition = Point(viewPositionBeforeEviction.x, newY)
-      }
     }
-    if (batch.newAllLogs.isNotEmpty()) {
-      logListTableModel.addLogs(batch.newAllLogs)
-      if (isAutoScrollActive && logListTableModel.rowCount > 0) {
-        val lastRow = logListTableModel.rowCount - 1
-        logList.table.scrollRectToVisible(logList.table.getCellRect(lastRow, 0, true))
-      }
-    }
+    appendBatchLogs(logListTableModel, logList.table, batch.newAllLogs)
 
     if (batch.evictedFilteredCount > 0) {
-      val viewPositionBeforeEviction = filteredLogList.scrollPane.viewport.viewPosition
-      val evictedHeight = batch.evictedFilteredCount * filteredLogList.table.rowHeight
+      val rowHeight = filteredLogList.table.rowHeight
+      compensateEvictionScroll(filteredLogList.scrollPane, rowHeight, batch.evictedFilteredCount)
       filteredLogListTableModel.removeFirstLogs(batch.evictedFilteredCount)
-
-      // Same compensation for filtered logs when oldest matching entries are evicted
-      if (!isAutoScrollActive) {
-        val newY = maxOf(0, viewPositionBeforeEviction.y - evictedHeight)
-        filteredLogList.scrollPane.viewport.viewPosition = Point(viewPositionBeforeEviction.x, newY)
-      }
     }
-    if (batch.newFilteredLogs.isNotEmpty()) {
-      filteredLogListTableModel.addLogs(batch.newFilteredLogs)
-      if (isAutoScrollActive && filteredLogListTableModel.rowCount > 0) {
-        val lastRow = filteredLogListTableModel.rowCount - 1
-        filteredLogList.table.scrollRectToVisible(filteredLogList.table.getCellRect(lastRow, 0, true))
-      }
-    }
+    appendBatchLogs(filteredLogListTableModel, filteredLogList.table, batch.newFilteredLogs)
 
-    if ((batch.newFilteredLogs.isNotEmpty() || batch.evictedFilteredCount > 0) &&
-      filtersPanel?.activeFilterContextTag == presenter.filterContextTag
-    ) {
+    val hasFilteredChanges = batch.newFilteredLogs.isNotEmpty() || batch.evictedFilteredCount > 0
+    if (hasFilteredChanges && filtersPanel?.activeFilterContextTag == presenter.filterContextTag) {
       filtersPanel?.updateFiltersUI()
     }
 
