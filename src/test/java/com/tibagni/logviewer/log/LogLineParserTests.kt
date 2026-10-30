@@ -284,4 +284,186 @@ class LogLineParserTests {
         assertEquals(LogLevel.DEBUG, LogLineParser.findLogLevel("    08-04 11:36:56:598 FocusRequester: request focus"))
         assertEquals(LogLevel.DEBUG, LogLineParser.findLogLevel("    08-04 11:36:56:598 Event: something happened"))
     }
+
+    @Test
+    fun testParseFastTimestampWithYear() {
+        val line = "2026-10-29 12:34:56.789  1000  1000 I Tag: test message"
+        val ts = LogLineParser.parseFastTimestamp(line)
+        assertNotNull(ts)
+        assertEquals(LogTimestamp(10, 29, 12, 34, 56, 789), ts)
+
+        val lineWithTabs = "\t2026-01-02 03:04:05.123456 \t 100 100 D Tag: message"
+        val tsTabs = LogLineParser.parseFastTimestamp(lineWithTabs)
+        assertNotNull(tsTabs)
+        assertEquals(LogTimestamp(1, 2, 3, 4, 5, 123456), tsTabs)
+    }
+
+    @Test
+    fun testParseFastTimestampWithoutYear() {
+        val line = "10-29 12:34:56.789  1000  1000 I Tag: test message"
+        val ts = LogLineParser.parseFastTimestamp(line)
+        assertNotNull(ts)
+        assertEquals(LogTimestamp(10, 29, 12, 34, 56, 789), ts)
+
+        val lineLeadingSpaces = "   10-29 12:34:56.789  1000  1000 I Tag: message"
+        val tsSpaces = LogLineParser.parseFastTimestamp(lineLeadingSpaces)
+        assertNotNull(tsSpaces)
+        assertEquals(LogTimestamp(10, 29, 12, 34, 56, 789), tsSpaces)
+    }
+
+    @Test
+    fun testParseFastTimestampSubsecondSeparators() {
+        val dotLine = "10-29 12:34:56.789  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 789),
+            LogLineParser.parseFastTimestamp(dotLine)
+        )
+
+        val commaLine = "10-29 12:34:56,789  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 789),
+            LogLineParser.parseFastTimestamp(commaLine)
+        )
+
+        val colonLine = "10-29 12:34:56:789  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 789),
+            LogLineParser.parseFastTimestamp(colonLine)
+        )
+
+        val semiColonLine = "10-29 12:34:56;789  1000  1000 I Tag: message"
+        assertNull(LogLineParser.parseFastTimestamp(semiColonLine))
+
+        val spaceLine = "10-29 12:34:56 789  1000  1000 I Tag: message"
+        assertNull(LogLineParser.parseFastTimestamp(spaceLine))
+    }
+
+    @Test
+    fun testParseFastTimestampSubsecondPrecisionRange() {
+        // 3 digits (milliseconds)
+        val msLine = "10-29 12:34:56.123  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 123),
+            LogLineParser.parseFastTimestamp(msLine)
+        )
+
+        // 4 digits
+        val fourDigitsLine = "10-29 12:34:56.1234  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 1234),
+            LogLineParser.parseFastTimestamp(fourDigitsLine)
+        )
+
+        // 6 digits (microseconds)
+        val microLine = "10-29 12:34:56.123456  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 123456),
+            LogLineParser.parseFastTimestamp(microLine)
+        )
+
+        // 9 digits (nanoseconds)
+        val nanoLine = "10-29 12:34:56.123456789  1000  1000 I Tag: message"
+        assertEquals(
+            LogTimestamp(10, 29, 12, 34, 56, 123456789),
+            LogLineParser.parseFastTimestamp(nanoLine)
+        )
+
+        // Below minimum precision (< 3 digits)
+        val twoDigitsLine = "10-29 12:34:56.12  1000  1000 I Tag: message"
+        assertNull(LogLineParser.parseFastTimestamp(twoDigitsLine))
+
+        val oneDigitLine = "10-29 12:34:56.1  1000  1000 I Tag: message"
+        assertNull(LogLineParser.parseFastTimestamp(oneDigitLine))
+
+        // Above maximum precision (> 9 digits)
+        val tenDigitsLine = "10-29 12:34:56.1234567890  1000  1000 I Tag: message"
+        assertNull(LogLineParser.parseFastTimestamp(tenDigitsLine))
+    }
+
+    @Test
+    fun testParseFastTimestampInvalidAndMalformed() {
+        assertNull(LogLineParser.parseFastTimestamp(""))
+        assertNull(LogLineParser.parseFastTimestamp("   "))
+        assertNull(LogLineParser.parseFastTimestamp("10-29 12:34:56"))
+        assertNull(LogLineParser.parseFastTimestamp("10-29 12:34"))
+
+        assertNull(LogLineParser.parseFastTimestamp("AA-BB 12:34:56.789"))
+        assertNull(LogLineParser.parseFastTimestamp("10/29 12:34:56.789"))
+        assertNull(LogLineParser.parseFastTimestamp("202-10-29 12:34:56.789"))
+
+        assertNull(LogLineParser.parseFastTimestamp("10-2912:34:56.789"))
+
+        assertNull(LogLineParser.parseFastTimestamp("10-29 HH:MM:SS.789"))
+        assertNull(LogLineParser.parseFastTimestamp("10-29 12-34-56.789"))
+        assertNull(LogLineParser.parseFastTimestamp("10-29 12:34.789"))
+
+        assertNull(LogLineParser.parseFastTimestamp("10-29 12:34:56.abc"))
+    }
+
+    @Test
+    fun testParseDatePrefix() {
+        val withYear = "2026-10-29 12:34:56.789"
+        val resYear = LogLineParser.parseDatePrefix(withYear, 0)
+        assertNotNull(resYear)
+        assertEquals(10, resYear!!.month)
+        assertEquals(29, resYear.day)
+        assertEquals(11, resYear.nextIndex)
+
+        val withoutYear = "10-29 12:34:56.789"
+        val resNoYear = LogLineParser.parseDatePrefix(withoutYear, 0)
+        assertNotNull(resNoYear)
+        assertEquals(10, resNoYear!!.month)
+        assertEquals(29, resNoYear.day)
+        assertEquals(6, resNoYear.nextIndex)
+
+        // Invalid: missing whitespace after date
+        assertNull(LogLineParser.parseDatePrefix("10-2912:34:56.789", 0))
+
+        // Invalid: too short
+        assertNull(LogLineParser.parseDatePrefix("10-29", 0))
+
+        // Invalid: non-numeric
+        assertNull(LogLineParser.parseDatePrefix("MM-DD 12:34:56.789", 0))
+    }
+
+    @Test
+    fun testParseTime() {
+        val line = "10-29 12:34:56.789"
+        val res = LogLineParser.parseTime(line, 6)
+        assertNotNull(res)
+        assertEquals(12, res!!.hour)
+        assertEquals(34, res.minutes)
+        assertEquals(56, res.seconds)
+        assertEquals(14, res.subsecondIndex)
+
+        // Invalid: too short (< 12 chars from startIndex)
+        assertNull(LogLineParser.parseTime("12:34:56", 0))
+
+        // Invalid: wrong separator in time
+        assertNull(LogLineParser.parseTime("12-34-56.789", 0))
+    }
+
+    @Test
+    fun testParseSubseconds() {
+        // Dot separator
+        assertEquals(789, LogLineParser.parseSubseconds(".789", 0))
+
+        // Comma separator
+        assertEquals(789, LogLineParser.parseSubseconds(",789", 0))
+
+        // Colon separator
+        assertEquals(789, LogLineParser.parseSubseconds(":789", 0))
+
+        // 9-digit subsecond (nanoseconds)
+        assertEquals(123456789, LogLineParser.parseSubseconds(".123456789", 0))
+
+        // > 9 digits is invalid
+        assertNull(LogLineParser.parseSubseconds(".1234567890", 0))
+
+        // < 3 digits is invalid
+        assertNull(LogLineParser.parseSubseconds(".12", 0))
+
+        // Invalid separator
+        assertNull(LogLineParser.parseSubseconds(";789", 0))
+    }
 }

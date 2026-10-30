@@ -43,39 +43,18 @@ object LogLineParser {
   }
 
   /**
-   * Checks if characters starting at [startIndex] match the date/time structure (MM-DD HH:MM:SS or YYYY-MM-DD HH:MM:SS).
+   * Checks if characters starting at [startIndex] match the date/time structure
+   * (MM-DD HH:MM:SS or YYYY-MM-DD HH:MM:SS).
    */
   private fun hasDatePrefixAt(line: String, startIndex: Int): Boolean {
-    var i = startIndex
-    val len = line.length
-    if (len - i < 14) return false
+    val cur = skipOptionalYear(line, startIndex)
+    if (line.length - cur < 14) return false
+    if (!isMonthDay(line, cur)) return false
 
-    // Optional 4-digit year: YYYY-
-    if (i + 5 <= len && isFourDigits(line, i) && line[i + 4] == '-') {
-      i += 5
-    }
+    val timeStart = skipWhitespace(line, cur + 5)
+    if (timeStart == cur + 5 || line.length - timeStart < 8) return false
 
-    if (len - i < 14) return false
-
-    // MM-DD
-    if (!isTwoDigits(line, i) || line[i + 2] != '-' || !isTwoDigits(line, i + 3)) {
-      return false
-    }
-    i += 5
-
-    // Separator between date and time: 1 or more spaces or tabs
-    if (i >= len || (line[i] != ' ' && line[i] != '\t')) return false
-    while (i < len && (line[i] == ' ' || line[i] == '\t')) {
-      i++
-    }
-
-    // HH:MM:SS
-    if (len - i < 8) return false
-    return isTwoDigits(line, i) &&
-      line[i + 2] == ':' &&
-      isTwoDigits(line, i + 3) &&
-      line[i + 5] == ':' &&
-      isTwoDigits(line, i + 6)
+    return isTimeFormat(line, timeStart)
   }
 
   @JvmStatic
@@ -120,65 +99,200 @@ object LogLineParser {
   }
 
   /**
-   * High-performance non-regex timestamp parser for Android timestamped lines.
+   * Result of parsing the date prefix: month, day, and the index where time begins.
+   *
+   * @property month Parsed month (1-12).
+   * @property day Parsed day (1-31).
+   * @property nextIndex Character index in the raw line where time components begin.
    */
-  private fun parseFastTimestamp(logLine: String): LogTimestamp? {
-    var offset = 0
-    val len = logLine.length
-    while (offset < len && (logLine[offset] == ' ' || logLine[offset] == '\t')) {
-      offset++
-    }
-    if (len - offset < 18) return null
+  internal data class DatePrefixResult(val month: Int, val day: Int, val nextIndex: Int)
 
-    // Optional 4-digit year: YYYY-
-    if (offset + 5 <= len && isFourDigits(logLine, offset) && logLine[offset + 4] == '-') {
-      offset += 5
-    }
+  /**
+   * Result of parsing time components: hour, minute, second, and subsecond separator index.
+   *
+   * @property hour Parsed hour (0-23).
+   * @property minutes Parsed minutes (0-59).
+   * @property seconds Parsed seconds (0-59).
+   * @property subsecondIndex Character index of the subsecond separator ('.', ',', ':').
+   */
+  internal data class TimeResult(
+    val hour: Int,
+    val minutes: Int,
+    val seconds: Int,
+    val subsecondIndex: Int
+  )
 
-    if (len - offset < 18) return null
+  /**
+   * High-performance non-regex timestamp parser for Android timestamped lines.
+   *
+   * @param logLine The raw log line text.
+   * @return A parsed [LogTimestamp], or null if the line does not match.
+   */
+  internal fun parseFastTimestamp(logLine: String): LogTimestamp? {
+    val offset = skipWhitespace(logLine, 0)
+    val date = parseDatePrefix(logLine, offset) ?: return null
+    val time = parseTime(logLine, date.nextIndex) ?: return null
+    val subseconds = parseSubseconds(logLine, time.subsecondIndex) ?: return null
 
-    // MM-DD
-    if (!isTwoDigits(logLine, offset) || logLine[offset + 2] != '-' || !isTwoDigits(logLine, offset + 3)) {
-      return null
-    }
+    return LogTimestamp(date.month, date.day, time.hour, time.minutes, time.seconds, subseconds)
+  }
 
-    val month = parseTwoDigitInt(logLine, offset)
-    val day = parseTwoDigitInt(logLine, offset + 3)
+  /**
+   * Parses the date prefix (optional year and MM-DD followed by whitespace).
+   *
+   * @param logLine The raw log line text.
+   * @param startIndex The index to start parsing from (after leading whitespace).
+   * @return A [DatePrefixResult] with month, day, and index after date whitespace, or null.
+   */
+  internal fun parseDatePrefix(logLine: String, startIndex: Int): DatePrefixResult? {
+    val cur = skipOptionalYear(logLine, startIndex)
+    if (logLine.length - cur < 18) return null
+    if (!isMonthDay(logLine, cur)) return null
 
-    var i = offset + 5
-    if (i >= len || (logLine[i] != ' ' && logLine[i] != '\t')) return null
-    while (i < len && (logLine[i] == ' ' || logLine[i] == '\t')) {
+    val month = parseTwoDigitInt(logLine, cur)
+    val day = parseTwoDigitInt(logLine, cur + 3)
+
+    val nextIndex = skipWhitespace(logLine, cur + 5)
+    if (nextIndex == cur + 5) return null
+
+    return DatePrefixResult(month, day, nextIndex)
+  }
+
+  /**
+   * Parses time components (HH:MM:SS) starting at [startIndex].
+   *
+   * @param logLine The raw log line text.
+   * @param startIndex The index where time components begin.
+   * @return A [TimeResult] containing hour, minute, second, and subsecond index, or null.
+   */
+  internal fun parseTime(logLine: String, startIndex: Int): TimeResult? {
+    if (logLine.length - startIndex < 12) return null
+    if (!isTimeFormat(logLine, startIndex)) return null
+
+    val hour = parseTwoDigitInt(logLine, startIndex)
+    val minutes = parseTwoDigitInt(logLine, startIndex + 3)
+    val seconds = parseTwoDigitInt(logLine, startIndex + 6)
+    return TimeResult(hour, minutes, seconds, startIndex + 8)
+  }
+
+  /**
+   * Parses subsecond digits (between 3 and 9 digits) following a separator at [startIndex].
+   *
+   * @param logLine The raw log line text.
+   * @param startIndex The index of the subsecond separator ('.', ',', or ':').
+   * @return The parsed subsecond integer value, or null if malformed.
+   */
+  internal fun parseSubseconds(logLine: String, startIndex: Int): Int? {
+    if (startIndex < 0 || startIndex >= logLine.length) return null
+    if (!hasValidSubsecondPrefix(logLine, startIndex)) return null
+
+    val digitsStart = startIndex + 1
+    val subEnd = findDigitsEnd(logLine, digitsStart + 3)
+    val subLen = subEnd - digitsStart
+    if (subLen > 9) return null
+
+    return parseDigitsToInt(logLine, digitsStart, subEnd)
+  }
+
+  /**
+   * Advances the index through consecutive spaces or tabs.
+   *
+   * @param s The string to scan.
+   * @param startIndex The index to start scanning from.
+   * @return The index of the first non-whitespace character, or the string length.
+   */
+  private fun skipWhitespace(s: String, startIndex: Int): Int {
+    var i = startIndex
+    val len = s.length
+    while (i < len && (s[i] == ' ' || s[i] == '\t')) {
       i++
     }
+    return i
+  }
 
-    if (len - i < 12) return null // Need at least HH:MM:SS.mmm (8 + 1 + 3)
-
-    if (!isTwoDigits(logLine, i) || logLine[i + 2] != ':' || !isTwoDigits(logLine, i + 3) ||
-        logLine[i + 5] != ':' || !isTwoDigits(logLine, i + 6)) {
-      return null
+  /**
+   * Skips an optional 4-digit year prefix (YYYY-) if present.
+   *
+   * @param s The string to inspect.
+   * @param offset The starting index.
+   * @return The new offset after the year prefix, or the original offset if not present.
+   */
+  private fun skipOptionalYear(s: String, offset: Int): Int {
+    if (offset + 5 <= s.length && isFourDigits(s, offset) && s[offset + 4] == '-') {
+      return offset + 5
     }
+    return offset
+  }
 
-    val hour = parseTwoDigitInt(logLine, i)
-    val minutes = parseTwoDigitInt(logLine, i + 3)
-    val seconds = parseTwoDigitInt(logLine, i + 6)
+  /**
+   * Checks whether the characters at [offset] form a valid MM-DD pattern.
+   *
+   * @param s The string to inspect.
+   * @param offset The starting index.
+   * @return True if [offset] begins with two digits, a hyphen, and two digits.
+   */
+  private fun isMonthDay(s: String, offset: Int): Boolean {
+    return isTwoDigits(s, offset) && s[offset + 2] == '-' && isTwoDigits(s, offset + 3)
+  }
 
-    val sep = logLine[i + 8]
-    if (sep != '.' && sep != ',' && sep != ':') return null
-    if (!isThreeDigits(logLine, i + 9)) return null
+  /**
+   * Checks whether the characters at [startIndex] match the HH:MM:SS format.
+   *
+   * @param s The string to inspect.
+   * @param startIndex The index where HH:MM:SS should start.
+   * @return True if characters form valid HH:MM:SS.
+   */
+  private fun isTimeFormat(s: String, startIndex: Int): Boolean {
+    return isTwoDigits(s, startIndex) &&
+      s[startIndex + 2] == ':' &&
+      isTwoDigits(s, startIndex + 3) &&
+      s[startIndex + 5] == ':' &&
+      isTwoDigits(s, startIndex + 6)
+  }
 
-    var subEnd = i + 12
-    while (subEnd < len && logLine[subEnd] in '0'..'9') {
-      subEnd++
+  /**
+   * Validates that [startIndex] points to a valid separator followed by at least three digits.
+   *
+   * @param s The string to inspect.
+   * @param startIndex The index of the separator.
+   * @return True if separator is '.', ',', or ':' and next three characters are digits.
+   */
+  private fun hasValidSubsecondPrefix(s: String, startIndex: Int): Boolean {
+    val sep = s[startIndex]
+    val isValidSep = sep == '.' || sep == ',' || sep == ':'
+    return isValidSep && isThreeDigits(s, startIndex + 1)
+  }
+
+  /**
+   * Finds the index of the first non-digit character starting at [startIndex].
+   *
+   * @param s The string to inspect.
+   * @param startIndex The index to start scanning from.
+   * @return The index of the first non-digit or string length if all remaining are digits.
+   */
+  private fun findDigitsEnd(s: String, startIndex: Int): Int {
+    var end = startIndex
+    val len = s.length
+    while (end < len && s[end] in '0'..'9') {
+      end++
     }
-    val subLen = subEnd - (i + 9)
-    if (subLen in 3..9) {
-      var hundredth = 0
-      for (idx in (i + 9) until subEnd) {
-        hundredth = hundredth * 10 + (logLine[idx] - '0')
-      }
-      return LogTimestamp(month, day, hour, minutes, seconds, hundredth)
+    return end
+  }
+
+  /**
+   * Parses characters in the range [start, end) into an integer.
+   *
+   * @param s The string containing digits.
+   * @param start The inclusive start index.
+   * @param end The exclusive end index.
+   * @return The parsed integer value.
+   */
+  private fun parseDigitsToInt(s: String, start: Int, end: Int): Int {
+    var value = 0
+    for (idx in start until end) {
+      value = value * 10 + (s[idx] - '0')
     }
-    return null
+    return value
   }
 
   private fun isTwoDigits(s: String, startIndex: Int): Boolean {
