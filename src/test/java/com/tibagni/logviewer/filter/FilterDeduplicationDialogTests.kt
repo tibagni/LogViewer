@@ -403,4 +403,44 @@ class FilterDeduplicationDialogTests {
       dialog.dispose()
     }
   }
+
+  /**
+   * Tests modular sub-panel builders extracted from monolithic buildUi, verifying
+   * header, footer, cluster card, and resolution panel generation.
+   */
+  @Test
+  fun testBuildSubPanelsModularStructure() {
+    if (GraphicsEnvironment.isHeadless()) return
+
+    val f1 = Filter("f1", "AudioFlinger", Color.RED, LogLevel.DEBUG)
+    val f2 = Filter("f2", "AudioFlinger", Color.BLUE, LogLevel.DEBUG)
+    val cluster = DuplicateCluster(
+      f1,
+      listOf(FilterMatch("GroupA", f1, 0), FilterMatch("GroupB", f2, 0))
+    )
+
+    val dialog = FilterDeduplicationDialog(null, listOf(cluster))
+    try {
+      val header = dialog.buildHeaderPanel()
+      assertNotNull(header)
+
+      val footer = dialog.buildFooterActionsPanel()
+      assertNotNull(footer)
+
+      val card = dialog.buildClusterCard(0, cluster)
+      assertNotNull(card)
+
+      val resolution = dialog.buildResolutionPanel(0, cluster)
+      assertNotNull(resolution)
+
+      val sameGroupCluster = DuplicateCluster(
+        f1,
+        listOf(FilterMatch("GroupA", f1, 0), FilterMatch("GroupA", f2, 1))
+      )
+      val sameGroupResolution = dialog.buildResolutionPanel(0, sameGroupCluster)
+      assertNotNull(sameGroupResolution)
+    } finally {
+      dialog.dispose()
+    }
+  }
 }
