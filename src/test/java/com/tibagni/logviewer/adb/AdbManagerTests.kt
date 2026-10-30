@@ -456,4 +456,90 @@ class AdbManagerTests {
     assertFalse(launched)
     assertFalse(launcherCalled)
   }
+  /**
+   * Verifies that device parsing correctly handles tabs, multiple spaces, and trailing whitespace.
+   */
+  @Test
+  fun testParseDevicesOutputWithWhitespaceVariations() {
+    val output = """
+      List of devices attached
+      emulator-5554	device	product:sdk_gphone64	model:sdk_gphone64	device:emu64a	transport_id:1   
+      28241FDH2002DF       device    product:husky   model:Pixel_8_Pro   
+    """.trimIndent()
+
+    val devices = AdbManagerImpl.parseDevicesOutput(output)
+    assertEquals(2, devices.size)
+
+    assertEquals("emulator-5554", devices[0].serialNumber)
+    assertEquals(DeviceState.ONLINE, devices[0].state)
+    assertEquals("sdk_gphone64", devices[0].product)
+    assertEquals("sdk_gphone64", devices[0].model)
+    assertEquals("emu64a", devices[0].device)
+    assertEquals("1", devices[0].transportId)
+
+    assertEquals("28241FDH2002DF", devices[1].serialNumber)
+    assertEquals(DeviceState.ONLINE, devices[1].state)
+    assertEquals("husky", devices[1].product)
+    assertEquals("Pixel_8_Pro", devices[1].model)
+    assertNull(devices[1].device)
+    assertNull(devices[1].transportId)
+  }
+
+  /**
+   * Verifies that adb daemon startup lines and informational status output are skipped.
+   */
+  @Test
+  fun testParseDevicesOutputWithDaemonStartupLines() {
+    val output = """
+      * daemon not running; starting now at tcp:5037 *
+      * daemon started successfully *
+      List of devices attached
+      * daemon status check *
+      emulator-5554 device product:sdk_gphone64 model:sdk_gphone64
+    """.trimIndent()
+
+    val devices = AdbManagerImpl.parseDevicesOutput(output)
+    assertEquals(1, devices.size)
+    assertEquals("emulator-5554", devices[0].serialNumber)
+    assertEquals(DeviceState.ONLINE, devices[0].state)
+    assertEquals("sdk_gphone64", devices[0].product)
+    assertEquals("sdk_gphone64", devices[0].model)
+  }
+
+  /**
+   * Verifies that devices with missing or extra optional properties are parsed cleanly.
+   */
+  @Test
+  fun testParseDevicesOutputWithMissingOrExtraOptionalProperties() {
+    val output = """
+      List of devices attached
+      serial_only            device
+      extra_props_device     offline extra_key:extra_value usb:2-1 transport_id:5
+      unauthorized_device    unauthorized product:tangorpro
+    """.trimIndent()
+
+    val devices = AdbManagerImpl.parseDevicesOutput(output)
+    assertEquals(3, devices.size)
+
+    assertEquals("serial_only", devices[0].serialNumber)
+    assertEquals(DeviceState.ONLINE, devices[0].state)
+    assertNull(devices[0].product)
+    assertNull(devices[0].model)
+    assertNull(devices[0].device)
+    assertNull(devices[0].transportId)
+
+    assertEquals("extra_props_device", devices[1].serialNumber)
+    assertEquals(DeviceState.OFFLINE, devices[1].state)
+    assertNull(devices[1].product)
+    assertNull(devices[1].model)
+    assertNull(devices[1].device)
+    assertEquals("5", devices[1].transportId)
+
+    assertEquals("unauthorized_device", devices[2].serialNumber)
+    assertEquals(DeviceState.UNAUTHORIZED, devices[2].state)
+    assertEquals("tangorpro", devices[2].product)
+    assertNull(devices[2].model)
+    assertNull(devices[2].device)
+    assertNull(devices[2].transportId)
+  }
 }
