@@ -252,6 +252,31 @@ class FiltersPresenterTests {
   }
 
   @Test
+  fun testRemoveGroupCleansUpLastFilterPathsPreference() {
+    val file1 = File("file1.filters")
+    val file2 = File("file2.filters")
+    openedFiles["Group1"] = file1
+    val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
+    openedFilters["Group1"] = mutableListOf(f)
+    `when`(mockPrefs.lastFilterPaths).thenReturn(arrayOf(file1, file2))
+
+    presenter.removeGroup("Group1")
+
+    val captor = ArgumentCaptor.forClass(Array<File>::class.java)
+    verify(mockPrefs).lastFilterPaths = captureNonNull(captor, emptyArray())
+    assertArrayEquals(arrayOf(file2), captor.value)
+  }
+
+  @Test
+  fun testRemoveGroupEmptyGroupNoOp() {
+    presenter.removeGroup("")
+
+    verify(view, never()).showAskToSaveFilterDialog(anyNonNull(""))
+    verify(mockFiltersRepository, never()).deleteGroup(anyNonNull(""))
+    verify(mockPrefs, never()).lastFilterPaths
+  }
+
+  @Test
   fun testReorderFilters() {
     presenter.reorderFilters("Group1", 0, 2)
 

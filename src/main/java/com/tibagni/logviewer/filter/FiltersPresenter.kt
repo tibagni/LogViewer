@@ -140,38 +140,52 @@ class FiltersPresenterImpl(
     }
   }
 
+  /**
+   * Prompts the user to save unsaved filter changes for [group] if necessary.
+   *
+   * @param group the name of the filter group to evaluate
+   * @return true if removal should be aborted, false to continue
+   */
+  private fun shouldAbortGroupRemoval(group: String): Boolean {
+    if (!unsavedFilterGroups.contains(group)) return false
+
+    val userSelection = view.showAskToSaveFilterDialog(group)
+    if (userSelection == FiltersPresenter.UserSelection.CONFIRMED) {
+      saveFilters(group)
+    }
+    return userSelection == FiltersPresenter.UserSelection.CANCELLED
+  }
+
+  /**
+   * Removes [groupFile] from the persisted last filter paths preference if present.
+   *
+   * @param groupFile the file associated with the removed group, or null if unsaved
+   */
+  private fun removeGroupFromSavedPaths(groupFile: File?) {
+    if (groupFile == null) return
+
+    val currentSavedPaths = userPrefs.lastFilterPaths
+    if (!currentSavedPaths.isNullOrEmpty()) {
+      userPrefs.lastFilterPaths = currentSavedPaths.filter { it != groupFile }.toTypedArray()
+    }
+  }
+
   override fun removeGroup(group: String) {
-    if (group.isNotEmpty()) {
-      val unsavedChange = unsavedFilterGroups.contains(group)
-      if (unsavedChange) {
-        val userSelection = view.showAskToSaveFilterDialog(group)
-        if (userSelection == FiltersPresenter.UserSelection.CONFIRMED) {
-          saveFilters(group)
-        } else if (userSelection == FiltersPresenter.UserSelection.CANCELLED) {
-          return
-        }
-      }
+    if (group.isEmpty() || shouldAbortGroupRemoval(group)) return
 
-      val filtersFromGroup = filtersRepository.currentlyOpenedFilters[group]
-      val groupFile = filtersRepository.currentlyOpenedFilterFiles[group]
-      if (filtersFromGroup != null) {
-        filtersRepository.deleteGroup(group)
-        view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
-        checkForUnsavedChanges()
+    val filtersFromGroup = filtersRepository.currentlyOpenedFilters[group]
+    val groupFile = filtersRepository.currentlyOpenedFilterFiles[group]
+    if (filtersFromGroup != null) {
+      filtersRepository.deleteGroup(group)
+      view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
+      checkForUnsavedChanges()
 
-        val shouldReapply = filtersFromGroup.any { it.isApplied }
-        if (shouldReapply) {
-          applyFilters()
-        }
-      }
-
-      if (groupFile != null) {
-        val currentSavedPaths = userPrefs.lastFilterPaths
-        if (!currentSavedPaths.isNullOrEmpty()) {
-          userPrefs.lastFilterPaths = currentSavedPaths.filter { it != groupFile }.toTypedArray()
-        }
+      if (filtersFromGroup.any { it.isApplied }) {
+        applyFilters()
       }
     }
+
+    removeGroupFromSavedPaths(groupFile)
   }
 
   override fun reorderFilters(group: String, orig: Int, dest: Int) {
