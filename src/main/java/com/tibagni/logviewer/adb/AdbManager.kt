@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.adb
 
+import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
@@ -7,6 +8,8 @@ import com.tibagni.logviewer.util.PlatformUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
+import kotlin.math.min
 
 interface AdbManager {
   fun getAdbExecutable(): File?
@@ -14,6 +17,7 @@ interface AdbManager {
   fun setCustomAdbPath(path: File?)
 
   suspend fun getConnectedDevices(): List<AdbDevice>
+  suspend fun getDeviceBugreport(serialNumber: String, progressReporter: ProgressReporter)
   suspend fun restartServer(): Boolean
   fun launchDeviceTerminal(device: AdbDevice): Boolean
 }
@@ -28,6 +32,31 @@ class AdbManagerImpl(
   private val adbPathLock = Any()
   private var customAdbPath: File? = userPrefs?.adbPath
   private var cachedAdbPath: File? = null
+
+  private inner class BugreportProgress(initialProgress: Int = 0, initialPath: String = "") {
+    private var _progress: Int = initialProgress
+    private var _path: String = initialPath
+
+    val progress: Int
+      get() = _progress
+
+    val path: String
+      get() = _path
+
+    fun update(progressLine: String) {
+      val parts = progressLine.split(":")
+      when (parts[0]) {
+        "PROGRESS" -> updateProgress(parts[1])
+        "BEGIN" -> _path = parts[1]
+        "OK" -> _path = parts[1]
+      }
+    }
+
+    private fun updateProgress(progressText: String) {
+      val (current, total) = progressText.split("/").map { it.toInt() }
+      _progress = (current * 100 / total)
+    }
+  }
 
   init {
     userPrefs?.addPreferenceListener(object : LogViewerPreferences.Adapter() {
@@ -98,11 +127,13 @@ class AdbManagerImpl(
         "${PlatformUtils.getEnv("LOCALAPPDATA")}\\Android\\Sdk\\platform-tools\\$adbBinaryName",
         "${PlatformUtils.getEnv("PROGRAMFILES")}\\Android\\android-sdk\\platform-tools\\$adbBinaryName"
       )
+
       PlatformUtils.isMac -> listOf(
         "${PlatformUtils.userHome}/Library/Android/sdk/platform-tools/$adbBinaryName",
         "/usr/local/bin/$adbBinaryName",
         "/opt/homebrew/bin/$adbBinaryName"
       )
+
       else -> listOf(
         "${PlatformUtils.userHome}/Android/Sdk/platform-tools/$adbBinaryName",
         "/usr/bin/$adbBinaryName",
@@ -123,6 +154,57 @@ class AdbManagerImpl(
     } catch (e: Exception) {
       Logger.error("Exception while running adb devices", e)
       emptyList()
+    }
+  }
+
+  override suspend fun getDeviceBugreport(serialNumber: String, progressReporter: ProgressReporter) {
+    withContext(Dispatchers.IO) {
+      val adb = getAdbExecutable() ?: return@withContext
+
+      val cmd = mutableListOf(adb.absolutePath)
+      if (serialNumber.isNotBlank()) {
+        cmd.addAll(listOf("-s", serialNumber))
+      }
+      cmd.addAll(listOf("shell", "bugreportz", "-p"))
+
+      val bugreportProgress = BugreportProgress()
+      val process = commandRunner.startProcess(cmd)
+      try {
+        // In java.lang.Process, inputStream represents stdout of the child process
+        process.inputStream.bufferedReader().use { reader ->
+          reader.forEachLine {
+            bugreportProgress.update(it)
+
+            // Limit the progress to 95%. We still need to pull after generating the bugreport
+            progressReporter.onProgress(min(95, bugreportProgress.progress), bugreportProgress.path)
+          }
+        }
+
+        // Pull the report
+        val result = commandRunner.exec(
+          listOf(
+            adb.absolutePath,
+            "-s",
+            serialNumber,
+            "pull",
+            bugreportProgress.path,
+            "/home/tbagni/Downloads/" //TODO
+          )
+        )
+
+        if (result.isSuccess) {
+          // Make sure to report full progress at the end
+          progressReporter.onProgress(100, bugreportProgress.path)
+        } else {
+          Logger.error("Failed to run adb pull: $result")
+          progressReporter.failProgress()
+        }
+      } catch (e: IOException) {
+        Logger.error("Failed to pull bugreport", e)
+        progressReporter.failProgress()
+      } finally {
+        process.destroy()
+      }
     }
   }
 

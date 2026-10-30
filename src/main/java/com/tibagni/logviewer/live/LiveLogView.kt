@@ -2,6 +2,7 @@ package com.tibagni.logviewer.live
 
 import com.tibagni.logviewer.MainView
 import com.tibagni.logviewer.MainViewTab
+import com.tibagni.logviewer.ProgressReporter
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.adb.AdbDevice
@@ -342,6 +343,21 @@ class LiveLogViewImpl(
     sidePanel.setItemEnabled(ID_TERMINAL, device.isOnline)
     sidePanel.setItemEnabled(ID_STOP_RESUME, true)
     rootCardLayout.show(contentPane, CARD_LOGS)
+  }
+
+  override fun showBugreportProgress(progress: Int, description: String) {
+    val progressTag = "bugreport"
+    when (progress) {
+      0 -> {
+        mainView?.showStartLoading(progressTag)
+      }
+      100 -> {
+        mainView?.finishLoading(progressTag)
+      }
+      else -> {
+        mainView?.showLoadingProgress(progressTag, progress, description)
+      }
+    }
   }
 
   override fun showDeviceScanning() {
