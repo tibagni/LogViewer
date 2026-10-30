@@ -225,8 +225,15 @@ class LiveLogDevicesPanel(
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
           addActionListener { presenter.openDeviceTerminal(device) }
         }
+
+        // TODO hardcoded string
+        val bugreportBtn = JButton("Bugreport").apply {
+          cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+          addActionListener { presenter.pullDeviceBugreport(device) }
+        }
         actionsPanel.add(startBtn)
         actionsPanel.add(termBtn)
+        actionsPanel.add(bugreportBtn)
 
         itemPanel.cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         itemPanel.addMouseListener(object : MouseAdapter() {

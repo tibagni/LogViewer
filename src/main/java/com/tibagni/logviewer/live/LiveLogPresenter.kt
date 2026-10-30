@@ -11,6 +11,7 @@ import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogStream
+import com.tibagni.logviewer.logger.Logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlin.time.Duration
@@ -35,6 +36,8 @@ interface LiveLogPresenterView {
   fun showOpenTerminalFailed()
 
   fun showLogsView(device: AdbDevice)
+
+  fun showBugreportProgress(progress: Int, description: String)
 }
 
 interface LiveLogPresenter {
@@ -54,6 +57,7 @@ interface LiveLogPresenter {
   fun setStreamAllowed(stream: LogStream, allowed: Boolean)
   fun isStreamAllowed(stream: LogStream): Boolean
   fun openDeviceTerminal(device: AdbDevice)
+  fun pullDeviceBugreport(device: AdbDevice)
   fun restartAdbServer()
   fun disconnectDevice()
   fun finishing()
@@ -408,6 +412,17 @@ class LiveLogPresenterImpl(
       if (!launched) {
         withContext(mainDispatcher) {
           view.showOpenTerminalFailed()
+        }
+      }
+    }
+  }
+
+  override fun pullDeviceBugreport(device: AdbDevice) {
+    view.showBugreportProgress(0, "")
+    coroutineScope.launch(ioDispatcher) {
+      adbManager.getDeviceBugreport(device.serialNumber) { progress, description ->
+        launch(mainDispatcher) {
+          view.showBugreportProgress(progress, description)
         }
       }
     }
