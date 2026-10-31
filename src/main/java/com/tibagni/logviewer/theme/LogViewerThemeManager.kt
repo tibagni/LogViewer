@@ -5,6 +5,14 @@ import com.formdev.flatlaf.FlatDarkLaf
 import com.formdev.flatlaf.FlatIntelliJLaf
 import com.formdev.flatlaf.FlatLaf
 import com.formdev.flatlaf.FlatLightLaf
+import com.formdev.flatlaf.intellijthemes.FlatArcDarkIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatArcIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatGruvboxDarkHardIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatNordIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatSolarizedDarkIJTheme
+import com.formdev.flatlaf.intellijthemes.FlatSolarizedLightIJTheme
 import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import com.formdev.flatlaf.themes.FlatMacLightLaf
 import com.tibagni.logviewer.ServiceLocator
@@ -20,8 +28,9 @@ import javax.swing.UIManager
  * Manages look-and-feel themes, accent colors, and global UI design properties
  * for the LogViewer application.
  *
- * Utilizes FlatLaf to provide modern light, dark, macOS, and IntelliJ/Darcula
- * themes with customizable accent colors, consistent component styling,
+ * Utilizes FlatLaf and FlatLaf IntelliJ Themes to provide modern light, dark,
+ * macOS, and developer-favorite themes (Nord, One Dark, Dracula, Gruvbox,
+ * Solarized, Arc) with customizable accent colors, consistent component styling,
  * rounded corners, rounded selection arcs, pill progress bars, slender
  * splitters, floating inset scrollbars, underlined tabs, tooltip styling, drop
  * shadows, table presentation defaults, and unified window title pane
@@ -36,7 +45,20 @@ object LogViewerThemeManager {
     LogViewerTheme("macOS Dark", true) { FlatMacDarkLaf.setup() }
   private val INTELLIJ =
     LogViewerTheme("IntelliJ Light", false) { FlatIntelliJLaf.setup() }
-  private val DARCULA = LogViewerTheme("Darcula", true) { FlatDarculaLaf.setup() }
+  private val DARCULA =
+    LogViewerTheme("IntelliJ Darcula", true) { FlatDarculaLaf.setup() }
+  private val NORD = LogViewerTheme("Nord", true) { FlatNordIJTheme.setup() }
+  private val ONE_DARK = LogViewerTheme("One Dark", true) { FlatOneDarkIJTheme.setup() }
+  private val DRACULA = LogViewerTheme("Dracula", true) { FlatDraculaIJTheme.setup() }
+  private val GRUVBOX_DARK =
+    LogViewerTheme("Gruvbox Dark", true) { FlatGruvboxDarkHardIJTheme.setup() }
+  private val SOLARIZED_DARK =
+    LogViewerTheme("Solarized Dark", true) { FlatSolarizedDarkIJTheme.setup() }
+  private val SOLARIZED_LIGHT =
+    LogViewerTheme("Solarized Light", false) { FlatSolarizedLightIJTheme.setup() }
+  private val ARC_LIGHT = LogViewerTheme("Arc Light", false) { FlatArcIJTheme.setup() }
+  private val ARC_DARK = LogViewerTheme("Arc Dark", true) { FlatArcDarkIJTheme.setup() }
+
   private val NONE = LogViewerTheme("None", false) {
     throw IllegalArgumentException("Tried to install theme NONE")
   }
@@ -48,7 +70,15 @@ object LogViewerThemeManager {
     MAC_LIGHT.name to MAC_LIGHT,
     MAC_DARK.name to MAC_DARK,
     INTELLIJ.name to INTELLIJ,
-    DARCULA.name to DARCULA
+    DARCULA.name to DARCULA,
+    NORD.name to NORD,
+    ONE_DARK.name to ONE_DARK,
+    DRACULA.name to DRACULA,
+    GRUVBOX_DARK.name to GRUVBOX_DARK,
+    SOLARIZED_DARK.name to SOLARIZED_DARK,
+    SOLARIZED_LIGHT.name to SOLARIZED_LIGHT,
+    ARC_LIGHT.name to ARC_LIGHT,
+    ARC_DARK.name to ARC_DARK
   )
   private var installedTheme: LogViewerTheme = NONE
 
@@ -88,7 +118,8 @@ object LogViewerThemeManager {
   var currentTheme: String
     get() = installedTheme.name
     set(value) {
-      val t = allThemes[value]
+      val resolvedTheme = if (value == "Darcula") DARCULA.name else value
+      val t = allThemes[resolvedTheme]
       if (t == null && installedTheme == NONE) {
         install(DEFAULT) // fallback to default
       } else {
@@ -129,12 +160,35 @@ object LogViewerThemeManager {
     get() = SwingUtils.toHexString(mutedTextForeground)
 
   /**
+   * Indicates whether the specified theme supports custom accent color personalization.
+   *
+   * Core FlatLaf themes (Light, Dark, macOS, IntelliJ) dynamically derive their components
+   * from `@accentColor`, whereas third-party IntelliJ themes (Nord, Dracula, One Dark, etc.)
+   * use fixed, carefully balanced color palettes defined in their theme specifications.
+   *
+   * @param theme the name of the theme to query, defaults to [currentTheme].
+   * @return true if the theme supports custom accent colors, false if it uses a fixed palette.
+   */
+  fun supportsCustomAccentColors(theme: String = currentTheme): Boolean {
+    val resolvedTheme = if (theme == "Darcula") DARCULA.name else theme
+    return when (resolvedTheme) {
+      LIGHT.name, DARK.name,
+      MAC_LIGHT.name, MAC_DARK.name,
+      INTELLIJ.name, DARCULA.name -> true
+      else -> false
+    }
+  }
+
+  /**
    * Sets the accent color for FlatLaf themes and refreshes the UI.
+   * If the currently installed theme does not support custom accent colors,
+   * the accent color is automatically constrained to "Default".
    *
    * @param accentColor the name of the accent color to apply.
    */
   fun setAccentColor(accentColor: String) {
-    currentAccentColor = if (ACCENT_COLORS.containsKey(accentColor)) {
+    val supportsCustom = supportsCustomAccentColors(currentTheme)
+    currentAccentColor = if (supportsCustom && ACCENT_COLORS.containsKey(accentColor)) {
       accentColor
     } else {
       "Default"
@@ -151,40 +205,65 @@ object LogViewerThemeManager {
   }
 
   /**
-   * Returns the default accent color for the currently active theme.
+   * Checks whether the specified theme name (or the currently installed theme) is dark.
    *
+   * @param theme the name of the theme to query, defaults to [currentTheme].
+   * @return true if the theme is a dark variant, false otherwise.
+   */
+  fun isThemeDark(theme: String = currentTheme): Boolean {
+    val resolvedTheme = if (theme == "Darcula") DARCULA.name else theme
+    return allThemes[resolvedTheme]?.isDark ?: isDark
+  }
+
+  /**
+   * Returns the default accent color for the specified theme (or currently active theme).
+   *
+   * @param theme the name of the theme to query, defaults to [currentTheme].
    * @return the theme's default accent [Color].
    */
-  fun getDefaultAccentColor(): Color {
-    if (currentAccentColor == "Default") {
+  fun getDefaultAccentColor(theme: String = currentTheme): Color {
+    val resolvedTheme = if (theme == "Darcula") DARCULA.name else theme
+    if (resolvedTheme == currentTheme && currentAccentColor == "Default") {
       val uimColor = UIManager.getColor("Component.accentColor")
       if (uimColor != null) return uimColor
     }
-    return when {
-      currentTheme.startsWith("macOS") -> Color.decode("#007AFF")
-      isDark -> Color.decode("#4B6EAF")
-      else -> Color.decode("#2675BF")
+    return when (resolvedTheme) {
+      "Nord" -> Color.decode("#88C0D0")
+      "One Dark" -> Color.decode("#568AF2")
+      "Dracula" -> Color.decode("#BD93F9")
+      "Gruvbox Dark" -> Color.decode("#4C87C8")
+      "Solarized Dark" -> Color.decode("#3985C7")
+      "Solarized Light" -> Color.decode("#3D7EC0")
+      "Arc Light", "Arc Dark" -> Color.decode("#2679DB")
+      "macOS Light", "macOS Dark" -> Color.decode("#007AFF")
+      "Dark", "IntelliJ Darcula" -> Color.decode("#4B6EAF")
+      "Light", "IntelliJ Light" -> Color.decode("#2675BF")
+      else -> {
+        if (isThemeDark(resolvedTheme)) Color.decode("#4B6EAF")
+        else Color.decode("#2675BF")
+      }
     }
   }
 
   /**
    * Returns the [Color] corresponding to the specified accent color name.
-   * If the accent color is "Default", returns [getDefaultAccentColor].
+   * If the accent color is "Default", returns [getDefaultAccentColor] for the specified theme.
    * If the color is unknown or invalid, falls back to [getDefaultAccentColor].
    *
    * @param accentColor the name of the accent color (e.g., "Default", "Blue", etc.).
+   * @param theme the theme context to resolve "Default" against, defaults to [currentTheme].
    * @return the resolved [Color].
    */
-  fun getColorForAccent(accentColor: String): Color {
+  fun getColorForAccent(accentColor: String, theme: String = currentTheme): Color {
     val hex = ACCENT_COLORS[accentColor]
     return if (hex != null) {
       try {
         Color.decode(hex)
       } catch (e: NumberFormatException) {
-        getDefaultAccentColor()
+        getDefaultAccentColor(theme)
       }
     } else {
-      getDefaultAccentColor()
+      getDefaultAccentColor(theme)
     }
   }
 
@@ -203,6 +282,9 @@ object LogViewerThemeManager {
    */
   private fun install(theme: LogViewerTheme) {
     installedTheme = theme
+    if (!supportsCustomAccentColors(theme.name)) {
+      currentAccentColor = "Default"
+    }
     val hex = ACCENT_COLORS[currentAccentColor]
     FlatLaf.setGlobalExtraDefaults(
       if (hex != null) mapOf("@accentColor" to hex) else emptyMap()

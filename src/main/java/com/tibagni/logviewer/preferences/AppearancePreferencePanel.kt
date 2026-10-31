@@ -33,7 +33,8 @@ class AppearancePreferencePanel(
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_APPEARANCE)
 
-  private val lookAndFeelCbx = JComboBox<String>()
+  @VisibleForTesting
+  internal val lookAndFeelCbx = JComboBox<String>()
   internal val accentColorPicker = AccentColorPickerPanel(themeManager)
   private val logFontSizeCbx = JComboBox<Int>()
   private val logFontFamilyCbx = JComboBox<String>()
@@ -107,20 +108,40 @@ class AppearancePreferencePanel(
   override val panel: JComponent = buildPanel()
 
   override val hasTimeConsumingOperation: Boolean
-    get() = (lookAndFeelCbx.selectedItem as? String) !=
-      themeManager.currentTheme ||
-      accentColorPicker.selectedAccentColor !=
-      themeManager.currentAccentColor
+    get() {
+      val selectedTheme = lookAndFeelCbx.selectedItem as? String
+      val effectiveAccent = if (selectedTheme != null &&
+        !themeManager.supportsCustomAccentColors(selectedTheme)
+      ) {
+        "Default"
+      } else {
+        accentColorPicker.selectedAccentColor
+      }
+      return selectedTheme != themeManager.currentTheme ||
+        effectiveAccent != themeManager.currentAccentColor
+    }
 
   init {
-    initLookAndFeel()
     initAccentColor()
+    initLookAndFeel()
     initLogFont()
   }
 
   private fun initLookAndFeel() {
     themeManager.availableThemes.forEach { lookAndFeelCbx.addItem(it) }
     lookAndFeelCbx.selectedItem = themeManager.currentTheme
+    accentColorPicker.previewTheme = themeManager.currentTheme
+    accentColorPicker.setCustomAccentsSupported(
+      themeManager.supportsCustomAccentColors(themeManager.currentTheme)
+    )
+
+    lookAndFeelCbx.addActionListener {
+      val selectedTheme = lookAndFeelCbx.selectedItem as? String ?: themeManager.currentTheme
+      accentColorPicker.previewTheme = selectedTheme
+      accentColorPicker.setCustomAccentsSupported(
+        themeManager.supportsCustomAccentColors(selectedTheme)
+      )
+    }
   }
 
   /**
@@ -161,7 +182,13 @@ class AppearancePreferencePanel(
       userPrefs.lookAndFeel = selectedTheme
     }
 
-    val selectedAccent = accentColorPicker.selectedAccentColor
+    val selectedAccent = if (selectedTheme != null &&
+      !themeManager.supportsCustomAccentColors(selectedTheme)
+    ) {
+      "Default"
+    } else {
+      accentColorPicker.selectedAccentColor
+    }
     if (selectedAccent != userPrefs.accentColor) {
       userPrefs.accentColor = selectedAccent
     }

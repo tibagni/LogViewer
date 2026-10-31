@@ -20,8 +20,16 @@ class LogViewerThemeManagerTests {
     assertTrue(themes.contains("macOS Light"))
     assertTrue(themes.contains("macOS Dark"))
     assertTrue(themes.contains("IntelliJ Light"))
-    assertTrue(themes.contains("Darcula"))
-    assertEquals(6, themes.size)
+    assertTrue(themes.contains("IntelliJ Darcula"))
+    assertTrue(themes.contains("Nord"))
+    assertTrue(themes.contains("One Dark"))
+    assertTrue(themes.contains("Dracula"))
+    assertTrue(themes.contains("Gruvbox Dark"))
+    assertTrue(themes.contains("Solarized Dark"))
+    assertTrue(themes.contains("Solarized Light"))
+    assertTrue(themes.contains("Arc Light"))
+    assertTrue(themes.contains("Arc Dark"))
+    assertEquals(14, themes.size)
   }
 
   @Test
@@ -60,9 +68,72 @@ class LogViewerThemeManagerTests {
   }
 
   @Test
-  fun testThemeInstallationDarcula() {
+  fun testThemeInstallationIntelliJDarcula() {
+    LogViewerThemeManager.currentTheme = "IntelliJ Darcula"
+    assertEquals("IntelliJ Darcula", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationDarculaLegacyAlias() {
     LogViewerThemeManager.currentTheme = "Darcula"
-    assertEquals("Darcula", LogViewerThemeManager.currentTheme)
+    assertEquals("IntelliJ Darcula", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationNord() {
+    LogViewerThemeManager.currentTheme = "Nord"
+    assertEquals("Nord", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationOneDark() {
+    LogViewerThemeManager.currentTheme = "One Dark"
+    assertEquals("One Dark", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationDracula() {
+    LogViewerThemeManager.currentTheme = "Dracula"
+    assertEquals("Dracula", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationGruvboxDark() {
+    LogViewerThemeManager.currentTheme = "Gruvbox Dark"
+    assertEquals("Gruvbox Dark", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationSolarizedDark() {
+    LogViewerThemeManager.currentTheme = "Solarized Dark"
+    assertEquals("Solarized Dark", LogViewerThemeManager.currentTheme)
+    assertTrue(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationSolarizedLight() {
+    LogViewerThemeManager.currentTheme = "Solarized Light"
+    assertEquals("Solarized Light", LogViewerThemeManager.currentTheme)
+    assertFalse(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationArcLight() {
+    LogViewerThemeManager.currentTheme = "Arc Light"
+    assertEquals("Arc Light", LogViewerThemeManager.currentTheme)
+    assertFalse(LogViewerThemeManager.isDark)
+  }
+
+  @Test
+  fun testThemeInstallationArcDark() {
+    LogViewerThemeManager.currentTheme = "Arc Dark"
+    assertEquals("Arc Dark", LogViewerThemeManager.currentTheme)
     assertTrue(LogViewerThemeManager.isDark)
   }
 
@@ -180,6 +251,92 @@ class LogViewerThemeManagerTests {
     LogViewerThemeManager.currentTheme = "macOS Light"
     val macDefault = LogViewerThemeManager.getDefaultAccentColor()
     assertEquals(Color.decode("#007AFF"), macDefault)
+
+    LogViewerThemeManager.currentTheme = "Nord"
+    assertEquals(Color.decode("#88C0D0"), LogViewerThemeManager.getDefaultAccentColor())
+
+    LogViewerThemeManager.currentTheme = "One Dark"
+    assertEquals(Color.decode("#568AF2"), LogViewerThemeManager.getDefaultAccentColor())
+
+    LogViewerThemeManager.currentTheme = "Dracula"
+    assertEquals(Color.decode("#BD93F9"), LogViewerThemeManager.getDefaultAccentColor())
+
+    LogViewerThemeManager.currentTheme = "Gruvbox Dark"
+    assertEquals(Color.decode("#4C87C8"), LogViewerThemeManager.getDefaultAccentColor())
+
+    LogViewerThemeManager.currentTheme = "Solarized Dark"
+    assertEquals(Color.decode("#3985C7"), LogViewerThemeManager.getDefaultAccentColor())
+
+    LogViewerThemeManager.currentTheme = "Solarized Light"
+    assertEquals(Color.decode("#3D7EC0"), LogViewerThemeManager.getDefaultAccentColor())
+
+    LogViewerThemeManager.currentTheme = "Arc Dark"
+    assertEquals(Color.decode("#2679DB"), LogViewerThemeManager.getDefaultAccentColor())
+
+    // Parameterized theme querying
+    assertEquals(Color.decode("#88C0D0"), LogViewerThemeManager.getDefaultAccentColor("Nord"))
+    assertEquals(Color.decode("#BD93F9"), LogViewerThemeManager.getDefaultAccentColor("Dracula"))
+  }
+
+  @Test
+  fun testIsThemeDarkResolution() {
+    assertTrue(LogViewerThemeManager.isThemeDark("Dracula"))
+    assertTrue(LogViewerThemeManager.isThemeDark("Darcula"))
+    assertTrue(LogViewerThemeManager.isThemeDark("IntelliJ Darcula"))
+    assertTrue(LogViewerThemeManager.isThemeDark("Nord"))
+    assertTrue(LogViewerThemeManager.isThemeDark("One Dark"))
+    assertTrue(LogViewerThemeManager.isThemeDark("Gruvbox Dark"))
+    assertTrue(LogViewerThemeManager.isThemeDark("Solarized Dark"))
+    assertTrue(LogViewerThemeManager.isThemeDark("Arc Dark"))
+    assertTrue(LogViewerThemeManager.isThemeDark("Dark"))
+    assertTrue(LogViewerThemeManager.isThemeDark("macOS Dark"))
+
+    assertFalse(LogViewerThemeManager.isThemeDark("Light"))
+    assertFalse(LogViewerThemeManager.isThemeDark("IntelliJ Light"))
+    assertFalse(LogViewerThemeManager.isThemeDark("Solarized Light"))
+    assertFalse(LogViewerThemeManager.isThemeDark("Arc Light"))
+    assertFalse(LogViewerThemeManager.isThemeDark("macOS Light"))
+  }
+
+  @Test
+  fun testSupportsCustomAccentColors() {
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("Light"))
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("Dark"))
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("macOS Light"))
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("macOS Dark"))
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("IntelliJ Light"))
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("IntelliJ Darcula"))
+    assertTrue(LogViewerThemeManager.supportsCustomAccentColors("Darcula"))
+
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Nord"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("One Dark"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Dracula"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Gruvbox Dark"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Solarized Dark"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Solarized Light"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Arc Light"))
+    assertFalse(LogViewerThemeManager.supportsCustomAccentColors("Arc Dark"))
+  }
+
+  @Test
+  fun testSettingAccentColorOnUnsupportedThemeFallsBackToDefault() {
+    LogViewerThemeManager.currentTheme = "Nord"
+    LogViewerThemeManager.setAccentColor("Purple")
+    assertEquals("Default", LogViewerThemeManager.currentAccentColor)
+
+    LogViewerThemeManager.currentTheme = "Dracula"
+    LogViewerThemeManager.setAccentColor("Blue")
+    assertEquals("Default", LogViewerThemeManager.currentAccentColor)
+  }
+
+  @Test
+  fun testInstallingUnsupportedThemeResetsAccentToDefault() {
+    LogViewerThemeManager.currentTheme = "Light"
+    LogViewerThemeManager.setAccentColor("Purple")
+    assertEquals("Purple", LogViewerThemeManager.currentAccentColor)
+
+    LogViewerThemeManager.currentTheme = "Nord"
+    assertEquals("Default", LogViewerThemeManager.currentAccentColor)
   }
 
   @Test
