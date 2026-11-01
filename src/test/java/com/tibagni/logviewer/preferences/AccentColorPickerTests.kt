@@ -11,6 +11,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.event.KeyEvent
@@ -312,5 +313,124 @@ class AccentColorPickerTests {
     panel.apply()
 
     verify(mockPrefs, never()).accentColor = "Default"
+  }
+
+  @Test
+  fun testThemeChangeUpdatesAccentColorPreview() {
+    val mockPrefs = mock(LogViewerPreferences::class.java)
+    `when`(mockPrefs.lookAndFeel).thenReturn("Light")
+    `when`(mockPrefs.accentColor).thenReturn("Default")
+    `when`(mockPrefs.logFontSize).thenReturn(12)
+    `when`(mockPrefs.logFontFamily).thenReturn("Monospaced")
+    `when`(mockPrefs.logFontBold).thenReturn(false)
+
+    LogViewerThemeManager.currentTheme = "Light"
+    LogViewerThemeManager.setAccentColor("Default")
+
+    val panel = AppearancePreferencePanel(mockPrefs, LogViewerThemeManager)
+    val defaultButton = panel.accentColorPicker.getButton("Default")!!
+
+    // Light default accent color
+    assertEquals(Color.decode("#2675BF"), defaultButton.color)
+
+    // Switch preview theme to Dracula via lookAndFeelCbx
+    panel.lookAndFeelCbx.selectedItem = "Dracula"
+    assertEquals("Dracula", panel.accentColorPicker.previewTheme)
+    assertEquals(Color.decode("#BD93F9"), defaultButton.color)
+
+    // Switch preview theme to Nord
+    panel.lookAndFeelCbx.selectedItem = "Nord"
+    assertEquals("Nord", panel.accentColorPicker.previewTheme)
+    assertEquals(Color.decode("#88C0D0"), defaultButton.color)
+
+    // Switch preview theme to One Dark
+    panel.lookAndFeelCbx.selectedItem = "One Dark"
+    assertEquals("One Dark", panel.accentColorPicker.previewTheme)
+    assertEquals(Color.decode("#568AF2"), defaultButton.color)
+
+    // Switch preview theme to Gruvbox Dark
+    panel.lookAndFeelCbx.selectedItem = "Gruvbox Dark"
+    assertEquals("Gruvbox Dark", panel.accentColorPicker.previewTheme)
+    assertEquals(Color.decode("#4C87C8"), defaultButton.color)
+  }
+
+  @Test
+  fun testSetCustomAccentsSupportedHidesNonDefaultButtons() {
+    val picker = AccentColorPickerPanel(LogViewerThemeManager)
+    val defaultBtn = picker.getButton("Default")!!
+    val blueBtn = picker.getButton("Blue")!!
+    val purpleBtn = picker.getButton("Purple")!!
+
+    // By default, custom accents supported
+    picker.selectedAccentColor = "Purple"
+    assertEquals("Purple", picker.selectedAccentColor)
+    assertTrue(defaultBtn.isVisible && defaultBtn.isEnabled)
+    assertTrue(blueBtn.isVisible && blueBtn.isEnabled)
+    assertTrue(purpleBtn.isVisible && purpleBtn.isEnabled)
+
+    // When unsupported, only Default is visible and selected
+    picker.setCustomAccentsSupported(false)
+    assertEquals("Default", picker.selectedAccentColor)
+    assertTrue(defaultBtn.isVisible && defaultBtn.isEnabled)
+    assertFalse(blueBtn.isVisible)
+    assertFalse(blueBtn.isEnabled)
+    assertFalse(purpleBtn.isVisible)
+    assertFalse(purpleBtn.isEnabled)
+
+    // Restoring support re-enables all buttons
+    picker.setCustomAccentsSupported(true)
+    assertTrue(defaultBtn.isVisible && defaultBtn.isEnabled)
+    assertTrue(blueBtn.isVisible && blueBtn.isEnabled)
+    assertTrue(purpleBtn.isVisible && purpleBtn.isEnabled)
+  }
+
+  @Test
+  fun testSwitchingToUnsupportedThemeResetsAccentToDefaultInPreferences() {
+    val mockPrefs = mock(LogViewerPreferences::class.java)
+    `when`(mockPrefs.lookAndFeel).thenReturn("Light")
+    `when`(mockPrefs.accentColor).thenReturn("Purple")
+    `when`(mockPrefs.logFontSize).thenReturn(12)
+    `when`(mockPrefs.logFontFamily).thenReturn("Monospaced")
+    `when`(mockPrefs.logFontBold).thenReturn(false)
+
+    LogViewerThemeManager.currentTheme = "Light"
+    LogViewerThemeManager.setAccentColor("Purple")
+
+    val panel = AppearancePreferencePanel(mockPrefs, LogViewerThemeManager)
+    assertEquals("Purple", panel.selectedAccentColor)
+
+    // Switch theme to Nord (fixed palette)
+    panel.lookAndFeelCbx.selectedItem = "Nord"
+    assertEquals("Default", panel.selectedAccentColor)
+
+    panel.apply()
+    verify(mockPrefs).lookAndFeel = "Nord"
+    verify(mockPrefs).accentColor = "Default"
+  }
+
+  @Test
+  fun testInitializingAppearancePanelWithUnsupportedThemeConstrainsAccentToDefault() {
+    val mockPrefs = mock(LogViewerPreferences::class.java)
+    `when`(mockPrefs.lookAndFeel).thenReturn("Nord")
+    `when`(mockPrefs.accentColor).thenReturn("Purple")
+    `when`(mockPrefs.logFontSize).thenReturn(12)
+    `when`(mockPrefs.logFontFamily).thenReturn("Monospaced")
+    `when`(mockPrefs.logFontBold).thenReturn(false)
+
+    LogViewerThemeManager.currentTheme = "Nord"
+    LogViewerThemeManager.setAccentColor("Purple")
+
+    val panel = AppearancePreferencePanel(mockPrefs, LogViewerThemeManager)
+
+    // Even though preferences had Purple, Nord has fixed palette so Default must be selected
+    assertEquals("Default", panel.selectedAccentColor)
+    val defaultBtn = panel.accentColorPicker.getButton("Default")!!
+    assertTrue(defaultBtn.isVisible && defaultBtn.isEnabled && defaultBtn.isSelected)
+
+    // Non-default button should be hidden and disabled
+    val purpleBtn = panel.accentColorPicker.getButton("Purple")!!
+    assertFalse(purpleBtn.isVisible)
+    assertFalse(purpleBtn.isEnabled)
+    assertFalse(purpleBtn.isSelected)
   }
 }

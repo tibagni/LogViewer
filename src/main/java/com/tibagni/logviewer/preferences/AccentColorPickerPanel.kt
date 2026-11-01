@@ -42,9 +42,20 @@ class RoundColorButton(
 ) : JComponent() {
 
   /**
+   * The preview theme context used to resolve dynamic theme accent colors.
+   */
+  var previewTheme: String = themeManager.currentTheme
+    set(value) {
+      if (field != value) {
+        field = value
+        repaint()
+      }
+    }
+
+  /**
    * The resolved [Color] for this accent color choice.
    */
-  val color: Color get() = themeManager.getColorForAccent(colorName)
+  val color: Color get() = themeManager.getColorForAccent(colorName, previewTheme)
 
   /**
    * Whether this button is currently selected.
@@ -160,7 +171,8 @@ class RoundColorButton(
 
         // Subtle boundary outline
         val boundaryStroke = UIScaleUtils.dipf(1f)
-        g2.color = if (themeManager.isDark) Color(255, 255, 255, 60) else Color(0, 0, 0, 50)
+        val isDark = themeManager.isThemeDark(previewTheme)
+        g2.color = if (isDark) Color(255, 255, 255, 60) else Color(0, 0, 0, 50)
         g2.stroke = BasicStroke(boundaryStroke)
         g2.draw(
           Ellipse2D.Float(
@@ -239,20 +251,54 @@ class AccentColorPickerPanel(
   private val colorButtons = mutableMapOf<String, RoundColorButton>()
 
   /**
+   * The preview theme context for dynamic theme accent colors in the picker.
+   */
+  var previewTheme: String = themeManager.currentTheme
+    set(value) {
+      if (field != value) {
+        field = value
+        colorButtons.values.forEach { it.previewTheme = value }
+        repaint()
+      }
+    }
+
+  /**
    * Optional listener invoked whenever a new accent color is selected.
    */
   var onColorSelected: ((String) -> Unit)? = null
 
   /**
+   * Updates which accent color buttons are visible and enabled based on whether
+   * the active or previewed theme supports custom accent color personalization.
+   *
+   * When [supportsCustom] is false, only the "Default" button is visible and enabled,
+   * and [selectedAccentColor] is automatically switched to "Default".
+   *
+   * @param supportsCustom whether custom accent colors are supported by the theme.
+   */
+  fun setCustomAccentsSupported(supportsCustom: Boolean) {
+    colorButtons.forEach { (name, btn) ->
+      val isDefault = (name == "Default")
+      btn.isVisible = supportsCustom || isDefault
+      btn.isEnabled = supportsCustom || isDefault
+    }
+    if (!supportsCustom) {
+      selectedAccentColor = "Default"
+    }
+    revalidate()
+    repaint()
+  }
+
+  /**
    * The name of the currently selected accent color.
    *
    * Setting this property updates the selected state across all child color buttons.
-   * If an unrecognized color is supplied, falls back to selecting "Default".
+   * If an unrecognized or disabled color is supplied, falls back to selecting "Default".
    */
   var selectedAccentColor: String
     get() = colorButtons.entries.firstOrNull { it.value.isSelected }?.key ?: "Default"
     set(value) {
-      val target = if (colorButtons.containsKey(value)) value else "Default"
+      val target = if (colorButtons[value]?.isEnabled == true) value else "Default"
       colorButtons.forEach { (name, btn) ->
         btn.isSelected = (name == target)
       }
