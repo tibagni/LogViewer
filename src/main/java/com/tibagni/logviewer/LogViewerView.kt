@@ -319,17 +319,11 @@ class LogViewerViewImpl(
   override fun getMenus(): List<JMenu> = listOfNotNull(buildStreamsMenu())
 
   override fun buildStreamsMenu(): JMenu? {
-    if (logStreams.isEmpty()) return null
-
-    val streamsMenu = JMenu(I18n.get(I18n.MENU_STREAMS))
-    for (stream in logStreams) {
-      val item = JCheckBoxMenuItem(stream.toString())
-      item.state = presenter.isStreamAllowed(stream)
-      item.addItemListener { presenter.setStreamAllowed(stream, item.isSelected) }
-      streamsMenu.add(item)
-    }
-
-    return streamsMenu
+    return LogStreamsMenuBuilder.buildStreamsMenu(
+      availableStreams = logStreams,
+      isStreamAllowed = { presenter.isStreamAllowed(it) },
+      onStreamToggled = { stream, allowed -> presenter.setStreamAllowed(stream, allowed) }
+    )
   }
 
   override fun handleOpenLogsMenu() {
