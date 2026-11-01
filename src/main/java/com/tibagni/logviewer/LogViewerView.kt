@@ -595,10 +595,7 @@ class LogViewerViewImpl(
         .build()
     )
 
-    mainSplitPane = JSplitPane()
-    mainSplitPane.dividerSize = UIScaleUtils.dip(4)
-    mainSplitPane.isOneTouchExpandable = true
-    mainSplitPane.resizeWeight = 0.15
+    mainSplitPane = buildSplitPaneHierarchy()
     _contentPane.add(
       mainSplitPane,
       GBConstraintsBuilder()
@@ -611,50 +608,7 @@ class LogViewerViewImpl(
         .build()
     )
 
-    mainLogSplit = JSplitPane()
-    mainLogSplit.dividerSize = UIScaleUtils.dip(4)
-    mainLogSplit.resizeWeight = 0.8
-    mainLogSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
-      if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
-        val newDividerLocation = evt.newValue as Int
-        if (newDividerLocation < mainLogSplit.maximumDividerLocation) {
-          myLogsLastDividerLocation = newDividerLocation.toDouble() / mainLogSplit.width
-        }
-      }
-    }
-
-    logsPane = JSplitPane()
-    logsPane.dividerSize = UIScaleUtils.dip(4)
-    logsPane.orientation = JSplitPane.VERTICAL_SPLIT
-    logsPane.resizeWeight = 0.6
-
-    logListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_ALL))
-    logList = SearchableTable(logListTableModel)
-    logsPane.leftComponent = logList // Left or above (above in this case)
-
-    filteredLogListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_FILTERED))
-    filteredLogList = SearchableTable(filteredLogListTableModel)
-    logsPane.rightComponent = filteredLogList // Right or below (below in this case)
-
-    myLogsListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_MY_LOGS))
-    myLogsList = SearchableTable(myLogsListTableModel)
-
-    mainLogSplit.leftComponent = logsPane
-    mainLogSplit.rightComponent = myLogsList
-    mainLogSplit.rightComponent.isVisible = false // Start collapsed
-
-    mainSplitPane.rightComponent = mainLogSplit
-
-    sideButtonsPanel = SideButtonsPanel(
-      isExpandable = false,
-      entries = listOf(
-        SidePanelEntry.Toggle(
-          id = MY_LOGS_BUTTON_ID,
-          icon = CommonIcons.myLogsIcon(),
-          text = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
-        ) { showMyLogsPanel(it) }
-      )
-    )
+    sideButtonsPanel = buildSideButtonsPanel()
     _contentPane.add(
       sideButtonsPanel,
       GBConstraintsBuilder()
@@ -665,8 +619,77 @@ class LogViewerViewImpl(
         .withFill(GridBagConstraints.VERTICAL)
         .build()
     )
+  }
 
+  /**
+   * Builds and configures the split pane hierarchy containing the main logs,
+   * filtered logs, and My Logs panels.
+   *
+   * @return the configured [mainSplitPane] instance.
+   */
+  private fun buildSplitPaneHierarchy(): JSplitPane {
+    mainSplitPane = JSplitPane().apply {
+      dividerSize = UIScaleUtils.dip(4)
+      isOneTouchExpandable = true
+      resizeWeight = 0.15
+    }
+
+    mainLogSplit = JSplitPane().apply {
+      dividerSize = UIScaleUtils.dip(4)
+      resizeWeight = 0.8
+      addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY) { evt ->
+        if (evt.propertyName == JSplitPane.DIVIDER_LOCATION_PROPERTY) {
+          val newDividerLocation = evt.newValue as Int
+          if (newDividerLocation < maximumDividerLocation) {
+            myLogsLastDividerLocation = newDividerLocation.toDouble() / width
+          }
+        }
+      }
+    }
+
+    logsPane = JSplitPane().apply {
+      dividerSize = UIScaleUtils.dip(4)
+      orientation = JSplitPane.VERTICAL_SPLIT
+      resizeWeight = 0.6
+    }
+
+    logListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_ALL))
+    logList = SearchableTable(logListTableModel)
+    logsPane.leftComponent = logList
+
+    filteredLogListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_FILTERED))
+    filteredLogList = SearchableTable(filteredLogListTableModel)
+    logsPane.rightComponent = filteredLogList
+
+    myLogsListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_MY_LOGS))
+    myLogsList = SearchableTable(myLogsListTableModel)
+
+    mainLogSplit.leftComponent = logsPane
+    mainLogSplit.rightComponent = myLogsList
+    mainLogSplit.rightComponent.isVisible = false
+
+    mainSplitPane.rightComponent = mainLogSplit
     mainSplitPane.leftComponent = filtersPanel
+
+    return mainSplitPane
+  }
+
+  /**
+   * Builds the side action buttons panel with tools for toggling the My Logs view.
+   *
+   * @return the configured [SideButtonsPanel] instance.
+   */
+  private fun buildSideButtonsPanel(): SideButtonsPanel {
+    return SideButtonsPanel(
+      isExpandable = false,
+      entries = listOf(
+        SidePanelEntry.Toggle(
+          id = MY_LOGS_BUTTON_ID,
+          icon = CommonIcons.myLogsIcon(),
+          text = I18n.get(I18n.LOGS_MY_LOGS_TOOLTIP)
+        ) { showMyLogsPanel(it) }
+      )
+    )
   }
 
   companion object {
