@@ -382,11 +382,10 @@ class StatusBadgeTests {
 
   /**
    * Verifies integration with [LogViewerViewImpl], ensuring that
-   * [LogViewerViewImpl.statusBadge] updates appropriately on
+   * [LogViewerViewImpl.headerPanel] updates stats and path appropriately on
    * [LogViewerViewImpl.showLogs], [LogViewerViewImpl.showFilteredLogs],
-   * and [LogViewerViewImpl.showCurrentLogsLocation], and that
-   * [LogViewerViewImpl.headerPanel] and [LogViewerViewImpl.currentLogsLbl]
-   * toggle visibility and icon correctly when logs open and close.
+   * and [LogViewerViewImpl.showCurrentLogsLocation], toggling visibility,
+   * text, and icon correctly when logs open and close.
    */
   @Test
   fun testLogViewerViewIntegration() {
@@ -397,55 +396,51 @@ class StatusBadgeTests {
 
     val filtersPanel = FiltersPanel(mockHost)
     val logView = LogViewerViewImpl(mockMain, filtersPanel, emptySet())
-    val badge = logView.statusBadge
     val headerPanel = logView.headerPanel
-    val currentLogsLbl = logView.currentLogsLbl
 
-    assertNotNull(badge)
     assertNotNull(headerPanel)
-    assertNotNull(currentLogsLbl)
-    assertFalse(badge.isVisible)
+    assertFalse(headerPanel.isBadgeVisible)
     assertFalse(headerPanel.isVisible)
 
     val entry1 = LogEntry("Line 1", LogLevel.INFO, null)
     val entry2 = LogEntry("Line 2", LogLevel.ERROR, null)
 
     logView.showLogs(listOf(entry1, entry2))
-    assertTrue(badge.isVisible)
-    assertEquals(I18n.format(I18n.LOGS_STATUS_ALL, "2"), badge.text)
+    assertTrue(headerPanel.isBadgeVisible)
+    assertEquals(I18n.format(I18n.LOGS_STATUS_ALL, "2"), headerPanel.badgeText)
 
     logView.showFilteredLogs(listOf(entry1))
-    assertTrue(badge.isVisible)
+    assertTrue(headerPanel.isBadgeVisible)
     assertEquals(
       I18n.format(I18n.LOGS_STATUS_FILTERED, "1", "2", 50),
-      badge.text
+      headerPanel.badgeText
     )
 
     logView.showFilteredLogs(emptyList())
-    assertTrue(badge.isVisible)
-    assertEquals(I18n.format(I18n.LOGS_STATUS_ALL, "2"), badge.text)
+    assertTrue(headerPanel.isBadgeVisible)
+    assertEquals(I18n.format(I18n.LOGS_STATUS_ALL, "2"), headerPanel.badgeText)
 
-    // Verify opening logs location updates headerPanel and currentLogsLbl icon
+    // Verify opening logs location updates headerPanel and path icon
     logView.showCurrentLogsLocation("/path/to/android_logs.txt")
     assertTrue(headerPanel.isVisible)
-    assertNotNull(currentLogsLbl.icon)
-    assertEquals(16, currentLogsLbl.icon.iconWidth)
-    assertEquals(16, currentLogsLbl.icon.iconHeight)
-    assertEquals("/path/to/android_logs.txt", currentLogsLbl.text)
+    assertNotNull(headerPanel.displayedPathIcon)
+    assertEquals(16, headerPanel.displayedPathIcon?.iconWidth)
+    assertEquals(16, headerPanel.displayedPathIcon?.iconHeight)
+    assertEquals("/path/to/android_logs.txt", headerPanel.displayedPathText)
 
     // Verify closing logs clears icon, text, and hides header panel
     logView.showCurrentLogsLocation(null)
-    assertFalse(badge.isVisible)
-    assertEquals("", badge.text)
+    assertFalse(headerPanel.isBadgeVisible)
+    assertEquals("", headerPanel.badgeText)
     assertFalse(headerPanel.isVisible)
-    assertNull(currentLogsLbl.icon)
-    assertNull(currentLogsLbl.text)
+    assertNull(headerPanel.displayedPathIcon)
+    assertNull(headerPanel.displayedPathText)
 
     // Reopening logs restores icon and visibility
     logView.showCurrentLogsLocation("/another/path/to/log.txt")
     assertTrue(headerPanel.isVisible)
-    assertNotNull(currentLogsLbl.icon)
-    assertEquals("/another/path/to/log.txt", currentLogsLbl.text)
+    assertNotNull(headerPanel.displayedPathIcon)
+    assertEquals("/another/path/to/log.txt", headerPanel.displayedPathText)
   }
 
   /**
