@@ -60,6 +60,20 @@ public class LogListTableModel extends AbstractTableModel {
     return entries.get(entries.size() - 1);
   }
 
+  /**
+   * Returns the index of the first occurrence of the specified [entry] in this model,
+   * or -1 if this model does not contain the entry.
+   *
+   * @param entry the log entry to search for.
+   * @return the index of the entry, or -1 if not found.
+   */
+  public int indexOf(@Nullable LogEntry entry) {
+    if (entry == null) {
+      return -1;
+    }
+    return entries.indexOf(entry);
+  }
+
   public void setLogs(List<LogEntry> entries) {
     this.entries.clear();
     if (entries != null) {

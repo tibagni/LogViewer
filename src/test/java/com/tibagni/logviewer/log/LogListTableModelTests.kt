@@ -90,4 +90,19 @@ class LogListTableModelTests {
     assertEquals(0, events[0].firstRow)
     assertEquals(Int.MAX_VALUE, events[0].lastRow)
   }
+
+  @Test
+  fun testIndexOfReturnsCorrectIndexOrNegativeOne() {
+    val model = LogListTableModel("Test")
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    val entry1 = LogEntry("Line 1", LogLevel.DEBUG, null, LogStream.MAIN)
+    val notPresent = LogEntry("Not Present", LogLevel.ERROR, null, LogStream.MAIN)
+
+    model.setLogs(listOf(entry0, entry1))
+
+    assertEquals(0, model.indexOf(entry0))
+    assertEquals(1, model.indexOf(entry1))
+    assertEquals(-1, model.indexOf(notPresent))
+    assertEquals(-1, model.indexOf(null))
+  }
 }
