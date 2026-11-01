@@ -222,13 +222,7 @@ class LogViewerViewImpl(
       onDoubleClick = { _, clickedEntry ->
         // go back to the filter list pos
         if (clickedEntry.appliedFilter != null) {
-          var logIndex = -1
-          for (index in 0 until filteredLogList.table.rowCount) {
-            if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
-              logIndex = index
-              break
-            }
-          }
+          val logIndex = filteredLogListTableModel.indexOf(clickedEntry)
           if (logIndex != -1) {
             SwingUtils.scrollToVisible(filteredLogList.table, logIndex)
             filteredLogList.table.setRowSelectionInterval(logIndex, logIndex)
@@ -280,12 +274,7 @@ class LogViewerViewImpl(
         var targetTable = logList.table
         var targetIndex = -1
         if (clickedEntry.appliedFilter != null) {
-          for (index in 0 until filteredLogList.table.rowCount) {
-            if (filteredLogListTableModel.getValueAt(index, 0) == clickedEntry) {
-              targetIndex = index
-              break
-            }
-          }
+          targetIndex = filteredLogListTableModel.indexOf(clickedEntry)
           targetTable = filteredLogList.table
         }
         if (targetIndex == -1) {
