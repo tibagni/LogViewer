@@ -176,8 +176,8 @@ class LogViewerHeaderPanelTests {
     panel.updatePath(path)
 
     assertEquals(path, panel.rawPath)
-    assertEquals(path, panel.currentLogsLabel.toolTipText)
-    assertEquals(java.awt.Cursor.HAND_CURSOR, panel.currentLogsLabel.cursor.type)
+    assertEquals(path, panel.displayedToolTipText)
+    assertEquals(java.awt.Cursor.HAND_CURSOR, panel.displayedCursor.type)
   }
 
   /**
@@ -193,6 +193,6 @@ class LogViewerHeaderPanelTests {
 
     panel.reset()
     assertNull(panel.rawPath)
-    assertNull(panel.currentLogsLabel.toolTipText)
+    assertNull(panel.displayedToolTipText)
   }
 }

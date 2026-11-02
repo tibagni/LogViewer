@@ -51,6 +51,14 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
     get() = currentLogsLbl.icon
 
   @get:VisibleForTesting
+  val displayedToolTipText: String?
+    get() = currentLogsLbl.toolTipText
+
+  @get:VisibleForTesting
+  val displayedCursor: Cursor
+    get() = currentLogsLbl.cursor
+
+  @get:VisibleForTesting
   val isBadgeVisible: Boolean
     get() = statusBadge.isVisible
 
@@ -60,10 +68,6 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
 
   @get:VisibleForTesting
   internal var rawPath: String? = null
-
-  @get:VisibleForTesting
-  val currentLogsLabel: JLabel
-    get() = currentLogsLbl
 
   init {
     isOpaque = false
