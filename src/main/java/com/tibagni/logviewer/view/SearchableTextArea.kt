@@ -14,15 +14,18 @@ import java.awt.Component
 import java.awt.Cursor
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.event.ActionEvent
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.util.regex.Pattern
+import javax.swing.AbstractAction
 import javax.swing.BorderFactory
 import javax.swing.JCheckBox
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
+import javax.swing.SwingUtilities
 import javax.swing.border.Border
 import javax.swing.text.DefaultHighlighter
 
@@ -41,8 +44,12 @@ class SearchableTextArea(hasScroll: Boolean = true) : JPanel() {
   internal val searchOptionPanel = JPanel()
 
   @VisibleForTesting
-  internal val searchText = HintTextField("Search").apply {
+  internal val searchText = HintTextField(I18n.get(I18n.SEARCH_HINT)).apply {
     putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true)
+    putClientProperty(
+      FlatClientProperties.TEXT_FIELD_LEADING_ICON,
+      CommonIcons.searchIcon(14)
+    )
   }
 
   @VisibleForTesting
@@ -122,10 +129,32 @@ class SearchableTextArea(hasScroll: Boolean = true) : JPanel() {
     close.addActionListener { hideSearch() }
     matchCaseOption.addItemListener { updateHighlights() }
 
+    val origCopy = textArea.actionMap.get("copy")
+    val copyTextHandler = {
+      if (!textArea.selectedText.isNullOrEmpty()) {
+        origCopy?.actionPerformed(
+          ActionEvent(textArea, ActionEvent.ACTION_PERFORMED, "copy")
+        )
+        val window = SwingUtilities.getWindowAncestor(this@SearchableTextArea)
+        Toast.showToast(window, I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD), Toast.LENGTH_SHORT)
+      }
+    }
+
+    textArea.actionMap.put("copy", object : AbstractAction() {
+      override fun actionPerformed(e: ActionEvent) {
+        copyTextHandler()
+      }
+    })
+
     textArea.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
         val shortcutManager = ServiceLocator.shortcutManager
+        val isCopy = e.keyCode == KeyEvent.VK_C && (e.isControlDown || e.isMetaDown)
         when {
+          isCopy && !textArea.selectedText.isNullOrEmpty() -> {
+            e.consume()
+            copyTextHandler()
+          }
           shortcutManager.matches(e, ShortcutAction.SEARCH_FIND_IN_TABLE) -> showSearch()
           e.keyCode == KeyEvent.VK_ESCAPE -> hideSearch()
         }

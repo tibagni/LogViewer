@@ -13,6 +13,7 @@ import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.StatusBadge
+import com.tibagni.logviewer.view.Toast
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
@@ -224,7 +225,14 @@ class LogLineDetailsDialog(
     copyPathBtn = FlatButton(I18n.get(I18n.LOG_DETAILS_COPY_PATH)).apply {
       isEnabled = info.sourceFile != null
       addActionListener {
-        info.sourceFile?.let { CommonUtils.copyToClipboard(it.absolutePath) }
+        info.sourceFile?.let {
+          CommonUtils.copyToClipboard(it.absolutePath)
+          Toast.showToast(
+            this@LogLineDetailsDialog,
+            I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+            Toast.LENGTH_SHORT
+          )
+        }
       }
     }
     actionsPanel.add(copyPathBtn)
@@ -467,6 +475,11 @@ class LogLineDetailsDialog(
         ).apply {
           addActionListener {
             CommonUtils.copyToClipboard(info.tag)
+            Toast.showToast(
+              this@LogLineDetailsDialog,
+              I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+              Toast.LENGTH_SHORT
+            )
           }
         }
         add(copyTagBtn)
@@ -508,6 +521,11 @@ class LogLineDetailsDialog(
     ).apply {
       addActionListener {
         CommonUtils.copyToClipboard(info.entry.logText)
+        Toast.showToast(
+          this@LogLineDetailsDialog,
+          I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+          Toast.LENGTH_SHORT
+        )
       }
     }
     actionsPanel.add(copyLineBtn)
@@ -517,6 +535,11 @@ class LogLineDetailsDialog(
     ).apply {
       addActionListener {
         CommonUtils.copyToClipboard(info.message)
+        Toast.showToast(
+          this@LogLineDetailsDialog,
+          I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+          Toast.LENGTH_SHORT
+        )
       }
     }
     actionsPanel.add(copyMsgBtn)

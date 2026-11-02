@@ -796,4 +796,29 @@ class CommonIconsTests {
     assertEquals(36, largeIcon.iconWidth)
     assertEquals(36, largeIcon.iconHeight)
   }
+
+  /**
+   * Verifies that [CommonIcons.copyIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testCopyIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.copyIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("copyIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.copyIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
 }

@@ -5,6 +5,8 @@ import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.CommonUtils
+import com.tibagni.logviewer.util.PlatformUtils
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
@@ -13,6 +15,7 @@ import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
 import com.tibagni.logviewer.view.StatusBadge
+import com.tibagni.logviewer.view.Toast
 import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.*
 import java.awt.event.*
@@ -269,23 +272,34 @@ class SearchFiltersDialog(
       }
     })
 
+    resultsTable.actionMap.put("copy", object : AbstractAction() {
+      override fun actionPerformed(e: ActionEvent) {
+        copyFilterHandler()
+      }
+    })
+
     resultsTable.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
-        when (e.keyCode) {
-          KeyEvent.VK_ENTER -> {
+        val isCopy = e.keyCode == KeyEvent.VK_C && (e.isControlDown || e.isMetaDown)
+        when {
+          isCopy && resultsTable.selectedRowCount > 0 -> {
+            e.consume()
+            copyFilterHandler()
+          }
+          e.keyCode == KeyEvent.VK_ENTER -> {
             e.consume()
             jumpToSelectedFilter()
           }
-          KeyEvent.VK_SPACE -> {
+          e.keyCode == KeyEvent.VK_SPACE -> {
             e.consume()
             toggleSelectedFilterApplied()
           }
-          KeyEvent.VK_DELETE -> {
+          e.keyCode == KeyEvent.VK_DELETE -> {
             e.consume()
             deleteSelectedFilter()
           }
-          KeyEvent.VK_ESCAPE -> dispose()
-          KeyEvent.VK_E -> {
+          e.keyCode == KeyEvent.VK_ESCAPE -> dispose()
+          e.keyCode == KeyEvent.VK_E -> {
             if (!e.isControlDown && !e.isMetaDown) {
               e.consume()
               editSelectedFilter()
@@ -332,6 +346,23 @@ class SearchFiltersDialog(
     updateButtonStates()
   }
 
+  private fun copyFilterHandler() {
+    if (resultsTable.selectedRowCount > 0) {
+      val selectedRows = resultsTable.selectedRows
+      val text = selectedRows.toList().mapNotNull { row ->
+        tableModel.getItem(row)?.let { item ->
+          "${item.group} : ${item.filter.name} [${item.filter.pattern}]"
+        }
+      }.joinToString("\n")
+      CommonUtils.copyToClipboard(text)
+      Toast.showToast(
+        this@SearchFiltersDialog,
+        I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+        Toast.LENGTH_SHORT
+      )
+    }
+  }
+
   private fun showContextMenu(e: MouseEvent) {
     val row = resultsTable.rowAtPoint(e.point)
     if (row >= 0) {
@@ -339,6 +370,14 @@ class SearchFiltersDialog(
       updateButtonStates()
 
       val popup = JPopupMenu().apply {
+        val copyItem = JMenuItem(I18n.get(I18n.COMMON_COPY)).apply {
+          icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+          accelerator = KeyStroke.getKeyStroke(
+            KeyEvent.VK_C,
+            PlatformUtils.menuShortcutMask
+          )
+          addActionListener { copyFilterHandler() }
+        }
         val jumpItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_JUMP)).apply {
           addActionListener { jumpToSelectedFilter() }
         }
@@ -350,6 +389,8 @@ class SearchFiltersDialog(
         ).apply {
           addActionListener { deleteSelectedFilter() }
         }
+        add(copyItem)
+        addSeparator()
         add(jumpItem)
         addSeparator()
         add(editItem)

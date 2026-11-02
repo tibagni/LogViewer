@@ -25,6 +25,9 @@ class SearchableTextAreaTests {
       true,
       comp.searchText.getClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON)
     )
+    assertNotNull(
+      comp.searchText.getClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON)
+    )
     assertEquals(Cursor.HAND_CURSOR, comp.matchCaseOption.cursor.type)
     assertNotNull(comp.searchLast.icon)
     assertNotNull(comp.searchNext.icon)
@@ -136,5 +139,11 @@ class SearchableTextAreaTests {
     comp.searchText.text = ""
     assertEquals(0, comp.currentMatches.size)
     assertEquals("", comp.searchResult.text)
+  }
+
+  @Test
+  fun testCopyActionRegistered() {
+    val comp = SearchableTextArea()
+    assertNotNull(comp.textArea.actionMap.get("copy"))
   }
 }
