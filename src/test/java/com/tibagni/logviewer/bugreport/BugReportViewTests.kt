@@ -2,9 +2,12 @@ package com.tibagni.logviewer.bugreport
 
 import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.MainView
+import com.tibagni.logviewer.bugreport.content.AppPackage
 import com.tibagni.logviewer.bugreport.section.BugReportSection
+import com.tibagni.logviewer.bugreport.section.PackagesSection
 import com.tibagni.logviewer.bugreport.section.PlainTextSection
 import com.tibagni.logviewer.bugreport.section.SystemPropertiesSection
+import com.tibagni.logviewer.bugreport.section.ui.PackageSectionPanel
 import com.tibagni.logviewer.bugreport.section.ui.PlainTextBugreportPanel
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanel
 import com.tibagni.logviewer.bugreport.section.ui.SystemPropertiesSectionPanel
@@ -166,5 +169,21 @@ class BugReportViewTests {
     // Test notify lifecycle
     panel.addNotify()
     panel.removeNotify()
+  }
+
+  @Test
+  fun testPackageSectionPanelCaseInsensitiveSearch() {
+    val pkg1 = AppPackage("com.example.app", "1", "1.0", "/data/app/1", "raw1")
+    val pkg2 = AppPackage("com.Google.android", "2", "2.0", "/data/app/2", "raw2")
+    val section = PackagesSection("Packages", listOf(pkg1, pkg2))
+    val panel = PackageSectionPanel(section)
+
+    assertEquals(2, panel.listModel.size())
+
+    panel.onSearch("google")
+    javax.swing.SwingUtilities.invokeAndWait {}
+
+    assertEquals(1, panel.listModel.size())
+    assertEquals(pkg2.toSummary(), panel.listModel[0])
   }
 }

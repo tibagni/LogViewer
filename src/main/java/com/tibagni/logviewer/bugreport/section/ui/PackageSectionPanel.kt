@@ -6,15 +6,17 @@ import javax.swing.*
 
 class PackageSectionPanel(section: PackagesSection) : ListSectionPanel(section.sectionName) {
 
-  private val packagesMap: Map<String, AppPackage> = mapOf(*(section.packages.map { it.toSummary() to it }.toTypedArray()))
-  private val sortedPackagesSummaries: List<String> = section.packages.map { it.toSummary() }.sorted()
+  private val packagesMap: Map<String, AppPackage> =
+    section.packages.associateBy { it.toSummary() }
+  private val sortedPackagesSummaries: List<String> =
+    section.packages.map { it.toSummary() }.sorted()
 
   init {
     updateListData(sortedPackagesSummaries)
   }
 
-  override fun onSearch(searchText: String) {
-    val filtered = sortedPackagesSummaries.filter { it.contains(searchText) }
+  public override fun onSearch(searchText: String) {
+    val filtered = sortedPackagesSummaries.filter { it.contains(searchText, ignoreCase = true) }
     SwingUtilities.invokeLater { updateListData(filtered) }
   }
 

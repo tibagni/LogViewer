@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.view;
 
+import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.util.StringUtils;
 
 import javax.swing.*;
@@ -17,7 +18,8 @@ public class JFileChooserExt extends JFileChooser {
   /**
    * Set the extension to be added to a file (if not already) when saving
    *
-   * @param saveExtension The extension to be appended to the file name when saving a file (if missing)
+   * @param saveExtension The extension to be appended to the file name
+   *                      when saving a file (if missing)
    */
   public void setSaveExtension(String saveExtension) {
     this.saveExtension = saveExtension;
@@ -41,8 +43,8 @@ public class JFileChooserExt extends JFileChooser {
       File savingFile = getSelectedFile();
       if (savingFile != null && savingFile.exists()) {
         int result = JOptionPane.showConfirmDialog(this,
-            String.format("The file %s already exists, overwrite?", savingFile.getName()),
-            "File already exists!",
+            I18n.format(I18n.MAIN_FILECHOOSER_OVERWRITE_CONFIRM_MSG, savingFile.getName()),
+            I18n.get(I18n.MAIN_FILECHOOSER_OVERWRITE_CONFIRM_TITLE),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE);
 

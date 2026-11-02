@@ -9,17 +9,24 @@ import com.tibagni.logviewer.bugreport.section.EmptyBugReportSection
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanel
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanelFactory
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
+import com.tibagni.logviewer.view.FileDrop
+import com.tibagni.logviewer.view.FlatButton
 import java.awt.BorderLayout
 import java.awt.Component
+import java.awt.Cursor
 import java.awt.Dimension
+import java.awt.FlowLayout
 import java.awt.Font
+import java.awt.GraphicsEnvironment
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.Insets
 import javax.swing.*
 import javax.swing.border.EmptyBorder
 
@@ -59,11 +66,37 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
 
   @VisibleForTesting
   internal val emptyPane = JPanel()
+  private lateinit var emptyCard: JPanel
+  private lateinit var emptyTitle: JLabel
+  private lateinit var emptyHint: JLabel
+  private lateinit var emptyOpenBtn: FlatButton
 
   init {
     buildUi()
     presenter = BugReportPresenterImpl(this, ServiceLocator.bugReportRepository)
     sectionsList.addListSelectionListener { onSectionSelected() }
+    updateEmptyStateText()
+  }
+
+  /**
+   * Updates empty state card presentation, headings, and open button visibility
+   * depending on whether a bug report is loaded or if all sections are deselected.
+   */
+  private fun updateEmptyStateText() {
+    if (!::emptyTitle.isInitialized) return
+    if (bugReport == null) {
+      emptyTitle.text = I18n.get(I18n.BUGREPORT_EMPTY_CARD_TITLE)
+      emptyHint.text = StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_EMPTY_CARD_HINT))
+      emptyOpenBtn.isVisible = true
+    } else {
+      emptyTitle.text = I18n.get(I18n.BUGREPORT_NO_SECTION_SELECTED)
+      emptyHint.text = StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_SELECT_SECTION_HINT))
+      emptyOpenBtn.isVisible = false
+    }
+    if (::emptyCard.isInitialized) {
+      emptyCard.revalidate()
+      emptyCard.repaint()
+    }
   }
 
   override fun onBugReportLoaded(bugreportPath: String, bugreportText: String) {
@@ -76,6 +109,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     sectionPanels.clear()
     this.bugReport = null
     currentlySelectedSection = -1
+    updateEmptyStateText()
     mainSplitPane.rightComponent = emptyPane
   }
 
@@ -84,6 +118,18 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     sectionPanels.clear()
     sidebarHeaderLabel.icon = CommonIcons.viewListIcon()
     sectionsList.cellRenderer = SectionListCellRenderer()
+    if (::emptyCard.isInitialized) {
+      emptyCard.border = CardBorderUtils.createCardBorder(
+        insets = Insets(
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(28),
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(28)
+        )
+      )
+      emptyHint.foreground = CardBorderUtils.resolveSecondaryLabelColor()
+      emptyOpenBtn.updateUI()
+    }
     contentPane.revalidate()
     contentPane.repaint()
   }
@@ -113,6 +159,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     if (selected < 0) {
       // If there is nothing selected on sections list, show empty pane
       currentlySelectedSection = -1
+      updateEmptyStateText()
       mainSplitPane.rightComponent = emptyPane
       return
     }
@@ -210,34 +257,72 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
     )
 
     emptyPane.layout = GridBagLayout()
-    val emptyContainer = JPanel().apply {
+
+    emptyTitle = JLabel(I18n.get(I18n.BUGREPORT_EMPTY_CARD_TITLE)).apply {
+      font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(15).toFloat())
+      alignmentX = Component.CENTER_ALIGNMENT
+      border = EmptyBorder(UIScaleUtils.dip(12), 0, UIScaleUtils.dip(6), 0)
+    }
+
+    emptyHint = JLabel(StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_EMPTY_CARD_HINT))).apply {
+      foreground = CardBorderUtils.resolveSecondaryLabelColor()
+      alignmentX = Component.CENTER_ALIGNMENT
+    }
+
+    emptyOpenBtn = FlatButton(I18n.get(I18n.BUGREPORT_EMPTY_CARD_BTN_OPEN)).apply {
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(6)
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+      alignmentX = Component.CENTER_ALIGNMENT
+      addActionListener { mainView.openLogs() }
+    }
+
+    emptyCard = JPanel().apply {
       layout = BoxLayout(this, BoxLayout.Y_AXIS)
       isOpaque = false
-      val emptyIcon = JLabel(CommonIcons.fileDocumentIcon(UIScaleUtils.dip(40))).apply {
+      border = CardBorderUtils.createCardBorder(
+        insets = Insets(
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(28),
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(28)
+        )
+      )
+
+      val emptyIcon = JLabel(CommonIcons.bugReportTabIcon(UIScaleUtils.dip(48))).apply {
         alignmentX = Component.CENTER_ALIGNMENT
       }
-      val emptyTitle = JLabel(I18n.get(I18n.BUGREPORT_NO_SECTION_SELECTED)).apply {
-        font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(14).toFloat())
+
+      val btnPanel = JPanel(FlowLayout(FlowLayout.CENTER, 0, 0)).apply {
+        isOpaque = false
+        border = EmptyBorder(UIScaleUtils.dip(14), 0, 0, 0)
         alignmentX = Component.CENTER_ALIGNMENT
-        border = EmptyBorder(UIScaleUtils.dip(10), 0, UIScaleUtils.dip(6), 0)
+        add(emptyOpenBtn)
       }
-      val emptyHint = JLabel(StringUtils.wrapHtml(I18n.get(I18n.BUGREPORT_OPEN_HINT))).apply {
-        foreground = CardBorderUtils.resolveSecondaryLabelColor()
-        alignmentX = Component.CENTER_ALIGNMENT
-      }
+
       add(emptyIcon)
       add(emptyTitle)
       add(emptyHint)
+      add(btnPanel as Component)
     }
 
     emptyPane.add(
-      emptyContainer,
+      emptyCard,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(0)
         .withAnchor(GridBagConstraints.CENTER)
         .build()
     )
+
+    if (!GraphicsEnvironment.isHeadless()) {
+      FileDrop(Logger.getDebugStream(), emptyPane, true) { files ->
+        mainView.loadLogs(files)
+      }
+      FileDrop(Logger.getDebugStream(), sidebarPanel, true) { files ->
+        mainView.loadLogs(files)
+      }
+    }
 
     mainSplitPane.leftComponent = sidebarPanel
     mainSplitPane.rightComponent = emptyPane

@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.bugreport.section.ui
 
+import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.PaddingListCellRenderer
@@ -19,7 +20,8 @@ abstract class ListSectionPanel(
   title: String,
   isSearchable: Boolean = true
 ) : SectionPanel(title, isSearchable) {
-  private lateinit var listModel: DefaultListModel<String>
+  @VisibleForTesting
+  internal lateinit var listModel: DefaultListModel<String>
   private lateinit var list: JList<String>
   private lateinit var splitPane: JSplitPane
   private lateinit var detailsText: SearchableTextArea

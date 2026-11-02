@@ -67,6 +67,18 @@ interface MainView {
   fun showSaveFilterFileChooser(suggestedFileName: String? = null): File?
   fun showOpenMultipleFiltersFileChooser(): Array<File>
 
+  /**
+   * Prompts the user with the file chooser dialog and loads the selected log files.
+   */
+  fun openLogs()
+
+  /**
+   * Initiates asynchronous loading of the specified log or bugreport files.
+   *
+   * @param files array of log or bugreport files to parse and display.
+   */
+  fun loadLogs(files: Array<File>)
+
   fun showStartLoading(tag: String)
   fun showLoadingProgress(tag:String, progress: Int, note: String?)
   fun finishLoading(tag: String)
@@ -251,7 +263,8 @@ class MainViewImpl(
 
   override fun showOpenMultipleFiltersFileChooser(): Array<File> {
     filterOpenFileChooser.resetChoosableFileFilters()
-    filterOpenFileChooser.fileFilter = FileNameExtensionFilter(I18n.get(I18n.MAIN_FILECHOOSER_FILTER_FILES), Filter.FILE_EXTENSION)
+    filterOpenFileChooser.fileFilter =
+      FileNameExtensionFilter(I18n.get(I18n.MAIN_FILECHOOSER_FILTER_FILES), Filter.FILE_EXTENSION)
     filterOpenFileChooser.isMultiSelectionEnabled = true
     filterOpenFileChooser.dialogTitle = I18n.get(I18n.MAIN_FILECHOOSER_OPEN_FILTERS)
 
@@ -259,6 +272,22 @@ class MainViewImpl(
     return if (selectedOption == JFileChooser.APPROVE_OPTION) {
       filterOpenFileChooser.selectedFiles
     } else arrayOf()
+  }
+
+  /**
+   * Prompts the user with the file chooser dialog and loads the selected log files.
+   */
+  override fun openLogs() {
+    logViewerView.handleOpenLogsMenu()
+  }
+
+  /**
+   * Directly initiates asynchronous loading of the specified log or bugreport files.
+   *
+   * @param files array of log or bugreport files to parse and display.
+   */
+  override fun loadLogs(files: Array<File>) {
+    logViewerView.presenter.loadLogs(files)
   }
 
   override fun showStartLoading(tag: String) {

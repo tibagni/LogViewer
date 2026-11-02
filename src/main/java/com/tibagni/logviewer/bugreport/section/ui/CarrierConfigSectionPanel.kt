@@ -61,7 +61,7 @@ class CarrierConfigSectionPanel(
   public override fun onSearch(searchText: String) {
     for (entry in section.configs.entries) {
       val filteredRows = section.configs[entry.key]
-        ?.filterKeys { it.contains(searchText) }
+        ?.filterKeys { it.contains(searchText, ignoreCase = true) }
         ?.map { arrayOf(it.key, it.value) }
         ?.toTypedArray()
       carrierConfigModels[entry.key]?.setDataVector(
