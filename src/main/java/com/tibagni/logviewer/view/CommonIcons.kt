@@ -266,6 +266,16 @@ object CommonIcons {
   fun paletteIcon(size: Int = 16): ImageIcon = PaletteIcon(size)
 
   /**
+   * Returns a theme-aware filter funnel icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun filterIcon(size: Int = 16): ImageIcon = FilterIcon(size)
+
+  /**
    * Returns a theme-aware logs tab icon of the given [size].
    *
    * @param size icon width and height in pixels (defaults to 16)
@@ -1041,6 +1051,39 @@ object CommonIcons {
 
       // Base antenna stem
       g2d.draw(Line2D.Double(cx, cy, cx, s * 0.88))
+    }
+  }
+
+  /**
+   * Dynamic theme-aware [ImageIcon] that paints a filter/funnel icon
+   * using current Look and Feel foreground colors directly at paint time.
+   */
+  private class FilterIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val path = java.awt.geom.Path2D.Double().apply {
+        moveTo(2.5 * scale, 2.5 * scale)
+        lineTo(13.5 * scale, 2.5 * scale)
+        lineTo(9.5 * scale, 7.5 * scale)
+        lineTo(9.5 * scale, 13.5 * scale)
+        lineTo(6.5 * scale, 11.5 * scale)
+        lineTo(6.5 * scale, 7.5 * scale)
+        closePath()
+      }
+      g2d.draw(path)
     }
   }
 

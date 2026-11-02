@@ -771,4 +771,29 @@ class CommonIconsTests {
     }
     assertTrue("liveLogsTabIcon should have painted pixels", hasPixels)
   }
+
+  /**
+   * Verifies that [CommonIcons.filterIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testFilterIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.filterIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("filterIcon should have painted pixels", hasPixels)
+
+    val largeIcon = CommonIcons.filterIcon(36)
+    assertEquals(36, largeIcon.iconWidth)
+    assertEquals(36, largeIcon.iconHeight)
+  }
 }

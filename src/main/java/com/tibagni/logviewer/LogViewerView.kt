@@ -69,6 +69,12 @@ class LogViewerViewImpl(
   private lateinit var filteredLogList: SearchableTable
   private lateinit var myLogsList: SearchableTable
   private lateinit var logsPane: JSplitPane
+  private lateinit var emptyLogsCard: JPanel
+  private lateinit var emptyLogsOpenBtn: FlatButton
+
+  private val centerLogsCardLayout = CardLayout()
+  private val centerLogsContainer = JPanel(centerLogsCardLayout)
+
   @VisibleForTesting
   internal val headerPanel: LogViewerHeaderPanel = LogViewerHeaderPanel()
   private var totalLogsCount = 0
@@ -248,7 +254,8 @@ class LogViewerViewImpl(
       parentWindow = mainView.parent,
       filtersPanelProvider = { filtersPanel },
       onDoubleClick = { _, clickedEntry ->
-        val logIndex = (clickedEntry.index - presenter.visibleLogsOffset) // Map to the visible index
+        // Map to the visible index
+        val logIndex = clickedEntry.index - presenter.visibleLogsOffset
         SwingUtils.scrollToVisible(logList.table, logIndex)
         logList.table.setRowSelectionInterval(logIndex, logIndex)
       },
@@ -320,7 +327,9 @@ class LogViewerViewImpl(
 
   override fun handleRefreshLogsMenu() = presenter.refreshLogs()
   override fun handleCloseLogsMenu() = presenter.closeLogs()
-  override fun handleChangeCharsetMenu(charset: Charset) = presenter.refreshLogsWithDifferentCharset(charset)
+  override fun handleChangeCharsetMenu(charset: Charset) {
+    presenter.refreshLogsWithDifferentCharset(charset)
+  }
 
   override fun handleSaveFilteredLogsMenu() {
     val file = mainView.showSaveLogFileChooser()
@@ -331,16 +340,20 @@ class LogViewerViewImpl(
     var hintText = "{month}-{day} {hour}:{min}:{sec}:{hund}"
     var ts: LogTimestamp? = null
     if (filteredLogList.table.hasFocus() && filteredLogList.table.selectedRow >= 0) {
-      val selectedEntry =
-        filteredLogList.table.model.getValueAt(filteredLogList.table.selectedRow, filteredLogList.table.selectedColumn) as LogEntry
+      val row = filteredLogList.table.selectedRow
+      val col = filteredLogList.table.selectedColumn
+      val selectedEntry = filteredLogList.table.model.getValueAt(row, col) as LogEntry
       ts = selectedEntry.timestamp
     } else if (logList.table.hasFocus() && logList.table.selectedRow >= 0) {
-      val selectedEntry =
-        logList.table.model.getValueAt(logList.table.selectedRow, logList.table.selectedColumn) as LogEntry
+      val row = logList.table.selectedRow
+      val col = logList.table.selectedColumn
+      val selectedEntry = logList.table.model.getValueAt(row, col) as LogEntry
       ts = selectedEntry.timestamp
     }
 
-    ts?.let { hintText = "${it.month}-${it.day} ${it.hour}:${it.minutes}:${it.seconds}.${it.hundredth}" }
+    ts?.let {
+      hintText = "${it.month}-${it.day} ${it.hour}:${it.minutes}:${it.seconds}.${it.hundredth}"
+    }
 
     val input =
       JOptionPane.showInputDialog(
@@ -363,7 +376,8 @@ class LogViewerViewImpl(
 
   override fun handleConfigureIgnoredLogs() {
     val config = VisibleLogConfiguration(presenter.firstVisibleLog, presenter.lastVisibleLog)
-    val userConfig = VisibleLogsConfigurationDialog.showIgnoredLogsConfigurationDialog(mainView.parent, config)
+    val userConfig =
+      VisibleLogsConfigurationDialog.showIgnoredLogsConfigurationDialog(mainView.parent, config)
       ?: return // userConfig null mean dialog was cancelled. Don't do anything in this case
 
     if (config.startingLog == null && config.endingLog == null) {
@@ -391,7 +405,8 @@ class LogViewerViewImpl(
     logRenderer.updateFont(fontSize, isBold, fontFamilyStr)
     myLogsRenderer.updateFont(fontSize, isBold, fontFamilyStr)
 
-    val font = LogFontManager.getFont(fontFamilyStr, if (isBold) Font.BOLD else Font.PLAIN, fontSize)
+    val style = if (isBold) Font.BOLD else Font.PLAIN
+    val font = LogFontManager.getFont(fontFamilyStr, style, fontSize)
     val fontMetrics = logList.table.getFontMetrics(font)
     val rowHeight = maxOf(UIScaleUtils.dip(22), fontMetrics.height + UIScaleUtils.dip(6))
 
@@ -399,8 +414,12 @@ class LogViewerViewImpl(
     filteredLogList.table.rowHeight = rowHeight
     myLogsList.table.rowHeight = rowHeight
 
-    logListTableModel.lastEntry?.let { logRenderer.recalculateLineNumberPreferredSize(it.index) }
-    myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
+    logListTableModel.lastEntry?.let {
+      logRenderer.recalculateLineNumberPreferredSize(it.index)
+    }
+    myLogsListTableModel.lastEntry?.let {
+      myLogsRenderer.recalculateLineNumberPreferredSize(it.index)
+    }
 
     logList.table.revalidate()
     logList.table.repaint()
@@ -420,6 +439,9 @@ class LogViewerViewImpl(
       filteredLogList.onThemeChanged()
       myLogsList.onThemeChanged()
     }
+    if (::emptyLogsOpenBtn.isInitialized) {
+      emptyLogsOpenBtn.updateUI()
+    }
   }
 
   override fun requestFinish(doFinish: () -> Unit) {
@@ -428,7 +450,12 @@ class LogViewerViewImpl(
   }
 
   override fun showErrorMessage(message: String?) {
-    JOptionPane.showMessageDialog(contentPane, message, I18n.get(I18n.COMMON_ERROR), JOptionPane.ERROR_MESSAGE)
+    JOptionPane.showMessageDialog(
+      contentPane,
+      message,
+      I18n.get(I18n.COMMON_ERROR),
+      JOptionPane.ERROR_MESSAGE
+    )
   }
 
   override fun showSkippedLogsMessage(skippedLogs: List<String>) {
@@ -451,6 +478,7 @@ class LogViewerViewImpl(
   private fun updateTotalLogsCount(count: Int) {
     totalLogsCount = count
     headerPanel.updateStats(totalLogsCount, filteredLogsCount)
+    updateEmptyStateVisibility()
   }
 
   /**
@@ -477,7 +505,9 @@ class LogViewerViewImpl(
       showMyLogsPanel(false)
     } else {
       myLogsListTableModel.setLogs(logEntries)
-      myLogsListTableModel.lastEntry?.let { myLogsRenderer.recalculateLineNumberPreferredSize(it.index) }
+      myLogsListTableModel.lastEntry?.let {
+        myLogsRenderer.recalculateLineNumberPreferredSize(it.index)
+      }
       sideButtonsPanel.setItemActive(MY_LOGS_BUTTON_ID, true)
       showMyLogsPanel(true)
     }
@@ -499,6 +529,7 @@ class LogViewerViewImpl(
       totalLogsCount = 0
       filteredLogsCount = 0
       headerPanel.reset()
+      updateEmptyStateVisibility()
       return
     }
 
@@ -540,6 +571,18 @@ class LogViewerViewImpl(
     )
   }
 
+  /**
+   * Updates CardLayout visibility between the empty state card and the main logs pane
+   * depending on whether log entries are currently loaded.
+   */
+  private fun updateEmptyStateVisibility() {
+    if (totalLogsCount == 0) {
+      centerLogsCardLayout.show(centerLogsContainer, CARD_EMPTY)
+    } else {
+      centerLogsCardLayout.show(centerLogsContainer, CARD_LOGS)
+    }
+  }
+
   override fun showAvailableLogStreams(logStreams: Set<LogStream>?) {
     this.logStreams.reset(logStreams)
 
@@ -574,7 +617,9 @@ class LogViewerViewImpl(
 
   override fun showStartLoading() = mainView.showStartLoading("Logs")
 
-  override fun showLoadingProgress(progress: Int, note: String?) = mainView.showLoadingProgress("Logs", progress, note)
+  override fun showLoadingProgress(progress: Int, note: String?) {
+    mainView.showLoadingProgress("Logs", progress, note)
+  }
 
   override fun finishLoading() = mainView.finishLoading("Logs")
 
@@ -664,13 +709,88 @@ class LogViewerViewImpl(
     myLogsListTableModel = LogListTableModel(I18n.get(I18n.LOGS_TAB_MY_LOGS))
     myLogsList = SearchableTable(myLogsListTableModel)
 
-    mainLogSplit.leftComponent = logsPane
+    emptyLogsOpenBtn = FlatButton().apply {
+      text = I18n.get(I18n.MAIN_EMPTY_LOGS_BTN_OPEN)
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(6)
+      addActionListener { handleOpenLogsMenu() }
+    }
+
+    emptyLogsCard = JPanel(GridBagLayout()).apply {
+      isOpaque = false
+      border = CardBorderUtils.createCardBorder(
+        insets = Insets(
+          UIScaleUtils.dip(24),
+          UIScaleUtils.dip(16),
+          UIScaleUtils.dip(24),
+          UIScaleUtils.dip(16)
+        )
+      )
+
+      val iconLabel = JLabel(CommonIcons.logsTabIcon(UIScaleUtils.dip(48)))
+      val titleLabel = JLabel(I18n.get(I18n.MAIN_EMPTY_LOGS_TITLE)).apply {
+        font = font.deriveFont(Font.BOLD, font.size2D + UIScaleUtils.dip(2))
+        foreground = UIManager.getColor("Label.foreground")
+      }
+      val hintLabel = JLabel(I18n.get(I18n.MAIN_EMPTY_LOGS_HINT)).apply {
+        foreground = CardBorderUtils.resolveSecondaryLabelColor()
+      }
+
+      add(
+        iconLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(0)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(12), 0))
+          .build()
+      )
+      add(
+        titleLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(1)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(6), 0))
+          .build()
+      )
+      add(
+        hintLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(2)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(16), 0))
+          .build()
+      )
+      add(
+        emptyLogsOpenBtn,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(3)
+          .withAnchor(GridBagConstraints.CENTER)
+          .build()
+      )
+    }
+
+    if (!GraphicsEnvironment.isHeadless()) {
+      FileDrop(Logger.getDebugStream(), emptyLogsCard) { files ->
+        if (files != null && files.isNotEmpty()) {
+          presenter.loadLogs(files)
+        }
+      }
+    }
+
+    centerLogsContainer.apply {
+      isOpaque = false
+      add(logsPane, CARD_LOGS)
+      add(emptyLogsCard, CARD_EMPTY)
+    }
+
+    mainLogSplit.leftComponent = centerLogsContainer
     mainLogSplit.rightComponent = myLogsList
     mainLogSplit.rightComponent.isVisible = false
 
     mainSplitPane.rightComponent = mainLogSplit
     mainSplitPane.leftComponent = filtersPanel
 
+    updateEmptyStateVisibility()
     return mainSplitPane
   }
 
@@ -693,6 +813,8 @@ class LogViewerViewImpl(
   }
 
   companion object {
+    private const val CARD_LOGS = "logs"
+    private const val CARD_EMPTY = "empty"
     private const val MY_LOGS_BUTTON_ID = "my_logs"
   }
 }

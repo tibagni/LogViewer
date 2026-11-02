@@ -72,6 +72,9 @@ public final class I18n {
   // Main View & File Choosers
   public static final String MAIN_FILECHOOSER_OPEN_LOGS = "main.filechooser.open.logs";
   public static final String MAIN_FILECHOOSER_OPEN_LOG = "main.filechooser.open.log";
+  public static final String MAIN_EMPTY_LOGS_TITLE = "main.empty_logs.title";
+  public static final String MAIN_EMPTY_LOGS_HINT = "main.empty_logs.hint";
+  public static final String MAIN_EMPTY_LOGS_BTN_OPEN = "main.empty_logs.btn_open";
   public static final String MAIN_FILECHOOSER_SAVE_FILTERED_LOGS = "main.filechooser.save.filtered.logs";
   public static final String MAIN_FILECHOOSER_SAVE_FILTER = "main.filechooser.save.filter";
   public static final String MAIN_FILECHOOSER_OPEN_FILTERS = "main.filechooser.open.filters";
@@ -242,6 +245,9 @@ public final class I18n {
 
   // Filters Panel & Controls (LogViewerView)
   public static final String FILTERS_PANEL_TITLE = "filters.panel.title";
+  public static final String FILTERS_EMPTY_CARD_TITLE = "filters.empty.card_title";
+  public static final String FILTERS_EMPTY_CARD_HINT = "filters.empty.card_hint";
+  public static final String FILTERS_EMPTY_CARD_BTN_OPEN = "filters.empty.btn_open";
   public static final String FILTERS_BTN_NEW_GROUP = "filters.btn.new_group";
   public static final String FILTERS_BTN_APPLY = "filters.btn.apply";
   public static final String FILTERS_TOOLTIP_APPLY = "filters.tooltip.apply";

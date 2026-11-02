@@ -6,25 +6,20 @@ import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.View
 import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
+import com.tibagni.logviewer.view.FileDrop
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.MultipleChoiceDialog
 import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.Toast
 import com.tibagni.logviewer.view.ToolbarDivider
-import java.awt.BorderLayout
-import java.awt.Color
-import java.awt.Component
-import java.awt.FlowLayout
-import java.awt.Frame
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
-import java.awt.Insets
+import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.io.File
@@ -59,12 +54,18 @@ open class FiltersPanel @VisibleForTesting internal constructor(
 
   // Allow tests to fake user dialog choices without opening real Swing dialogs
   @VisibleForTesting
-  internal var singleChoiceDialogProvider: (title: String, message: String, choices: Array<String>, defaultIdx: Int, parent: Component) -> Int =
-    { title, msg, choices, def, parent -> SingleChoiceDialog(title, msg, choices, def).show(parent) }
+  internal var singleChoiceDialogProvider: (
+    title: String, message: String, choices: Array<String>, defaultIdx: Int, parent: Component
+  ) -> Int = { title, msg, choices, def, parent ->
+    SingleChoiceDialog(title, msg, choices, def).show(parent)
+  }
 
   @VisibleForTesting
-  internal var inputDialogProvider: (parent: Component, message: String, title: String) -> String? =
-    { parent, msg, title -> JOptionPane.showInputDialog(parent, msg, title, JOptionPane.PLAIN_MESSAGE) }
+  internal var inputDialogProvider:
+    (parent: Component, message: String, title: String) -> String? =
+    { parent, msg, title ->
+      JOptionPane.showInputDialog(parent, msg, title, JOptionPane.PLAIN_MESSAGE)
+    }
 
   override var activeFilterContextTag: FilterContextTag?
     get() = filtersPane.activeFilterContextTag
@@ -82,7 +83,10 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   }
 
   fun createFilterFromText(text: String) {
-    val filter = EditFilterDialog.showEditFilterDialogWithText(host.parentWindow, text) { pattern, caseSensitive ->
+    val filter = EditFilterDialog.showEditFilterDialogWithText(
+      host.parentWindow,
+      text
+    ) { pattern, caseSensitive ->
       presenter.findDuplicateFilter(pattern, caseSensitive, null)
     }
     if (filter != null) {
@@ -116,6 +120,13 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   internal lateinit var filterActionButtonsPane: JPanel
   @VisibleForTesting
   internal lateinit var scrollPane: JScrollPane
+  private lateinit var emptyFiltersCard: JPanel
+  private lateinit var emptyFiltersNewGroupBtn: FlatButton
+  private lateinit var emptyFiltersOpenBtn: FlatButton
+
+  private val centerCardLayout = CardLayout()
+  private val centerContainer = JPanel(centerCardLayout)
+
   val filtersPane: FiltersList = FiltersList()
 
   var listener: FiltersPanelListener? = null
@@ -126,6 +137,19 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     buildUi()
     setupActions()
     presenter.init()
+    updateEmptyStateVisibility()
+  }
+
+  /**
+   * Updates CardLayout visibility between the empty state card and the main filters pane
+   * depending on whether filter rules are currently loaded.
+   */
+  private fun updateEmptyStateVisibility() {
+    if (filtersPane.isEmpty) {
+      centerCardLayout.show(centerContainer, CARD_EMPTY)
+    } else {
+      centerCardLayout.show(centerContainer, CARD_FILTERS)
+    }
   }
 
   /**
@@ -149,17 +173,88 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     layout = GridBagLayout()
     border = createPanelBorder()
 
-    val emptyPane = JPanel()
-    emptyPane.layout = FlowLayout(FlowLayout.CENTER, 5, 5)
-    add(
-      emptyPane,
-      GBConstraintsBuilder()
-        .withGridx(0)
-        .withGridy(2)
-        .withWeightx(1.0)
-        .withAnchor(GridBagConstraints.SOUTH)
-        .build()
-    )
+    emptyFiltersNewGroupBtn = FlatButton().apply {
+      text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
+      icon = CommonIcons.plusIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
+      addActionListener { addGroup() }
+    }
+
+    emptyFiltersOpenBtn = FlatButton().apply {
+      text = I18n.get(I18n.FILTERS_EMPTY_CARD_BTN_OPEN)
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
+      addActionListener { handleOpenFiltersMenu() }
+    }
+
+    emptyFiltersCard = JPanel(GridBagLayout()).apply {
+      isOpaque = false
+      border = CardBorderUtils.createCardBorder(
+        insets = Insets(
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(12),
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(12)
+        )
+      )
+
+      val iconLabel = JLabel(CommonIcons.filterIcon(UIScaleUtils.dip(36)))
+      val titleLabel = JLabel(I18n.get(I18n.FILTERS_EMPTY_CARD_TITLE)).apply {
+        font = font.deriveFont(Font.BOLD, font.size2D + UIScaleUtils.dip(1))
+        foreground = UIManager.getColor("Label.foreground")
+      }
+      val hintLabel = JLabel(I18n.get(I18n.FILTERS_EMPTY_CARD_HINT)).apply {
+        foreground = CardBorderUtils.resolveSecondaryLabelColor()
+      }
+
+      val actionsPanel = JPanel(
+        FlowLayout(FlowLayout.CENTER, UIScaleUtils.dip(8), 0)
+      ).apply {
+        isOpaque = false
+        add(emptyFiltersNewGroupBtn)
+        add(emptyFiltersOpenBtn)
+      }
+
+      add(
+        iconLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(0)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(10), 0))
+          .build()
+      )
+      add(
+        titleLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(1)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(6), 0))
+          .build()
+      )
+      add(
+        hintLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(2)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(14), 0))
+          .build()
+      )
+      add(
+        actionsPanel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(3)
+          .withAnchor(GridBagConstraints.CENTER)
+          .build()
+      )
+    }
+
+    if (!GraphicsEnvironment.isHeadless()) {
+      FileDrop(Logger.getDebugStream(), emptyFiltersCard) { files ->
+        if (files != null && files.isNotEmpty()) {
+          presenter.loadFilters(files, !isEmpty)
+        }
+      }
+    }
 
     scrollPane = JScrollPane(filtersPane).apply {
       verticalScrollBar.unitIncrement = 16
@@ -168,8 +263,15 @@ open class FiltersPanel @VisibleForTesting internal constructor(
       isOpaque = false
       viewport.isOpaque = false
     }
+
+    centerContainer.apply {
+      isOpaque = false
+      add(scrollPane, CARD_FILTERS)
+      add(emptyFiltersCard, CARD_EMPTY)
+    }
+
     add(
-      scrollPane,
+      centerContainer,
       GBConstraintsBuilder()
         .withGridx(0)
         .withGridy(1)
@@ -288,7 +390,10 @@ open class FiltersPanel @VisibleForTesting internal constructor(
       }
 
       override fun onEditFilter(filter: Filter) {
-        val edited = EditFilterDialog.showEditFilterDialog(host.parentWindow, filter) { pattern, caseSensitive ->
+        val edited = EditFilterDialog.showEditFilterDialog(
+          host.parentWindow,
+          filter
+        ) { pattern, caseSensitive ->
           presenter.findDuplicateFilter(pattern, caseSensitive, filter)
         }
         if (edited != null) {
@@ -318,7 +423,9 @@ open class FiltersPanel @VisibleForTesting internal constructor(
         val groups = presenter.groups
         if (groups.size <= 1) return
 
-        val options = groups.filter { !StringUtils.areEquals(it, group) }.toTypedArray() + arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
+        val filteredGroups = groups.filter { !StringUtils.areEquals(it, group) }
+        val newOption = arrayOf(I18n.get(I18n.FILTERS_MOVE_CREATE_NEW))
+        val options = filteredGroups.toTypedArray() + newOption
         val choice = singleChoiceDialogProvider(
           I18n.format(I18n.FILTERS_MOVE_DIALOG_TITLE, indices.size),
           I18n.get(I18n.FILTERS_MOVE_DIALOG_MSG),
@@ -393,6 +500,7 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   open override fun updateFiltersUI() {
     filtersPane.updateActionPaneButtons()
     filtersPane.repaint()
+    updateEmptyStateVisibility()
   }
 
   fun updateCollapseExpandButtonState() {
@@ -426,7 +534,9 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   }
 
   fun addFilter(group: String) {
-    val newFilter = EditFilterDialog.showEditFilterDialog(host.parentWindow) { pattern, caseSensitive ->
+    val newFilter = EditFilterDialog.showEditFilterDialog(
+      host.parentWindow
+    ) { pattern, caseSensitive ->
       presenter.findDuplicateFilter(pattern, caseSensitive, null)
     }
     if (newFilter != null) {
@@ -529,6 +639,7 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   override fun configureFiltersList(filters: Map<String, List<Filter>>?) {
     filtersPane.setFilters(HashMap(filters))
     updateCollapseExpandButtonState()
+    updateEmptyStateVisibility()
   }
 
   override fun showUnsavedFilterIndication(group: String?) {
@@ -561,7 +672,9 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     return result == JOptionPane.YES_OPTION
   }
 
-  override fun showDuplicateFiltersDialog(clusters: List<DuplicateCluster>): Map<String, List<Filter>>? {
+  override fun showDuplicateFiltersDialog(
+    clusters: List<DuplicateCluster>
+  ): Map<String, List<Filter>>? {
     return FilterDeduplicationDialog.showDialog(host.parentWindow, clusters)
   }
 
@@ -611,11 +724,21 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   override fun showSaveFilters(group: String?): File? = host.showSaveFilterFileChooser(group)
 
   override fun showInfoMessage(title: String, message: String) {
-    JOptionPane.showMessageDialog(host.parentWindow, message, title, JOptionPane.INFORMATION_MESSAGE)
+    JOptionPane.showMessageDialog(
+      host.parentWindow,
+      message,
+      title,
+      JOptionPane.INFORMATION_MESSAGE
+    )
   }
 
   override fun showErrorMessage(message: String?) {
-    JOptionPane.showMessageDialog(host.parentWindow, message, I18n.get(I18n.COMMON_ERROR), JOptionPane.ERROR_MESSAGE)
+    JOptionPane.showMessageDialog(
+      host.parentWindow,
+      message,
+      I18n.get(I18n.COMMON_ERROR),
+      JOptionPane.ERROR_MESSAGE
+    )
   }
 
   override fun showToast(message: String) {
@@ -635,6 +758,13 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     moreFilterOptionsBtn.updateUI()
     findFiltersBtn.updateUI()
     applyFiltersBtn.updateUI()
+    emptyFiltersNewGroupBtn.updateUI()
+    emptyFiltersOpenBtn.updateUI()
     updateUI()
+  }
+
+  companion object {
+    private const val CARD_FILTERS = "filters"
+    private const val CARD_EMPTY = "empty"
   }
 }
