@@ -163,4 +163,36 @@ class LogViewerHeaderPanelTests {
     assertNotNull(panel.border)
     assertNotNull(panel.displayedPathIcon)
   }
+
+  /**
+   * Verifies that updatePath sets rawPath and toolTipText on the label, and configures hand cursor.
+   */
+  @Test
+  fun testUpdatePathSetsTooltipAndCursor() {
+    if (GraphicsEnvironment.isHeadless()) return
+
+    val panel = LogViewerHeaderPanel()
+    val path = "/var/log/syslog"
+    panel.updatePath(path)
+
+    assertEquals(path, panel.rawPath)
+    assertEquals(path, panel.currentLogsLabel.toolTipText)
+    assertEquals(java.awt.Cursor.HAND_CURSOR, panel.currentLogsLabel.cursor.type)
+  }
+
+  /**
+   * Verifies that reset clears rawPath and toolTipText.
+   */
+  @Test
+  fun testResetClearsRawPathAndTooltip() {
+    if (GraphicsEnvironment.isHeadless()) return
+
+    val panel = LogViewerHeaderPanel()
+    panel.updatePath("/var/log/syslog")
+    assertEquals("/var/log/syslog", panel.rawPath)
+
+    panel.reset()
+    assertNull(panel.rawPath)
+    assertNull(panel.currentLogsLabel.toolTipText)
+  }
 }

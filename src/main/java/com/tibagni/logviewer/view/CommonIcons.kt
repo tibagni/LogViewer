@@ -309,6 +309,7 @@ object CommonIcons {
   fun liveLogsTabIcon(size: Int = 16): ImageIcon = LiveLogsTabIcon(size)
 
   /**
+  /**
    * Returns a theme-aware more options (vertical ellipsis) icon of the given [size].
    *
    * @param size icon width and height in pixels (defaults to 16)
@@ -337,6 +338,26 @@ object CommonIcons {
   @JvmStatic
   @JvmOverloads
   fun checkIcon(size: Int = 16): ImageIcon = CheckIcon(size)
+
+  /**
+   * Returns a theme-aware info badge icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun infoIcon(size: Int = 16): ImageIcon = InfoIcon(size)
+
+  /**
+   * Returns a theme-aware circular refresh/reload icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun refreshIcon(size: Int = 16): ImageIcon = RefreshIcon(size)
 
   /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
@@ -1163,7 +1184,7 @@ object CommonIcons {
   }
 
   /**
-   * Theme-aware vector icon rendering a three-dot vertical overflow menu.
+* Theme-aware vector icon rendering a three-dot vertical overflow menu.
    */
   private class MoreVerticalIcon(iconSize: Int = 16) :
     DynamicVectorIcon(iconSize) {
@@ -1292,6 +1313,84 @@ object CommonIcons {
           cy + slashOffset
         )
       )
+
+  /**
+   * Theme-aware vector icon rendering an information circle badge.
+   */
+  private class InfoIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val pad = s * 0.12
+      val d = s - 2 * pad
+      g2d.draw(Ellipse2D.Double(pad, pad, d, d))
+
+      val cx = s / 2.0
+      val dotR = (s * 0.05).coerceAtLeast(0.8)
+      val dotY = s * 0.32
+      g2d.fill(Ellipse2D.Double(cx - dotR, dotY - dotR, dotR * 2, dotR * 2))
+
+      val stemTop = s * 0.44
+      val stemBottom = s * 0.70
+      g2d.draw(Line2D.Double(cx, stemTop, cx, stemBottom))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a circular refresh/reload arrow.
+   */
+  private class RefreshIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.09f).coerceAtLeast(1.3f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val cx = s / 2.0
+      val cy = s / 2.0
+      val r = 5.0 * scale
+
+      val arc = java.awt.geom.Arc2D.Double(
+        cx - r,
+        cy - r,
+        r * 2,
+        r * 2,
+        45.0,
+        280.0,
+        java.awt.geom.Arc2D.OPEN
+      )
+      g2d.draw(arc)
+
+      val arrow = Path2D.Double().apply {
+        moveTo(cx + 1.0 * scale, cy - r - 2.5 * scale)
+        lineTo(cx + 4.5 * scale, cy - r + 0.5 * scale)
+        lineTo(cx + 1.5 * scale, cy - r + 3.0 * scale)
+      }
+      g2d.draw(arrow)
+    }
+  }
+
+  /**
     }
   }
 

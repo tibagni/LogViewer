@@ -336,15 +336,21 @@ class MainViewImpl(
     fileMenu.add(settingsItem)
 
     val logsMenu = JMenu(I18n.get(I18n.MENU_LOGS))
-    val openLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_LOGS))
+    val openLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_LOGS)).apply {
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(openLogsItem, ShortcutAction.LOGS_OPEN)
     openLogsItem.addActionListener { logViewerView.handleOpenLogsMenu() }
     logsMenu.add(openLogsItem)
-    val refreshLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_REFRESH))
+    val refreshLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_REFRESH)).apply {
+      icon = CommonIcons.refreshIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(refreshLogsItem, ShortcutAction.LOGS_REFRESH)
     refreshLogsItem.addActionListener { logViewerView.handleRefreshLogsMenu() }
     logsMenu.add(refreshLogsItem)
-    val closeLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLOSE_LOGS))
+    val closeLogsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLOSE_LOGS)).apply {
+      icon = CommonIcons.closeIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(closeLogsItem, ShortcutAction.LOGS_CLOSE)
     closeLogsItem.addActionListener { logViewerView.handleCloseLogsMenu() }
     logsMenu.add(closeLogsItem)
@@ -353,7 +359,9 @@ class MainViewImpl(
     configureCharsetsMenu(changeEncodingMenu)
     logsMenu.add(changeEncodingMenu)
 
-    saveFilteredLogs = JMenuItem(I18n.get(I18n.MENU_ITEM_SAVE_FILTERED_LOGS))
+    saveFilteredLogs = JMenuItem(I18n.get(I18n.MENU_ITEM_SAVE_FILTERED_LOGS)).apply {
+      icon = CommonIcons.saveIcon(UIScaleUtils.dip(14))
+    }
     saveFilteredLogs?.addActionListener { logViewerView.handleSaveFilteredLogsMenu() }
     logsMenu.add(saveFilteredLogs)
     logsMenu.addSeparator()
@@ -368,21 +376,31 @@ class MainViewImpl(
 
 
     val filtersMenu = JMenu(I18n.get(I18n.MENU_FILTERS))
-    val openFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_FILTERS))
+    val openFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_OPEN_FILTERS)).apply {
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(openFilterItem, ShortcutAction.FILTERS_OPEN)
     openFilterItem.addActionListener { filtersPanel.handleOpenFiltersMenu() }
     filtersMenu.add(openFilterItem)
-    val findFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_FIND_FILTERS))
+    val findFilterItem = JMenuItem(I18n.get(I18n.MENU_ITEM_FIND_FILTERS)).apply {
+      icon = CommonIcons.searchIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(findFilterItem, ShortcutAction.FILTERS_FIND_GLOBAL)
     findFilterItem.addActionListener { filtersPanel.showSearchFiltersDialog() }
     filtersMenu.add(findFilterItem)
-    val cleanDuplicatesItem = JMenuItem(I18n.get(I18n.MENU_ITEM_CLEAN_DUPLICATE_FILTERS))
+    val cleanDuplicatesItem = JMenuItem(
+      I18n.get(I18n.MENU_ITEM_CLEAN_DUPLICATE_FILTERS)
+    ).apply {
+      icon = CommonIcons.filterIcon(UIScaleUtils.dip(14))
+    }
     cleanDuplicatesItem.addActionListener { filtersPanel.handleCleanDuplicateFilters() }
     filtersMenu.add(cleanDuplicatesItem)
 
     val helpMenu = JMenu(I18n.get(I18n.MENU_HELP))
     val shortcutsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_KEYBOARD_SHORTCUTS))
-    val aboutItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ABOUT))
+    val aboutItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ABOUT)).apply {
+      icon = CommonIcons.infoIcon(UIScaleUtils.dip(14))
+    }
     val onlineHelpItem = JMenuItem(I18n.get(I18n.MENU_ITEM_USER_GUIDE))
     shortcutsItem.addActionListener { openKeyboardShortcuts() }
     aboutItem.addActionListener { AboutDialog.showAboutDialog(parent) }
@@ -405,17 +423,29 @@ class MainViewImpl(
 
   private fun configureCharsetsMenu(menu: JMenu) {
     val asciiSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_ASCII))
-    asciiSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.US_ASCII) }
+    asciiSubMenuItem.addActionListener {
+      logViewerView.handleChangeCharsetMenu(StandardCharsets.US_ASCII)
+    }
     val latinSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_LATIN))
-    latinSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.ISO_8859_1) }
+    latinSubMenuItem.addActionListener {
+      logViewerView.handleChangeCharsetMenu(StandardCharsets.ISO_8859_1)
+    }
     val utf8SubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF8))
-    utf8SubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_8) }
+    utf8SubMenuItem.addActionListener {
+      logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_8)
+    }
     val utf16beSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF16_BE))
-    utf16beSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16BE) }
+    utf16beSubMenuItem.addActionListener {
+      logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16BE)
+    }
     val utf16leSubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF16_LE))
-    utf16leSubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16LE) }
+    utf16leSubMenuItem.addActionListener {
+      logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16LE)
+    }
     val utf16SubMenuItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ENCODING_UTF16))
-    utf16SubMenuItem.addActionListener { logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16) }
+    utf16SubMenuItem.addActionListener {
+      logViewerView.handleChangeCharsetMenu(StandardCharsets.UTF_16)
+    }
     menu.add(asciiSubMenuItem)
     menu.add(latinSubMenuItem)
     menu.add(utf8SubMenuItem)
