@@ -309,7 +309,6 @@ object CommonIcons {
   fun liveLogsTabIcon(size: Int = 16): ImageIcon = LiveLogsTabIcon(size)
 
   /**
-  /**
    * Returns a theme-aware more options (vertical ellipsis) icon of the given [size].
    *
    * @param size icon width and height in pixels (defaults to 16)
@@ -1313,6 +1312,8 @@ object CommonIcons {
           cy + slashOffset
         )
       )
+    }
+  }
 
   /**
    * Theme-aware vector icon rendering an information circle badge.
@@ -1387,10 +1388,6 @@ object CommonIcons {
         lineTo(cx + 1.5 * scale, cy - r + 3.0 * scale)
       }
       g2d.draw(arrow)
-    }
-  }
-
-  /**
     }
   }
 

@@ -929,6 +929,7 @@ class CommonIconsTests {
       }
     }
     assertTrue("clearIcon with custom size should have painted pixels", hasCustomPixels)
+  }
 
   /**
    * Verifies that [CommonIcons.infoIcon] is created with expected
@@ -978,8 +979,5 @@ class CommonIconsTests {
     val customIcon = CommonIcons.refreshIcon(24)
     assertEquals(24, customIcon.iconWidth)
     assertEquals(24, customIcon.iconHeight)
-  }
-
-  /**
   }
 }
