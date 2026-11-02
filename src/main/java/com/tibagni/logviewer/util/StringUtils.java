@@ -26,8 +26,6 @@ public class StringUtils {
   public static final String DOWN_ARROW_HEAD_BIG = "\u25BC";
   public static final String UP_ARROW_HEAD_BIG = "\u25B2";
 
-  public static final String THREE_LINES = "\u2630";
-
   public static final String DELETE = "\u2715";
   public static final String PLUS = "\uFF0B";
 

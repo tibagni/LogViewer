@@ -560,7 +560,7 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     }
 
     val unApplyAllFilters = JMenuItem(I18n.get(I18n.FILTERS_MENU_UNAPPLY_ALL)).apply {
-      icon = CommonIcons.clearIcon()
+      icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
       toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_UNAPPLY_ALL)
       addActionListener { clearAllFiltersSelection() }
     }

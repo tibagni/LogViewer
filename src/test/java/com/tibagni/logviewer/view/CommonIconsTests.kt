@@ -896,4 +896,29 @@ class CommonIconsTests {
     assertEquals(24, customIcon.iconWidth)
     assertEquals(24, customIcon.iconHeight)
   }
+
+  /**
+   * Verifies that [CommonIcons.clearIcon] supports custom sizing and rasterizes pixels.
+   */
+  @Test
+  fun testClearIconCustomSize() {
+    val defaultIcon = CommonIcons.clearIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(25, defaultIcon.iconWidth)
+    assertEquals(25, defaultIcon.iconHeight)
+
+    val customIcon = CommonIcons.clearIcon(14)
+    assertNotNull(customIcon)
+    assertEquals(14, customIcon.iconWidth)
+    assertEquals(14, customIcon.iconHeight)
+
+    val image = customIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("clearIcon with custom size should have painted pixels", hasPixels)
+  }
 }

@@ -35,12 +35,21 @@ object CommonIcons {
     g2d.fillRoundRect(pad, pad, size - 2 * pad, size - 2 * pad, arc, arc)
   }
 
-  fun clearIcon(): ImageIcon = createIcon { g2d, size, color ->
+  /**
+   * Returns a theme-aware clear/ban icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to [ICON_SIZE])
+   * @return theme-aware [ImageIcon]
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun clearIcon(size: Int = ICON_SIZE): ImageIcon = createIcon(size) { g2d, s, color ->
     g2d.color = color
-    g2d.stroke = BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    val r = size * 0.32
-    val cx = size / 2.0
-    val cy = size / 2.0
+    val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+    g2d.stroke = BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+    val r = s * 0.32
+    val cx = s / 2.0
+    val cy = s / 2.0
     g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
     // Diagonal slash
     val slashOffset = r * 0.7071
