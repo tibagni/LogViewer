@@ -14,7 +14,6 @@ class CommonIconsTests {
     val icons = listOf(
       CommonIcons.playIcon(),
       CommonIcons.stopIcon(),
-      CommonIcons.clearIcon(),
       CommonIcons.autoScrollIcon(),
       CommonIcons.terminalIcon(),
       CommonIcons.changeDeviceIcon(),
@@ -820,5 +819,115 @@ class CommonIconsTests {
     val customIcon = CommonIcons.copyIcon(24)
     assertEquals(24, customIcon.iconWidth)
     assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.moreVerticalIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testMoreVerticalIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.moreVerticalIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("moreVerticalIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.moreVerticalIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.saveIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testSaveIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.saveIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("saveIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.saveIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.checkIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testCheckIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.checkIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("checkIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.checkIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.clearIcon] is a [DynamicVectorIcon], supports
+   * custom sizing, and rasterizes non-empty pixels.
+   */
+  @Test
+  fun testClearIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.clearIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(25, defaultIcon.iconWidth)
+    assertEquals(25, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("clearIcon should be backed by a BufferedImage", image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("clearIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.clearIcon(14)
+    assertNotNull(customIcon)
+    assertEquals(14, customIcon.iconWidth)
+    assertEquals(14, customIcon.iconHeight)
+
+    val customImage = customIcon.image as? BufferedImage
+    assertNotNull(customImage)
+    val hasCustomPixels = (0 until customImage!!.width).any { x ->
+      (0 until customImage.height).any { y ->
+        (customImage.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("clearIcon with custom size should have painted pixels", hasCustomPixels)
   }
 }

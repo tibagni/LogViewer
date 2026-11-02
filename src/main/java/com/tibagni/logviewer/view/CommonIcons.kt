@@ -35,22 +35,15 @@ object CommonIcons {
     g2d.fillRoundRect(pad, pad, size - 2 * pad, size - 2 * pad, arc, arc)
   }
 
-  fun clearIcon(): ImageIcon = createIcon { g2d, size, color ->
-    g2d.color = color
-    g2d.stroke = BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    val r = size * 0.32
-    val cx = size / 2.0
-    val cy = size / 2.0
-    g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
-    // Diagonal slash
-    val slashOffset = r * 0.7071
-    g2d.draw(
-      Line2D.Double(
-        cx - slashOffset, cy - slashOffset,
-        cx + slashOffset, cy + slashOffset
-      )
-    )
-  }
+  /**
+   * Returns a theme-aware clear/ban icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to [ICON_SIZE])
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun clearIcon(size: Int = ICON_SIZE): ImageIcon = ClearIcon(size)
 
   fun autoScrollIcon(): ImageIcon = createIcon { g2d, size, color ->
     g2d.color = color
@@ -314,6 +307,36 @@ object CommonIcons {
   @JvmStatic
   @JvmOverloads
   fun liveLogsTabIcon(size: Int = 16): ImageIcon = LiveLogsTabIcon(size)
+
+  /**
+   * Returns a theme-aware more options (vertical ellipsis) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun moreVerticalIcon(size: Int = 16): ImageIcon = MoreVerticalIcon(size)
+
+  /**
+   * Returns a theme-aware save (floppy disk) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun saveIcon(size: Int = 16): ImageIcon = SaveIcon(size)
+
+  /**
+   * Returns a theme-aware checkmark icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun checkIcon(size: Int = 16): ImageIcon = CheckIcon(size)
 
   /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
@@ -1136,6 +1159,139 @@ object CommonIcons {
         arc
       )
       g2d.draw(front)
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a three-dot vertical overflow menu.
+   */
+  private class MoreVerticalIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.color = color
+      val r = (s * 0.09).coerceAtLeast(1.2)
+      val cx = s / 2.0
+      val y1 = s * 0.25
+      val y2 = s * 0.50
+      val y3 = s * 0.75
+      g2d.fill(Ellipse2D.Double(cx - r, y1 - r, r * 2, r * 2))
+      g2d.fill(Ellipse2D.Double(cx - r, y2 - r, r * 2, r * 2))
+      g2d.fill(Ellipse2D.Double(cx - r, y3 - r, r * 2, r * 2))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a floppy disk save symbol.
+   */
+  private class SaveIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val pad = 2.0 * scale
+      val w = 12.0 * scale
+      val h = 12.0 * scale
+      val chamfer = 2.5 * scale
+
+      val body = Path2D.Double().apply {
+        moveTo(pad, pad)
+        lineTo(pad + w - chamfer, pad)
+        lineTo(pad + w, pad + chamfer)
+        lineTo(pad + w, pad + h)
+        lineTo(pad, pad + h)
+        closePath()
+      }
+      g2d.draw(body)
+
+      val shutterPad = pad + 2.0 * scale
+      val shutterW = w - 4.0 * scale
+      val shutterH = 3.5 * scale
+      g2d.draw(RoundRectangle2D.Double(shutterPad, pad, shutterW, shutterH, 1.0, 1.0))
+
+      val labelPad = pad + 1.5 * scale
+      val labelW = w - 3.0 * scale
+      val labelH = 4.0 * scale
+      val labelY = pad + h - labelH
+      g2d.draw(RoundRectangle2D.Double(labelPad, labelY, labelW, labelH, 1.0, 1.0))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a checkmark confirmation symbol.
+   */
+  private class CheckIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.12f).coerceAtLeast(1.5f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val check = Path2D.Double().apply {
+        moveTo(3.0 * scale, 8.5 * scale)
+        lineTo(6.5 * scale, 12.0 * scale)
+        lineTo(13.5 * scale, 4.5 * scale)
+      }
+      g2d.draw(check)
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a clear/cancel slashed-circle symbol.
+   */
+  private class ClearIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.09f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val cx = s / 2.0
+      val cy = s / 2.0
+      val r = 5.2 * scale
+
+      g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
+      val slashOffset = r * 0.7071
+      g2d.draw(
+        Line2D.Double(
+          cx - slashOffset,
+          cy - slashOffset,
+          cx + slashOffset,
+          cy + slashOffset
+        )
+      )
     }
   }
 

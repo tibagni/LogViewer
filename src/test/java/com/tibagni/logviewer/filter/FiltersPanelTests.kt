@@ -352,6 +352,9 @@ class FiltersPanelTests {
     assertEquals(FlowLayout.RIGHT, layout.alignment)
     assertEquals(UIScaleUtils.dip(4), layout.hgap)
     assertEquals(0, layout.vgap)
+    assertNotNull(panel.moreFilterOptionsBtn.icon)
+    assertNotNull(panel.findFiltersBtn.icon)
+    assertNotNull(panel.applyFiltersBtn.icon)
   }
 
   @Test

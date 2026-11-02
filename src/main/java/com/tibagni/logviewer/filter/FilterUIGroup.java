@@ -127,6 +127,8 @@ class FilterUIGroup extends JPanel {
     addBtn.setIcon(CommonIcons.plusIcon(14));
     addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
 
+    saveBtn.setIcon(CommonIcons.saveIcon(14));
+    saveBtn.setIconTextGap(UIScaleUtils.dip(4));
     saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
     saveBtn.setVisible(false);
 
@@ -804,6 +806,9 @@ class FilterUIGroup extends JPanel {
     }
     if (addBtn != null) {
       addBtn.setIcon(CommonIcons.plusIcon(14));
+    }
+    if (saveBtn != null) {
+      saveBtn.setIcon(CommonIcons.saveIcon(14));
     }
     if (closeBtn != null) {
       closeBtn.setIcon(CommonIcons.closeIcon(14));
