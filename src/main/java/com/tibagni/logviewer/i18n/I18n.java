@@ -184,6 +184,8 @@ public final class I18n {
   public static final String REGEX_EDITOR_MATCHES_COUNT = "regex.editor.matches_count";
   public static final String REGEX_EDITOR_NO_MATCHES = "regex.editor.no_matches";
   public static final String REGEX_EDITOR_INVALID_REGEX = "regex.editor.invalid_regex";
+  public static final String REGEX_EDITOR_RESET_SAMPLE_TOOLTIP =
+      "regex.editor.reset_sample_tooltip";
 
   // Search Filters Dialog
   public static final String SEARCH_FILTERS_DIALOG_TITLE = "filters.search.title";

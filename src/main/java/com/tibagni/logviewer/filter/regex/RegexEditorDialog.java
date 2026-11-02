@@ -10,7 +10,10 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder;
 import com.tibagni.logviewer.util.scaling.UIScaleUtils;
 import com.tibagni.logviewer.view.ButtonsPane;
 import com.tibagni.logviewer.view.CardBorderUtils;
+import com.tibagni.logviewer.view.CommonIcons;
+import com.tibagni.logviewer.view.FlatButton;
 import com.tibagni.logviewer.view.StatusBadge;
+import com.tibagni.logviewer.view.Toast;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -34,6 +37,7 @@ public class RegexEditorDialog extends JDialog
   private JLabel regexLbl;
   private JLabel previewLbl;
   private StatusBadge matchStatusBadge;
+  private FlatButton resetSampleBtn;
 
   private final Color defaultRegexEditBg;
   private final Color errorRegexEditBg;
@@ -93,6 +97,34 @@ public class RegexEditorDialog extends JDialog
     regexEdit.getDocument().addDocumentListener(regexApplier);
     regexPreview.getDocument().addDocumentListener(regexApplier);
     caseSensitive.addActionListener(e -> onDocumentChanged());
+
+    setupCopyAction(regexEdit);
+    setupCopyAction(regexPreview);
+  }
+
+  /**
+   * Installs a copy action wrapper on the specified text area to provide
+   * transient toast feedback when text is copied to the clipboard.
+   *
+   * @param textArea the text area to configure with copy action feedback
+   */
+  private void setupCopyAction(JTextArea textArea) {
+    Action origCopy = textArea.getActionMap().get("copy");
+    textArea.getActionMap().put("copy", new AbstractAction() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        if (origCopy != null) {
+          origCopy.actionPerformed(e);
+        }
+        String selected = textArea.getSelectedText();
+        if (selected != null && !selected.isEmpty()) {
+          Toast.showToast(
+              RegexEditorDialog.this,
+              I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+              Toast.LENGTH_SHORT);
+        }
+      }
+    });
   }
 
   private void onDocumentChanged() {
@@ -248,6 +280,15 @@ public class RegexEditorDialog extends JDialog
    */
   public JLabel getPreviewLbl() {
     return previewLbl;
+  }
+
+  /**
+   * Returns the reset sample text button.
+   *
+   * @return the reset sample button
+   */
+  public FlatButton getResetSampleBtn() {
+    return resetSampleBtn;
   }
 
   private void updateOkButton() {
@@ -447,7 +488,20 @@ public class RegexEditorDialog extends JDialog
         UIScaleUtils.dip(4), UIScaleUtils.dip(6),
         UIScaleUtils.dip(4), UIScaleUtils.dip(6)));
 
-    card.add(previewLbl,
+    JPanel headerPanel = new JPanel(new BorderLayout());
+    headerPanel.setOpaque(false);
+    headerPanel.add(previewLbl, BorderLayout.WEST);
+
+    resetSampleBtn = new FlatButton();
+    resetSampleBtn.setIcon(CommonIcons.refreshIcon(UIScaleUtils.dip(12)));
+    resetSampleBtn.setToolTipText(I18n.get(I18n.REGEX_EDITOR_RESET_SAMPLE_TOOLTIP));
+    resetSampleBtn.addActionListener(e -> {
+      regexPreview.setText(I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT));
+      regexPreview.requestFocus();
+    });
+    headerPanel.add(resetSampleBtn, BorderLayout.EAST);
+
+    card.add(headerPanel,
         new GBConstraintsBuilder()
             .withGridx(0).withGridy(0)
             .withWeightx(1.0)
