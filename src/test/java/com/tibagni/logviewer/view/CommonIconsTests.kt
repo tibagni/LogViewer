@@ -821,4 +821,79 @@ class CommonIconsTests {
     assertEquals(24, customIcon.iconWidth)
     assertEquals(24, customIcon.iconHeight)
   }
+
+  /**
+   * Verifies that [CommonIcons.moreVerticalIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testMoreVerticalIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.moreVerticalIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("moreVerticalIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.moreVerticalIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.saveIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testSaveIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.saveIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("saveIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.saveIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.checkIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testCheckIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.checkIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("checkIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.checkIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
 }

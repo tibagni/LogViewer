@@ -6,10 +6,14 @@ import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.shortcuts.ShortcutAction
 import com.tibagni.logviewer.shortcuts.ShortcutManager
+import com.tibagni.logviewer.util.CommonUtils
+import com.tibagni.logviewer.util.PlatformUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
+import com.tibagni.logviewer.view.Toast
 import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.BorderLayout
 import java.awt.Component
@@ -18,10 +22,12 @@ import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.Insets
+import java.awt.event.ActionEvent
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.AbstractAction
 import javax.swing.BorderFactory
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -89,6 +95,10 @@ class KeymapPreferencePanel(
     }
 
     searchField.putClientProperty(
+      FlatClientProperties.TEXT_FIELD_LEADING_ICON,
+      CommonIcons.searchIcon(UIScaleUtils.dip(14))
+    )
+    searchField.putClientProperty(
       FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON,
       true
     )
@@ -113,6 +123,23 @@ class KeymapPreferencePanel(
   }
 
   private fun setupListeners() {
+    shortcutsTable.actionMap.put("copy", object : AbstractAction() {
+      override fun actionPerformed(e: ActionEvent?) {
+        copySelectedShortcuts()
+      }
+    })
+
+    shortcutsTable.addKeyListener(object : KeyAdapter() {
+      override fun keyPressed(e: KeyEvent) {
+        if ((e.keyCode == KeyEvent.VK_C) &&
+          (e.modifiersEx and PlatformUtils.menuShortcutMask) == PlatformUtils.menuShortcutMask
+        ) {
+          copySelectedShortcuts()
+          e.consume()
+        }
+      }
+    })
+
     searchField.whenTextChanges { filterShortcuts(searchField.text) }
 
     shortcutsTable.selectionModel.addListSelectionListener {
@@ -146,6 +173,29 @@ class KeymapPreferencePanel(
 
     resetAllBtn.addActionListener {
       resetAllToDefaults()
+    }
+  }
+
+  /**
+   * Copies selected shortcut rows in the format "Category > Name: Shortcut"
+   * to the system clipboard and triggers transient [Toast] feedback.
+   */
+  private fun copySelectedShortcuts() {
+    val selectedRows = shortcutsTable.selectedRows
+    if (selectedRows.isNotEmpty()) {
+      val text = selectedRows.toList().mapNotNull { row ->
+        val action = visibleActions.getOrNull(row) ?: return@mapNotNull null
+        "${action.category.displayName} > ${action.displayName}: ${formatActionShortcut(action)}"
+      }.joinToString("\n")
+
+      if (text.isNotEmpty()) {
+        CommonUtils.copyToClipboard(text)
+        Toast.showToast(
+          parent,
+          I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+          Toast.LENGTH_SHORT
+        )
+      }
     }
   }
 

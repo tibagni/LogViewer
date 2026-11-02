@@ -294,19 +294,23 @@ open class FiltersPanel @VisibleForTesting internal constructor(
       iconTextGap = UIScaleUtils.dip(4)
     }
     moreFilterOptionsBtn = FlatButton().apply {
+      icon = CommonIcons.moreVerticalIcon(UIScaleUtils.dip(14))
       toolTipText = I18n.get(
         I18n.FILTERS_TOOLTIP_MORE_OPTIONS
       )
-      text = StringUtils.THREE_LINES
     }
     applyFiltersBtn = FlatButton(I18n.get(I18n.FILTERS_BTN_APPLY)).apply {
       actionCommand = "Apply"
+      icon = CommonIcons.checkIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_APPLY)
     }
     applyDivider = ToolbarDivider()
     findFiltersBtn = FlatButton().apply {
       actionCommand = "Find"
       text = I18n.get(I18n.FILTERS_BTN_FIND)
+      icon = CommonIcons.searchIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_FIND)
     }
 
@@ -548,21 +552,30 @@ open class FiltersPanel @VisibleForTesting internal constructor(
 
   private fun showFilterOptionsMenu(e: MouseEvent) {
     val popup = JPopupMenu()
-    val closeAllGroupsItem = popup.add(I18n.get(I18n.FILTERS_MENU_CLOSE_ALL_GROUPS))
-    closeAllGroupsItem.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_ALL_GROUPS)
+    val closeAllGroupsItem = JMenuItem(I18n.get(I18n.FILTERS_MENU_CLOSE_ALL_GROUPS)).apply {
+      icon = CommonIcons.closeIcon(UIScaleUtils.dip(14))
+      toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_ALL_GROUPS)
+      addActionListener { closeAllGroups() }
+      isEnabled = presenter.groups.isNotEmpty()
+    }
 
-    val unApplyAllFilters = popup.add(I18n.get(I18n.FILTERS_MENU_UNAPPLY_ALL))
-    unApplyAllFilters.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_UNAPPLY_ALL)
+    val unApplyAllFilters = JMenuItem(I18n.get(I18n.FILTERS_MENU_UNAPPLY_ALL)).apply {
+      icon = CommonIcons.clearIcon()
+      toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_UNAPPLY_ALL)
+      addActionListener { clearAllFiltersSelection() }
+    }
 
-    val cleanDuplicatesItem = popup.add(I18n.get(I18n.FILTERS_MENU_CLEAN_DUPLICATES))
-    cleanDuplicatesItem.toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLEAN_DUPLICATES)
+    val cleanDuplicatesItem = JMenuItem(I18n.get(I18n.FILTERS_MENU_CLEAN_DUPLICATES)).apply {
+      icon = CommonIcons.filterIcon(UIScaleUtils.dip(14))
+      toolTipText = I18n.get(I18n.FILTERS_TOOLTIP_CLEAN_DUPLICATES)
+      addActionListener { handleCleanDuplicateFilters() }
+      isEnabled = presenter.groups.isNotEmpty()
+    }
 
-    closeAllGroupsItem.addActionListener { closeAllGroups() }
-    unApplyAllFilters.addActionListener { clearAllFiltersSelection() }
-    cleanDuplicatesItem.addActionListener { handleCleanDuplicateFilters() }
-
-    closeAllGroupsItem.isEnabled = presenter.groups.isNotEmpty()
-    cleanDuplicatesItem.isEnabled = presenter.groups.isNotEmpty()
+    popup.add(closeAllGroupsItem)
+    popup.add(unApplyAllFilters)
+    popup.addSeparator()
+    popup.add(cleanDuplicatesItem)
 
     popup.show(e.component, e.x, e.y)
   }
