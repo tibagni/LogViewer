@@ -11,6 +11,8 @@ import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JFileChooser
@@ -91,57 +93,78 @@ class FiltersPreferencePanel(
 
   private fun buildPanel(): JComponent {
     val cc = CellConstraints()
-    val form = JPanel(
+
+    // Card 1: Storage & Startup Card
+    val startupForm = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
         "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
-          "top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
-          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
           "top:4dlu:noGrow,center:d:noGrow"
       )
     ).apply { isOpaque = false }
 
-    // Row 1: Default filters path
     val filtersPathLbl = JLabel(I18n.get(I18n.PREF_DEFAULT_FILTERS_PATH))
     val filtersPathPanel = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
       isOpaque = false
       add(filtersPathTxt, BorderLayout.CENTER)
       add(filtersPathBtn, BorderLayout.EAST)
     }
-    form.add(filtersPathLbl, cc.xy(1, 1))
-    form.add(filtersPathPanel, cc.xy(3, 1))
+    startupForm.add(filtersPathLbl, cc.xy(1, 1))
+    startupForm.add(filtersPathPanel, cc.xy(3, 1))
 
-    // Row 3: Open last filter
     val openLastFilterLbl = JLabel(I18n.get(I18n.PREF_OPEN_LAST_FILTER))
     bindLabelToCheckbox(openLastFilterLbl, openLastFilterChbx)
-    form.add(openLastFilterLbl, cc.xy(1, 3))
-    form.add(openLastFilterChbx, cc.xy(3, 3))
+    startupForm.add(openLastFilterLbl, cc.xy(1, 3))
+    startupForm.add(openLastFilterChbx, cc.xy(3, 3))
 
-    // Row 5: Reapply filters after edit
-    val applyAfterEditLbl = JLabel(I18n.get(I18n.PREF_APPLY_FILTERS_AFTER_EDIT))
-    bindLabelToCheckbox(applyAfterEditLbl, applyFiltersAfterEditChbx)
-    form.add(applyAfterEditLbl, cc.xy(1, 5))
-    form.add(applyFiltersAfterEditChbx, cc.xy(3, 5))
-
-    // Row 7: Remember applied filters
-    val rememberAppliedLbl = JLabel(I18n.get(I18n.PREF_REMEMBER_APPLIED_FILTERS))
-    bindLabelToCheckbox(rememberAppliedLbl, rememberAppliedFiltersChbx)
-    form.add(rememberAppliedLbl, cc.xy(1, 7))
-    form.add(rememberAppliedFiltersChbx, cc.xy(3, 7))
-
-    // Row 9: Collapse all groups startup
     val collapseGroupsLbl = JLabel(I18n.get(I18n.PREF_COLLAPSE_ALL_GROUPS_STARTUP))
     bindLabelToCheckbox(collapseGroupsLbl, collapseAllGroupsStartup)
-    form.add(collapseGroupsLbl, cc.xy(1, 9))
-    form.add(collapseAllGroupsStartup, cc.xy(3, 9))
+    startupForm.add(collapseGroupsLbl, cc.xy(1, 5))
+    startupForm.add(collapseAllGroupsStartup, cc.xy(3, 5))
 
-    // Row 11: Apply filters on check
+    val startupCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_FILTERS_STARTUP),
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(16)),
+      content = startupForm
+    )
+
+    // Card 2: Filtering Behavior Card
+    val behaviorForm = JPanel(
+      FormLayout(
+        "fill:pref,left:6dlu:noGrow,fill:default:grow",
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
+          "top:4dlu:noGrow,center:d:noGrow"
+      )
+    ).apply { isOpaque = false }
+
     val applyOnCheckLbl = JLabel(I18n.get(I18n.PREF_APPLY_FILTERS_ON_CHECK))
     bindLabelToCheckbox(applyOnCheckLbl, applyFiltersOnCheckChbx)
-    form.add(applyOnCheckLbl, cc.xy(1, 11))
-    form.add(applyFiltersOnCheckChbx, cc.xy(3, 11))
+    behaviorForm.add(applyOnCheckLbl, cc.xy(1, 1))
+    behaviorForm.add(applyFiltersOnCheckChbx, cc.xy(3, 1))
 
-    return form
+    val applyAfterEditLbl = JLabel(I18n.get(I18n.PREF_APPLY_FILTERS_AFTER_EDIT))
+    bindLabelToCheckbox(applyAfterEditLbl, applyFiltersAfterEditChbx)
+    behaviorForm.add(applyAfterEditLbl, cc.xy(1, 3))
+    behaviorForm.add(applyFiltersAfterEditChbx, cc.xy(3, 3))
+
+    val rememberAppliedLbl = JLabel(I18n.get(I18n.PREF_REMEMBER_APPLIED_FILTERS))
+    bindLabelToCheckbox(rememberAppliedLbl, rememberAppliedFiltersChbx)
+    behaviorForm.add(rememberAppliedLbl, cc.xy(1, 5))
+    behaviorForm.add(rememberAppliedFiltersChbx, cc.xy(3, 5))
+
+    val behaviorCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_FILTERS_BEHAVIOR),
+      icon = CommonIcons.viewListIcon(),
+      content = behaviorForm
+    )
+
+    return JPanel().apply {
+      layout = BoxLayout(this, BoxLayout.Y_AXIS)
+      isOpaque = false
+      add(startupCard)
+      add(Box.createVerticalStrut(UIScaleUtils.dip(12)))
+      add(behaviorCard)
+    }
   }
 
   companion object {

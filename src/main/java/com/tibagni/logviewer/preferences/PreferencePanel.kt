@@ -1,18 +1,25 @@
 package com.tibagni.logviewer.preferences
 
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
+import java.awt.BorderLayout
 import java.awt.Cursor
 import java.awt.Dimension
+import java.awt.Font
+import java.awt.Insets
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JLabel
+import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.SwingUtilities
+import javax.swing.UIManager
+import javax.swing.border.EmptyBorder
 
 interface PreferencePanel {
   val id: String
@@ -74,4 +81,50 @@ internal fun createBrowseButton(
   return FlatButton(icon).apply {
     toolTipText = tooltipText
   }
+}
+
+/**
+ * Creates a modern Material 3 section card panel with an 8dp rounded border,
+ * optional header with icon and title, and internal padding.
+ *
+ * @param title optional section title
+ * @param icon optional section icon (e.g. 16dp vector icon)
+ * @param content the inner component to place inside the card
+ * @return the configured card [JPanel]
+ */
+internal fun createPreferenceCard(
+  title: String? = null,
+  icon: Icon? = null,
+  content: JComponent
+): JPanel {
+  val card = JPanel(BorderLayout(0, UIScaleUtils.dip(6))).apply {
+    isOpaque = false
+    border = CardBorderUtils.createCardBorder(
+      insets = Insets(
+        UIScaleUtils.dip(10),
+        UIScaleUtils.dip(14),
+        UIScaleUtils.dip(12),
+        UIScaleUtils.dip(14)
+      )
+    )
+  }
+
+  if (!title.isNullOrEmpty() || icon != null) {
+    val headerPanel = JPanel(BorderLayout(UIScaleUtils.dip(8), 0)).apply {
+      isOpaque = false
+      border = EmptyBorder(0, 0, UIScaleUtils.dip(4), 0)
+    }
+
+    val titleLabel = JLabel(title ?: "").apply {
+      this.icon = icon
+      iconTextGap = UIScaleUtils.dip(6)
+      font = font.deriveFont(Font.BOLD)
+      foreground = UIManager.getColor("Label.foreground")
+    }
+    headerPanel.add(titleLabel, BorderLayout.WEST)
+    card.add(headerPanel, BorderLayout.NORTH)
+  }
+
+  card.add(content, BorderLayout.CENTER)
+  return card
 }

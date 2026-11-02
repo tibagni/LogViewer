@@ -10,17 +10,19 @@ import com.tibagni.logviewer.theme.LogViewerThemeManager
 import com.tibagni.logviewer.util.LogFontManager
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
 import javax.swing.BorderFactory
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.JCheckBox
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JSeparator
 import javax.swing.JTextField
 import javax.swing.UIManager
 import javax.swing.border.Border
@@ -210,55 +212,69 @@ class AppearancePreferencePanel(
 
   private fun buildPanel(): JComponent {
     val cc = CellConstraints()
-    val form = JPanel(
+
+    // Card 1: Theme & Colors Card
+    val themeForm = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
-        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
-          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
-          "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:6dlu:noGrow," +
-          "center:d:noGrow"
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow"
       )
     ).apply { isOpaque = false }
 
-    // Row 1: Look and Feel
     val lookNFeelLbl = JLabel(I18n.get(I18n.PREF_LOOK_AND_FEEL))
-    form.add(lookNFeelLbl, cc.xy(1, 1))
-    form.add(lookAndFeelCbx, cc.xy(3, 1))
+    themeForm.add(lookNFeelLbl, cc.xy(1, 1))
+    themeForm.add(lookAndFeelCbx, cc.xy(3, 1))
 
-    // Row 3: Accent Color
     val accentColorLbl = JLabel(I18n.get(I18n.PREF_ACCENT_COLOR))
-    form.add(accentColorLbl, cc.xy(1, 3))
-    form.add(accentColorPicker, cc.xy(3, 3))
+    themeForm.add(accentColorLbl, cc.xy(1, 3))
+    themeForm.add(accentColorPicker, cc.xy(3, 3))
 
-    // Row 5: Separator
-    form.add(
-      JSeparator(),
-      cc.xyw(1, 5, 3, CellConstraints.FILL, CellConstraints.DEFAULT)
+    val themeCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_APPEARANCE_THEME),
+      icon = CommonIcons.paletteIcon(UIScaleUtils.dip(16)),
+      content = themeForm
     )
 
-    // Row 7: Log Font Family
+    // Card 2: Typography & Preview Card
+    val typographyForm = JPanel(
+      FormLayout(
+        "fill:pref,left:6dlu:noGrow,fill:default:grow",
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow,top:4dlu:noGrow," +
+          "center:d:noGrow,top:6dlu:noGrow,center:d:noGrow"
+      )
+    ).apply { isOpaque = false }
+
     val fontFamilyLbl = JLabel(I18n.get(I18n.PREF_LOG_FONT_FAMILY))
-    form.add(fontFamilyLbl, cc.xy(1, 7))
-    form.add(logFontFamilyCbx, cc.xy(3, 7))
+    typographyForm.add(fontFamilyLbl, cc.xy(1, 1))
+    typographyForm.add(logFontFamilyCbx, cc.xy(3, 1))
 
-    // Row 9: Log Font Size
     val fontSizeLbl = JLabel(I18n.get(I18n.PREF_LOG_FONT_SIZE))
-    form.add(fontSizeLbl, cc.xy(1, 9))
-    form.add(logFontSizeCbx, cc.xy(3, 9))
+    typographyForm.add(fontSizeLbl, cc.xy(1, 3))
+    typographyForm.add(logFontSizeCbx, cc.xy(3, 3))
 
-    // Row 11: Bold Log Text
     val boldLogLbl = JLabel(I18n.get(I18n.PREF_LOG_FONT_BOLD))
     bindLabelToCheckbox(boldLogLbl, boldLogTextChbx)
-    form.add(boldLogLbl, cc.xy(1, 11))
-    form.add(boldLogTextChbx, cc.xy(3, 11))
+    typographyForm.add(boldLogLbl, cc.xy(1, 5))
+    typographyForm.add(boldLogTextChbx, cc.xy(3, 5))
 
-    // Row 13: Font Preview
-    form.add(
+    typographyForm.add(
       fontPreviewTxt,
-      cc.xyw(1, 13, 3, CellConstraints.FILL, CellConstraints.DEFAULT)
+      cc.xyw(1, 7, 3, CellConstraints.FILL, CellConstraints.DEFAULT)
     )
 
-    return form
+    val typographyCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_APPEARANCE_TYPOGRAPHY),
+      icon = CommonIcons.terminalIcon(),
+      content = typographyForm
+    )
+
+    return JPanel().apply {
+      layout = BoxLayout(this, BoxLayout.Y_AXIS)
+      isOpaque = false
+      add(themeCard)
+      add(Box.createVerticalStrut(UIScaleUtils.dip(12)))
+      add(typographyCard)
+    }
   }
 
   companion object {
