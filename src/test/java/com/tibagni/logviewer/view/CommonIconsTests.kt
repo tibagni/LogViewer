@@ -14,7 +14,6 @@ class CommonIconsTests {
     val icons = listOf(
       CommonIcons.playIcon(),
       CommonIcons.stopIcon(),
-      CommonIcons.clearIcon(),
       CommonIcons.autoScrollIcon(),
       CommonIcons.terminalIcon(),
       CommonIcons.changeDeviceIcon(),
@@ -898,27 +897,37 @@ class CommonIconsTests {
   }
 
   /**
-   * Verifies that [CommonIcons.clearIcon] supports custom sizing and rasterizes pixels.
+   * Verifies that [CommonIcons.clearIcon] is a [DynamicVectorIcon], supports
+   * custom sizing, and rasterizes non-empty pixels.
    */
   @Test
-  fun testClearIconCustomSize() {
+  fun testClearIconCreatedSuccessfully() {
     val defaultIcon = CommonIcons.clearIcon()
     assertNotNull(defaultIcon)
     assertEquals(25, defaultIcon.iconWidth)
     assertEquals(25, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull("clearIcon should be backed by a BufferedImage", image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("clearIcon should have painted pixels", hasPixels)
 
     val customIcon = CommonIcons.clearIcon(14)
     assertNotNull(customIcon)
     assertEquals(14, customIcon.iconWidth)
     assertEquals(14, customIcon.iconHeight)
 
-    val image = customIcon.image as? BufferedImage
-    assertNotNull(image)
-    val hasPixels = (0 until image!!.width).any { x ->
-      (0 until image.height).any { y ->
-        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+    val customImage = customIcon.image as? BufferedImage
+    assertNotNull(customImage)
+    val hasCustomPixels = (0 until customImage!!.width).any { x ->
+      (0 until customImage.height).any { y ->
+        (customImage.getRGB(x, y) ushr 24 and 0xFF) > 0
       }
     }
-    assertTrue("clearIcon with custom size should have painted pixels", hasPixels)
+    assertTrue("clearIcon with custom size should have painted pixels", hasCustomPixels)
   }
 }

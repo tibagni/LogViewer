@@ -39,27 +39,11 @@ object CommonIcons {
    * Returns a theme-aware clear/ban icon of the given [size].
    *
    * @param size icon width and height in pixels (defaults to [ICON_SIZE])
-   * @return theme-aware [ImageIcon]
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
    */
   @JvmStatic
   @JvmOverloads
-  fun clearIcon(size: Int = ICON_SIZE): ImageIcon = createIcon(size) { g2d, s, color ->
-    g2d.color = color
-    val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
-    g2d.stroke = BasicStroke(strokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    val r = s * 0.32
-    val cx = s / 2.0
-    val cy = s / 2.0
-    g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
-    // Diagonal slash
-    val slashOffset = r * 0.7071
-    g2d.draw(
-      Line2D.Double(
-        cx - slashOffset, cy - slashOffset,
-        cx + slashOffset, cy + slashOffset
-      )
-    )
-  }
+  fun clearIcon(size: Int = ICON_SIZE): ImageIcon = ClearIcon(size)
 
   fun autoScrollIcon(): ImageIcon = createIcon { g2d, size, color ->
     g2d.color = color
@@ -1272,6 +1256,42 @@ object CommonIcons {
         lineTo(13.5 * scale, 4.5 * scale)
       }
       g2d.draw(check)
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a clear/cancel slashed-circle symbol.
+   */
+  private class ClearIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.09f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val cx = s / 2.0
+      val cy = s / 2.0
+      val r = 5.2 * scale
+
+      g2d.draw(Ellipse2D.Double(cx - r, cy - r, 2 * r, 2 * r))
+      val slashOffset = r * 0.7071
+      g2d.draw(
+        Line2D.Double(
+          cx - slashOffset,
+          cy - slashOffset,
+          cx + slashOffset,
+          cy + slashOffset
+        )
+      )
     }
   }
 
