@@ -160,6 +160,10 @@ class CarrierConfigSectionPanelTests {
     assertEquals("carrier_volte_enabled", table.getValueAt(0, 0))
     assertEquals("carrier_wfc_mode", table.getValueAt(1, 0))
 
+    // Case-insensitive search
+    panel.onSearch("CARRIER")
+    assertEquals(2, table.rowCount)
+
     // Filter matching single row
     panel.onSearch("volte")
     assertEquals(1, table.rowCount)

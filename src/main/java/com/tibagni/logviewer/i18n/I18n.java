@@ -79,6 +79,10 @@ public final class I18n {
   public static final String MAIN_FILECHOOSER_SAVE_FILTER = "main.filechooser.save.filter";
   public static final String MAIN_FILECHOOSER_OPEN_FILTERS = "main.filechooser.open.filters";
   public static final String MAIN_FILECHOOSER_FILTER_FILES = "main.filechooser.filter.files";
+  public static final String MAIN_FILECHOOSER_OVERWRITE_CONFIRM_MSG =
+      "main.filechooser.overwrite_confirm_msg";
+  public static final String MAIN_FILECHOOSER_OVERWRITE_CONFIRM_TITLE =
+      "main.filechooser.overwrite_confirm_title";
 
   // Menus
   public static final String MENU_FILE = "main.menu.file";
@@ -352,10 +356,20 @@ public final class I18n {
   public static final String BUGREPORT_SECTIONS_TITLE = "bugreport.sections_title";
   public static final String BUGREPORT_NO_SECTION_SELECTED = "bugreport.no_section_selected";
   public static final String BUGREPORT_OPEN_HINT = "bugreport.open_hint";
+  public static final String BUGREPORT_EMPTY_CARD_TITLE = "bugreport.empty.card_title";
+  public static final String BUGREPORT_EMPTY_CARD_HINT = "bugreport.empty.card_hint";
+  public static final String BUGREPORT_EMPTY_CARD_BTN_OPEN = "bugreport.empty.btn_open";
+  public static final String BUGREPORT_SELECT_SECTION_HINT = "bugreport.select_section_hint";
+  public static final String BUGREPORT_DEFAULT_EDITOR_FALLBACK =
+      "bugreport.default_editor_fallback";
+  public static final String BUGREPORT_OPEN_WITH_EDITOR = "bugreport.open_with_editor";
+  public static final String BUGREPORT_PLAINTEXT_DISCLAIMER =
+      "bugreport.plaintext_disclaimer";
   public static final String BUGREPORT_SUBS_SERVICE_DUMP = "bugreport.subs.service_dump";
   public static final String BUGREPORT_SUBS_ACTIVE = "bugreport.subs.active";
   public static final String BUGREPORT_SUBS_ALL = "bugreport.subs.all";
-  public static final String BUGREPORT_CARRIER_CONFIG_LOADING_LOGS = "bugreport.carrier_config.loading_logs";
+  public static final String BUGREPORT_CARRIER_CONFIG_LOADING_LOGS =
+      "bugreport.carrier_config.loading_logs";
 
   // About Dialog
   public static final String ABOUT_DIALOG_TITLE = "about.dialog_title";

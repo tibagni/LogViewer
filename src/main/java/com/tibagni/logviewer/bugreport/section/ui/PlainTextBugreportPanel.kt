@@ -2,8 +2,10 @@ package com.tibagni.logviewer.bugreport.section.ui
 
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.bugreport.section.PlainTextSection
+import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.preferences.LogViewerPreferences
+import com.tibagni.logviewer.util.EditorLauncher
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
@@ -50,40 +52,7 @@ class PlainTextBugreportPanel(private val plainTextSection: PlainTextSection) :
 
   private fun openBugReport() {
     val bugreportFile = File(plainTextSection.bugReportPath)
-    val editorFile = textEditorPath
-
-    if (editorFile != null) {
-      try {
-        val process = Runtime.getRuntime().exec(
-          editorFile.absolutePath + " " + bugreportFile.absoluteFile
-        )
-        Logger.debug("Opened $bugreportFile using $editorFile: $process")
-      } catch (ex: Exception) {
-        JOptionPane.showMessageDialog(
-          this,
-          "It was not possible to open the bugreport using ${editorFile.absolutePath}",
-          "Error",
-          JOptionPane.ERROR_MESSAGE
-        )
-      }
-    } else {
-      val input = JOptionPane.showConfirmDialog(
-        this,
-        "You don't have a preferred text editor, do you want to configure one now",
-        "Preferred text editor",
-        JOptionPane.YES_NO_OPTION
-      )
-
-      if (input == JOptionPane.YES_OPTION) {
-        val fileChooser = JFileChooser()
-        val result = fileChooser.showOpenDialog(this)
-        if (result == JFileChooser.APPROVE_OPTION) {
-          val newPreferredEditor = fileChooser.selectedFile
-          Logger.debug("New preferred editor selected: $newPreferredEditor")
-          ServiceLocator.logViewerPrefs.preferredTextEditor = newPreferredEditor
-        }
-      }
-    }
+    EditorLauncher.openInEditor(this, bugreportFile)
   }
 
   private fun findTextEditor(): File? {
@@ -93,14 +62,10 @@ class PlainTextBugreportPanel(private val plainTextSection: PlainTextSection) :
   }
 
   private fun updateUiText() {
-    val textEditorName = textEditorPath?.name ?: "a text editor of your preference"
-    openBugreportBtn.text = "Open using $textEditorName"
-    disclaimerTxt.text = "LogViewer can parse bugreports and present it here in a " +
-        "more user-friendly manner. However, there are only a few sections presented " +
-        "this way at this time, and sometimes reading the full bugreport is the best choice.\n\n" +
-        "If what you are looking for is not in any of the sections available, you can open " +
-        "the bugreport file located in \"${plainTextSection.bugReportPath}\" " +
-        "with $textEditorName by clicking the button below"
+    val textEditorName = textEditorPath?.name
+      ?: I18n.get(I18n.BUGREPORT_DEFAULT_EDITOR_FALLBACK)
+    openBugreportBtn.text = I18n.format(I18n.BUGREPORT_OPEN_WITH_EDITOR, textEditorName)
+    disclaimerTxt.text = I18n.get(I18n.BUGREPORT_PLAINTEXT_DISCLAIMER)
   }
 
   private fun buildUi() {
