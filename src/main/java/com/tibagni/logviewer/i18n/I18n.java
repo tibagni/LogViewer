@@ -192,6 +192,9 @@ public final class I18n {
   public static final String SEARCH_FILTERS_COL_NAME = "filters.search.col.name";
   public static final String SEARCH_FILTERS_COL_PATTERN = "filters.search.col.pattern";
   public static final String SEARCH_FILTERS_COL_GROUP = "filters.search.col.group";
+  public static final String SEARCH_FILTERS_EMPTY_TITLE = "filters.search.empty_title";
+  public static final String SEARCH_FILTERS_EMPTY_HINT = "filters.search.empty_hint";
+  public static final String SEARCH_FILTERS_BTN_CLEAR = "filters.search.btn_clear";
 
   // Filter Deduplication Dialog
   public static final String FILTER_DEDUP_DIALOG_TITLE = "filters.dedup.title";

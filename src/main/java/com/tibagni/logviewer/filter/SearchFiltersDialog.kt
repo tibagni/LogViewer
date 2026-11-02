@@ -8,6 +8,8 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.util.StringUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
 import com.tibagni.logviewer.view.StatusBadge
@@ -51,8 +53,27 @@ class SearchFiltersDialog(
   internal val closeBtn = FlatButton(I18n.get(I18n.COMMON_CLOSE))
 
   @VisibleForTesting
+  internal val clearSearchBtn = FlatButton(I18n.get(I18n.SEARCH_FILTERS_BTN_CLEAR)).apply {
+    addActionListener {
+      searchField.text = ""
+      searchField.requestFocusInWindow()
+    }
+  }
+
+  @VisibleForTesting
   internal val hintLabel =
     JLabel(I18n.get(I18n.SEARCH_FILTERS_HINT_SHORTCUTS))
+
+  @VisibleForTesting
+  internal lateinit var emptyStateCard: JPanel
+    private set
+
+  @VisibleForTesting
+  internal lateinit var tableScrollPane: JScrollPane
+    private set
+
+  private val cardLayout = CardLayout()
+  private val centerCards = JPanel(cardLayout)
 
   init {
     layout = BorderLayout()
@@ -77,6 +98,10 @@ class SearchFiltersDialog(
       searchField.putClientProperty(
         FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON,
         true
+      )
+      searchField.putClientProperty(
+        FlatClientProperties.TEXT_FIELD_LEADING_ICON,
+        CommonIcons.searchIcon(UIScaleUtils.dip(15))
       )
       add(
         searchField,
@@ -126,18 +151,73 @@ class SearchFiltersDialog(
       }
     }
 
-    val tableBorderColor = UIManager.getColor("Component.borderColor")
-      ?: Color(128, 128, 128, 80)
-    val tableScrollPane = JScrollPane(resultsTable).apply {
-      border = BorderFactory.createCompoundBorder(
-        BorderFactory.createEmptyBorder(
-          0,
-          UIScaleUtils.dip(10),
-          0,
-          UIScaleUtils.dip(10)
-        ),
-        BorderFactory.createLineBorder(tableBorderColor)
+    tableScrollPane = JScrollPane(resultsTable).apply {
+      border = CardBorderUtils.createCardBorder(insets = Insets(0, 0, 0, 0))
+    }
+
+    emptyStateCard = JPanel(GridBagLayout()).apply {
+      isOpaque = false
+      border = CardBorderUtils.createCardBorder(
+        insets = Insets(
+          UIScaleUtils.dip(24),
+          UIScaleUtils.dip(16),
+          UIScaleUtils.dip(24),
+          UIScaleUtils.dip(16)
+        )
       )
+
+      val iconLabel = JLabel(CommonIcons.searchIcon(UIScaleUtils.dip(36)))
+      val titleLabel = JLabel(I18n.get(I18n.SEARCH_FILTERS_EMPTY_TITLE)).apply {
+        font = font.deriveFont(Font.BOLD, font.size2D + UIScaleUtils.dip(2))
+        foreground = UIManager.getColor("Label.foreground")
+      }
+      val emptyHintLabel = JLabel(I18n.get(I18n.SEARCH_FILTERS_EMPTY_HINT)).apply {
+        foreground = CardBorderUtils.resolveSecondaryLabelColor()
+      }
+
+      add(
+        iconLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(0)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(10), 0))
+          .build()
+      )
+      add(
+        titleLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(1)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(6), 0))
+          .build()
+      )
+      add(
+        emptyHintLabel,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(2)
+          .withAnchor(GridBagConstraints.CENTER)
+          .withInsets(Insets(0, 0, UIScaleUtils.dip(14), 0))
+          .build()
+      )
+      add(
+        clearSearchBtn,
+        GBConstraintsBuilder()
+          .withGridx(0).withGridy(3)
+          .withAnchor(GridBagConstraints.CENTER)
+          .build()
+      )
+    }
+
+    centerCards.apply {
+      isOpaque = false
+      border = BorderFactory.createEmptyBorder(
+        0,
+        UIScaleUtils.dip(10),
+        0,
+        UIScaleUtils.dip(10)
+      )
+      add(tableScrollPane, CARD_TABLE)
+      add(emptyStateCard, CARD_EMPTY)
     }
 
     val bottomPanel = JPanel(BorderLayout()).apply {
@@ -149,12 +229,7 @@ class SearchFiltersDialog(
       hintLabel.font = hintLabel.font.deriveFont(
         UIScaleUtils.scaleFont(11).toFloat()
       )
-      hintLabel.foreground = UIManager.getColor("Label.disabledForeground")
-        ?: if (ServiceLocator.themeManager.isDark) {
-          Color(150, 150, 150)
-        } else {
-          Color(120, 120, 120)
-        }
+      hintLabel.foreground = CardBorderUtils.resolveSecondaryLabelColor()
       add(hintLabel, BorderLayout.WEST)
 
       val buttonsPanel = JPanel(
@@ -171,7 +246,7 @@ class SearchFiltersDialog(
     rootPane.defaultButton = jumpBtn
 
     add(topPanel, BorderLayout.NORTH)
-    add(tableScrollPane, BorderLayout.CENTER)
+    add(centerCards, BorderLayout.CENTER)
     add(bottomPanel, BorderLayout.SOUTH)
   }
 
@@ -325,6 +400,11 @@ class SearchFiltersDialog(
 
     if (matchedResults.isNotEmpty()) {
       resultsTable.setRowSelectionInterval(0, 0)
+      cardLayout.show(centerCards, CARD_TABLE)
+    } else if (query.isNotBlank()) {
+      cardLayout.show(centerCards, CARD_EMPTY)
+    } else {
+      cardLayout.show(centerCards, CARD_TABLE)
     }
     updateButtonStates()
   }
@@ -396,6 +476,9 @@ class SearchFiltersDialog(
   }
 
   companion object {
+    private const val CARD_TABLE = "table"
+    private const val CARD_EMPTY = "empty"
+
     fun show(
       owner: Frame?,
       presenter: FiltersPresenter,
@@ -471,7 +554,9 @@ class SearchFiltersTableModel(private val presenter: FiltersPresenter) : Abstrac
   }
 }
 
-class FilterNameCellRenderer(private val tableModel: SearchFiltersTableModel) : DefaultTableCellRenderer() {
+class FilterNameCellRenderer(
+  private val tableModel: SearchFiltersTableModel
+) : DefaultTableCellRenderer() {
   override fun getTableCellRendererComponent(
     table: JTable,
     value: Any?,
@@ -480,7 +565,9 @@ class FilterNameCellRenderer(private val tableModel: SearchFiltersTableModel) : 
     row: Int,
     column: Int
   ): Component {
-    val comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column) as JLabel
+    val comp = super.getTableCellRendererComponent(
+      table, value, isSelected, hasFocus, row, column
+    ) as JLabel
     val item = tableModel.getItem(row) ?: return comp
 
     val filter = item.filter
@@ -491,7 +578,9 @@ class FilterNameCellRenderer(private val tableModel: SearchFiltersTableModel) : 
     val verbosity = filter.verbosity?.toString()?.firstOrNull() ?: 'V'
     val verbosityColor = ServiceLocator.themeManager.mutedTextForegroundHex
 
-    comp.text = StringUtils.wrapHtml("<nobr><small color=\"$verbosityColor\">[$verbosity]</small> $truncated</nobr>")
+    val textSnippet =
+      "<nobr><small color=\"$verbosityColor\">[$verbosity]</small> $truncated</nobr>"
+    comp.text = StringUtils.wrapHtml(textSnippet)
     comp.toolTipText = "${filter.name} (${filter.patternString})" // no-i18n
 
     if (isSelected) {
@@ -506,7 +595,9 @@ class FilterNameCellRenderer(private val tableModel: SearchFiltersTableModel) : 
   }
 }
 
-class FilterPatternCellRenderer(private val tableModel: SearchFiltersTableModel) : DefaultTableCellRenderer() {
+class FilterPatternCellRenderer(
+  private val tableModel: SearchFiltersTableModel
+) : DefaultTableCellRenderer() {
   override fun getTableCellRendererComponent(
     table: JTable,
     value: Any?,
@@ -515,7 +606,9 @@ class FilterPatternCellRenderer(private val tableModel: SearchFiltersTableModel)
     row: Int,
     column: Int
   ): Component {
-    val comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column) as JLabel
+    val comp = super.getTableCellRendererComponent(
+      table, value, isSelected, hasFocus, row, column
+    ) as JLabel
     val item = tableModel.getItem(row) ?: return comp
 
     val pattern = item.filter.patternString ?: ""
@@ -529,7 +622,8 @@ class FilterPatternCellRenderer(private val tableModel: SearchFiltersTableModel)
       comp.foreground = table.selectionForeground
       comp.background = table.selectionBackground
     } else {
-      comp.foreground = if (ServiceLocator.themeManager.isDark) Color(180, 180, 180) else Color(80, 80, 80)
+      val isDark = ServiceLocator.themeManager.isDark
+      comp.foreground = if (isDark) Color(180, 180, 180) else Color(80, 80, 80)
       comp.background = table.background
     }
 
@@ -546,7 +640,9 @@ class FilterGroupCellRenderer : DefaultTableCellRenderer() {
     row: Int,
     column: Int
   ): Component {
-    val comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column) as JLabel
+    val comp = super.getTableCellRendererComponent(
+      table, value, isSelected, hasFocus, row, column
+    ) as JLabel
     val groupName = value?.toString() ?: ""
     comp.text = StringUtils.wrapHtml("<nobr>${StringUtils.htmlEscape(groupName)}</nobr>")
     comp.toolTipText = groupName
@@ -555,7 +651,8 @@ class FilterGroupCellRenderer : DefaultTableCellRenderer() {
       comp.foreground = table.selectionForeground
       comp.background = table.selectionBackground
     } else {
-      comp.foreground = if (ServiceLocator.themeManager.isDark) Color(150, 150, 150) else Color(110, 110, 110)
+      val isDark = ServiceLocator.themeManager.isDark
+      comp.foreground = if (isDark) Color(150, 150, 150) else Color(110, 110, 110)
       comp.background = table.background
     }
     return comp

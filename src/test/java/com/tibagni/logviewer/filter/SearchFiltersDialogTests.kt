@@ -222,4 +222,61 @@ class SearchFiltersDialogTests {
       dialog.dispose()
     }
   }
+
+  @Test
+  fun testEmptyStateCardAndClearSearchAction() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val dialog = SearchFiltersDialog(
+      owner = null,
+      presenter = mockPresenter,
+      filtersRepository = mockFiltersRepo,
+      onFilterSelected = { _, _ -> }
+    )
+    try {
+      assertNotNull(dialog.emptyStateCard)
+      assertNotNull(dialog.tableScrollPane)
+      assertTrue(dialog.tableScrollPane.border is com.formdev.flatlaf.ui.FlatLineBorder)
+
+      // Initial search has 3 results -> table card showing
+      assertEquals(3, dialog.resultsTable.rowCount)
+
+      // Search non-existent -> empty state card
+      dialog.searchField.text = "UnknownFilterXYZ"
+      dialog.performSearch("UnknownFilterXYZ")
+      assertEquals(0, dialog.resultsTable.rowCount)
+      assertEquals(StatusBadge.Variant.NO_RESULTS, dialog.matchesBadge.variant)
+
+      // Clicking clear button resets search field and restores all filters
+      dialog.clearSearchBtn.doClick()
+      assertEquals("", dialog.searchField.text)
+      assertEquals(3, dialog.resultsTable.rowCount)
+      assertEquals(StatusBadge.Variant.NORMAL, dialog.matchesBadge.variant)
+    } finally {
+      dialog.dispose()
+    }
+  }
+
+  @Test
+  fun testSearchFieldLeadingIconConfigured() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val dialog = SearchFiltersDialog(
+      owner = null,
+      presenter = mockPresenter,
+      filtersRepository = mockFiltersRepo,
+      onFilterSelected = { _, _ -> }
+    )
+    try {
+      assertNotNull(
+        dialog.searchField.getClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON)
+      )
+      assertEquals(
+        true,
+        dialog.searchField.getClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON)
+      )
+    } finally {
+      dialog.dispose()
+    }
+  }
 }
