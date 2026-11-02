@@ -77,6 +77,10 @@ class SearchableTable @JvmOverloads constructor(
       FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON,
       true
     )
+    putClientProperty(
+      FlatClientProperties.TEXT_FIELD_LEADING_ICON,
+      CommonIcons.searchIcon(14)
+    )
   }
   @VisibleForTesting
   internal val searchResult = StatusBadge()

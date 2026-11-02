@@ -624,6 +624,11 @@ class SearchableTableTests {
       FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON
     )
     assertEquals(true, showClear)
+    assertNotNull(
+      table.searchText.getClientProperty(
+        FlatClientProperties.TEXT_FIELD_LEADING_ICON
+      )
+    )
 
     val handCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     assertEquals(handCursor, table.searchLast.cursor)

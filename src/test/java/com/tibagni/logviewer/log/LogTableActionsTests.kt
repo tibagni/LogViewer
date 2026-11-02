@@ -308,4 +308,71 @@ class LogTableActionsTests {
 
     assertNull("Popup should not contain Elapsed Time menu when timestamps are null", elapsedMenu)
   }
+
+  @Test
+  fun testCreatePopupMenuContainsCopyAction() {
+    val model = LogListTableModel("Test")
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    model.setLogs(listOf(entry0))
+
+    val table = JTable(model)
+    table.setRowSelectionInterval(0, 0)
+
+    val popup = createPopupMenu(
+      table = table,
+      model = model
+    )
+
+    val copyItem = (0 until popup.componentCount)
+      .mapNotNull { popup.getComponent(it) as? JMenuItem }
+      .firstOrNull { it.text == I18n.get(I18n.COMMON_COPY) }
+
+    assertNotNull("Popup should contain a Copy menu item", copyItem)
+    assertNotNull(copyItem!!.icon)
+    assertNotNull(copyItem.accelerator)
+    assertTrue(copyItem.actionListeners.isNotEmpty())
+  }
+
+  @Test
+  fun testCopyActionKeyBindingInstalled() {
+    val model = LogListTableModel("Test")
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    model.setLogs(listOf(entry0))
+
+    val table = JTable(model)
+    table.setupLogTableActions(model = model)
+
+    assertNotNull(table.actionMap.get("copy"))
+  }
+
+  @Test
+  fun testPopupMenuNoAdjacentOrTrailingSeparators() {
+    val model = LogListTableModel("Test")
+    val entry0 = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    val entry1 = LogEntry("Line 1", LogLevel.DEBUG, null, LogStream.MAIN)
+    model.setLogs(listOf(entry0, entry1))
+
+    val table = JTable(model)
+    table.setRowSelectionInterval(0, 1)
+
+    val popup = createPopupMenu(
+      table = table,
+      model = model
+    )
+
+    assertTrue(popup.componentCount > 0)
+    assertFalse(
+      "Popup should not end with a trailing separator",
+      popup.getComponent(popup.componentCount - 1) is JSeparator
+    )
+
+    for (i in 0 until popup.componentCount - 1) {
+      val c1 = popup.getComponent(i)
+      val c2 = popup.getComponent(i + 1)
+      assertFalse(
+        "Popup should not have adjacent separators at index $i and ${i + 1}",
+        c1 is JSeparator && c2 is JSeparator
+      )
+    }
+  }
 }

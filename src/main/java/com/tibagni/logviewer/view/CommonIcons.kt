@@ -246,6 +246,16 @@ object CommonIcons {
   fun folderIcon(size: Int = 16): ImageIcon = FolderIcon(size)
 
   /**
+   * Creates a theme-aware vector copy icon with two overlapping document outlines.
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun copyIcon(size: Int = 16): ImageIcon = CopyIcon(size)
+
+  /**
    * Returns a theme-aware search (magnifying glass) icon of the given [size].
    *
    * @param size icon width and height in pixels (defaults to 16)
@@ -1084,6 +1094,48 @@ object CommonIcons {
         closePath()
       }
       g2d.draw(path)
+    }
+  }
+
+  /**
+   * Dynamic theme-aware [ImageIcon] that paints a copy icon with two overlapping cards.
+   */
+  private class CopyIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val arc = 2.0 * scale
+
+      // Back document outline (top-right)
+      val back = Path2D.Double().apply {
+        moveTo(6.0 * scale, 2.5 * scale)
+        lineTo(13.0 * scale, 2.5 * scale)
+        lineTo(13.0 * scale, 10.5 * scale)
+      }
+      g2d.draw(back)
+
+      // Front document (bottom-left)
+      val front = RoundRectangle2D.Double(
+        2.5 * scale,
+        4.5 * scale,
+        8.0 * scale,
+        9.0 * scale,
+        arc,
+        arc
+      )
+      g2d.draw(front)
     }
   }
 

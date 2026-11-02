@@ -1,5 +1,7 @@
 package com.tibagni.logviewer.util
 
+import java.awt.event.InputEvent
+
 object PlatformUtils {
   var propertyProvider: (String) -> String? = System::getProperty
   var envProvider: (String) -> String? = System::getenv
@@ -15,6 +17,14 @@ object PlatformUtils {
   @JvmStatic
   val isLinux: Boolean
     get() = !isWindows && !isMac
+
+  /**
+   * Returns the platform-appropriate menu shortcut modifier mask ([InputEvent.META_DOWN_MASK] on
+   * macOS, [InputEvent.CTRL_DOWN_MASK] on other platforms), safe for headless environments.
+   */
+  @JvmStatic
+  val menuShortcutMask: Int
+    get() = if (isMac) InputEvent.META_DOWN_MASK else InputEvent.CTRL_DOWN_MASK
 
   @JvmStatic
   val userHome: String
