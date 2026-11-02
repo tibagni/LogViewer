@@ -59,6 +59,15 @@ public final class I18n {
   public static final String PREF_CATEGORY_TOOLS = "pref.category.tools";
   public static final String PREF_CATEGORY_KEYMAP = "pref.category.keymap";
   public static final String PREF_SAVING_CHANGES = "pref.saving_changes";
+  public static final String PREF_SECTION_LOGS_STORAGE = "pref.section.logs.storage";
+  public static final String PREF_SECTION_LOGS_DISPLAY = "pref.section.logs.display";
+  public static final String PREF_SECTION_FILTERS_STARTUP = "pref.section.filters.startup";
+  public static final String PREF_SECTION_FILTERS_BEHAVIOR = "pref.section.filters.behavior";
+  public static final String PREF_SECTION_TOOLS_EDITOR = "pref.section.tools.editor";
+  public static final String PREF_SECTION_TOOLS_ADB = "pref.section.tools.adb";
+  public static final String PREF_SECTION_APPEARANCE_THEME = "pref.section.appearance.theme";
+  public static final String PREF_SECTION_APPEARANCE_TYPOGRAPHY =
+      "pref.section.appearance.typography";
 
   // Main View & File Choosers
   public static final String MAIN_FILECHOOSER_OPEN_LOGS = "main.filechooser.open.logs";

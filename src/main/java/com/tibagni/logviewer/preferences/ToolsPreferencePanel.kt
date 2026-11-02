@@ -11,6 +11,8 @@ import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JFileChooser
 import javax.swing.JLabel
@@ -105,24 +107,38 @@ class ToolsPreferencePanel(
 
   private fun buildPanel(): JComponent {
     val cc = CellConstraints()
-    val form = JPanel(
+
+    // Card 1: External Text Editor Card
+    val editorForm = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
-        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow"
+        "center:d:noGrow"
       )
     ).apply { isOpaque = false }
 
-    // Row 1: Preferred text editor
     val editorPathLbl = JLabel(I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR))
     val editorPathPanel = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
       isOpaque = false
       add(preferredEditorPathTxt, BorderLayout.CENTER)
       add(preferredEditorPathBtn, BorderLayout.EAST)
     }
-    form.add(editorPathLbl, cc.xy(1, 1))
-    form.add(editorPathPanel, cc.xy(3, 1))
+    editorForm.add(editorPathLbl, cc.xy(1, 1))
+    editorForm.add(editorPathPanel, cc.xy(3, 1))
 
-    // Row 3: ADB path
+    val editorCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_TOOLS_EDITOR),
+      icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16)),
+      content = editorForm
+    )
+
+    // Card 2: Android Debug Bridge (ADB) Card
+    val adbForm = JPanel(
+      FormLayout(
+        "fill:pref,left:6dlu:noGrow,fill:default:grow",
+        "center:d:noGrow"
+      )
+    ).apply { isOpaque = false }
+
     val adbPathLbl = JLabel(I18n.get(I18n.PREF_ADB_PATH))
     val adbButtonsPane = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
       isOpaque = false
@@ -134,10 +150,22 @@ class ToolsPreferencePanel(
       add(adbPathTxt, BorderLayout.CENTER)
       add(adbButtonsPane, BorderLayout.EAST)
     }
-    form.add(adbPathLbl, cc.xy(1, 3))
-    form.add(adbPathPanel, cc.xy(3, 3))
+    adbForm.add(adbPathLbl, cc.xy(1, 1))
+    adbForm.add(adbPathPanel, cc.xy(3, 1))
 
-    return form
+    val adbCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_TOOLS_ADB),
+      icon = CommonIcons.smartphoneIcon(UIScaleUtils.dip(16)),
+      content = adbForm
+    )
+
+    return JPanel().apply {
+      layout = BoxLayout(this, BoxLayout.Y_AXIS)
+      isOpaque = false
+      add(editorCard)
+      add(Box.createVerticalStrut(UIScaleUtils.dip(12)))
+      add(adbCard)
+    }
   }
 
   companion object {

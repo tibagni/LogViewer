@@ -1,11 +1,14 @@
 package com.tibagni.logviewer.preferences
 
+import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.ServiceLocator
 import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.shortcuts.ShortcutAction
 import com.tibagni.logviewer.shortcuts.ShortcutManager
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
 import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.BorderLayout
@@ -14,6 +17,7 @@ import java.awt.Dialog
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Font
+import java.awt.Insets
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -56,11 +60,11 @@ class KeymapPreferencePanel(
   internal val shortcutsTable = JTable(tableModel)
 
   @VisibleForTesting
-  internal val changeBtn = JButton(I18n.get(I18n.KEYMAP_BTN_CHANGE))
+  internal val changeBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_CHANGE))
   @VisibleForTesting
-  internal val resetSelectedBtn = JButton(I18n.get(I18n.KEYMAP_BTN_RESET_SELECTED))
+  internal val resetSelectedBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_RESET_SELECTED))
   @VisibleForTesting
-  internal val resetAllBtn = JButton(I18n.get(I18n.KEYMAP_BTN_RESET_ALL))
+  internal val resetAllBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_RESET_ALL))
 
   override val panel: JComponent = buildPanel()
 
@@ -84,8 +88,14 @@ class KeymapPreferencePanel(
       setDefaultRenderer(Any::class.java, ShortcutCellRenderer())
     }
 
+    searchField.putClientProperty(
+      FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON,
+      true
+    )
+
     val scrollPane = JScrollPane(shortcutsTable).apply {
       preferredSize = Dimension(UIScaleUtils.dip(520), UIScaleUtils.dip(286))
+      border = CardBorderUtils.createCardBorder(insets = Insets(0, 0, 0, 0))
     }
 
     val bottomBar = JPanel(FlowLayout(FlowLayout.LEFT, UIScaleUtils.dip(6), 0)).apply {
@@ -226,7 +236,11 @@ class KeymapPreferencePanel(
 
   private fun promptForNewShortcut(action: ShortcutAction) {
     val ownerWindow = SwingUtilities.getWindowAncestor(parent)
-    val captureDialog = JDialog(ownerWindow, I18n.get(I18n.KEYMAP_CAPTURE_TITLE), Dialog.ModalityType.APPLICATION_MODAL)
+    val captureDialog = JDialog(
+      ownerWindow,
+      I18n.get(I18n.KEYMAP_CAPTURE_TITLE),
+      Dialog.ModalityType.APPLICATION_MODAL
+    )
     val promptLabel = JLabel(
       I18n.format(I18n.KEYMAP_CAPTURE_PROMPT, action.displayName),
       SwingConstants.CENTER
@@ -244,7 +258,9 @@ class KeymapPreferencePanel(
     promptLabel.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent) {
         e.consume()
-        if (e.keyCode == KeyEvent.VK_ESCAPE && (e.modifiersEx and ShortcutManager.MODIFIER_MASK) == 0) {
+        val isEscape = e.keyCode == KeyEvent.VK_ESCAPE
+        val noMods = (e.modifiersEx and ShortcutManager.MODIFIER_MASK) == 0
+        if (isEscape && noMods) {
           captureDialog.dispose()
           return
         }
@@ -330,7 +346,9 @@ class KeymapPreferencePanel(
       row: Int,
       column: Int
     ): Component {
-      val comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+      val comp = super.getTableCellRendererComponent(
+        table, value, isSelected, hasFocus, row, column
+      )
       val action = visibleActions.getOrNull(row)
       if (action != null) {
         val customized = isCustomized(action)

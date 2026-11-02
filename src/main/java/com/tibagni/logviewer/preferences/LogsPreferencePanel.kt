@@ -11,6 +11,8 @@ import com.tibagni.logviewer.view.JFileChooserExt
 import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JFileChooser
@@ -75,37 +77,61 @@ class LogsPreferencePanel(
 
   private fun buildPanel(): JComponent {
     val cc = CellConstraints()
-    val form = JPanel(
+
+    // Card 1: Storage Card
+    val storageForm = JPanel(
       FormLayout(
         "fill:pref,left:6dlu:noGrow,fill:default:grow",
-        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow," +
-          "top:4dlu:noGrow,center:d:noGrow"
+        "center:d:noGrow"
       )
     ).apply { isOpaque = false }
 
-    // Row 1: Default logs path
     val logsPathLbl = JLabel(I18n.get(I18n.PREF_DEFAULT_LOGS_PATH))
     val logsPathPanel = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
       isOpaque = false
       add(logsPathTxt, BorderLayout.CENTER)
       add(logsPathBtn, BorderLayout.EAST)
     }
-    form.add(logsPathLbl, cc.xy(1, 1))
-    form.add(logsPathPanel, cc.xy(3, 1))
+    storageForm.add(logsPathLbl, cc.xy(1, 1))
+    storageForm.add(logsPathPanel, cc.xy(3, 1))
 
-    // Row 3: Show line numbers
+    val storageCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_LOGS_STORAGE),
+      icon = CommonIcons.folderIcon(UIScaleUtils.dip(16)),
+      content = storageForm
+    )
+
+    // Card 2: Display Card
+    val displayForm = JPanel(
+      FormLayout(
+        "fill:pref,left:6dlu:noGrow,fill:default:grow",
+        "center:d:noGrow,top:4dlu:noGrow,center:d:noGrow"
+      )
+    ).apply { isOpaque = false }
+
     val lineNumbersLbl = JLabel(I18n.get(I18n.PREF_SHOW_LINE_NUMBERS))
     bindLabelToCheckbox(lineNumbersLbl, showLineNumbersChbx)
-    form.add(lineNumbersLbl, cc.xy(1, 3))
-    form.add(showLineNumbersChbx, cc.xy(3, 3))
+    displayForm.add(lineNumbersLbl, cc.xy(1, 1))
+    displayForm.add(showLineNumbersChbx, cc.xy(3, 1))
 
-    // Row 5: Show log line dividers
     val dividersLbl = JLabel(I18n.get(I18n.PREF_SHOW_LOG_DIVIDERS))
     bindLabelToCheckbox(dividersLbl, showLogDividersChbx)
-    form.add(dividersLbl, cc.xy(1, 5))
-    form.add(showLogDividersChbx, cc.xy(3, 5))
+    displayForm.add(dividersLbl, cc.xy(1, 3))
+    displayForm.add(showLogDividersChbx, cc.xy(3, 3))
 
-    return form
+    val displayCard = createPreferenceCard(
+      title = I18n.get(I18n.PREF_SECTION_LOGS_DISPLAY),
+      icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16)),
+      content = displayForm
+    )
+
+    return JPanel().apply {
+      layout = BoxLayout(this, BoxLayout.Y_AXIS)
+      isOpaque = false
+      add(storageCard)
+      add(Box.createVerticalStrut(UIScaleUtils.dip(12)))
+      add(displayCard)
+    }
   }
 
   companion object {

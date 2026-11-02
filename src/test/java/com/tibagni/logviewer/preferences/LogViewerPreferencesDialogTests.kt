@@ -7,12 +7,14 @@ import com.tibagni.logviewer.theme.LogViewerThemeManager
 import com.tibagni.logviewer.util.LogFontManager
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CommonIcons
+import com.tibagni.logviewer.view.FlatButton
 import java.awt.CardLayout
 import java.awt.Cursor
 import java.awt.Font
 import java.awt.GraphicsEnvironment
 import java.io.File
 import java.util.Locale
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.border.CompoundBorder
@@ -248,5 +250,75 @@ class LogViewerPreferencesDialogTests {
     assertNotNull(toolsPanel.adbPathBtn.icon)
     assertEquals(Cursor.HAND_CURSOR, toolsPanel.adbPathBtn.cursor.type)
     assertEquals(Cursor.HAND_CURSOR, toolsPanel.adbPathClearBtn.cursor.type)
+  }
+
+  @Test
+  fun testCreatePreferenceCardStructure() {
+    val dummyContent = JLabel("Content")
+    val card = createPreferenceCard(
+      title = "Section Title",
+      icon = CommonIcons.folderIcon(),
+      content = dummyContent
+    )
+    assertNotNull(card)
+    assertFalse(card.isOpaque)
+    assertTrue("Border should be FlatLineBorder", card.border is FlatLineBorder)
+    val lineBorder = card.border as FlatLineBorder
+    assertEquals(UIScaleUtils.dip(8), lineBorder.arc)
+
+    // Header label
+    val headerPanel = card.getComponent(0) as JPanel
+    val headerLabel = headerPanel.getComponent(0) as JLabel
+    assertEquals("Section Title", headerLabel.text)
+    assertNotNull(headerLabel.icon)
+    assertEquals(dummyContent, card.getComponent(1))
+  }
+
+  @Test
+  fun testPanelCardContainersInstantiated() {
+    val mockPrefs = mock(LogViewerPreferences::class.java)
+    val dummyDir = File("/test/logs")
+    `when`(mockPrefs.defaultLogsPath).thenReturn(dummyDir)
+    `when`(mockPrefs.defaultFiltersPath).thenReturn(dummyDir)
+    `when`(mockPrefs.preferredTextEditor).thenReturn(File("/test/editor"))
+    `when`(mockPrefs.adbPath).thenReturn(File("/test/adb"))
+
+    val container = JPanel()
+    val logsPanel = LogsPreferencePanel(container, mockPrefs)
+    val logsRoot = logsPanel.panel as JPanel
+    // Two cards + vertical strut
+    assertTrue(logsRoot.componentCount >= 3)
+    assertTrue((logsRoot.getComponent(0) as JPanel).border is FlatLineBorder)
+    assertTrue((logsRoot.getComponent(2) as JPanel).border is FlatLineBorder)
+
+    val filtersPanel = FiltersPreferencePanel(container, mockPrefs)
+    val filtersRoot = filtersPanel.panel as JPanel
+    assertTrue(filtersRoot.componentCount >= 3)
+    assertTrue((filtersRoot.getComponent(0) as JPanel).border is FlatLineBorder)
+    assertTrue((filtersRoot.getComponent(2) as JPanel).border is FlatLineBorder)
+
+    val toolsPanel = ToolsPreferencePanel(container, mockPrefs)
+    val toolsRoot = toolsPanel.panel as JPanel
+    assertTrue(toolsRoot.componentCount >= 3)
+    assertTrue((toolsRoot.getComponent(0) as JPanel).border is FlatLineBorder)
+    assertTrue((toolsRoot.getComponent(2) as JPanel).border is FlatLineBorder)
+  }
+
+  @Test
+  fun testKeymapPanelCardAndControlsProperties() {
+    val keymapPanel = KeymapPreferencePanel(JPanel())
+    val root = keymapPanel.panel as JPanel
+    assertNotNull(root)
+
+    // Clear button client property configured on search field
+    assertEquals(
+      true,
+      keymapPanel.searchField.getClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON)
+    )
+
+    // FlatButtons configured
+    assertEquals(FlatButton::class.java, keymapPanel.changeBtn.javaClass)
+    assertEquals(FlatButton::class.java, keymapPanel.resetSelectedBtn.javaClass)
+    assertEquals(FlatButton::class.java, keymapPanel.resetAllBtn.javaClass)
   }
 }

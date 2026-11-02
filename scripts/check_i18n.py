@@ -137,13 +137,16 @@ def validate_bundle():
         return False
 
     i18n_keys = {}
-    key_pattern = re.compile(r'public\s+static\s+final\s+String\s+(\w+)\s*=\s*"([^"]+)";')
+    key_pattern = re.compile(
+        r'public\s+static\s+final\s+String\s+(\w+)\s*=\s*[\r\n\s]*"([^"]+)";',
+        re.MULTILINE
+    )
     with open(i18n_path, "r", encoding="utf-8") as f:
-        for line_num, line in enumerate(f, 1):
-            m = key_pattern.search(line)
-            if m:
-                const_name, key_val = m.groups()
-                i18n_keys[key_val] = (const_name, line_num)
+        content = f.read()
+        for m in key_pattern.finditer(content):
+            const_name, key_val = m.groups()
+            line_num = content[:m.start()].count("\n") + 1
+            i18n_keys[key_val] = (const_name, line_num)
 
     prop_keys = set()
     with open(props_path, "r", encoding="utf-8") as f:
