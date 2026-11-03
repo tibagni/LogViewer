@@ -16,7 +16,7 @@ LogViewer strictly enforces the Model-View-Presenter (MVP) pattern to ensure lon
   - Presenters must not be coupled to UI layout mechanics or widget choices. Avoid modeling presenter contracts or method names around specific UI containers or layout mechanisms (e.g., referencing split panes, card layouts, tabs, or component hierarchies in presenter contracts).
 - **Passive Views**: Views must be completely passive - responsible only for component layout, capturing user gestures, and projecting presenter state onto UI widgets. Views must NEVER perform business logic, filtering, data manipulation, or orchestrate cross-component workflows.
 - **Single Source of Truth**: Repositories and managers (e.g., `FiltersRepository`, `LiveLogsRepository`) own application data. Views and presenters must not maintain divergent or parallel state caches.
-- **Severity**: MVP boundary leaks (e.g., Presenters coupled to UI layout mechanics, Views executing domain/filtering logic) are **Critical Issues** and block approval.
+- **Severity**: MVP boundary leaks (e.g., Presenters coupled to UI layout mechanics, Views executing domain/filtering logic, or View component encapsulation leaks that expose internal Swing widgets) are **Critical Issues** and block approval.
 
 ### 2. Concurrency & Threading Discipline (Critical)
 - **Swing EDT Invariant**: Any mutation to UI state, component hierarchy, dialogs, or table models MUST occur on the Swing Event Dispatch Thread (EDT) via `SwingUtilities.invokeLater` / `Dispatchers.Main`.
@@ -36,6 +36,19 @@ LogViewer strictly enforces the Model-View-Presenter (MVP) pattern to ensure lon
 ### 5. Testing & Maintainability
 - Verify meaningful unit test coverage for new or modified presenter, repository, and domain logic.
 - Tests should verify observable behavior and edge cases rather than over-specifying internal private implementation details.
+
+### Swing Component Encapsulation & UI Testing Invariants
+
+- **Strict View Encapsulation**:
+  All Swing widgets, containers, and layouts within View classes (`*View`, `*Panel`, `*Dialog`) must remain strictly `private`. Never broaden visibility to `internal`, package-private, or `public` (and never use `@VisibleForTesting`) solely to expose widgets for unit tests.
+
+- **Test Behavior and Contracts, Not Component Trees**:
+  Unit tests must verify behavioral contracts rather than internal Swing plumbing:
+  - **Do test**: Public View interface methods, user gesture propagation (e.g., verifying a button click invokes `presenter.doAction()`), and EDT dispatching.
+  - **Do NOT test**: Internal widget hierarchies, child container counts, border instances (e.g., asserting `border is FlatLineBorder`), margins, or colors on parent views. These create brittle tests that break during harmless UI refactors.
+
+- **Isolate Custom Painting in Reusable Components**:
+  If custom styling, vector painting, or special borders require direct test coverage, encapsulate that logic inside a dedicated, standalone component (e.g., `StatusBadge`, `FlatButton`, `SearchableTable`) and test that isolated component directly instead of puncturing the encapsulation of composite views.
 
 ---
 
@@ -60,12 +73,12 @@ Format your review with clear GitHub Flavored Markdown:
 1. **Overall Verdict**:
    - `✅ LGTM` (Ready to merge)
    - `⚠️ LGTM with Suggestions` (Non-blocking improvements; ready to merge after author review)
-   - `❌ Needs Work` (Critical issues: MVP boundary violations, threading/EDT defects, race conditions, memory leaks, or regressions)
+   - `❌ Needs Work` (Critical issues: MVP boundary violations, View component encapsulation leaks, threading/EDT defects, race conditions, memory leaks, or regressions)
 
 2. **Summary**: A concise 2-3 sentence overview of the change and its architectural impact.
 
 3. **Key Findings**:
-   - **Critical Issues** (Must-fix items: MVP boundary/semantic leaks, concurrency bugs, resource leaks, functional regressions)
+   - **Critical Issues** (Must-fix items: MVP boundary/semantic leaks, View component encapsulation leaks, concurrency bugs, resource leaks, functional regressions)
    - **Suggestions & Improvements** (Meaningful clean code, OO design, or realistic edge cases. State "None." if there are no significant issues; do not invent trivial suggestions)
    
    For each finding, provide:

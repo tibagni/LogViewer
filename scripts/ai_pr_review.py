@@ -88,7 +88,36 @@ PREFERRED_MODELS_ORDER = [
 MAX_CONTEXT_FILES = 3
 MAX_CONTEXT_FILE_LINES = 600
 MAX_CONTEXT_FILE_BYTES = 50 * 1024  # 50 KB
+MAX_PREFETCH_FILES = 5
+SMALL_DIFF_MAX_LINES = 400
+SMALL_DIFF_MAX_CODE_FILES = 3
+CODE_EXTENSIONS = (".kt", ".java", ".py")
+SELF_CONTAINED_EXTENSIONS = (
+    ".md", ".properties", ".yml", ".yaml", ".json", ".txt",
+    ".gitignore", ".gradle", ".kts", ".sh", ".xml"
+)
 CONTEXT_REQUESTS_PATTERN = r"```(?:context-requests|context_requests)\s*([\s\S]*?)\s*```"
+TOP_LEVEL_DECL_PATTERN = re.compile(
+    r"^[ \t]{0,3}(?:(?:public|internal|private|protected|abstract|open|final|"
+    r"sealed|data|value|inline|expect|actual|static)\s+)*"
+    r"(?:class|interface|object|enum\s+class|annotation\s+class)\s+([A-Z][A-Za-z0-9_]*)",
+    re.MULTILINE
+)
+ANY_DECL_PATTERN = re.compile(
+    r"\b(?:class|interface|object|enum\s+class|annotation\s+class)\s+([A-Z][A-Za-z0-9_]*)"
+)
+IMPORT_PATTERN = re.compile(
+    r"^\+?[\s]*import\s+com\.tibagni\.logviewer\.([A-Za-z0-9_.]+)",
+    re.MULTILINE
+)
+PASCAL_IDENT_PATTERN = re.compile(r"\b([A-Z][A-Za-z0-9_]+)\b")
+
+
+@dataclass
+class DeterministicContextResult:
+    preloaded_files: Dict[str, str] = field(default_factory=dict)
+    allow_context_requests: bool = True
+    reason: str = ""
 
 
 def get_project_root() -> str:
@@ -218,13 +247,350 @@ def parse_valid_diff_lines(diff: str) -> Dict[str, Set[int]]:
 
 
 def normalize_path(path: str) -> str:
-    """Normalizes relative file path from model output."""
-    path = path.strip().lstrip("/")
-    if path.startswith("b/"):
+    """Normalizes relative file path from model output or diff headers."""
+    path = path.strip().replace("\\", "/").lstrip("/")
+    if path.startswith("b/") or path.startswith("a/"):
         path = path[2:]
     elif path.startswith("./"):
         path = path[2:]
     return path
+
+
+def build_repo_symbol_index(repo_root: str) -> Dict[str, str]:
+    """Scans src/main/java under repo_root for .kt and .java top-level symbols."""
+    symbol_index: Dict[str, str] = {}
+    if not repo_root or not os.path.isdir(repo_root):
+        return symbol_index
+
+    src_root = os.path.join(repo_root, "src", "main", "java")
+    if not os.path.isdir(src_root):
+        return symbol_index
+
+    for current_dir, dirs, files in os.walk(src_root):
+        dirs.sort()
+        for fname in sorted(files):
+            if not fname.endswith((".kt", ".java")):
+                continue
+            abs_path = os.path.join(current_dir, fname)
+            rel_path = normalize_path(os.path.relpath(abs_path, repo_root))
+            stem = os.path.splitext(fname)[0]
+            if stem and stem[0].isupper() and stem not in symbol_index:
+                symbol_index[stem] = rel_path
+            try:
+                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read(MAX_CONTEXT_FILE_BYTES)
+                for match in TOP_LEVEL_DECL_PATTERN.finditer(content):
+                    sym = match.group(1)
+                    if sym and sym not in symbol_index:
+                        symbol_index[sym] = rel_path
+                for match in ANY_DECL_PATTERN.finditer(content):
+                    sym = match.group(1)
+                    if sym and sym not in symbol_index:
+                        symbol_index[sym] = rel_path
+            except Exception:
+                continue
+
+    return symbol_index
+
+
+def parse_diff_file_statuses(diff: str) -> List[Dict[str, Any]]:
+    """Parses file headers in a unified diff into status and hunk metadata entries."""
+    entries: List[Dict[str, Any]] = []
+    lines = diff.splitlines()
+    current_entry: Optional[Dict[str, Any]] = None
+    hunk_lines: List[str] = []
+    in_hunk = False
+    i = 0
+
+    def finalize_current() -> None:
+        nonlocal current_entry, hunk_lines, in_hunk
+        if current_entry is not None:
+            current_entry["diff_hunk_text"] = "\n".join(hunk_lines)
+            entries.append(current_entry)
+        current_entry = None
+        hunk_lines = []
+        in_hunk = False
+
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("diff --git "):
+            finalize_current()
+            i += 1
+            continue
+
+        if line.startswith("--- ") and i + 1 < len(lines) and lines[i + 1].startswith("+++ "):
+            finalize_current()
+            old_raw = line[4:].split("\t")[0].strip()
+            new_raw = lines[i + 1][4:].split("\t")[0].strip()
+            if old_raw == "/dev/null":
+                status = "added"
+                path = normalize_path(new_raw)
+            elif new_raw == "/dev/null":
+                status = "deleted"
+                path = normalize_path(old_raw)
+            else:
+                status = "modified"
+                path = normalize_path(new_raw)
+
+            current_entry = {
+                "path": path,
+                "status": status,
+                "added_or_context_lines": 0,
+                "diff_hunk_text": "",
+            }
+            i += 2
+            continue
+
+        if current_entry is not None:
+            if line.startswith("@@ "):
+                in_hunk = True
+                hunk_lines.append(line)
+            elif in_hunk:
+                if line.startswith("+") or line.startswith(" "):
+                    current_entry["added_or_context_lines"] += 1
+                    hunk_lines.append(line)
+                elif line.startswith("-") or line.startswith("\\"):
+                    hunk_lines.append(line)
+        i += 1
+
+    finalize_current()
+    return entries
+
+
+def _derive_mvp_and_subject_candidates(stem: str) -> List[str]:
+    """Returns candidate symbol names for test subjects and MVP peers of a file stem."""
+    candidates: List[str] = []
+    for suffix in ("Tests", "Test"):
+        if stem.endswith(suffix) and len(stem) > len(suffix):
+            base = stem[:-len(suffix)]
+            candidates.extend([base, f"{base}Impl", f"{base}Presenter", f"{base}View"])
+            if base.endswith("Impl") and len(base) > 4:
+                candidates.append(base[:-4])
+
+    if stem.endswith("PresenterImpl") and len(stem) > 13:
+        prefix = stem[:-13]
+        candidates.extend([
+            f"{prefix}Presenter",
+            f"{prefix}PresenterView",
+            f"{prefix}View",
+            f"{prefix}ViewImpl",
+            f"{prefix}Repository",
+        ])
+    elif stem.endswith("Presenter") and len(stem) > 9:
+        prefix = stem[:-9]
+        candidates.extend([
+            f"{prefix}PresenterImpl",
+            f"{prefix}PresenterView",
+            f"{prefix}View",
+            f"{prefix}ViewImpl",
+            f"{prefix}Repository",
+        ])
+    elif stem.endswith("ViewImpl") and len(stem) > 8:
+        prefix = stem[:-8]
+        candidates.extend([
+            f"{prefix}View",
+            f"{prefix}Presenter",
+            f"{prefix}PresenterView",
+            f"{prefix}PresenterImpl",
+        ])
+    elif stem.endswith("View") and len(stem) > 4:
+        prefix = stem[:-4]
+        candidates.extend([
+            f"{prefix}ViewImpl",
+            f"{prefix}Presenter",
+            f"{prefix}PresenterImpl",
+        ])
+    elif stem.endswith("RepositoryImpl") and len(stem) > 14:
+        prefix = stem[:-14]
+        candidates.append(f"{prefix}Repository")
+
+    return candidates
+
+
+def discover_referenced_repo_files(
+    diff: str,
+    modified_entries: List[Dict[str, Any]],
+    symbol_index: Dict[str, str],
+    repo_root: Optional[str] = None
+) -> List[str]:
+    """Deterministically resolves unmodified repository files referenced by the diff."""
+    if not symbol_index:
+        return []
+
+    diff_paths = {
+        normalize_path(e["path"])
+        for e in modified_entries
+        if e.get("path")
+    }
+    high_priority: List[str] = []
+    normal_priority: List[str] = []
+
+    def add_resolved(rel_path: str, is_high: bool) -> None:
+        norm = normalize_path(rel_path)
+        if not norm or norm in diff_paths:
+            return
+        if is_high:
+            if norm not in high_priority:
+                high_priority.append(norm)
+        else:
+            if norm not in high_priority and norm not in normal_priority:
+                normal_priority.append(norm)
+
+    header_snippets: List[str] = [diff]
+    norm_root = os.path.realpath(repo_root) if repo_root and os.path.isdir(repo_root) else None
+
+    for entry in modified_entries:
+        if entry.get("status") == "deleted":
+            continue
+        path = normalize_path(entry.get("path", ""))
+        stem = os.path.splitext(os.path.basename(path))[0]
+        for cand_sym in _derive_mvp_and_subject_candidates(stem):
+            if cand_sym in symbol_index:
+                add_resolved(symbol_index[cand_sym], is_high=True)
+
+        if norm_root and entry.get("status") == "modified":
+            abs_file = os.path.realpath(os.path.join(norm_root, path))
+            if abs_file.startswith(norm_root) and os.path.isfile(abs_file):
+                try:
+                    with open(abs_file, "r", encoding="utf-8", errors="replace") as f:
+                        head_lines = [f.readline() for _ in range(120)]
+                    header_snippets.append("".join(head_lines))
+                except Exception:
+                    pass
+
+    combined_text = "\n".join(header_snippets)
+
+    for match in IMPORT_PATTERN.finditer(combined_text):
+        imported_chain = match.group(1)
+        for part in imported_chain.split("."):
+            if part and part[0].isupper() and part in symbol_index:
+                is_mvp = any(k in part for k in ("Presenter", "View", "Repository"))
+                add_resolved(symbol_index[part], is_high=is_mvp)
+
+    for match in PASCAL_IDENT_PATTERN.finditer(combined_text):
+        ident = match.group(1)
+        if ident in symbol_index:
+            is_mvp = any(k in ident for k in ("Presenter", "View", "Repository"))
+            add_resolved(symbol_index[ident], is_high=is_mvp)
+
+    return high_priority + [p for p in normal_priority if p not in high_priority]
+
+
+def _inspect_repo_file_fits_budget(
+    repo_root: str,
+    rel_path: str,
+    max_lines: int = MAX_CONTEXT_FILE_LINES,
+    max_bytes: int = MAX_CONTEXT_FILE_BYTES
+) -> Tuple[bool, bool]:
+    """Returns (exists_on_disk, fits_within_limits) for a repository-relative path."""
+    if not repo_root or not os.path.isdir(repo_root):
+        return False, False
+    norm_root = os.path.realpath(repo_root)
+    clean_path = normalize_path(rel_path)
+    if not clean_path:
+        return False, False
+    candidate = os.path.realpath(os.path.join(norm_root, clean_path))
+    if not candidate.startswith(norm_root) or not os.path.isfile(candidate):
+        return False, False
+    try:
+        size = os.path.getsize(candidate)
+        if size > max_bytes:
+            return True, False
+        with open(candidate, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read(max_bytes + 1)
+        if len(content.splitlines()) > max_lines:
+            return True, False
+        return True, True
+    except Exception:
+        return False, False
+
+
+def evaluate_deterministic_context(
+    diff: str,
+    repo_root: str,
+    two_pass_enabled: bool = True,
+    max_prefetch_files: int = MAX_PREFETCH_FILES
+) -> DeterministicContextResult:
+    """Deterministically preloads modified/referenced context and gates Pass 2."""
+    modified_entries = parse_diff_file_statuses(diff)
+    symbol_index = build_repo_symbol_index(repo_root)
+    candidate_paths: List[str] = []
+    all_candidates_loaded = True
+
+    # Priority 1: Partially-shown modified existing code files
+    for entry in modified_entries:
+        path = normalize_path(entry.get("path", ""))
+        status = entry.get("status", "")
+        if not path or not path.lower().endswith(CODE_EXTENSIONS):
+            continue
+        if status in ("added", "deleted"):
+            continue
+        exists, fits = _inspect_repo_file_fits_budget(repo_root, path)
+        if not exists:
+            all_candidates_loaded = False
+            continue
+        if not fits:
+            all_candidates_loaded = False
+        if path not in candidate_paths:
+            candidate_paths.append(path)
+
+    # Priority 2: Referenced unmodified repository files
+    referenced_paths = discover_referenced_repo_files(
+        diff=diff,
+        modified_entries=modified_entries,
+        symbol_index=symbol_index,
+        repo_root=repo_root
+    )
+    for ref_path in referenced_paths:
+        exists, fits = _inspect_repo_file_fits_budget(repo_root, ref_path)
+        if not exists or not fits:
+            all_candidates_loaded = False
+        if exists and ref_path not in candidate_paths:
+            candidate_paths.append(ref_path)
+
+    if len(candidate_paths) > max_prefetch_files:
+        all_candidates_loaded = False
+
+    preloaded_files: Dict[str, str] = {}
+    if candidate_paths:
+        preloaded_files = fetch_file_context(
+            repo_root,
+            candidate_paths,
+            max_files=max_prefetch_files
+        )
+        if len(preloaded_files) < len(candidate_paths[:max_prefetch_files]):
+            all_candidates_loaded = False
+
+    total_diff_lines = len(diff.splitlines())
+    code_entries = [
+        e for e in modified_entries
+        if e.get("path", "").lower().endswith(CODE_EXTENSIONS)
+    ]
+
+    if not two_pass_enabled:
+        allow_context_requests = False
+        reason = "two-pass review disabled via configuration"
+    elif modified_entries and len(code_entries) == 0 and len(candidate_paths) == 0:
+        allow_context_requests = False
+        reason = "only self-contained/non-code files modified"
+    elif (
+        modified_entries and
+        total_diff_lines <= SMALL_DIFF_MAX_LINES and
+        len(code_entries) <= SMALL_DIFF_MAX_CODE_FILES and
+        len(candidate_paths) <= max_prefetch_files and
+        all_candidates_loaded
+    ):
+        allow_context_requests = False
+        reason = "small diff and 100% of modified/referenced context files preloaded in Pass 1"
+    else:
+        allow_context_requests = True
+        reason = "diff exceeds small-change threshold or additional unpreloaded context may exist"
+
+    return DeterministicContextResult(
+        preloaded_files=preloaded_files,
+        allow_context_requests=allow_context_requests,
+        reason=reason
+    )
 
 
 def extract_inline_comments(text: str) -> Tuple[str, List[Dict]]:
@@ -495,7 +861,8 @@ def build_prompt(
         description: Optional[str] = None,
         commits: Optional[List[str]] = None,
         comments: Optional[List[Dict[str, str]]] = None,
-        allow_context_requests: bool = True
+        allow_context_requests: bool = True,
+        preloaded_context: Optional[Dict[str, str]] = None
 ) -> str:
     """Assembles the system guidelines, PR context, and code diff into the LLM review prompt."""
     sections = [guidelines.strip(), "\n---"]
@@ -511,21 +878,47 @@ def build_prompt(
             commits_text = "\n".join(f"- {c}" for c in commits)
             sections.append(f"### Commits:\n{commits_text}")
         if comments:
-            comments_text = "\n".join(f"- @{c.get('author', 'user')}: {c.get('body', '').strip()}" for c in comments)
+            comments_text = "\n".join(
+                f"- @{c.get('author', 'user')}: {c.get('body', '').strip()}"
+                for c in comments
+            )
             sections.append(f"### Existing Discussion:\n{comments_text}")
         sections.append("\n---")
 
+    if preloaded_context:
+        files_section = [
+            "## Pre-loaded Repository File Context:\n"
+            "The following repository files are pre-loaded so you can understand "
+            "architectural boundaries, threading/EDT behavior, state ownership, and "
+            "lifecycle semantics, and verify that any APIs you recommend in your "
+            "feedback actually exist. Do NOT use this context to check whether the PR "
+            "compiles (automated CI already compiles the code and runs unit tests)."
+        ]
+        for path, content in sorted(preloaded_context.items()):
+            files_section.append(f"### File: `{path}`\n```\n{content}\n```")
+        sections.append("\n\n".join(files_section) + "\n\n---")
+
+    ci_compilation_notice = """### ⚙️ CI Build & Compilation Assumption:
+- **Assume the PR Compiles and Passes CI Tests**: Automated CI compiles the project and runs the full unit test suite on every pull request. Never act as a compiler or flag suspected compilation errors, missing imports, unresolved symbols, or type/signature mismatches in the PR diff.
+- Repository file context is strictly for understanding **architectural boundaries, threading/EDT behavior, state ownership, and lifecycle semantics**, and for verifying that any methods or properties you recommend calling in your review feedback actually exist."""
+    sections.append(ci_compilation_notice)
+
     if allow_context_requests:
-        context_request_instructions = """### 📂 Optional Context Request (Two-Pass Review):
-If you need to verify method signatures, interface contracts, or class implementations from unmodified files in the repository before finalizing your findings, you may request up to 3 files using a ```context-requests``` code block:
+        dedup_rule = (
+            "\n- Do not request files that are already provided in the "
+            "Pre-loaded Repository File Context section."
+            if preloaded_context else ""
+        )
+        context_request_instructions = f"""### 📂 Optional Context Request (Two-Pass Review):
+If you need to inspect unmodified repository files to understand architectural boundaries, threading/EDT behavior, state ownership, or lifecycle semantics (or to verify that an API you plan to recommend in your feedback actually exists), you may request up to 3 files using a ```context-requests``` code block:
 ```context-requests
 path/to/File1.kt
 path/to/File2.java
 ```
 Rules for context requests:
 - Specify exact repository-relative paths (e.g. `src/main/java/com/tibagni/logviewer/MainView.kt`).
-- Only request files whose declarations or contracts you directly need to verify.
-- Maximum 3 files.
+- Only request files needed to verify behavioral, architectural, or lifecycle semantics, or to ground your own API recommendations (never to check compilation).
+- Maximum 3 files.{dedup_rule}
 - Always provide your best provisional review in this response regardless of whether you request context."""
         sections.append(context_request_instructions)
 
@@ -599,14 +992,15 @@ Rules for inline comments:
 - If there are no specific line-level issues, omit the ```inline-comments``` block completely."""
 
     pass2_instructions = f"""## Second-Pass Verification Instructions:
-You previously generated the draft review above and requested additional repository file context to verify method signatures, interface contracts, or class implementations. The exact contents of the requested files are provided above.
+You previously generated the draft review above and requested additional repository file context. The exact contents of the repository files are provided above to help you evaluate architectural boundaries, threading/EDT behavior, state ownership, and lifecycle semantics, and to verify that any APIs you recommend in your feedback actually exist.
 
 Review Directives:
-1. **Contract & API Verification**: Cross-reference any findings, suggested method calls, properties, or lifecycle assumptions in your draft against the confirmed declarations in the provided file context.
-2. **Eliminate Ungrounded Assumptions**: If any method, property, or lifecycle behavior you recommended in your draft does not actually exist in the provided source code, eliminate or adjust that finding.
-3. **Refine Findings**: Update your Overall Verdict, Key Findings, and inline comments based on confirmed codebase realities. If all concerns are resolved and the code is sound, elevate your verdict to ✅ LGTM.
-4. **Finalized Output**: Output your complete, finalized review in the required GitHub Flavored Markdown format.
-5. Do not include any ```context-requests``` block in this second-pass response.
+1. **Assume the PR Compiles and Passes CI Tests**: Automated CI already compiles the project and runs unit tests on every PR. Never act as a compiler or flag suspected compilation errors, missing imports, or signature mismatches.
+2. **Contract & Behavioral Verification**: Cross-reference any architectural, concurrency, or lifecycle findings and any suggested method calls or properties in your draft against the confirmed declarations in the provided file context.
+3. **Eliminate Ungrounded Assumptions**: If any method, property, or lifecycle behavior you recommended in your draft does not actually exist in the provided source code, eliminate or adjust that finding.
+4. **Refine Findings**: Update your Overall Verdict, Key Findings, and inline comments based on confirmed codebase realities. If all concerns are resolved and the code is sound, elevate your verdict to ✅ LGTM.
+5. **Finalized Output**: Output your complete, finalized review in the required GitHub Flavored Markdown format.
+6. Do not include any ```context-requests``` block in this second-pass response.
 
 {inline_instructions}"""
 
@@ -1116,17 +1510,37 @@ def handle_empty_diff(
 
 def resolve_context_files(
     review_output: str,
-    repo_root: str
+    repo_root: str,
+    already_loaded: Optional[Set[str]] = None
 ) -> Dict[str, str]:
     """Parses requested context files from review output and loads their contents from disk."""
     requested_files = parse_context_requests(review_output)
     if not requested_files:
         return {}
 
-    print(f"Reviewer requested additional context for {len(requested_files)} file(s): {', '.join(requested_files)}")
+    if already_loaded:
+        norm_loaded = {normalize_path(p) for p in already_loaded}
+        requested_files = [
+            f for f in requested_files
+            if normalize_path(f) not in norm_loaded
+        ]
+        if not requested_files:
+            print(
+                "Notice: All requested context files were already pre-loaded in Pass 1. "
+                "Skipping Pass 2."
+            )
+            return {}
+
+    print(
+        f"Reviewer requested additional context for {len(requested_files)} file(s): "
+        f"{', '.join(requested_files)}"
+    )
     file_contexts = fetch_file_context(repo_root, requested_files)
     if not file_contexts:
-        print("Notice: None of the requested context files could be loaded. Proceeding with Pass 1 review.")
+        print(
+            "Notice: None of the requested context files could be loaded. "
+            "Proceeding with Pass 1 review."
+        )
         return {}
 
     print(f"Loaded {len(file_contexts)} context file(s). Executing Pass 2 verification...")
@@ -1140,23 +1554,35 @@ def run_second_pass_if_needed(
     first_pass_review: str,
     model_used: str,
     preferred_model: Optional[str] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    preloaded_context: Optional[Dict[str, str]] = None
 ) -> Tuple[str, str, List[str]]:
-    """Checks if the reviewer requested additional context files and executes Pass 2 verification if so.
+    """Checks if the reviewer requested additional context files and executes Pass 2 if needed.
 
     Returns:
         Tuple of (final_review_text, model_name_used, list_of_verified_file_paths)
     """
-    file_contexts = resolve_context_files(first_pass_review, get_project_root())
+    base_verified = sorted(preloaded_context.keys()) if preloaded_context else []
+    already_loaded = set(preloaded_context.keys()) if preloaded_context else None
+    file_contexts = resolve_context_files(
+        first_pass_review,
+        get_project_root(),
+        already_loaded=already_loaded
+    )
     if not file_contexts:
-        return first_pass_review, model_used, []
+        return first_pass_review, model_used, base_verified
+
+    combined_contexts: Dict[str, str] = {}
+    if preloaded_context:
+        combined_contexts.update(preloaded_context)
+    combined_contexts.update(file_contexts)
 
     try:
         pass2_prompt = build_second_pass_prompt(
             guidelines=guidelines,
             diff=change.diff,
             first_pass_review=first_pass_review,
-            file_contexts=file_contexts,
+            file_contexts=combined_contexts,
             title=change.title,
             description=change.description
         )
@@ -1172,12 +1598,12 @@ def run_second_pass_if_needed(
             prompt=pass2_prompt,
             preferred_model=preferred_model or model_used
         )
-        verified_files = sorted(file_contexts.keys())
+        verified_files = sorted(combined_contexts.keys())
         print(f"Pass 2 verification completed successfully using {pass2_model}.")
         return pass2_output, pass2_model, verified_files
     except Exception as e:
         print(f"Warning: Pass 2 verification failed: {e}. Falling back to Pass 1 review.")
-        return first_pass_review, model_used, []
+        return first_pass_review, model_used, base_verified
 
 
 def print_dry_run_results(
@@ -1250,10 +1676,24 @@ def main(argv: Optional[List[str]] = None) -> int:
     if handle_empty_diff(change, repo, args.dry_run, args.timezone):
         return 0
 
-    # 6. Load review guidelines and assemble prompt
+    # 6. Load review guidelines, evaluate deterministic context, and assemble prompt
     print(f"Extracted diff ({len(change.diff)} characters). Loading review guidelines...")
     valid_diff_lines = parse_valid_diff_lines(change.diff)
     guidelines, source_description = load_review_guidelines()
+    det_ctx = evaluate_deterministic_context(
+        diff=change.diff,
+        repo_root=get_project_root(),
+        two_pass_enabled=two_pass_enabled
+    )
+    if det_ctx.preloaded_files:
+        preloaded_list = ", ".join(sorted(det_ctx.preloaded_files.keys()))
+        print(
+            f"Pre-loaded {len(det_ctx.preloaded_files)} context file(s) for Pass 1: "
+            f"{preloaded_list}"
+        )
+    pass2_status = "enabled" if det_ctx.allow_context_requests else "deterministically skipped"
+    print(f"Pass 2 context requests {pass2_status} ({det_ctx.reason}).")
+
     prompt = build_prompt(
         guidelines=guidelines,
         diff=change.diff,
@@ -1261,23 +1701,26 @@ def main(argv: Optional[List[str]] = None) -> int:
         description=change.description,
         commits=change.commits,
         comments=change.comments,
-        allow_context_requests=two_pass_enabled
+        allow_context_requests=det_ctx.allow_context_requests,
+        preloaded_context=det_ctx.preloaded_files
     )
 
     if args.verbose:
+        pass_label = " (Pass 1)" if det_ctx.allow_context_requests else ""
         print("\n" + "=" * 80)
-        print("VERBOSE: Full Prompt Sent to LLM" + (" (Pass 1)" if two_pass_enabled else ""))
+        print("VERBOSE: Full Prompt Sent to LLM" + pass_label)
         print("=" * 80)
         print(prompt)
         print("=" * 80 + "\n")
 
     # 7. Request code review (Pass 1)
-    print("Requesting code review from LLM API" + (" (Pass 1)..." if two_pass_enabled else "..."))
+    pass_req_label = " (Pass 1)..." if det_ctx.allow_context_requests else "..."
+    print("Requesting code review from LLM API" + pass_req_label)
     raw_review_output, model_used = call_llm_api(api_key, prompt, preferred_model=preferred_model)
 
     # 8. Second-pass context verification (if requested and enabled)
-    verified_files: List[str] = []
-    if two_pass_enabled:
+    verified_files: List[str] = sorted(det_ctx.preloaded_files.keys())
+    if det_ctx.allow_context_requests:
         raw_review_output, model_used, verified_files = run_second_pass_if_needed(
             api_key=api_key,
             guidelines=guidelines,
@@ -1285,7 +1728,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             first_pass_review=raw_review_output,
             model_used=model_used,
             preferred_model=preferred_model,
-            verbose=args.verbose
+            verbose=args.verbose,
+            preloaded_context=det_ctx.preloaded_files
         )
 
     # 9. Clean output and extract inline comments

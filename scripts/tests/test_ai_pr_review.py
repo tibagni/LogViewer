@@ -919,6 +919,433 @@ src/Extra.kt
         self.assertIn("b.kt:20 -> ignore", output)
         self.assertIn("Auto-Approval Check: Author 'author1' matches AUTO_APPROVE_AUTHORS", output)
 
+    def test_build_repo_symbol_index(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pkg_dir = os.path.join(tmpdir, "src", "main", "java", "com", "tibagni", "logviewer")
+            os.makedirs(pkg_dir, exist_ok=True)
+
+            live_log_path = os.path.join(pkg_dir, "LiveLogPresenter.kt")
+            with open(live_log_path, "w", encoding="utf-8") as f:
+                f.write(
+                    "package com.tibagni.logviewer\n\n"
+                    "interface LiveLogPresenterView {\n"
+                    "    fun onLogLinesAdded()\n"
+                    "}\n\n"
+                    "interface LiveLogPresenter {\n"
+                    "    fun start()\n"
+                    "}\n\n"
+                    "class LiveLogPresenterImpl : LiveLogPresenter {\n"
+                    "    override fun start() {}\n"
+                    "}\n"
+                )
+
+            locator_path = os.path.join(pkg_dir, "ServiceLocator.kt")
+            with open(locator_path, "w", encoding="utf-8") as f:
+                f.write(
+                    "package com.tibagni.logviewer\n"
+                    "object ServiceLocator {\n"
+                    "    enum class LogLevel { DEBUG, ERROR }\n"
+                    "}\n"
+                )
+
+            java_path = os.path.join(pkg_dir, "LegacyHelper.java")
+            with open(java_path, "w", encoding="utf-8") as f:
+                f.write(
+                    "package com.tibagni.logviewer;\n"
+                    "public final class LegacyHelper {}\n"
+                )
+
+            index = ai_review.build_repo_symbol_index(tmpdir)
+            expected_live = "src/main/java/com/tibagni/logviewer/LiveLogPresenter.kt"
+            expected_locator = "src/main/java/com/tibagni/logviewer/ServiceLocator.kt"
+            expected_java = "src/main/java/com/tibagni/logviewer/LegacyHelper.java"
+
+            self.assertEqual(index.get("LiveLogPresenterView"), expected_live)
+            self.assertEqual(index.get("LiveLogPresenter"), expected_live)
+            self.assertEqual(index.get("LiveLogPresenterImpl"), expected_live)
+            self.assertEqual(index.get("ServiceLocator"), expected_locator)
+            self.assertEqual(index.get("LogLevel"), expected_locator)
+            self.assertEqual(index.get("LegacyHelper"), expected_java)
+
+        self.assertEqual(ai_review.build_repo_symbol_index("/non/existent/repo"), {})
+
+    def test_parse_diff_file_statuses(self):
+        diff = (
+            "diff --git a/src/Mod.kt b/src/Mod.kt\n"
+            "--- a/src/Mod.kt\n"
+            "+++ b/src/Mod.kt\n"
+            "@@ -1,3 +1,4 @@\n"
+            " val a = 1\n"
+            "-val b = 2\n"
+            "+val b = 20\n"
+            "+val c = 30\n"
+            " val d = 4\n"
+            "diff --git a/src/New.kt b/src/New.kt\n"
+            "--- /dev/null\n"
+            "+++ b/src/New.kt\n"
+            "@@ -0,0 +1,3 @@\n"
+            "+package com.tibagni.logviewer\n"
+            "+class New {\n"
+            "+}\n"
+            "diff --git a/src/Old.kt b/src/Old.kt\n"
+            "--- a/src/Old.kt\n"
+            "+++ /dev/null\n"
+            "@@ -1,2 +0,0 @@\n"
+            "-class Old\n"
+            "-val unused = 0\n"
+        )
+        entries = ai_review.parse_diff_file_statuses(diff)
+        self.assertEqual(len(entries), 3)
+
+        self.assertEqual(entries[0]["path"], "src/Mod.kt")
+        self.assertEqual(entries[0]["status"], "modified")
+        self.assertEqual(entries[0]["added_or_context_lines"], 4)
+
+        self.assertEqual(entries[1]["path"], "src/New.kt")
+        self.assertEqual(entries[1]["status"], "added")
+        self.assertEqual(entries[1]["added_or_context_lines"], 3)
+
+        self.assertEqual(entries[2]["path"], "src/Old.kt")
+        self.assertEqual(entries[2]["status"], "deleted")
+        self.assertEqual(entries[2]["added_or_context_lines"], 0)
+
+    def test_discover_referenced_repo_files(self):
+        symbol_index = {
+            "FooPresenter": "src/main/java/com/tibagni/logviewer/FooPresenter.kt",
+            "FooPresenterImpl": "src/main/java/com/tibagni/logviewer/FooPresenterImpl.kt",
+            "BugReportPresenter": (
+                "src/main/java/com/tibagni/logviewer/bugreport/BugReportPresenter.kt"
+            ),
+            "BugReportPresenterView": (
+                "src/main/java/com/tibagni/logviewer/bugreport/BugReportView.kt"
+            ),
+            "BugReportRepository": (
+                "src/main/java/com/tibagni/logviewer/bugreport/BugReportRepository.kt"
+            ),
+            "StringUtils": "src/main/java/com/tibagni/logviewer/util/StringUtils.kt",
+            "AlreadyModifiedView": "src/main/java/com/tibagni/logviewer/AlreadyModifiedView.kt",
+        }
+
+        # 1. Test-to-subject resolution (FooPresenterTest.kt -> FooPresenter.kt)
+        test_diff = (
+            "--- a/src/test/java/com/tibagni/logviewer/FooPresenterTest.kt\n"
+            "+++ b/src/test/java/com/tibagni/logviewer/FooPresenterTest.kt\n"
+            "@@ -1,2 +1,3 @@\n"
+            "+@Test fun testFoo() {}\n"
+        )
+        test_entries = ai_review.parse_diff_file_statuses(test_diff)
+        resolved_test = ai_review.discover_referenced_repo_files(
+            test_diff, test_entries, symbol_index
+        )
+        self.assertIn("src/main/java/com/tibagni/logviewer/FooPresenter.kt", resolved_test)
+        self.assertIn("src/main/java/com/tibagni/logviewer/FooPresenterImpl.kt", resolved_test)
+
+        # 2. Same-package MVP peer resolution + explicit import + exclusion of modified files
+        mvp_diff = (
+            "--- a/src/main/java/com/tibagni/logviewer/bugreport/BugReportPresenter.kt\n"
+            "+++ b/src/main/java/com/tibagni/logviewer/bugreport/BugReportPresenter.kt\n"
+            "@@ -1,3 +1,6 @@\n"
+            "+import com.tibagni.logviewer.util.StringUtils\n"
+            " class BugReportPresenter(private val view: BugReportPresenterView) {\n"
+            "+    fun load(repo: BugReportRepository, other: AlreadyModifiedView) {\n"
+            "+        StringUtils.isEmpty(\"\")\n"
+            "+    }\n"
+            " }\n"
+            "--- a/src/main/java/com/tibagni/logviewer/AlreadyModifiedView.kt\n"
+            "+++ b/src/main/java/com/tibagni/logviewer/AlreadyModifiedView.kt\n"
+            "@@ -1,1 +1,2 @@\n"
+            "+class AlreadyModifiedView\n"
+        )
+        mvp_entries = ai_review.parse_diff_file_statuses(mvp_diff)
+        resolved_mvp = ai_review.discover_referenced_repo_files(
+            mvp_diff, mvp_entries, symbol_index
+        )
+        self.assertIn(
+            "src/main/java/com/tibagni/logviewer/bugreport/BugReportView.kt", resolved_mvp
+        )
+        self.assertIn(
+            "src/main/java/com/tibagni/logviewer/bugreport/BugReportRepository.kt", resolved_mvp
+        )
+        self.assertIn("src/main/java/com/tibagni/logviewer/util/StringUtils.kt", resolved_mvp)
+        self.assertNotIn(
+            "src/main/java/com/tibagni/logviewer/bugreport/BugReportPresenter.kt", resolved_mvp
+        )
+        self.assertNotIn(
+            "src/main/java/com/tibagni/logviewer/AlreadyModifiedView.kt", resolved_mvp
+        )
+
+    def test_evaluate_deterministic_context_non_code_diff(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            diff = (
+                "--- a/README.md\n"
+                "+++ b/README.md\n"
+                "@@ -1,1 +1,2 @@\n"
+                "+Updated documentation\n"
+                "--- a/src/main/resources/messages.properties\n"
+                "+++ b/src/main/resources/messages.properties\n"
+                "@@ -1,1 +1,2 @@\n"
+                "+key=value\n"
+            )
+            res = ai_review.evaluate_deterministic_context(diff, tmpdir, two_pass_enabled=True)
+            self.assertFalse(res.allow_context_requests)
+            self.assertEqual(res.preloaded_files, {})
+            self.assertIn("self-contained", res.reason)
+
+    def test_evaluate_deterministic_context_small_focused_code_diff(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pkg_dir = os.path.join(tmpdir, "src", "main", "java", "com", "tibagni", "logviewer")
+            os.makedirs(pkg_dir, exist_ok=True)
+
+            presenter_rel = "src/main/java/com/tibagni/logviewer/FooPresenter.kt"
+            view_rel = "src/main/java/com/tibagni/logviewer/FooView.kt"
+            with open(os.path.join(tmpdir, presenter_rel), "w", encoding="utf-8") as f:
+                f.write(
+                    "package com.tibagni.logviewer\n"
+                    "class FooPresenter(private val view: FooPresenterView) {\n"
+                    "    fun refresh() { view.showLoading() }\n"
+                    "}\n"
+                )
+            with open(os.path.join(tmpdir, view_rel), "w", encoding="utf-8") as f:
+                f.write(
+                    "package com.tibagni.logviewer\n"
+                    "interface FooPresenterView {\n"
+                    "    fun showLoading()\n"
+                    "}\n"
+                )
+
+            diff = (
+                f"--- a/{presenter_rel}\n"
+                f"+++ b/{presenter_rel}\n"
+                "@@ -1,3 +1,3 @@\n"
+                " class FooPresenter(private val view: FooPresenterView) {\n"
+                "-    fun refresh() {}\n"
+                "+    fun refresh() { view.showLoading() }\n"
+                " }\n"
+            )
+            res = ai_review.evaluate_deterministic_context(diff, tmpdir, two_pass_enabled=True)
+            self.assertFalse(res.allow_context_requests)
+            self.assertIn(presenter_rel, res.preloaded_files)
+            self.assertIn(view_rel, res.preloaded_files)
+
+    def test_evaluate_deterministic_context_newly_added_file_not_redundantly_preloaded(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pkg_dir = os.path.join(tmpdir, "src", "main", "java", "com", "tibagni", "logviewer")
+            os.makedirs(pkg_dir, exist_ok=True)
+
+            new_rel = "src/main/java/com/tibagni/logviewer/NewFeature.kt"
+            dep_rel = "src/main/java/com/tibagni/logviewer/ExistingDep.kt"
+            with open(os.path.join(tmpdir, new_rel), "w", encoding="utf-8") as f:
+                f.write(
+                    "package com.tibagni.logviewer\n"
+                    "class NewFeature(private val dep: ExistingDep)\n"
+                )
+            with open(os.path.join(tmpdir, dep_rel), "w", encoding="utf-8") as f:
+                f.write("package com.tibagni.logviewer\nclass ExistingDep\n")
+
+            diff = (
+                "--- /dev/null\n"
+                f"+++ b/{new_rel}\n"
+                "@@ -0,0 +1,2 @@\n"
+                "+package com.tibagni.logviewer\n"
+                "+class NewFeature(private val dep: ExistingDep)\n"
+            )
+            res = ai_review.evaluate_deterministic_context(diff, tmpdir, two_pass_enabled=True)
+            self.assertFalse(res.allow_context_requests)
+            self.assertNotIn(new_rel, res.preloaded_files)
+            self.assertIn(dep_rel, res.preloaded_files)
+
+    def test_evaluate_deterministic_context_large_or_overflow_keeps_pass2_enabled(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pkg_dir = os.path.join(tmpdir, "src", "main", "java", "com", "tibagni", "logviewer")
+            os.makedirs(pkg_dir, exist_ok=True)
+
+            # Create 6 small files and 1 truncated (>600 lines) file
+            for idx in range(6):
+                rel = f"src/main/java/com/tibagni/logviewer/Dep{idx}.kt"
+                with open(os.path.join(tmpdir, rel), "w", encoding="utf-8") as f:
+                    f.write(f"package com.tibagni.logviewer\nclass Dep{idx}\n")
+
+            huge_rel = "src/main/java/com/tibagni/logviewer/HugeFile.kt"
+            with open(os.path.join(tmpdir, huge_rel), "w", encoding="utf-8") as f:
+                for line_no in range(650):
+                    f.write(f"val x{line_no} = {line_no}\n")
+
+            # Case 1: Candidate count exceeds max_prefetch_files (5)
+            mod_rel = "src/main/java/com/tibagni/logviewer/Dep0.kt"
+            overflow_diff = (
+                f"--- a/{mod_rel}\n"
+                f"+++ b/{mod_rel}\n"
+                "@@ -1,2 +1,3 @@\n"
+                "+// uses Dep1 Dep2 Dep3 Dep4 Dep5\n"
+            )
+            res_overflow = ai_review.evaluate_deterministic_context(
+                overflow_diff, tmpdir, two_pass_enabled=True, max_prefetch_files=5
+            )
+            self.assertTrue(res_overflow.allow_context_requests)
+            self.assertEqual(len(res_overflow.preloaded_files), 5)
+
+            # Case 2: Modified file exceeds MAX_CONTEXT_FILE_LINES
+            huge_diff = (
+                f"--- a/{huge_rel}\n"
+                f"+++ b/{huge_rel}\n"
+                "@@ -1,1 +1,2 @@\n"
+                "+val extra = 1\n"
+            )
+            res_huge = ai_review.evaluate_deterministic_context(
+                huge_diff, tmpdir, two_pass_enabled=True
+            )
+            self.assertTrue(res_huge.allow_context_requests)
+
+            # Case 3: Diff exceeds SMALL_DIFF_MAX_LINES (> 400 lines)
+            long_diff_lines = [f"--- a/{mod_rel}", f"+++ b/{mod_rel}", "@@ -1,1 +1,405 @@"]
+            long_diff_lines.extend(f"+val line{i} = {i}" for i in range(405))
+            res_long_diff = ai_review.evaluate_deterministic_context(
+                "\n".join(long_diff_lines), tmpdir, two_pass_enabled=True
+            )
+            self.assertTrue(res_long_diff.allow_context_requests)
+
+            # Case 4: Diff touches > SMALL_DIFF_MAX_CODE_FILES (4 code files)
+            multi_file_chunks = []
+            for idx in range(4):
+                rel = f"src/main/java/com/tibagni/logviewer/Dep{idx}.kt"
+                multi_file_chunks.append(
+                    f"--- a/{rel}\n+++ b/{rel}\n@@ -1,1 +1,2 @@\n+// edit\n"
+                )
+            res_multi_code = ai_review.evaluate_deterministic_context(
+                "".join(multi_file_chunks), tmpdir, two_pass_enabled=True
+            )
+            self.assertTrue(res_multi_code.allow_context_requests)
+
+    def test_build_prompt_preloaded_context_and_ci_assumption(self):
+        prompt_with_pass2 = ai_review.build_prompt(
+            guidelines="Rules",
+            diff="+ val x = 1",
+            allow_context_requests=True,
+            preloaded_context={"src/Foo.kt": "class Foo"}
+        )
+        self.assertIn("## Pre-loaded Repository File Context:", prompt_with_pass2)
+        self.assertIn("### File: `src/Foo.kt`", prompt_with_pass2)
+        self.assertIn("class Foo", prompt_with_pass2)
+        self.assertIn("CI Build & Compilation Assumption", prompt_with_pass2)
+        self.assertIn("Assume the PR Compiles and Passes CI Tests", prompt_with_pass2)
+        self.assertIn(
+            "Do not request files that are already provided in the "
+            "Pre-loaded Repository File Context section.",
+            prompt_with_pass2
+        )
+
+        prompt_single_pass = ai_review.build_prompt(
+            guidelines="Rules",
+            diff="+ val x = 1",
+            allow_context_requests=False,
+            preloaded_context={"src/Foo.kt": "class Foo"}
+        )
+        self.assertIn("## Pre-loaded Repository File Context:", prompt_single_pass)
+        self.assertIn("CI Build & Compilation Assumption", prompt_single_pass)
+        self.assertNotIn("Optional Context Request (Two-Pass Review)", prompt_single_pass)
+
+        pass2_prompt = ai_review.build_second_pass_prompt(
+            guidelines="Rules",
+            diff="+ val x = 1",
+            first_pass_review="Draft",
+            file_contexts={"src/Foo.kt": "class Foo"}
+        )
+        self.assertIn("Assume the PR Compiles and Passes CI Tests", pass2_prompt)
+
+    @patch("scripts.ai_pr_review.call_llm_api")
+    @patch("scripts.ai_pr_review.fetch_file_context")
+    def test_resolve_context_files_and_run_second_pass_deduplication(
+        self, mock_fetch, mock_call_llm
+    ):
+        review_req_preloaded = "Draft\n```context-requests\nsrc/Already.kt\n```"
+
+        # 1. All requested files were already preloaded -> returns {} without fetching
+        dedup_res = ai_review.resolve_context_files(
+            review_req_preloaded,
+            "/repo",
+            already_loaded={"src/Already.kt"}
+        )
+        self.assertEqual(dedup_res, {})
+        mock_fetch.assert_not_called()
+
+        # 2. run_second_pass_if_needed skips Pass 2 API call and preserves verified_files
+        change = ai_review.ChangeContext(diff="+ val x = 1")
+        final_text, model_used, verified = ai_review.run_second_pass_if_needed(
+            api_key="key",
+            guidelines="Rules",
+            change=change,
+            first_pass_review=review_req_preloaded,
+            model_used="gemini-4-flash",
+            preloaded_context={"src/Already.kt": "class Already"}
+        )
+        self.assertEqual(final_text, review_req_preloaded)
+        self.assertEqual(model_used, "gemini-4-flash")
+        self.assertEqual(verified, ["src/Already.kt"])
+        mock_call_llm.assert_not_called()
+
+        # 3. Mix of already-loaded and new file only fetches new file and merges verified_files
+        review_req_mixed = "Draft\n```context-requests\nsrc/Already.kt\nsrc/NewExtra.kt\n```"
+        mock_fetch.return_value = {"src/NewExtra.kt": "class NewExtra"}
+        mock_call_llm.return_value = ("### Overall Verdict\n✅ LGTM", "gemini-4-flash")
+
+        final_text2, _, verified2 = ai_review.run_second_pass_if_needed(
+            api_key="key",
+            guidelines="Rules",
+            change=change,
+            first_pass_review=review_req_mixed,
+            model_used="gemini-4-flash",
+            preloaded_context={"src/Already.kt": "class Already"}
+        )
+        mock_fetch.assert_called_once()
+        self.assertEqual(mock_fetch.call_args[0][1], ["src/NewExtra.kt"])
+        mock_call_llm.assert_called_once()
+        self.assertEqual(final_text2, "### Overall Verdict\n✅ LGTM")
+        self.assertEqual(verified2, ["src/Already.kt", "src/NewExtra.kt"])
+
+    @patch("scripts.ai_pr_review.post_or_update_review_comment")
+    @patch("scripts.ai_pr_review.get_head_sha", return_value="sha123")
+    @patch("scripts.ai_pr_review.get_repo_name", return_value="tibagni/LogViewer")
+    @patch(
+        "scripts.ai_pr_review.get_pr_metadata",
+        return_value={"title": "T", "body": "B", "commits": [], "filtered_comments": []}
+    )
+    @patch(
+        "scripts.ai_pr_review.get_pr_diff",
+        return_value="--- a/src/A.kt\n+++ b/src/A.kt\n@@ -1,1 +1,2 @@\n+val x = 1\n"
+    )
+    @patch(
+        "scripts.ai_pr_review.evaluate_deterministic_context",
+        return_value=ai_review.DeterministicContextResult(
+            preloaded_files={"src/A.kt": "class A", "src/B.kt": "class B"},
+            allow_context_requests=False,
+            reason="small diff and 100% of modified/referenced context files preloaded in Pass 1"
+        )
+    )
+    @patch(
+        "scripts.ai_pr_review.call_llm_api",
+        return_value=("### Overall Verdict\n✅ LGTM", "gemini-4-flash")
+    )
+    def test_main_single_pass_preloaded_footer_attribution(
+        self,
+        mock_call,
+        mock_eval_ctx,
+        mock_diff,
+        mock_meta,
+        mock_repo,
+        mock_sha,
+        mock_post_top
+    ):
+        with patch.dict(os.environ, {"LLM_API_KEY": "test_key"}):
+            exit_code = ai_review.main(["--pr", "101", "--env-file", "/non/existent/.env"])
+            self.assertEqual(exit_code, 0)
+            mock_call.assert_called_once()
+            mock_post_top.assert_called_once()
+            comment_posted = mock_post_top.call_args[0][2]
+            self.assertIn(
+                "(`gemini-4-flash`, context-verified: `src/A.kt`, `src/B.kt`)",
+                comment_posted
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
