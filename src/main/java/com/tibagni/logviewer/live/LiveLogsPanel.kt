@@ -5,6 +5,7 @@ import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogCellRenderer
 import com.tibagni.logviewer.log.LogEntry
 import com.tibagni.logviewer.log.LogListTableModel
+import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
@@ -12,13 +13,17 @@ import com.tibagni.logviewer.view.SearchableTable
 import com.tibagni.logviewer.view.SideButtonsPanel
 import com.tibagni.logviewer.view.SidePanelEntry
 import com.tibagni.logviewer.view.StatusBadge
+import com.tibagni.logviewer.view.Toast
 import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.RenderingHints
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.*
 
 /**
@@ -75,6 +80,22 @@ class LiveLogsPanel(
     deviceLabel = JLabel("-").apply {
       icon = CommonIcons.smartphoneIcon()
       iconTextGap = UIScaleUtils.dip(6)
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+      addMouseListener(object : MouseAdapter() {
+        override fun mouseClicked(e: MouseEvent) {
+          if (SwingUtilities.isRightMouseButton(e) || e.clickCount == 2) {
+            val serialToCopy = toolTipText ?: text
+            if (serialToCopy.isNotEmpty() && serialToCopy != "-") {
+              CommonUtils.copyToClipboard(serialToCopy)
+              Toast.showToast(
+                this@LiveLogsPanel,
+                I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+                Toast.LENGTH_SHORT
+              )
+            }
+          }
+        }
+      })
     }
 
     statusLabel = JLabel("-").apply {

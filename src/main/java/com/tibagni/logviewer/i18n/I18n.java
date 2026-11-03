@@ -152,6 +152,7 @@ public final class I18n {
   public static final String LIVE_LOGS_COLLAPSE_SIDEBAR = "live.logs.collapse_sidebar";
   public static final String LIVE_LOGS_BUFFERS = "live.logs.buffers";
   public static final String LIVE_LOGS_NO_BUFFERS_SELECTED_TOOLTIP = "live.logs.no_buffers_selected_tooltip";
+  public static final String LIVE_LOGS_COPY_SERIAL = "live.logs.copy_serial";
 
   // Edit Filter Dialog
   public static final String FILTER_DIALOG_EDIT_TITLE = "filter.dialog.edit_title";

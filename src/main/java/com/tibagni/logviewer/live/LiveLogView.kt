@@ -71,7 +71,9 @@ class LiveLogViewImpl(
 ) : LiveLogView, LiveLogPresenterView {
 
   @VisibleForTesting
-  constructor(presenterFactory: (LiveLogPresenterView) -> LiveLogPresenter) : this(null, presenterFactory)
+  constructor(
+    presenterFactory: (LiveLogPresenterView) -> LiveLogPresenter
+  ) : this(null, presenterFactory)
 
   private val rootCardLayout = CardLayout()
   override val contentPane: JPanel = JPanel(rootCardLayout)
@@ -330,6 +332,7 @@ class LiveLogViewImpl(
     }
     val device = presenter.connectedDevice
     deviceLabel.text = device?.displayName ?: "-"
+    deviceLabel.toolTipText = device?.serialNumber
     sidePanel.setItemEnabled(ID_TERMINAL, device?.isOnline == true)
   }
 
@@ -339,6 +342,7 @@ class LiveLogViewImpl(
 
   override fun showLogsView(device: AdbDevice) {
     deviceLabel.text = device.displayName
+    deviceLabel.toolTipText = device.serialNumber
     sidePanel.setItemEnabled(ID_TERMINAL, device.isOnline)
     sidePanel.setItemEnabled(ID_STOP_RESUME, true)
     rootCardLayout.show(contentPane, CARD_LOGS)
@@ -569,7 +573,7 @@ class LiveLogViewImpl(
     logList.scrollPane.verticalScrollBar.addMouseListener(scrollBarMouseListener)
     filteredLogList.scrollPane.verticalScrollBar.addMouseListener(scrollBarMouseListener)
 
-    // Disable auto-scroll when user clicks on a log entry or anywhere in the table/viewport to inspect it
+    // Disable auto-scroll when user clicks on a log entry or anywhere in the table/viewport
     val tableMouseListener = object : MouseAdapter() {
       override fun mousePressed(e: MouseEvent) {
         if (isAutoScrollActive) {
