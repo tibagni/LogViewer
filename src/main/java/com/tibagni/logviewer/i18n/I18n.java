@@ -287,6 +287,7 @@ public final class I18n {
   public static final String FILTERS_SAVE_MULTIPLE_MSG = "filters.save_multiple.msg";
 
   // Logs View & Context Actions (LogViewerView)
+  public static final String LOGS_HEADER_OPEN_FOLDER = "logs.header.open_folder";
   public static final String LOGS_PATH_PREFIX = "logs.path_prefix";
   public static final String LOGS_STATUS_ALL = "logs.status.all";
   public static final String LOGS_STATUS_FILTERED = "logs.status.filtered";

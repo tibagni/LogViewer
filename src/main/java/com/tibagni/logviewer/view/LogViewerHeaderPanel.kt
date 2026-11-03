@@ -1,18 +1,30 @@
 package com.tibagni.logviewer.view
 
 import com.tibagni.logviewer.ServiceLocator
+import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.logger.Logger
+import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import kotlin.concurrent.thread
 import org.jetbrains.annotations.VisibleForTesting
 import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Cursor
+import java.awt.Desktop
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.RenderingHints
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.io.File
 import javax.swing.BorderFactory
 import javax.swing.Icon
 import javax.swing.JLabel
+import javax.swing.JMenuItem
 import javax.swing.JPanel
+import javax.swing.JPopupMenu
+import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.border.Border
 
@@ -40,6 +52,14 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
     get() = currentLogsLbl.icon
 
   @get:VisibleForTesting
+  val displayedToolTipText: String?
+    get() = currentLogsLbl.toolTipText
+
+  @get:VisibleForTesting
+  val displayedCursor: Cursor
+    get() = currentLogsLbl.cursor
+
+  @get:VisibleForTesting
   val isBadgeVisible: Boolean
     get() = statusBadge.isVisible
 
@@ -47,12 +67,71 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
   val badgeText: String
     get() = statusBadge.text
 
+  @get:VisibleForTesting
+  internal var rawPath: String? = null
+
   init {
     isOpaque = false
     isVisible = false
     border = createHeaderBorder()
+
+    currentLogsLbl.apply {
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+      addMouseListener(object : MouseAdapter() {
+        override fun mouseClicked(e: MouseEvent) {
+          if (SwingUtilities.isRightMouseButton(e) || e.clickCount == 2) {
+            showContextMenu(e)
+          }
+        }
+      })
+    }
+
     add(currentLogsLbl, BorderLayout.CENTER)
     add(statusBadge, BorderLayout.EAST)
+  }
+
+  /**
+   * Displays a context menu allowing the user to copy the log path
+   * or open the containing folder.
+   */
+  private fun showContextMenu(e: MouseEvent) {
+    val path = rawPath ?: return
+    val popup = JPopupMenu()
+
+    val copyItem = JMenuItem(I18n.get(I18n.LOG_DETAILS_COPY_PATH)).apply {
+      icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+      addActionListener {
+        CommonUtils.copyToClipboard(path)
+        Toast.showToast(
+          this@LogViewerHeaderPanel,
+          I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+          Toast.LENGTH_SHORT
+        )
+      }
+    }
+    popup.add(copyItem)
+
+    val file = File(path)
+    val folder = if (file.isDirectory) file else file.parentFile
+    if (folder != null && folder.exists() && Desktop.isDesktopSupported() &&
+      Desktop.getDesktop().isSupported(Desktop.Action.OPEN)
+    ) {
+      val openFolderItem = JMenuItem(I18n.get(I18n.LOGS_HEADER_OPEN_FOLDER)).apply {
+        icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
+        addActionListener {
+          thread(isDaemon = true, name = "OpenFolderThread") {
+            try {
+              Desktop.getDesktop().open(folder)
+            } catch (t: Throwable) {
+              Logger.error("Failed to open directory $folder", t)
+            }
+          }
+        }
+      }
+      popup.add(openFolderItem)
+    }
+
+    popup.show(e.component, e.x, e.y)
   }
 
   /**
@@ -64,16 +143,20 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
    */
   fun updatePath(path: String?, availableWidth: Int = 1000) {
     if (path.isNullOrEmpty()) {
+      rawPath = null
       currentLogsLbl.text = ""
       currentLogsLbl.icon = null
+      currentLogsLbl.toolTipText = null
       isVisible = false
       return
     }
 
+    rawPath = path
     val width = if (availableWidth > 0) availableWidth else 1000
     val truncated = SwingUtils.truncateTextFor(currentLogsLbl, "", path, width).trim()
     currentLogsLbl.text = truncated
     currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
+    currentLogsLbl.toolTipText = path
     isVisible = true
   }
 
@@ -91,8 +174,10 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
    * Resets the header panel by clearing the log path, resetting badge stats, and hiding.
    */
   fun reset() {
+    rawPath = null
     currentLogsLbl.text = null
     currentLogsLbl.icon = null
+    currentLogsLbl.toolTipText = null
     statusBadge.updateStats(0, 0)
     isVisible = false
   }

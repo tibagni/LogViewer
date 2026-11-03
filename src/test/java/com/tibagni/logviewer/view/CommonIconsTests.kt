@@ -822,7 +822,7 @@ class CommonIconsTests {
   }
 
   /**
-   * Verifies that [CommonIcons.moreVerticalIcon] is created with expected
+* Verifies that [CommonIcons.moreVerticalIcon] is created with expected
    * dimensions and paints non-empty pixels.
    */
   @Test
@@ -929,5 +929,55 @@ class CommonIconsTests {
       }
     }
     assertTrue("clearIcon with custom size should have painted pixels", hasCustomPixels)
+  }
+
+  /**
+   * Verifies that [CommonIcons.infoIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testInfoIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.infoIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("infoIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.infoIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.refreshIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testRefreshIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.refreshIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("refreshIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.refreshIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
   }
 }
