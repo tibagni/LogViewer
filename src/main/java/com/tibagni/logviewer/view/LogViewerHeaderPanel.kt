@@ -6,6 +6,7 @@ import com.tibagni.logviewer.logger.Logger
 import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.SwingUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
+import kotlin.concurrent.thread
 import org.jetbrains.annotations.VisibleForTesting
 import java.awt.BorderLayout
 import java.awt.Color
@@ -118,10 +119,12 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
       val openFolderItem = JMenuItem(I18n.get(I18n.LOGS_HEADER_OPEN_FOLDER)).apply {
         icon = CommonIcons.folderIcon(UIScaleUtils.dip(14))
         addActionListener {
-          try {
-            Desktop.getDesktop().open(folder)
-          } catch (t: Throwable) {
-            Logger.error("Failed to open directory $folder", t)
+          thread(isDaemon = true, name = "OpenFolderThread") {
+            try {
+              Desktop.getDesktop().open(folder)
+            } catch (t: Throwable) {
+              Logger.error("Failed to open directory $folder", t)
+            }
           }
         }
       }
