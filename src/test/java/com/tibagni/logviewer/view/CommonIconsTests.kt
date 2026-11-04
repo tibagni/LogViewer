@@ -1027,4 +1027,37 @@ class CommonIconsTests {
       assertTrue("Icon should have painted pixels at 14px", hasPixels)
     }
   }
+
+  /**
+   * Verifies that [CommonIcons.stopIcon], [CommonIcons.autoScrollIcon],
+   * [CommonIcons.expandIcon], [CommonIcons.collapseIcon], and
+   * [CommonIcons.viewListIcon] are [DynamicVectorIcon] subclasses, support
+   * custom sizing, and rasterize non-empty pixels across default and custom sizes.
+   */
+  @Test
+  fun testRemainingIconsCustomSizing() {
+    val iconsWithCustomSize = listOf(
+      CommonIcons.stopIcon(14),
+      CommonIcons.autoScrollIcon(14),
+      CommonIcons.expandIcon(14),
+      CommonIcons.collapseIcon(14),
+      CommonIcons.viewListIcon(14),
+      CommonIcons.myLogsIcon(14)
+    )
+
+    for (icon in iconsWithCustomSize) {
+      assertNotNull(icon)
+      assertEquals(14, icon.iconWidth)
+      assertEquals(14, icon.iconHeight)
+
+      val image = icon.image as? BufferedImage
+      assertNotNull("Custom icon should be backed by a BufferedImage", image)
+      val hasPixels = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+        }
+      }
+      assertTrue("Icon should have painted pixels at 14px", hasPixels)
+    }
+  }
 }

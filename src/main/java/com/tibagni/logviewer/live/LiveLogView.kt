@@ -314,7 +314,7 @@ class LiveLogViewImpl(
 
   override fun showStreamingStatus(statusText: String, isStreaming: Boolean) {
     statusLabel.text = statusText
-    statusLabel.icon = CommonIcons.statusIndicatorIcon(isStreaming)
+    statusLabel.icon = CommonIcons.statusIndicatorIcon(isStreaming, UIScaleUtils.dip(16))
     if (isStreaming) {
       sidePanel.updateItem(
         ID_STOP_RESUME,

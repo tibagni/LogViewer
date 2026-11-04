@@ -79,7 +79,21 @@ open class SideButton(
   }
 
   protected open fun updateIcons() {
-    val resized = SwingUtils.resizeImage(rawIcon, 25, 25)
+    if (rawIcon is CommonIcons.DynamicVectorIcon) {
+      val vectorIcon = rawIcon as CommonIcons.DynamicVectorIcon
+      normalIcon = vectorIcon.withColor(normalColor)
+      rolloverIconImg = vectorIcon.withColor(rolloverColor)
+      val disabledColor = UIManager.getColor("Label.disabledForeground")
+        ?: UIManager.getColor("Component.disabledForeground")
+        ?: Color(160, 160, 160)
+      disabledIcon = vectorIcon.withColor(disabledColor)
+      icon = normalIcon
+      rolloverIcon = rolloverIconImg
+      return
+    }
+
+    val size = UIScaleUtils.dip(25)
+    val resized = SwingUtils.resizeImage(rawIcon, size, size)
     normalIcon = SwingUtils.tintImage(resized, normalColor)
     rolloverIconImg = SwingUtils.tintImage(resized, rolloverColor)
     val tintedDisabled = SwingUtils.tintImage(
