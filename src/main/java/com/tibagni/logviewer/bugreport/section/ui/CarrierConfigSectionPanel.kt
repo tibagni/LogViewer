@@ -130,7 +130,7 @@ class CarrierConfigSectionPanel(
         FlatClientProperties.BUTTON_TYPE,
         FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON
       )
-      icon = CommonIcons.chevronRightIcon(14)
+      icon = CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
       text = ""
     }
     val header = JPanel(FlowLayout(FlowLayout.LEFT))
@@ -150,9 +150,9 @@ class CarrierConfigSectionPanel(
     val toggleTableVisibility = {
       table.isVisible = !table.isVisible
       collapseButton.icon = if (table.isVisible) {
-        CommonIcons.chevronDownIcon(14)
+        CommonIcons.chevronDownIcon(UIScaleUtils.dip(14))
       } else {
-        CommonIcons.chevronRightIcon(14)
+        CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
       }
       truncatePanelMaxSize(panel)
       revalidate()

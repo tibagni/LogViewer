@@ -409,12 +409,13 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
     regexTxt = new JTextField();
     regexTxt.putClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON, true);
     regexTxt.putClientProperty(
-        FlatClientProperties.TEXT_FIELD_LEADING_ICON, CommonIcons.searchIcon(14));
+        FlatClientProperties.TEXT_FIELD_LEADING_ICON,
+        CommonIcons.searchIcon(UIScaleUtils.dip(14)));
     regexTxt.setFont(new Font(Font.MONOSPACED, Font.PLAIN, regexTxt.getFont().getSize()));
 
     regexEditorBtn = new FlatButton();
     regexEditorBtn.setText(I18n.get(I18n.FILTER_BTN_REGEX_EDITOR));
-    regexEditorBtn.setIcon(CommonIcons.chevronRightIcon(14));
+    regexEditorBtn.setIcon(CommonIcons.chevronRightIcon(UIScaleUtils.dip(14)));
     regexEditorBtn.setIconTextGap(UIScaleUtils.dip(4));
     regexEditorBtn.setToolTipText(I18n.get(I18n.FILTER_TOOLTIP_REGEX_EDITOR));
 
