@@ -78,7 +78,7 @@ class LiveLogsPanel(
     }
 
     deviceLabel = JLabel("-").apply {
-      icon = CommonIcons.smartphoneIcon()
+      icon = CommonIcons.smartphoneIcon(UIScaleUtils.dip(16))
       iconTextGap = UIScaleUtils.dip(6)
       cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       addMouseListener(object : MouseAdapter() {
@@ -99,7 +99,7 @@ class LiveLogsPanel(
     }
 
     statusLabel = JLabel("-").apply {
-      icon = CommonIcons.statusIndicatorIcon(false)
+      icon = CommonIcons.statusIndicatorIcon(false, UIScaleUtils.dip(16))
       iconTextGap = UIScaleUtils.dip(6)
     }
 
@@ -302,8 +302,8 @@ class LiveLogsPanel(
    * @param isStreaming whether streaming is currently active
    */
   fun onThemeChanged(isStreaming: Boolean) {
-    deviceLabel.icon = CommonIcons.smartphoneIcon()
-    statusLabel.icon = CommonIcons.statusIndicatorIcon(isStreaming)
+    deviceLabel.icon = CommonIcons.smartphoneIcon(UIScaleUtils.dip(16))
+    statusLabel.icon = CommonIcons.statusIndicatorIcon(isStreaming, UIScaleUtils.dip(16))
     headerPanel.border = createHeaderBorder()
     headerPanel.repaint()
     logList.onThemeChanged()
