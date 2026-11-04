@@ -176,6 +176,8 @@ class LogViewerPreferencesDialog(
           )
           if (value is PreferencePanel) {
             text = value.title
+            icon = value.icon
+            iconTextGap = UIScaleUtils.dip(8)
           }
           return c
         }

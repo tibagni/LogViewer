@@ -13,6 +13,7 @@ import java.awt.Component
 import java.io.File
 import javax.swing.Box
 import javax.swing.BoxLayout
+import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JFileChooser
 import javax.swing.JLabel
@@ -25,6 +26,7 @@ class ToolsPreferencePanel(
 
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_TOOLS)
+  override val icon: Icon get() = CommonIcons.toolsIcon(UIScaleUtils.dip(16))
 
   @VisibleForTesting
   internal val preferredEditorPathTxt = createPathTextField()

@@ -24,6 +24,7 @@ import javax.swing.border.EmptyBorder
 interface PreferencePanel {
   val id: String
   val title: String
+  val icon: Icon? get() = null
   val panel: JComponent
   fun apply()
   val hasTimeConsumingOperation: Boolean get() = false

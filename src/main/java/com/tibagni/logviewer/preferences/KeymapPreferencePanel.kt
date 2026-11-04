@@ -30,6 +30,7 @@ import java.awt.event.MouseEvent
 import javax.swing.AbstractAction
 import javax.swing.BorderFactory
 import javax.swing.JButton
+import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JDialog
 import javax.swing.JLabel
@@ -51,6 +52,7 @@ class KeymapPreferencePanel(
 
   override val id: String = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_KEYMAP)
+  override val icon: Icon get() = CommonIcons.keyboardIcon(UIScaleUtils.dip(16))
 
   @VisibleForTesting
   internal val currentMappings: MutableMap<ShortcutAction, KeyStroke> =

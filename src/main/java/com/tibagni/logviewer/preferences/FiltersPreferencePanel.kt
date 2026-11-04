@@ -13,6 +13,7 @@ import java.awt.Component
 import java.io.File
 import javax.swing.Box
 import javax.swing.BoxLayout
+import javax.swing.Icon
 import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JFileChooser
@@ -26,6 +27,7 @@ class FiltersPreferencePanel(
 
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_FILTERS)
+  override val icon: Icon get() = CommonIcons.filterIcon(UIScaleUtils.dip(16))
 
   @VisibleForTesting
   internal val filtersPathTxt = createPathTextField()
