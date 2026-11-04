@@ -1060,4 +1060,54 @@ class CommonIconsTests {
       assertTrue("Icon should have painted pixels at 14px", hasPixels)
     }
   }
+
+  /**
+   * Verifies that [CommonIcons.toolsIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testToolsIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.toolsIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("toolsIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.toolsIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.keyboardIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testKeyboardIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.keyboardIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("keyboardIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.keyboardIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
 }

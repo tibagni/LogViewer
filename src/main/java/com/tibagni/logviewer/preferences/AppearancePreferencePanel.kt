@@ -18,6 +18,7 @@ import java.awt.Insets
 import javax.swing.BorderFactory
 import javax.swing.Box
 import javax.swing.BoxLayout
+import javax.swing.Icon
 import javax.swing.JCheckBox
 import javax.swing.JComboBox
 import javax.swing.JComponent
@@ -34,6 +35,7 @@ class AppearancePreferencePanel(
 
   override val id = ID
   override val title: String get() = I18n.get(I18n.PREF_CATEGORY_APPEARANCE)
+  override val icon: Icon get() = CommonIcons.paletteIcon(UIScaleUtils.dip(16))
 
   @VisibleForTesting
   internal val lookAndFeelCbx = JComboBox<String>()

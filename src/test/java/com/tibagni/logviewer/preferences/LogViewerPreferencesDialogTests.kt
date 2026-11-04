@@ -53,6 +53,32 @@ class LogViewerPreferencesDialogTests {
   }
 
   @Test
+  fun testCategoriesListCellRendererShowsIcons() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val dialog = LogViewerPreferencesDialog(null)
+    try {
+      val renderer = dialog.categoriesList.cellRenderer
+      assertNotNull(renderer)
+      for (i in 0 until dialog.preferencePanels.size) {
+        val panel = dialog.preferencePanels[i]
+        assertNotNull("${panel.id} panel should have an icon", panel.icon)
+        val component = renderer.getListCellRendererComponent(
+          dialog.categoriesList,
+          panel,
+          i,
+          false,
+          false
+        ) as JLabel
+        assertEquals(panel.title, component.text)
+        assertNotNull("Category ${panel.id} component should have an icon", component.icon)
+      }
+    } finally {
+      dialog.onCancel()
+    }
+  }
+
+  @Test
   fun testCategoryTitlesEnglish() {
     val originalLocale = I18n.getLocale()
     try {

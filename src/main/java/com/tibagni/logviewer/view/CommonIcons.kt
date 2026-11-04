@@ -327,6 +327,26 @@ object CommonIcons {
   fun refreshIcon(size: Int = 16): ImageIcon = RefreshIcon(size)
 
   /**
+   * Returns a theme-aware tools (wrench) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun toolsIcon(size: Int = 16): ImageIcon = ToolsIcon(size)
+
+  /**
+   * Returns a theme-aware keyboard icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun keyboardIcon(size: Int = 16): ImageIcon = KeyboardIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -1468,6 +1488,78 @@ object CommonIcons {
       g2d.draw(Line2D.Double(s * 0.20, s * 0.28, s * 0.80, s * 0.28))
       g2d.draw(Line2D.Double(s * 0.20, s * 0.50, s * 0.55, s * 0.50))
       g2d.draw(Line2D.Double(s * 0.20, s * 0.72, s * 0.75, s * 0.72))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering an open-ended wrench tool.
+   */
+  private class ToolsIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      // Wrench handle
+      g2d.draw(Line2D.Double(3.5 * scale, 12.5 * scale, 9.5 * scale, 6.5 * scale))
+
+      // Wrench jaw head
+      val head = Path2D.Double().apply {
+        moveTo(7.8 * scale, 8.2 * scale)
+        lineTo(6.8 * scale, 5.5 * scale)
+        lineTo(9.0 * scale, 3.2 * scale)
+        lineTo(11.2 * scale, 5.4 * scale)
+        lineTo(13.5 * scale, 3.2 * scale)
+        lineTo(14.5 * scale, 5.5 * scale)
+        lineTo(11.8 * scale, 8.2 * scale)
+      }
+      g2d.draw(head)
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a keyboard with keycaps and spacebar.
+   */
+  private class KeyboardIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val x = 2.0 * scale
+      val y = 3.5 * scale
+      val w = 12.0 * scale
+      val h = 9.0 * scale
+      val arc = 2.0 * scale
+      g2d.draw(RoundRectangle2D.Double(x, y, w, h, arc, arc))
+
+      // Top row keys (3 key dashes)
+      g2d.draw(Line2D.Double(4.5 * scale, 6.5 * scale, 5.5 * scale, 6.5 * scale))
+      g2d.draw(Line2D.Double(7.5 * scale, 6.5 * scale, 8.5 * scale, 6.5 * scale))
+      g2d.draw(Line2D.Double(10.5 * scale, 6.5 * scale, 11.5 * scale, 6.5 * scale))
+
+      // Bottom space bar
+      g2d.draw(Line2D.Double(5.5 * scale, 9.5 * scale, 10.5 * scale, 9.5 * scale))
     }
   }
 
