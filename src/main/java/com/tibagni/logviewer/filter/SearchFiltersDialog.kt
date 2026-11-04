@@ -44,19 +44,33 @@ class SearchFiltersDialog(
   internal val matchesBadge = StatusBadge(StatusBadge.Variant.NORMAL)
 
   @VisibleForTesting
-  internal val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP))
+  internal val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP)).apply {
+    icon = CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   @VisibleForTesting
-  internal val editBtn = FlatButton(I18n.get(I18n.COMMON_EDIT))
+  internal val editBtn = FlatButton(I18n.get(I18n.COMMON_EDIT)).apply {
+    icon = CommonIcons.editIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   @VisibleForTesting
-  internal val deleteBtn = FlatButton(I18n.get(I18n.COMMON_DELETE))
+  internal val deleteBtn = FlatButton(I18n.get(I18n.COMMON_DELETE)).apply {
+    icon = CommonIcons.deleteIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   @VisibleForTesting
-  internal val closeBtn = FlatButton(I18n.get(I18n.COMMON_CLOSE))
+  internal val closeBtn = FlatButton(I18n.get(I18n.COMMON_CLOSE)).apply {
+    icon = CommonIcons.closeIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   @VisibleForTesting
   internal val clearSearchBtn = FlatButton(I18n.get(I18n.SEARCH_FILTERS_BTN_CLEAR)).apply {
+    icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
     addActionListener {
       searchField.text = ""
       searchField.requestFocusInWindow()
@@ -379,14 +393,17 @@ class SearchFiltersDialog(
           addActionListener { copyFilterHandler() }
         }
         val jumpItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_JUMP)).apply {
+          icon = CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
           addActionListener { jumpToSelectedFilter() }
         }
         val editItem = JMenuItem(I18n.get(I18n.SEARCH_FILTERS_MENU_EDIT)).apply {
+          icon = CommonIcons.editIcon(UIScaleUtils.dip(14))
           addActionListener { editSelectedFilter() }
         }
         val deleteItem = JMenuItem(
           I18n.get(I18n.SEARCH_FILTERS_MENU_DELETE)
         ).apply {
+          icon = CommonIcons.deleteIcon(UIScaleUtils.dip(14))
           addActionListener { deleteSelectedFilter() }
         }
         add(copyItem)

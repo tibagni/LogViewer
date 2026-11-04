@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.FiltersRepository
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.log.LogLevel
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.StatusBadge
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -275,6 +276,32 @@ class SearchFiltersDialogTests {
         true,
         dialog.searchField.getClientProperty(FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON)
       )
+    } finally {
+      dialog.dispose()
+    }
+  }
+
+  @Test
+  fun testActionButtonsHaveVectorIcons() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val dialog = SearchFiltersDialog(
+      owner = null,
+      presenter = mockPresenter,
+      filtersRepository = mockFiltersRepo,
+      onFilterSelected = { _, _ -> }
+    )
+    try {
+      assertNotNull("jumpBtn should have an icon", dialog.jumpBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.jumpBtn.iconTextGap)
+      assertNotNull("editBtn should have an icon", dialog.editBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.editBtn.iconTextGap)
+      assertNotNull("deleteBtn should have an icon", dialog.deleteBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.deleteBtn.iconTextGap)
+      assertNotNull("closeBtn should have an icon", dialog.closeBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.closeBtn.iconTextGap)
+      assertNotNull("clearSearchBtn should have an icon", dialog.clearSearchBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.clearSearchBtn.iconTextGap)
     } finally {
       dialog.dispose()
     }

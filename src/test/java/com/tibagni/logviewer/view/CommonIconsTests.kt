@@ -1110,4 +1110,54 @@ class CommonIconsTests {
     assertEquals(24, customIcon.iconWidth)
     assertEquals(24, customIcon.iconHeight)
   }
+
+  /**
+   * Verifies that [CommonIcons.editIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testEditIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.editIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("editIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.editIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
+   * Verifies that [CommonIcons.deleteIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testDeleteIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.deleteIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("deleteIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.deleteIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
 }

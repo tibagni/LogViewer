@@ -50,6 +50,8 @@ class ToolsPreferencePanel(
   internal val adbPathClearBtn = FlatButton(
     I18n.get(I18n.COMMON_CLEAR)
   ).apply {
+    icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
     toolTipText = I18n.get(I18n.COMMON_CLEAR)
   }
 
