@@ -6,6 +6,7 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.StatusBadge
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -232,6 +233,70 @@ class RegexEditorDialogTests {
             assertNotNull(dialog.flagsLbl)
             assertNotNull(dialog.regexLbl)
             assertNotNull(dialog.previewLbl)
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies that 'copy' action is registered directly on both regexEdit and regexPreview.
+     */
+    @Test
+    fun testCopyActionRegisteredOnTextAreas() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+
+        val dialog = RegexEditorDialog(null)
+        try {
+            val editKeys = dialog.regexEdit.actionMap.keys()?.toList() ?: emptyList()
+            val previewKeys = dialog.regexPreview.actionMap.keys()?.toList() ?: emptyList()
+
+            assertTrue(editKeys.contains("copy"))
+            assertTrue(previewKeys.contains("copy"))
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies that modifying preview text and clicking resetSampleBtn
+     * restores the default sample text.
+     */
+    @Test
+    fun testResetSampleButtonRestoresDefaultText() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+
+        val dialog = RegexEditorDialog(null)
+        try {
+            dialog.regexPreview.text = "Modified sample text for testing"
+            assertNotEquals(
+                I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT),
+                dialog.regexPreview.text
+            )
+
+            dialog.resetSampleBtn.doClick()
+
+            assertEquals(
+                I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT),
+                dialog.regexPreview.text
+            )
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies that the preview card has default sample text populated.
+     */
+    @Test
+    fun testDefaultSampleTextPopulated() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+
+        val dialog = RegexEditorDialog(null)
+        try {
+            assertEquals(
+                I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT),
+                dialog.regexPreview.text
+            )
         } finally {
             dialog.dispose()
         }
