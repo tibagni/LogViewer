@@ -17,16 +17,9 @@ import javax.swing.UIManager
 object CommonIcons {
   private const val ICON_SIZE = 25
 
-  fun playIcon(): ImageIcon = createIcon { g2d, size, color ->
-    g2d.color = color
-    val path = Path2D.Double()
-    val padding = size * 0.25
-    path.moveTo(padding + 1, padding)
-    path.lineTo(size - padding + 1, size / 2.0)
-    path.lineTo(padding + 1, size - padding)
-    path.closePath()
-    g2d.fill(path)
-  }
+  @JvmStatic
+  @JvmOverloads
+  fun playIcon(size: Int = ICON_SIZE): ImageIcon = PlayIcon(size)
 
   fun stopIcon(): ImageIcon = createIcon { g2d, size, color ->
     g2d.color = color
@@ -61,38 +54,13 @@ object CommonIcons {
     g2d.draw(Line2D.Double(size * 0.2, size * 0.82, size * 0.8, size * 0.82))
   }
 
-  fun terminalIcon(): ImageIcon = createIcon { g2d, size, color ->
-    g2d.color = color
-    g2d.stroke = BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    // Prompt >
-    val prompt = Path2D.Double()
-    prompt.moveTo(size * 0.22, size * 0.28)
-    prompt.lineTo(size * 0.46, size * 0.50)
-    prompt.lineTo(size * 0.22, size * 0.72)
-    g2d.draw(prompt)
-    // Cursor _
-    g2d.draw(Line2D.Double(size * 0.54, size * 0.72, size * 0.78, size * 0.72))
-  }
+  @JvmStatic
+  @JvmOverloads
+  fun terminalIcon(size: Int = ICON_SIZE): ImageIcon = TerminalIcon(size)
 
-  fun changeDeviceIcon(): ImageIcon = createIcon { g2d, size, color ->
-    g2d.color = color
-    g2d.stroke = BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-    // Top arrow (pointing right)
-    g2d.draw(Line2D.Double(size * 0.22, size * 0.38, size * 0.74, size * 0.38))
-    val rightHead = Path2D.Double()
-    rightHead.moveTo(size * 0.58, size * 0.24)
-    rightHead.lineTo(size * 0.76, size * 0.38)
-    rightHead.lineTo(size * 0.58, size * 0.52)
-    g2d.draw(rightHead)
-
-    // Bottom arrow (pointing left)
-    g2d.draw(Line2D.Double(size * 0.78, size * 0.64, size * 0.26, size * 0.64))
-    val leftHead = Path2D.Double()
-    leftHead.moveTo(size * 0.42, size * 0.50)
-    leftHead.lineTo(size * 0.24, size * 0.64)
-    leftHead.lineTo(size * 0.42, size * 0.78)
-    g2d.draw(leftHead)
-  }
+  @JvmStatic
+  @JvmOverloads
+  fun changeDeviceIcon(size: Int = ICON_SIZE): ImageIcon = ChangeDeviceIcon(size)
 
   fun expandIcon(): ImageIcon = createIcon { g2d, size, color ->
     g2d.color = color
@@ -1316,39 +1284,6 @@ object CommonIcons {
   }
 
   /**
-   * Theme-aware vector icon rendering an information circle badge.
-   */
-  private class InfoIcon(iconSize: Int = 16) :
-    DynamicVectorIcon(iconSize) {
-    override fun paintIconContent(
-      g2d: Graphics2D,
-      s: Int,
-      color: Color
-    ) {
-      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
-      g2d.stroke = BasicStroke(
-        strokeWidth,
-        BasicStroke.CAP_ROUND,
-        BasicStroke.JOIN_ROUND
-      )
-      g2d.color = color
-
-      val pad = s * 0.12
-      val d = s - 2 * pad
-      g2d.draw(Ellipse2D.Double(pad, pad, d, d))
-
-      val cx = s / 2.0
-      val dotR = (s * 0.05).coerceAtLeast(0.8)
-      val dotY = s * 0.32
-      g2d.fill(Ellipse2D.Double(cx - dotR, dotY - dotR, dotR * 2, dotR * 2))
-
-      val stemTop = s * 0.44
-      val stemBottom = s * 0.70
-      g2d.draw(Line2D.Double(cx, stemTop, cx, stemBottom))
-    }
-  }
-
-  /**
    * Theme-aware vector icon rendering a circular refresh/reload arrow.
    */
   private class RefreshIcon(iconSize: Int = 16) :
@@ -1388,6 +1323,126 @@ object CommonIcons {
         lineTo(cx + 1.5 * scale, cy - r + 3.0 * scale)
       }
       g2d.draw(arrow)
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering an information circle badge.
+   */
+  private class InfoIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val pad = s * 0.12
+      val d = s - 2 * pad
+      g2d.draw(Ellipse2D.Double(pad, pad, d, d))
+
+      val cx = s / 2.0
+      val dotR = (s * 0.05).coerceAtLeast(0.8)
+      val dotY = s * 0.32
+      g2d.fill(Ellipse2D.Double(cx - dotR, dotY - dotR, dotR * 2, dotR * 2))
+
+      val stemTop = s * 0.44
+      val stemBottom = s * 0.70
+      g2d.draw(Line2D.Double(cx, stemTop, cx, stemBottom))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a play triangle symbol.
+   */
+  private class PlayIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      g2d.color = color
+      val path = Path2D.Double()
+      val padding = s * 0.25
+      path.moveTo(padding + 1, padding)
+      path.lineTo(s - padding + 1, s / 2.0)
+      path.lineTo(padding + 1, s - padding)
+      path.closePath()
+      g2d.fill(path)
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a command terminal prompt symbol.
+   */
+  private class TerminalIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      // Prompt >
+      val prompt = Path2D.Double()
+      prompt.moveTo(s * 0.22, s * 0.28)
+      prompt.lineTo(s * 0.46, s * 0.50)
+      prompt.lineTo(s * 0.22, s * 0.72)
+      g2d.draw(prompt)
+
+      // Cursor _
+      g2d.draw(Line2D.Double(s * 0.54, s * 0.72, s * 0.78, s * 0.72))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering exchange/switch arrows.
+   */
+  private class ChangeDeviceIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.075f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      // Top arrow (pointing right)
+      g2d.draw(Line2D.Double(s * 0.22, s * 0.38, s * 0.74, s * 0.38))
+      val rightHead = Path2D.Double()
+      rightHead.moveTo(s * 0.58, s * 0.24)
+      rightHead.lineTo(s * 0.76, s * 0.38)
+      rightHead.lineTo(s * 0.58, s * 0.52)
+      g2d.draw(rightHead)
+
+      // Bottom arrow (pointing left)
+      g2d.draw(Line2D.Double(s * 0.78, s * 0.64, s * 0.26, s * 0.64))
+      val leftHead = Path2D.Double()
+      leftHead.moveTo(s * 0.42, s * 0.50)
+      leftHead.lineTo(s * 0.24, s * 0.64)
+      leftHead.lineTo(s * 0.42, s * 0.78)
+      g2d.draw(leftHead)
     }
   }
 

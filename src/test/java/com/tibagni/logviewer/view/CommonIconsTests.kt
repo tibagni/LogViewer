@@ -12,11 +12,8 @@ class CommonIconsTests {
   @Test
   fun testAllIconsCreatedSuccessfully() {
     val icons = listOf(
-      CommonIcons.playIcon(),
       CommonIcons.stopIcon(),
       CommonIcons.autoScrollIcon(),
-      CommonIcons.terminalIcon(),
-      CommonIcons.changeDeviceIcon(),
       CommonIcons.expandIcon(),
       CommonIcons.collapseIcon(),
       CommonIcons.viewListIcon(),
@@ -932,6 +929,31 @@ class CommonIconsTests {
   }
 
   /**
+   * Verifies that [CommonIcons.refreshIcon] is created with expected
+   * dimensions and paints non-empty pixels.
+   */
+  @Test
+  fun testRefreshIconCreatedSuccessfully() {
+    val defaultIcon = CommonIcons.refreshIcon()
+    assertNotNull(defaultIcon)
+    assertEquals(16, defaultIcon.iconWidth)
+    assertEquals(16, defaultIcon.iconHeight)
+
+    val image = defaultIcon.image as? BufferedImage
+    assertNotNull(image)
+    val hasPixels = (0 until image!!.width).any { x ->
+      (0 until image.height).any { y ->
+        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+      }
+    }
+    assertTrue("refreshIcon should have painted pixels", hasPixels)
+
+    val customIcon = CommonIcons.refreshIcon(24)
+    assertEquals(24, customIcon.iconWidth)
+    assertEquals(24, customIcon.iconHeight)
+  }
+
+  /**
    * Verifies that [CommonIcons.infoIcon] is created with expected
    * dimensions and paints non-empty pixels.
    */
@@ -957,27 +979,52 @@ class CommonIconsTests {
   }
 
   /**
-   * Verifies that [CommonIcons.refreshIcon] is created with expected
-   * dimensions and paints non-empty pixels.
+   * Verifies that [CommonIcons.playIcon], [CommonIcons.terminalIcon], and
+   * [CommonIcons.changeDeviceIcon] are [DynamicVectorIcon] subclasses, support
+   * custom sizing, and rasterize non-empty pixels across default and custom sizes.
    */
   @Test
-  fun testRefreshIconCreatedSuccessfully() {
-    val defaultIcon = CommonIcons.refreshIcon()
-    assertNotNull(defaultIcon)
-    assertEquals(16, defaultIcon.iconWidth)
-    assertEquals(16, defaultIcon.iconHeight)
+  fun testDeviceIconsCustomSizing() {
+    val defaultIcons = listOf(
+      CommonIcons.playIcon(),
+      CommonIcons.terminalIcon(),
+      CommonIcons.changeDeviceIcon()
+    )
 
-    val image = defaultIcon.image as? BufferedImage
-    assertNotNull(image)
-    val hasPixels = (0 until image!!.width).any { x ->
-      (0 until image.height).any { y ->
-        (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+    for (icon in defaultIcons) {
+      assertNotNull(icon)
+      assertEquals(25, icon.iconWidth)
+      assertEquals(25, icon.iconHeight)
+
+      val image = icon.image as? BufferedImage
+      assertNotNull("Default icon should be backed by a BufferedImage", image)
+      val hasPixels = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+        }
       }
+      assertTrue("Default icon should have painted pixels", hasPixels)
     }
-    assertTrue("refreshIcon should have painted pixels", hasPixels)
 
-    val customIcon = CommonIcons.refreshIcon(24)
-    assertEquals(24, customIcon.iconWidth)
-    assertEquals(24, customIcon.iconHeight)
+    val iconsWithCustomSize = listOf(
+      CommonIcons.playIcon(14),
+      CommonIcons.terminalIcon(14),
+      CommonIcons.changeDeviceIcon(14)
+    )
+
+    for (icon in iconsWithCustomSize) {
+      assertNotNull(icon)
+      assertEquals(14, icon.iconWidth)
+      assertEquals(14, icon.iconHeight)
+
+      val image = icon.image as? BufferedImage
+      assertNotNull("Custom icon should be backed by a BufferedImage", image)
+      val hasPixels = (0 until image!!.width).any { x ->
+        (0 until image.height).any { y ->
+          (image.getRGB(x, y) ushr 24 and 0xFF) > 0
+        }
+      }
+      assertTrue("Icon should have painted pixels at 14px", hasPixels)
+    }
   }
 }

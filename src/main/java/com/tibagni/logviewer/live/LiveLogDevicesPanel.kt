@@ -4,11 +4,14 @@ import com.tibagni.logviewer.adb.AdbDevice
 import com.tibagni.logviewer.adb.DeviceState
 import com.tibagni.logviewer.i18n.I18n
 import com.tibagni.logviewer.preferences.LogViewerPreferencesDialog
+import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.layout.WrapLayout
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.view.Toast
 import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.view.TriStateCheckbox
 import java.awt.*
@@ -88,7 +91,9 @@ class LiveLogDevicesPanel(
    */
   internal fun onThemeChanged() {
     updateBuffersCardStyle()
+    refreshDevicesBtn.icon = CommonIcons.refreshIcon(UIScaleUtils.dip(14))
     refreshDevicesBtn.updateUI()
+    restartServerBtn.icon = CommonIcons.changeDeviceIcon(UIScaleUtils.dip(14))
     restartServerBtn.updateUI()
     toolbarDivider.updateUI()
     if (currentDevices.isNotEmpty()) {
@@ -209,9 +214,13 @@ class LiveLogDevicesPanel(
       if (device.isOnline) {
         val hasSelection = getSelectedBuffers().isNotEmpty()
         val startBtn = JButton(I18n.get(I18n.LIVE_LOGS_START)).apply {
+          icon = CommonIcons.playIcon(UIScaleUtils.dip(14))
+          iconTextGap = UIScaleUtils.dip(4)
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
           isEnabled = hasSelection
-          toolTipText = if (hasSelection) null else I18n.get(I18n.LIVE_LOGS_NO_BUFFERS_SELECTED_TOOLTIP)
+          toolTipText = if (hasSelection) null else {
+            I18n.get(I18n.LIVE_LOGS_NO_BUFFERS_SELECTED_TOOLTIP)
+          }
           addActionListener {
             val selected = getSelectedBuffers()
             if (selected.isNotEmpty()) {
@@ -222,36 +231,40 @@ class LiveLogDevicesPanel(
         activeStartButtons.add(startBtn)
 
         val termBtn = JButton(I18n.get(I18n.LIVE_LOGS_TERMINAL)).apply {
+          icon = CommonIcons.terminalIcon(UIScaleUtils.dip(14))
+          iconTextGap = UIScaleUtils.dip(4)
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
           addActionListener { presenter.openDeviceTerminal(device) }
         }
         actionsPanel.add(startBtn)
         actionsPanel.add(termBtn)
+      }
 
-        itemPanel.cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        itemPanel.addMouseListener(object : MouseAdapter() {
-          override fun mouseEntered(e: MouseEvent) {
-            itemPanel.border = hoverBorder
+      itemPanel.cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+      itemPanel.addMouseListener(object : MouseAdapter() {
+        override fun mouseEntered(e: MouseEvent) {
+          itemPanel.border = hoverBorder
+          itemPanel.repaint()
+        }
+
+        override fun mouseExited(e: MouseEvent) {
+          if (e.x !in 0 until itemPanel.width || e.y !in 0 until itemPanel.height) {
+            itemPanel.border = normalBorder
             itemPanel.repaint()
           }
+        }
 
-          override fun mouseExited(e: MouseEvent) {
-            if (e.x !in 0 until itemPanel.width || e.y !in 0 until itemPanel.height) {
-              itemPanel.border = normalBorder
-              itemPanel.repaint()
+        override fun mouseClicked(e: MouseEvent) {
+          if (SwingUtilities.isRightMouseButton(e)) {
+            showDeviceContextMenu(e, device)
+          } else if (e.clickCount == 2 && SwingUtilities.isLeftMouseButton(e) && device.isOnline) {
+            val selected = getSelectedBuffers()
+            if (selected.isNotEmpty()) {
+              presenter.startStreaming(device, selected)
             }
           }
-
-          override fun mouseClicked(e: MouseEvent) {
-            if (e.clickCount == 2 && SwingUtilities.isLeftMouseButton(e)) {
-              val selected = getSelectedBuffers()
-              if (selected.isNotEmpty()) {
-                presenter.startStreaming(device, selected)
-              }
-            }
-          }
-        })
-      }
+        }
+      })
 
       itemPanel.add(infoPanel, BorderLayout.WEST)
       itemPanel.add(actionsPanel, BorderLayout.EAST)
@@ -263,6 +276,49 @@ class LiveLogDevicesPanel(
 
     deviceItemsContainer.revalidate()
     deviceItemsContainer.repaint()
+  }
+
+  /**
+   * Displays a context menu on right-click for a device card with quick actions.
+   */
+  private fun showDeviceContextMenu(e: MouseEvent, device: AdbDevice) {
+    val popup = JPopupMenu()
+
+    val copySerialItem = JMenuItem(I18n.get(I18n.LIVE_LOGS_COPY_SERIAL)).apply {
+      icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+      addActionListener {
+        CommonUtils.copyToClipboard(device.serialNumber)
+        Toast.showToast(
+          this@LiveLogDevicesPanel,
+          I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+          Toast.LENGTH_SHORT
+        )
+      }
+    }
+    popup.add(copySerialItem)
+
+    if (device.isOnline) {
+      val hasSelection = getSelectedBuffers().isNotEmpty()
+      val startItem = JMenuItem(I18n.get(I18n.LIVE_LOGS_START)).apply {
+        icon = CommonIcons.playIcon(UIScaleUtils.dip(14))
+        isEnabled = hasSelection
+        addActionListener {
+          val selected = getSelectedBuffers()
+          if (selected.isNotEmpty()) {
+            presenter.startStreaming(device, selected)
+          }
+        }
+      }
+      val termItem = JMenuItem(I18n.get(I18n.LIVE_LOGS_TERMINAL)).apply {
+        icon = CommonIcons.terminalIcon(UIScaleUtils.dip(14))
+        addActionListener { presenter.openDeviceTerminal(device) }
+      }
+      popup.addSeparator()
+      popup.add(startItem)
+      popup.add(termItem)
+    }
+
+    popup.show(e.component, e.x, e.y)
   }
 
   private fun createBuffersCard(): Pair<JPanel, TriStateCheckbox> {
@@ -343,9 +399,13 @@ class LiveLogDevicesPanel(
     }
 
     refreshDevicesBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_REFRESH)).apply {
+      icon = CommonIcons.refreshIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       addActionListener { presenter.loadDevices() }
     }
     restartServerBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_RESTART_SERVER)).apply {
+      icon = CommonIcons.changeDeviceIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       addActionListener { presenter.restartAdbServer() }
     }
     toolbarDivider = ToolbarDivider()

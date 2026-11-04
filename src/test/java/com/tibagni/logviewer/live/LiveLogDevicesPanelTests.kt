@@ -7,6 +7,7 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.ToolbarDivider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -47,6 +48,8 @@ class LiveLogDevicesPanelTests {
       ToolbarDivider::class.java,
       panel.toolbarDivider.javaClass
     )
+    assertNotNull(panel.refreshDevicesBtn.icon)
+    assertNotNull(panel.restartServerBtn.icon)
   }
 
   @Test
@@ -102,5 +105,13 @@ class LiveLogDevicesPanelTests {
     assertTrue(compound.outsideBorder is FlatLineBorder)
     val lineBorder = compound.outsideBorder as FlatLineBorder
     assertEquals(UIScaleUtils.dip(8), lineBorder.arc)
+  }
+
+  @Test
+  fun testThemeChangedUpdatesIcons() {
+    val panel = LiveLogDevicesPanel(mockPresenter)
+    panel.onThemeChanged()
+    assertNotNull(panel.refreshDevicesBtn.icon)
+    assertNotNull(panel.restartServerBtn.icon)
   }
 }
