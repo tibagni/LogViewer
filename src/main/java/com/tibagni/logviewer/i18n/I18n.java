@@ -186,6 +186,11 @@ public final class I18n {
   public static final String REGEX_EDITOR_INVALID_REGEX = "regex.editor.invalid_regex";
   public static final String REGEX_EDITOR_RESET_SAMPLE_TOOLTIP =
       "regex.editor.reset_sample_tooltip";
+  public static final String REGEX_EDITOR_BTN_PRESETS = "regex.editor.presets";
+  public static final String REGEX_EDITOR_PRESET_DEFAULT = "regex.editor.preset.default";
+  public static final String REGEX_EDITOR_PRESET_LOGCAT = "regex.editor.preset.logcat";
+  public static final String REGEX_EDITOR_PRESET_EXCEPTION = "regex.editor.preset.exception";
+  public static final String REGEX_EDITOR_PRESET_SYSTEM = "regex.editor.preset.system";
 
   // Search Filters Dialog
   public static final String SEARCH_FILTERS_DIALOG_TITLE = "filters.search.title";

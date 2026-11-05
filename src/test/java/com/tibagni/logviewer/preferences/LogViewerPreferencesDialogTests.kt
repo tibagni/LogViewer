@@ -125,11 +125,18 @@ class LogViewerPreferencesDialogTests {
     assertNotNull(txt)
     assertEquals(10, txt.columns)
     assertEquals(false, txt.isEditable)
+    assertEquals(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR), txt.cursor)
 
     updatePathText(txt, "/path/to/test")
     assertEquals("/path/to/test", txt.text)
     assertEquals("/path/to/test", txt.toolTipText)
     assertEquals(0, txt.caretPosition)
+
+    val rightClickEvent = java.awt.event.MouseEvent(
+      txt, java.awt.event.MouseEvent.MOUSE_CLICKED,
+      System.currentTimeMillis(), 0, 0, 0, 1, false, java.awt.event.MouseEvent.BUTTON3
+    )
+    txt.dispatchEvent(rightClickEvent)
 
     updatePathText(txt, null)
     assertEquals("", txt.text)

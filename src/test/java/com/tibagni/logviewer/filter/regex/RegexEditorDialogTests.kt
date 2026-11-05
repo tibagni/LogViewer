@@ -301,4 +301,34 @@ class RegexEditorDialogTests {
             dialog.dispose()
         }
     }
+
+    /**
+     * Verifies that presetsBtn is initialized with icon and text, and
+     * loading presets replaces preview text accordingly.
+     */
+    @Test
+    fun testPresetsButtonAndLoadingPresets() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+
+        val dialog = RegexEditorDialog(null)
+        try {
+            assertNotNull(dialog.presetsBtn)
+            assertNotNull(dialog.presetsBtn.icon)
+            assertEquals(I18n.get(I18n.REGEX_EDITOR_BTN_PRESETS), dialog.presetsBtn.text)
+
+            // Test loading Logcat preset
+            dialog.loadSamplePreset(RegexEditorDialog.SAMPLE_LOGCAT, "Logcat")
+            assertEquals(RegexEditorDialog.SAMPLE_LOGCAT, dialog.regexPreview.text)
+
+            // Test loading Exception preset
+            dialog.loadSamplePreset(RegexEditorDialog.SAMPLE_EXCEPTION, "Exception")
+            assertEquals(RegexEditorDialog.SAMPLE_EXCEPTION, dialog.regexPreview.text)
+
+            // Test loading System preset
+            dialog.loadSamplePreset(RegexEditorDialog.SAMPLE_SYSTEM, "System")
+            assertEquals(RegexEditorDialog.SAMPLE_SYSTEM, dialog.regexPreview.text)
+        } finally {
+            dialog.dispose()
+        }
+    }
 }
