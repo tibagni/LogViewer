@@ -1,9 +1,12 @@
 package com.tibagni.logviewer.preferences
 
+import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.CommonUtils
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CardBorderUtils
 import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.view.Toast
 import java.awt.BorderLayout
 import java.awt.Cursor
 import java.awt.Dimension
@@ -46,6 +49,21 @@ internal fun createPathTextField(): JTextField {
   }.apply {
     isEditable = false
     columns = 10
+    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    addMouseListener(object : MouseAdapter() {
+      override fun mouseClicked(e: MouseEvent) {
+        if (SwingUtilities.isRightMouseButton(e) || e.clickCount == 2) {
+          if (!text.isNullOrEmpty()) {
+            CommonUtils.copyToClipboard(text)
+            Toast.showToast(
+              this@apply,
+              I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+              Toast.LENGTH_SHORT
+            )
+          }
+        }
+      }
+    })
   }
 }
 

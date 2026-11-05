@@ -32,12 +32,35 @@ public class RegexEditorDialog extends JDialog
   private JPanel contentPane;
   private JTextArea regexEdit;
   private JTextArea regexPreview;
+  public static final String SAMPLE_LOGCAT =
+      "10-27 12:34:56.789  1000  1024 D ActivityManager: Start proc " +
+      "1234:com.android.settings/u0a50 for activity\n" +
+      "10-27 12:34:57.102  1000  1024 I ActivityTaskManager: Displayed " +
+      "com.android.settings/.SubSettings: +312ms\n" +
+      "10-27 12:34:58.450  1000  1100 W WindowManager: Failed to deliver event to window";
+
+  public static final String SAMPLE_EXCEPTION =
+      "java.lang.NullPointerException: Attempt to invoke virtual method on a null " +
+      "object reference\n" +
+      "    at com.example.app.MainActivity.onCreate(MainActivity.kt:42)\n" +
+      "    at android.app.Activity.performCreate(Activity.java:8000)\n" +
+      "    at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1309)";
+
+  public static final String SAMPLE_SYSTEM =
+      "05-14 08:15:22.100  1000  1200 I WindowManager: Screen frozen for " +
+      "+150ms due to Window{abcd u0 StatusBar}\n" +
+      "05-14 08:15:23.010  1000  1250 D BatteryService: Processing new " +
+      "battery values: status=2, health=2, level=85\n" +
+      "05-14 08:15:24.320  1000  1300 E DropBoxManagerService: Can't write to " +
+      "/data/system/dropbox";
+
   private JCheckBox caseSensitive;
   private JLabel flagsLbl;
   private JLabel regexLbl;
   private JLabel previewLbl;
   private StatusBadge matchStatusBadge;
   private FlatButton resetSampleBtn;
+  private FlatButton presetsBtn;
 
   private final Color defaultRegexEditBg;
   private final Color errorRegexEditBg;
@@ -291,6 +314,60 @@ public class RegexEditorDialog extends JDialog
     return resetSampleBtn;
   }
 
+  /**
+   * Returns the presets button for loading sample log scenarios.
+   *
+   * @return the presets {@link FlatButton}
+   */
+  public FlatButton getPresetsBtn() {
+    return presetsBtn;
+  }
+
+  /**
+   * Displays the sample text presets menu below the presets button.
+   */
+  private void showPresetsMenu() {
+    JPopupMenu popup = new JPopupMenu();
+
+    JMenuItem defaultItem = new JMenuItem(I18n.get(I18n.REGEX_EDITOR_PRESET_DEFAULT));
+    defaultItem.setIcon(CommonIcons.fileDocumentIcon(UIScaleUtils.dip(14)));
+    defaultItem.addActionListener(e -> loadSamplePreset(
+        I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT),
+        I18n.get(I18n.REGEX_EDITOR_PRESET_DEFAULT)));
+
+    JMenuItem logcatItem = new JMenuItem(I18n.get(I18n.REGEX_EDITOR_PRESET_LOGCAT));
+    logcatItem.setIcon(CommonIcons.smartphoneIcon(UIScaleUtils.dip(14)));
+    logcatItem.addActionListener(e -> loadSamplePreset(
+        SAMPLE_LOGCAT,
+        I18n.get(I18n.REGEX_EDITOR_PRESET_LOGCAT)));
+
+    JMenuItem exceptionItem = new JMenuItem(I18n.get(I18n.REGEX_EDITOR_PRESET_EXCEPTION));
+    exceptionItem.setIcon(CommonIcons.infoIcon(UIScaleUtils.dip(14)));
+    exceptionItem.addActionListener(e -> loadSamplePreset(
+        SAMPLE_EXCEPTION,
+        I18n.get(I18n.REGEX_EDITOR_PRESET_EXCEPTION)));
+
+    JMenuItem systemItem = new JMenuItem(I18n.get(I18n.REGEX_EDITOR_PRESET_SYSTEM));
+    systemItem.setIcon(CommonIcons.terminalIcon(UIScaleUtils.dip(14)));
+    systemItem.addActionListener(e -> loadSamplePreset(
+        SAMPLE_SYSTEM,
+        I18n.get(I18n.REGEX_EDITOR_PRESET_SYSTEM)));
+
+    popup.add(defaultItem);
+    popup.addSeparator();
+    popup.add(logcatItem);
+    popup.add(exceptionItem);
+    popup.add(systemItem);
+
+    popup.show(presetsBtn, 0, presetsBtn.getHeight());
+  }
+
+  void loadSamplePreset(String text, String presetName) {
+    regexPreview.setText(text);
+    regexPreview.requestFocus();
+    Toast.showToast(this, presetName, Toast.LENGTH_SHORT);
+  }
+
   private void updateOkButton() {
     String regexPattern = regexEdit.getText();
     buttonsPane.enableOkButton(
@@ -492,6 +569,13 @@ public class RegexEditorDialog extends JDialog
     headerPanel.setOpaque(false);
     headerPanel.add(previewLbl, BorderLayout.WEST);
 
+    presetsBtn = new FlatButton();
+    presetsBtn.setIcon(CommonIcons.viewListIcon(UIScaleUtils.dip(12)));
+    presetsBtn.setText(I18n.get(I18n.REGEX_EDITOR_BTN_PRESETS));
+    presetsBtn.setIconTextGap(UIScaleUtils.dip(4));
+    presetsBtn.setToolTipText(I18n.get(I18n.REGEX_EDITOR_BTN_PRESETS));
+    presetsBtn.addActionListener(e -> showPresetsMenu());
+
     resetSampleBtn = new FlatButton();
     resetSampleBtn.setIcon(CommonIcons.refreshIcon(UIScaleUtils.dip(12)));
     resetSampleBtn.setToolTipText(I18n.get(I18n.REGEX_EDITOR_RESET_SAMPLE_TOOLTIP));
@@ -499,7 +583,12 @@ public class RegexEditorDialog extends JDialog
       regexPreview.setText(I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT));
       regexPreview.requestFocus();
     });
-    headerPanel.add(resetSampleBtn, BorderLayout.EAST);
+
+    JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(4), 0));
+    actionsPanel.setOpaque(false);
+    actionsPanel.add(presetsBtn);
+    actionsPanel.add(resetSampleBtn);
+    headerPanel.add(actionsPanel, BorderLayout.EAST);
 
     card.add(headerPanel,
         new GBConstraintsBuilder()
