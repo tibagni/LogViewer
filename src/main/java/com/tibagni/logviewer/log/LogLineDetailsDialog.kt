@@ -223,6 +223,8 @@ class LogLineDetailsDialog(
     }
 
     copyPathBtn = FlatButton(I18n.get(I18n.LOG_DETAILS_COPY_PATH)).apply {
+      icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       isEnabled = info.sourceFile != null
       addActionListener {
         info.sourceFile?.let {
@@ -240,7 +242,7 @@ class LogLineDetailsDialog(
     openEditorBtn = FlatButton(
       I18n.get(I18n.LOG_DETAILS_OPEN_EDITOR)
     ).apply {
-      icon = CommonIcons.fileDocumentIcon(14)
+      icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(14))
       iconTextGap = UIScaleUtils.dip(4)
       isEnabled = info.hasFile
       addActionListener {
@@ -422,6 +424,8 @@ class LogLineDetailsDialog(
         val filterPidBtn = FlatButton(
           I18n.get(I18n.LOG_DETAILS_BTN_FILTER_PID)
         ).apply {
+          icon = CommonIcons.filterIcon(UIScaleUtils.dip(14))
+          iconTextGap = UIScaleUtils.dip(4)
           addActionListener {
             onFilterByPid?.invoke(info.pid)
             dispose()
@@ -463,6 +467,8 @@ class LogLineDetailsDialog(
         val filterTagBtn = FlatButton(
           I18n.get(I18n.LOG_DETAILS_BTN_FILTER_TAG)
         ).apply {
+          icon = CommonIcons.filterIcon(UIScaleUtils.dip(14))
+          iconTextGap = UIScaleUtils.dip(4)
           addActionListener {
             onFilterByTag?.invoke(info.tag)
             dispose()
@@ -473,6 +479,8 @@ class LogLineDetailsDialog(
         val copyTagBtn = FlatButton(
           I18n.get(I18n.LOG_DETAILS_COPY_TAG)
         ).apply {
+          icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+          iconTextGap = UIScaleUtils.dip(4)
           addActionListener {
             CommonUtils.copyToClipboard(info.tag)
             Toast.showToast(
@@ -519,6 +527,8 @@ class LogLineDetailsDialog(
     copyLineBtn = FlatButton(
       I18n.get(I18n.LOG_DETAILS_COPY_LINE)
     ).apply {
+      icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       addActionListener {
         CommonUtils.copyToClipboard(info.entry.logText)
         Toast.showToast(
@@ -533,6 +543,8 @@ class LogLineDetailsDialog(
     copyMsgBtn = FlatButton(
       I18n.get(I18n.LOG_DETAILS_COPY_MESSAGE)
     ).apply {
+      icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+      iconTextGap = UIScaleUtils.dip(4)
       addActionListener {
         CommonUtils.copyToClipboard(info.message)
         Toast.showToast(

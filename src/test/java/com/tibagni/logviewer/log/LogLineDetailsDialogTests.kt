@@ -369,4 +369,48 @@ class LogLineDetailsDialogTests {
       g2d.dispose()
     }
   }
+
+  @Test
+  fun testActionButtonsHaveVectorIcons() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+
+    val tempFile = File.createTempFile("testLog", ".txt")
+    tempFile.deleteOnExit()
+    val entry = LogEntry(
+      "sample line",
+      LogLevel.DEBUG,
+      LogTimestamp(1, 2, 3, 4, 5, 6),
+      LogStream.SYSTEM,
+      tempFile,
+      1
+    )
+    val info = LogLineInfo(
+      entry = entry,
+      sourceFile = tempFile,
+      lineNumber = 1,
+      logStream = LogStream.SYSTEM,
+      logLevel = LogLevel.DEBUG,
+      timestamp = LogTimestamp(1, 2, 3, 4, 5, 6),
+      pid = 100,
+      tid = 200,
+      tag = "SampleTag",
+      message = "Sample log message",
+      appliedFilter = null,
+      index = 0
+    )
+
+    val dialog = LogLineDetailsDialog(owner = null, info = info)
+    try {
+      assertNotNull("copyPathBtn should have an icon", dialog.copyPathBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.copyPathBtn.iconTextGap)
+      assertNotNull("openEditorBtn should have an icon", dialog.openEditorBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.openEditorBtn.iconTextGap)
+      assertNotNull("copyLineBtn should have an icon", dialog.copyLineBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.copyLineBtn.iconTextGap)
+      assertNotNull("copyMsgBtn should have an icon", dialog.copyMsgBtn.icon)
+      assertEquals(UIScaleUtils.dip(4), dialog.copyMsgBtn.iconTextGap)
+    } finally {
+      dialog.dispose()
+    }
+  }
 }

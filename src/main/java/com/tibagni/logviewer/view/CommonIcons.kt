@@ -347,6 +347,26 @@ object CommonIcons {
   fun keyboardIcon(size: Int = 16): ImageIcon = KeyboardIcon(size)
 
   /**
+   * Returns a theme-aware edit (pencil) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun editIcon(size: Int = 16): ImageIcon = EditIcon(size)
+
+  /**
+   * Returns a theme-aware delete (trash can) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun deleteIcon(size: Int = 16): ImageIcon = DeleteIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -1560,6 +1580,96 @@ object CommonIcons {
 
       // Bottom space bar
       g2d.draw(Line2D.Double(5.5 * scale, 9.5 * scale, 10.5 * scale, 9.5 * scale))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering an edit pencil.
+   */
+  private class EditIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      // Pencil shaft
+      val body = Path2D.Double().apply {
+        moveTo(4.0 * scale, 11.0 * scale)
+        lineTo(10.0 * scale, 5.0 * scale)
+        lineTo(12.0 * scale, 7.0 * scale)
+        lineTo(6.0 * scale, 13.0 * scale)
+        closePath()
+      }
+      g2d.draw(body)
+
+      // Tip
+      val tip = Path2D.Double().apply {
+        moveTo(4.0 * scale, 11.0 * scale)
+        lineTo(2.5 * scale, 13.5 * scale)
+        lineTo(6.0 * scale, 13.0 * scale)
+      }
+      g2d.draw(tip)
+
+      // Eraser cap top right
+      g2d.draw(Line2D.Double(10.0 * scale, 5.0 * scale, 11.5 * scale, 3.5 * scale))
+      g2d.draw(Line2D.Double(11.5 * scale, 3.5 * scale, 13.5 * scale, 5.5 * scale))
+      g2d.draw(Line2D.Double(13.5 * scale, 5.5 * scale, 12.0 * scale, 7.0 * scale))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a trash can delete symbol.
+   */
+  private class DeleteIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      // Lid horizontal bar
+      g2d.draw(Line2D.Double(3.0 * scale, 4.0 * scale, 13.0 * scale, 4.0 * scale))
+
+      // Lid handle
+      val handle = Path2D.Double().apply {
+        moveTo(6.5 * scale, 4.0 * scale)
+        lineTo(6.5 * scale, 2.5 * scale)
+        lineTo(9.5 * scale, 2.5 * scale)
+        lineTo(9.5 * scale, 4.0 * scale)
+      }
+      g2d.draw(handle)
+
+      // Can body
+      val can = Path2D.Double().apply {
+        moveTo(4.5 * scale, 4.5 * scale)
+        lineTo(5.5 * scale, 13.5 * scale)
+        lineTo(10.5 * scale, 13.5 * scale)
+        lineTo(11.5 * scale, 4.5 * scale)
+      }
+      g2d.draw(can)
+
+      // Vertical ribs
+      g2d.draw(Line2D.Double(7.0 * scale, 6.5 * scale, 7.0 * scale, 11.5 * scale))
+      g2d.draw(Line2D.Double(9.0 * scale, 6.5 * scale, 9.0 * scale, 11.5 * scale))
     }
   }
 
