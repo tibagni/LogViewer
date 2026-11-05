@@ -367,6 +367,16 @@ object CommonIcons {
   fun deleteIcon(size: Int = 16): ImageIcon = DeleteIcon(size)
 
   /**
+   * Returns a theme-aware clock (time/duration) icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun clockIcon(size: Int = 16): ImageIcon = ClockIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -1670,6 +1680,40 @@ object CommonIcons {
       // Vertical ribs
       g2d.draw(Line2D.Double(7.0 * scale, 6.5 * scale, 7.0 * scale, 11.5 * scale))
       g2d.draw(Line2D.Double(9.0 * scale, 6.5 * scale, 9.0 * scale, 11.5 * scale))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering an analog clock face for elapsed time.
+   */
+  private class ClockIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+      val cx = 8.0 * scale
+      val cy = 8.0 * scale
+      val r = 6.0 * scale
+
+      // Outer clock ring
+      g2d.draw(Ellipse2D.Double(cx - r, cy - r, r * 2.0, r * 2.0))
+
+      // Hour hand (pointing to 2 o'clock)
+      g2d.draw(Line2D.Double(cx, cy, cx + 2.5 * scale, cy - 2.0 * scale))
+
+      // Minute hand (pointing to 12 o'clock)
+      g2d.draw(Line2D.Double(cx, cy, cx, cy - 4.5 * scale))
     }
   }
 

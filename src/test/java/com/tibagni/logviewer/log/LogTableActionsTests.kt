@@ -164,6 +164,9 @@ class LogTableActionsTests {
     val createItem = (0 until popup.componentCount).mapNotNull { popup.getComponent(it) as? JMenuItem }
       .first { it.text == I18n.get(I18n.LOGS_MENU_CREATE_FILTER) }
     assertTrue(createItem.actionListeners.isNotEmpty())
+    assertNotNull("PID item should have an icon", pidItem.icon)
+    assertNotNull("Tag item should have an icon", tagItem.icon)
+    assertNotNull("Create item should have an icon", createItem.icon)
   }
 
   @Test
@@ -194,6 +197,11 @@ class LogTableActionsTests {
       .mapNotNull { (popup.getComponent(it) as? JMenuItem)?.text }
 
     assertTrue("Menu should contain Log Details", menuTexts.contains(I18n.get(I18n.LOGS_MENU_LOG_DETAILS)))
+    val detailsItem = (0 until popup.componentCount)
+      .mapNotNull { popup.getComponent(it) as? JMenuItem }
+      .firstOrNull { it.text == I18n.get(I18n.LOGS_MENU_LOG_DETAILS) }
+    assertNotNull(detailsItem)
+    assertNotNull("Log details item should have an icon", detailsItem?.icon)
     assertTrue("Menu should contain Create Filter", menuTexts.contains(I18n.get(I18n.LOGS_MENU_CREATE_FILTER)))
     assertFalse("Menu should not contain Filter by PID", menuTexts.any { it.startsWith("Filter by PID") })
     assertFalse("Menu should not contain Filter by Tag", menuTexts.any { it.startsWith("Filter by Tag") })
@@ -276,14 +284,17 @@ class LogTableActionsTests {
       .firstOrNull { it.text.contains("1m 23s 450ms") }
 
     assertNotNull("Popup should contain Elapsed Time menu", elapsedMenu)
-    assertEquals(2, elapsedMenu!!.itemCount)
+    assertNotNull("Elapsed Time menu should have an icon", elapsedMenu!!.icon)
+    assertEquals(2, elapsedMenu.itemCount)
 
     val copySnippetItem = elapsedMenu.getItem(0)
     assertEquals(I18n.get(I18n.LOGS_MENU_COPY_ELAPSED_TIME_SNIPPET), copySnippetItem.text)
+    assertNotNull("Copy snippet item should have an icon", copySnippetItem.icon)
     assertTrue(copySnippetItem.actionListeners.isNotEmpty())
 
     val copyDurationOnlyItem = elapsedMenu.getItem(1)
     assertEquals(I18n.get(I18n.LOGS_MENU_COPY_DURATION_ONLY), copyDurationOnlyItem.text)
+    assertNotNull("Copy duration item should have an icon", copyDurationOnlyItem.icon)
     assertTrue(copyDurationOnlyItem.actionListeners.isNotEmpty())
   }
 
