@@ -3,6 +3,7 @@ package com.tibagni.logviewer.filter;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.FlatLaf;
 import com.tibagni.logviewer.ServiceLocator;
+import com.tibagni.logviewer.annotation.VisibleForTesting;
 import com.tibagni.logviewer.i18n.I18n;
 import com.tibagni.logviewer.preferences.LogViewerPreferences;
 import com.tibagni.logviewer.shortcuts.ShortcutAction;
@@ -373,7 +374,8 @@ class FilterUIGroup extends JPanel {
    * @param listener the active filters listener callback.
    * @return the configured {@link JPopupMenu} with actions for delete, edit, duplicate, and move.
    */
-  private JPopupMenu buildContextMenu(FiltersList.FiltersListener listener) {
+  @VisibleForTesting
+  JPopupMenu buildContextMenu(FiltersList.FiltersListener listener) {
     int[] selectedIndices = list.getSelectedIndices();
     int selectedFilters = selectedIndices.length;
 
@@ -385,17 +387,21 @@ class FilterUIGroup extends JPanel {
     popup.add(new JPopupMenu.Separator());
 
     JMenuItem deleteMenuItem = popup.add(I18n.get(I18n.COMMON_DELETE));
+    deleteMenuItem.setIcon(CommonIcons.deleteIcon(UIScaleUtils.dip(14)));
     deleteMenuItem.addActionListener(e -> deleteSelectedFilters(listener));
 
     JMenuItem editMenuItem = popup.add(I18n.get(I18n.COMMON_EDIT));
+    editMenuItem.setIcon(CommonIcons.editIcon(UIScaleUtils.dip(14)));
     editMenuItem.setVisible(selectedFilters == 1);
     editMenuItem.addActionListener(e -> editSelectedFilter(listener));
 
     JMenuItem duplicateMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_DUPLICATE));
+    duplicateMenuItem.setIcon(CommonIcons.copyIcon(UIScaleUtils.dip(14)));
     duplicateMenuItem.setVisible(selectedFilters == 1);
     duplicateMenuItem.addActionListener(e -> duplicateSelectedFilter(listener));
 
     JMenuItem moveMenuItem = popup.add(I18n.get(I18n.FILTERS_MENU_MOVE));
+    moveMenuItem.setIcon(CommonIcons.folderIcon(UIScaleUtils.dip(14)));
     moveMenuItem.addActionListener(e -> moveSelectedFilters(listener));
 
     return popup;

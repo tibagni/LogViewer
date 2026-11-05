@@ -357,4 +357,22 @@ class FilterUIGroupTests {
     group.selectAllCb.doClick()
     assertEquals("Batch (0 / 3)", group.hideGroupBtn.text)
   }
+
+  @Test
+  fun testContextMenuItemsHaveIcons() {
+    val group = createGroup("MenuTest", arrayOf(filterA))
+    group.list.setSelectedIndex(0)
+
+    val menu = group.buildContextMenu(listener)
+    assertNotNull(menu)
+    val deleteItem = menu.getComponent(2) as javax.swing.JMenuItem
+    val editItem = menu.getComponent(3) as javax.swing.JMenuItem
+    val duplicateItem = menu.getComponent(4) as javax.swing.JMenuItem
+    val moveItem = menu.getComponent(5) as javax.swing.JMenuItem
+
+    assertNotNull("Delete item should have an icon", deleteItem.icon)
+    assertNotNull("Edit item should have an icon", editItem.icon)
+    assertNotNull("Duplicate item should have an icon", duplicateItem.icon)
+    assertNotNull("Move item should have an icon", moveItem.icon)
+  }
 }

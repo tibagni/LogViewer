@@ -200,28 +200,34 @@ private fun addElapsedTimeContextActions(
   popup.addSeparatorIfNeeded()
 
   val toastParent = parentWindow ?: SwingUtilities.getWindowAncestor(table)
-  val elapsedTimeMenu = JMenu(I18n.format(I18n.LOGS_MENU_ELAPSED_TIME, durationText))
+  val elapsedTimeMenu = JMenu(I18n.format(I18n.LOGS_MENU_ELAPSED_TIME, durationText)).apply {
+    icon = CommonIcons.clockIcon(UIScaleUtils.dip(14))
+  }
 
-  val copySnippetItem = JMenuItem(I18n.get(I18n.LOGS_MENU_COPY_ELAPSED_TIME_SNIPPET))
-  copySnippetItem.addActionListener {
-    val snippet = ElapsedTimeHelper.createSnippet(first, second, durationResult)
-    CommonUtils.copyToClipboard(snippet)
-    Toast.showToast(
-      toastParent,
-      I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
-      Toast.LENGTH_SHORT
-    )
+  val copySnippetItem = JMenuItem(I18n.get(I18n.LOGS_MENU_COPY_ELAPSED_TIME_SNIPPET)).apply {
+    icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+    addActionListener {
+      val snippet = ElapsedTimeHelper.createSnippet(first, second, durationResult)
+      CommonUtils.copyToClipboard(snippet)
+      Toast.showToast(
+        toastParent,
+        I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+        Toast.LENGTH_SHORT
+      )
+    }
   }
   elapsedTimeMenu.add(copySnippetItem)
 
-  val copyDurationOnlyItem = JMenuItem(I18n.get(I18n.LOGS_MENU_COPY_DURATION_ONLY))
-  copyDurationOnlyItem.addActionListener {
-    CommonUtils.copyToClipboard(fullDurationStr)
-    Toast.showToast(
-      toastParent,
-      I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
-      Toast.LENGTH_SHORT
-    )
+  val copyDurationOnlyItem = JMenuItem(I18n.get(I18n.LOGS_MENU_COPY_DURATION_ONLY)).apply {
+    icon = CommonIcons.copyIcon(UIScaleUtils.dip(14))
+    addActionListener {
+      CommonUtils.copyToClipboard(fullDurationStr)
+      Toast.showToast(
+        toastParent,
+        I18n.get(I18n.COMMON_COPIED_TO_CLIPBOARD),
+        Toast.LENGTH_SHORT
+      )
+    }
   }
   elapsedTimeMenu.add(copyDurationOnlyItem)
 
@@ -239,28 +245,48 @@ private fun addSingleLogLineContextActions(
   val filtersPanel = filtersPanelProvider?.invoke()
 
   popup.addSeparatorIfNeeded()
-  popup.add(I18n.get(I18n.LOGS_MENU_LOG_DETAILS)).addActionListener {
-    showLogLineDetails(table, entry, parentWindow, filtersPanelProvider)
+  val detailsItem = JMenuItem(I18n.get(I18n.LOGS_MENU_LOG_DETAILS)).apply {
+    icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(14))
+    addActionListener {
+      showLogLineDetails(table, entry, parentWindow, filtersPanelProvider)
+    }
   }
+  popup.add(detailsItem)
 
   val pid = info?.pid
   if (pid != null && pid > 0 && filtersPanel != null) {
-    popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString())).addActionListener {
-      filtersPanel.addFilterForPid(pid)
+    val filterPidItem = JMenuItem(
+      I18n.format(I18n.LOGS_MENU_FILTER_BY_PID, pid.toString())
+    ).apply {
+      icon = CommonIcons.filterIcon(UIScaleUtils.dip(14))
+      addActionListener {
+        filtersPanel.addFilterForPid(pid)
+      }
     }
+    popup.add(filterPidItem)
   }
 
   val tag = info?.tag
   if (!tag.isNullOrBlank() && filtersPanel != null) {
-    popup.add(I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, tag)).addActionListener {
-      filtersPanel.addFilterForTag(tag)
+    val filterTagItem = JMenuItem(
+      I18n.format(I18n.LOGS_MENU_FILTER_BY_TAG, tag)
+    ).apply {
+      icon = CommonIcons.filterIcon(UIScaleUtils.dip(14))
+      addActionListener {
+        filtersPanel.addFilterForTag(tag)
+      }
     }
+    popup.add(filterTagItem)
   }
 
   if (filtersPanel != null) {
-    popup.add(I18n.get(I18n.LOGS_MENU_CREATE_FILTER)).addActionListener {
-      filtersPanel.createFilterFromText(entry.logText)
+    val createFilterItem = JMenuItem(I18n.get(I18n.LOGS_MENU_CREATE_FILTER)).apply {
+      icon = CommonIcons.plusIcon(UIScaleUtils.dip(14))
+      addActionListener {
+        filtersPanel.createFilterFromText(entry.logText)
+      }
     }
+    popup.add(createFilterItem)
   }
 }
 
