@@ -79,7 +79,7 @@ class SearchableTable @JvmOverloads constructor(
     )
     putClientProperty(
       FlatClientProperties.TEXT_FIELD_LEADING_ICON,
-      CommonIcons.searchIcon(14)
+      CommonIcons.searchIcon(UIScaleUtils.dip(14))
     )
   }
   @VisibleForTesting

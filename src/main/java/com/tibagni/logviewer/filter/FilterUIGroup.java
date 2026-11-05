@@ -120,19 +120,19 @@ class FilterUIGroup extends JPanel {
    * @return the configured toolbar {@link JPanel}.
    */
   private JPanel buildGroupHeaderToolbar() {
-    prevBtn.setIcon(CommonIcons.chevronLeftIcon(14));
-    nextBtn.setIcon(CommonIcons.chevronRightIcon(14));
+    prevBtn.setIcon(CommonIcons.chevronLeftIcon(UIScaleUtils.dip(14)));
+    nextBtn.setIcon(CommonIcons.chevronRightIcon(UIScaleUtils.dip(14)));
     updateNavigationTooltips();
 
-    addBtn.setIcon(CommonIcons.plusIcon(14));
+    addBtn.setIcon(CommonIcons.plusIcon(UIScaleUtils.dip(14)));
     addBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_ADD));
 
-    saveBtn.setIcon(CommonIcons.saveIcon(14));
+    saveBtn.setIcon(CommonIcons.saveIcon(UIScaleUtils.dip(14)));
     saveBtn.setIconTextGap(UIScaleUtils.dip(4));
     saveBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SAVE));
     saveBtn.setVisible(false);
 
-    closeBtn.setIcon(CommonIcons.closeIcon(14));
+    closeBtn.setIcon(CommonIcons.closeIcon(UIScaleUtils.dip(14)));
     closeBtn.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_CLOSE_GROUP));
 
     selectAllCb.setToolTipText(I18n.get(I18n.FILTERS_TOOLTIP_SELECT_ALL));
@@ -799,19 +799,19 @@ class FilterUIGroup extends JPanel {
       selectAllCb.updateUI();
     }
     if (prevBtn != null) {
-      prevBtn.setIcon(CommonIcons.chevronLeftIcon(14));
+      prevBtn.setIcon(CommonIcons.chevronLeftIcon(UIScaleUtils.dip(14)));
     }
     if (nextBtn != null) {
-      nextBtn.setIcon(CommonIcons.chevronRightIcon(14));
+      nextBtn.setIcon(CommonIcons.chevronRightIcon(UIScaleUtils.dip(14)));
     }
     if (addBtn != null) {
-      addBtn.setIcon(CommonIcons.plusIcon(14));
+      addBtn.setIcon(CommonIcons.plusIcon(UIScaleUtils.dip(14)));
     }
     if (saveBtn != null) {
-      saveBtn.setIcon(CommonIcons.saveIcon(14));
+      saveBtn.setIcon(CommonIcons.saveIcon(UIScaleUtils.dip(14)));
     }
     if (closeBtn != null) {
-      closeBtn.setIcon(CommonIcons.closeIcon(14));
+      closeBtn.setIcon(CommonIcons.closeIcon(UIScaleUtils.dip(14)));
     }
     updateCardMargin();
     updateHeaderStyle();
@@ -1082,8 +1082,8 @@ class FilterUIGroup extends JPanel {
 
     String filtersCount = count == 0 ? "(0)" : "(" + selectedCount + " / " + count + ")";
     hideGroupBtn.setIcon(isGroupVisible()
-        ? CommonIcons.chevronDownIcon(14)
-        : CommonIcons.chevronRightIcon(14));
+        ? CommonIcons.chevronDownIcon(UIScaleUtils.dip(14))
+        : CommonIcons.chevronRightIcon(UIScaleUtils.dip(14)));
     hideGroupBtn.setIconTextGap(UIScaleUtils.dip(4));
     hideGroupBtn.setText(groupName + " " + filtersCount);
   }

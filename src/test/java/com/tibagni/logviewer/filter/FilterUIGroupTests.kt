@@ -73,21 +73,21 @@ class FilterUIGroupTests {
     assertTrue(group.isGroupVisible)
     assertEquals("Network (2 / 2)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
-    assertEquals(14, group.hideGroupBtn.icon.iconWidth)
-    assertEquals(14, group.hideGroupBtn.icon.iconHeight)
+    assertEquals(UIScaleUtils.dip(14), group.hideGroupBtn.icon.iconWidth)
+    assertEquals(UIScaleUtils.dip(14), group.hideGroupBtn.icon.iconHeight)
 
     group.toggleGroupVisibility()
     assertFalse(group.isGroupVisible)
     assertEquals("Network (2 / 2)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
-    assertEquals(14, group.hideGroupBtn.icon.iconWidth)
+    assertEquals(UIScaleUtils.dip(14), group.hideGroupBtn.icon.iconWidth)
     verify(listener).onGroupVisibilityChanged("Network")
 
     group.toggleGroupVisibility()
     assertTrue(group.isGroupVisible)
     assertEquals("Network (2 / 2)", group.hideGroupBtn.text)
     assertNotNull(group.hideGroupBtn.icon)
-    assertEquals(14, group.hideGroupBtn.icon.iconWidth)
+    assertEquals(UIScaleUtils.dip(14), group.hideGroupBtn.icon.iconWidth)
   }
 
   @Test

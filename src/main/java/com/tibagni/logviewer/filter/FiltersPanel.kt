@@ -290,7 +290,7 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     addNewFilterGroupBtn = FlatButton().apply {
       actionCommand = "Add"
       text = I18n.get(I18n.FILTERS_BTN_NEW_GROUP)
-      icon = CommonIcons.plusIcon(14)
+      icon = CommonIcons.plusIcon(UIScaleUtils.dip(14))
       iconTextGap = UIScaleUtils.dip(4)
     }
     moreFilterOptionsBtn = FlatButton().apply {
@@ -511,9 +511,9 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     val allText = I18n.get(I18n.COMMON_ALL)
     val hasVisible = filtersPane.hasAtLeastOneGroupVisible()
     collapseExpandAllGroupsBtn.icon = if (hasVisible) {
-      CommonIcons.chevronDownIcon(14)
+      CommonIcons.chevronDownIcon(UIScaleUtils.dip(14))
     } else {
-      CommonIcons.chevronRightIcon(14)
+      CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
     }
     collapseExpandAllGroupsBtn.text = allText
     collapseExpandAllGroupsBtn.iconTextGap = UIScaleUtils.dip(4)
