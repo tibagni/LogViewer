@@ -442,6 +442,9 @@ class StatusBadgeTests {
     assertTrue(headerPanel.isVisible)
     assertNotNull(headerPanel.displayedPathIcon)
     assertEquals("/another/path/to/log.txt", headerPanel.displayedPathText)
+
+    // Verify onThemeChanged completes cleanly on LogViewerViewImpl
+    logView.onThemeChanged()
   }
 
   /**
