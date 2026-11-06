@@ -26,6 +26,11 @@ import java.awt.GraphicsEnvironment
  */
 class SearchFiltersDialogTests {
 
+  companion object {
+    private val TAG_A = FilterContextTag.register("search_dialog_tag_a")
+    private val TAG_B = FilterContextTag.register("search_dialog_tag_b")
+  }
+
   private lateinit var mockPresenter: FiltersPresenter
   private lateinit var mockFiltersRepo: FiltersRepository
   private lateinit var filter1: Filter
@@ -305,5 +310,31 @@ class SearchFiltersDialogTests {
     } finally {
       dialog.dispose()
     }
+  }
+
+  @Test
+  fun testSearchFiltersTableModelAppliedStateScopedToContextTag() {
+    val modelA = SearchFiltersTableModel(mockPresenter, TAG_A)
+    val modelB = SearchFiltersTableModel(mockPresenter, TAG_B)
+    val items = listOf(FilterSearchResult("GroupOne", filter1))
+    modelA.setItems(items, "")
+    modelB.setItems(items, "")
+
+    assertEquals(false, modelA.getValueAt(0, 0))
+    assertEquals(false, modelB.getValueAt(0, 0))
+
+    modelA.setValueAt(true, 0, 0)
+    assertEquals(true, modelA.getValueAt(0, 0))
+    assertEquals(false, modelB.getValueAt(0, 0))
+    assertTrue(filter1.isApplied(TAG_A))
+    assertFalse(filter1.isApplied(TAG_B))
+
+    modelB.setValueAt(true, 0, 0)
+    assertEquals(true, modelA.getValueAt(0, 0))
+    assertEquals(true, modelB.getValueAt(0, 0))
+
+    modelA.setValueAt(false, 0, 0)
+    assertEquals(false, modelA.getValueAt(0, 0))
+    assertEquals(true, modelB.getValueAt(0, 0))
   }
 }

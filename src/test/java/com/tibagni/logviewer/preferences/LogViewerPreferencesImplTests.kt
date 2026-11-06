@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.preferences
 
+import org.junit.After
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -24,6 +25,14 @@ class LogViewerPreferencesImplTests {
         MockitoAnnotations.initMocks(this)
         LogViewerPreferencesImpl.setMockPreferences(mockPrefs)
         LogViewerPreferencesImpl.addPreferenceListener(mockListener)
+    }
+
+    @After
+    fun tearDown() {
+        LogViewerPreferencesImpl.removePreferenceListener(mockListener)
+        LogViewerPreferencesImpl.setMockPreferences(
+            Preferences.userNodeForPackage(LogViewerPreferencesImpl::class.java)
+        )
     }
 
     @Test
@@ -250,37 +259,43 @@ class LogViewerPreferencesImplTests {
 
     @Test
     fun testSettingRememberAppliedFiltersIndicesSingleIndex() {
+        val tag = com.tibagni.logviewer.filter.FilterContextTag.register("pref_test_tag_1")
         val testGroup = "testGroup"
         val testIndices = listOf(1)
 
-        val prefName = LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX + testGroup
+        val prefName =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tag.id}_$testGroup"
         val stringContent = "1"
 
-        LogViewerPreferencesImpl.setAppliedFiltersIndices(testGroup, testIndices)
+        LogViewerPreferencesImpl.setAppliedFiltersIndices(tag, testGroup, testIndices)
 
         verify(mockPrefs, times(1)).put(prefName, stringContent)
     }
 
     @Test
     fun testSettingRememberAppliedFiltersIndicesMultipleIndices() {
+        val tag = com.tibagni.logviewer.filter.FilterContextTag.register("pref_test_tag_2")
         val testGroup = "testGroup"
         val testIndices = listOf(1, 6, 7, 9, 10)
 
-        val prefName = LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX + testGroup
+        val prefName =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tag.id}_$testGroup"
         val stringContent = "1,6,7,9,10"
 
-        LogViewerPreferencesImpl.setAppliedFiltersIndices(testGroup, testIndices)
+        LogViewerPreferencesImpl.setAppliedFiltersIndices(tag, testGroup, testIndices)
 
         verify(mockPrefs, times(1)).put(prefName, stringContent)
     }
 
     @Test
     fun testGettingRememberAppliedFiltersIndicesSingleIndex() {
+        val tag = com.tibagni.logviewer.filter.FilterContextTag.register("pref_test_tag_3")
         val testGroup = "testGroup"
 
-        val prefName = LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX + testGroup
+        val prefName =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tag.id}_$testGroup"
         `when`(mockPrefs.get(eq(prefName), any())).thenReturn("11")
-        val returnedVal = LogViewerPreferencesImpl.getAppliedFiltersIndices(testGroup)
+        val returnedVal = LogViewerPreferencesImpl.getAppliedFiltersIndices(tag, testGroup)
 
         verify(mockPrefs, never()).put(any(), any())
         assertEquals(1, returnedVal.size)
@@ -289,11 +304,13 @@ class LogViewerPreferencesImplTests {
 
     @Test
     fun testGettingRememberAppliedFiltersIndicesMultipleIndices() {
+        val tag = com.tibagni.logviewer.filter.FilterContextTag.register("pref_test_tag_4")
         val testGroup = "testGroup"
 
-        val prefName = LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX + testGroup
+        val prefName =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tag.id}_$testGroup"
         `when`(mockPrefs.get(eq(prefName), any())).thenReturn("1,2,4,11,6")
-        val returnedVal = LogViewerPreferencesImpl.getAppliedFiltersIndices(testGroup)
+        val returnedVal = LogViewerPreferencesImpl.getAppliedFiltersIndices(tag, testGroup)
 
         verify(mockPrefs, never()).put(any(), any())
         assertEquals(5, returnedVal.size)
@@ -306,17 +323,42 @@ class LogViewerPreferencesImplTests {
 
     @Test
     fun testGettingRememberAppliedFiltersIndicesWithInvalidValues() {
+        val tag = com.tibagni.logviewer.filter.FilterContextTag.register("pref_test_tag_5")
         val testGroup = "testGroup"
 
-        val prefName = LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX + testGroup
+        val prefName =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tag.id}_$testGroup"
         `when`(mockPrefs.get(eq(prefName), any())).thenReturn("a,hb6,4,11,6")
-        val returnedVal = LogViewerPreferencesImpl.getAppliedFiltersIndices(testGroup)
+        val returnedVal = LogViewerPreferencesImpl.getAppliedFiltersIndices(tag, testGroup)
 
         verify(mockPrefs, never()).put(any(), any())
         assertEquals(3, returnedVal.size)
         assertEquals(4, returnedVal[0])
         assertEquals(11, returnedVal[1])
         assertEquals(6, returnedVal[2])
+    }
+
+    @Test
+    fun testRememberAppliedFiltersIndicesScopedPerContextTag() {
+        val tagA = com.tibagni.logviewer.filter.FilterContextTag.register("pref_context_a")
+        val tagB = com.tibagni.logviewer.filter.FilterContextTag.register("pref_context_b")
+        val testGroup = "sharedGroup"
+        val prefA =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tagA.id}_$testGroup"
+        val prefB =
+            "${LogViewerPreferencesImpl.REMEMBER_APPLIED_FILTERS_PREFIX}${tagB.id}_$testGroup"
+
+        `when`(mockPrefs.get(eq(prefA), any())).thenReturn("0,2")
+        `when`(mockPrefs.get(eq(prefB), any())).thenReturn("1,3")
+
+        assertEquals(
+            listOf(0, 2),
+            LogViewerPreferencesImpl.getAppliedFiltersIndices(tagA, testGroup)
+        )
+        assertEquals(
+            listOf(1, 3),
+            LogViewerPreferencesImpl.getAppliedFiltersIndices(tagB, testGroup)
+        )
     }
 
     @Test

@@ -27,11 +27,12 @@ class SearchFiltersDialog(
   private val owner: Frame? = null,
   private val presenter: FiltersPresenter,
   private val filtersRepository: FiltersRepository,
+  private val contextTag: FilterContextTag? = null,
   private val onFilterSelected: (group: String, filter: Filter) -> Unit
 ) : JDialog(owner, I18n.get(I18n.SEARCH_FILTERS_DIALOG_TITLE), true) {
 
   @VisibleForTesting
-  internal val tableModel = SearchFiltersTableModel(presenter)
+  internal val tableModel = SearchFiltersTableModel(presenter, contextTag)
 
   @VisibleForTesting
   internal val resultsTable = JTable(tableModel)
@@ -483,7 +484,8 @@ class SearchFiltersDialog(
   private fun toggleSelectedFilterApplied() {
     val row = resultsTable.selectedRow
     val item = getSelectedItem() ?: return
-    val newApplied = !item.filter.isApplied
+    val tag = contextTag ?: return
+    val newApplied = !item.filter.isApplied(tag)
     tableModel.setValueAt(newApplied, row, 0)
   }
 
@@ -541,15 +543,25 @@ class SearchFiltersDialog(
       owner: Frame?,
       presenter: FiltersPresenter,
       filtersRepository: FiltersRepository,
+      contextTag: FilterContextTag? = null,
       onFilterSelected: (group: String, filter: Filter) -> Unit
     ) {
-      val dialog = SearchFiltersDialog(owner, presenter, filtersRepository, onFilterSelected)
+      val dialog = SearchFiltersDialog(
+        owner,
+        presenter,
+        filtersRepository,
+        contextTag,
+        onFilterSelected
+      )
       dialog.isVisible = true
     }
   }
 }
 
-class SearchFiltersTableModel(private val presenter: FiltersPresenter) : AbstractTableModel() {
+class SearchFiltersTableModel(
+  private val presenter: FiltersPresenter,
+  private val contextTag: FilterContextTag? = null
+) : AbstractTableModel() {
   private val items = mutableListOf<FilterSearchResult>()
   var currentQuery: String = ""
 
@@ -591,7 +603,7 @@ class SearchFiltersTableModel(private val presenter: FiltersPresenter) : Abstrac
   override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
     val item = items[rowIndex]
     return when (columnIndex) {
-      0 -> item.filter.isApplied
+      0 -> contextTag != null && item.filter.isApplied(contextTag)
       1 -> item.filter.name ?: ""
       2 -> item.filter.patternString ?: ""
       3 -> item.group
@@ -601,8 +613,9 @@ class SearchFiltersTableModel(private val presenter: FiltersPresenter) : Abstrac
 
   override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
     if (columnIndex == 0 && aValue is Boolean) {
+      val tag = contextTag ?: return
       val item = items[rowIndex]
-      item.filter.isApplied = aValue
+      item.filter.setApplied(tag, aValue)
       fireTableCellUpdated(rowIndex, columnIndex)
 
       if (ServiceLocator.logViewerPrefs.applyFilterOnCheck) {

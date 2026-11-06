@@ -1,6 +1,7 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.filter.FilterException
 import com.tibagni.logviewer.filter.serialized
 import java.io.*
@@ -14,16 +15,20 @@ class PersistFiltersException(message: String?, cause: Throwable) : java.lang.Ex
 interface FiltersRepository {
   val currentlyOpenedFilters: Map<String, List<Filter>>
   val currentlyOpenedFilterFiles: Map<String, File>
-  val appliedFilters: List<Filter>
-    get() = currentlyOpenedFilters.values.flatten().filter { it.isApplied }
 
-  fun notifyFiltersApplied()
+  fun getAppliedFilters(tag: FilterContextTag): List<Filter> =
+    currentlyOpenedFilters.values.flatten().filter { it.isApplied(tag) }
+
+  fun notifyFiltersApplied(tag: FilterContextTag)
 
   fun addListener(listener: Listener)
   fun removeListener(listener: Listener)
 
   interface Listener {
-    fun onFiltersApplied(appliedFilters: List<@JvmSuppressWildcards Filter>)
+    fun onFiltersApplied(
+      tag: FilterContextTag,
+      appliedFilters: List<@JvmSuppressWildcards Filter>
+    )
   }
 
   @Throws(OpenFiltersException::class)
@@ -55,13 +60,13 @@ class FiltersRepositoryImpl: FiltersRepository {
   private val lastOpenedSerializedFilters = mutableMapOf<String, List<String>>()
   private val listeners = mutableSetOf<FiltersRepository.Listener>()
 
-  override val appliedFilters: List<Filter>
-    get() = _currentlyOpenedFilters.values.flatten().filter { it.isApplied }
+  override fun getAppliedFilters(tag: FilterContextTag): List<Filter> =
+    _currentlyOpenedFilters.values.flatten().filter { it.isApplied(tag) }
 
-  override fun notifyFiltersApplied() {
+  override fun notifyFiltersApplied(tag: FilterContextTag) {
     val listenersCopy = synchronized(listeners) { listeners.toList() }
-    val applied = appliedFilters
-    listenersCopy.forEach { it.onFiltersApplied(applied) }
+    val applied = getAppliedFilters(tag)
+    listenersCopy.forEach { it.onFiltersApplied(tag, applied) }
   }
 
   override fun addListener(listener: FiltersRepository.Listener) {

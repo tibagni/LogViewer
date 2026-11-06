@@ -28,6 +28,8 @@ interface FiltersView {
   fun onAppliedFiltersRemembered()
   val activeFilterContextTag: FilterContextTag?
     get() = null
+  val availableFilterContextTags: Set<FilterContextTag>
+    get() = emptySet()
 }
 
 interface FiltersPresenter {
@@ -68,6 +70,11 @@ class FiltersPresenterImpl(
 
   private val unsavedFilterGroups = mutableSetOf<String>()
 
+  private val knownContextTags: Set<FilterContextTag>
+    get() = view.availableFilterContextTags.ifEmpty {
+      listOfNotNull(view.activeFilterContextTag).toSet()
+    }
+
   override fun init() {
     if (userPrefs.openLastFilter) {
       val lastFilters = userPrefs.lastFilterPaths
@@ -91,7 +98,7 @@ class FiltersPresenterImpl(
       filtersRepository.addFilter(group, newFilter)
 
       if (!ignoreReapply && userPrefs.reapplyFiltersAfterEdit) {
-        newFilter.isApplied = true
+        view.activeFilterContextTag?.let { newFilter.setApplied(it, true) }
         applyFilters()
       }
       view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
@@ -113,16 +120,14 @@ class FiltersPresenterImpl(
 
   override fun removeFilters(group: String, indices: IntArray) {
     val deletedFilters = filtersRepository.deleteFilters(group, indices)
-    val shouldReapply = deletedFilters.any { it.isApplied }
+    val affectedTags = deletedFilters.flatMap { it.appliedContexts }.toSet()
     view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
 
     if (filtersRepository.currentlyOpenedFilters.isNotEmpty()) {
       checkForUnsavedChanges()
     }
 
-    if (shouldReapply) {
-      applyFilters()
-    }
+    affectedTags.forEach { applyFiltersForContext(it) }
   }
 
   override fun moveFilters(origGroup: String, destGroup: String, indices: IntArray) {
@@ -131,13 +136,11 @@ class FiltersPresenterImpl(
     val movingFilters = filtersRepository.deleteFilters(origGroup, indices)
     filtersRepository.addFilters(destGroup, movingFilters)
 
-    val shouldReapply = movingFilters.any { it.isApplied }
+    val affectedTags = movingFilters.flatMap { it.appliedContexts }.toSet()
     view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
     checkForUnsavedChanges()
 
-    if (shouldReapply) {
-      applyFilters()
-    }
+    affectedTags.forEach { applyFiltersForContext(it) }
   }
 
   /**
@@ -176,13 +179,12 @@ class FiltersPresenterImpl(
     val filtersFromGroup = filtersRepository.currentlyOpenedFilters[group]
     val groupFile = filtersRepository.currentlyOpenedFilterFiles[group]
     if (filtersFromGroup != null) {
+      val affectedTags = filtersFromGroup.flatMap { it.appliedContexts }.toSet()
       filtersRepository.deleteGroup(group)
       view.configureFiltersList(filtersRepository.currentlyOpenedFilters)
       checkForUnsavedChanges()
 
-      if (filtersFromGroup.any { it.isApplied }) {
-        applyFilters()
-      }
+      affectedTags.forEach { applyFiltersForContext(it) }
     }
 
     removeGroupFromSavedPaths(groupFile)
@@ -259,27 +261,47 @@ class FiltersPresenterImpl(
   }
 
   override fun applyFilters() {
-    cleanUpFilterTempInfo()
-    filtersRepository.notifyFiltersApplied()
+    val tag = view.activeFilterContextTag ?: return
+    applyFiltersForContext(tag)
+  }
+
+  private fun applyFiltersForContext(tag: FilterContextTag) {
+    cleanUpFilterTempInfo(tag)
+    filtersRepository.notifyFiltersApplied(tag)
   }
 
   override fun filterEdited(filter: Filter) {
     checkForUnsavedChanges()
     if (userPrefs.reapplyFiltersAfterEdit) {
-      filter.isApplied = true
-      applyFilters()
+      val activeTag = view.activeFilterContextTag
+      val affectedTags = filter.appliedContexts.toMutableSet()
+      if (activeTag != null) {
+        filter.setApplied(activeTag, true)
+        affectedTags.add(activeTag)
+      }
+      affectedTags.forEach { applyFiltersForContext(it) }
     }
   }
 
   override fun setAllFiltersApplied(group: String, isApplied: Boolean) {
-    filtersRepository.currentlyOpenedFilters[group]?.forEach { it.isApplied = isApplied }
-    applyFilters()
+    val tag = view.activeFilterContextTag
+    if (tag != null) {
+      filtersRepository.currentlyOpenedFilters[group]?.forEach {
+        it.setApplied(tag, isApplied)
+      }
+      applyFiltersForContext(tag)
+    }
     view.updateFiltersUI()
   }
 
   override fun setAllFiltersApplied(isApplied: Boolean) {
-    filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.isApplied = isApplied }
-    applyFilters()
+    val tag = view.activeFilterContextTag
+    if (tag != null) {
+      filtersRepository.currentlyOpenedFilters.values.flatten().forEach {
+        it.setApplied(tag, isApplied)
+      }
+      applyFiltersForContext(tag)
+    }
     view.updateFiltersUI()
   }
 
@@ -301,7 +323,7 @@ class FiltersPresenterImpl(
       return
     }
 
-    val shouldReapply = removals.values.flatten().any { it.isApplied }
+    val affectedTags = removals.values.flatten().flatMap { it.appliedContexts }.toSet()
 
     val totalDeleted = applyDeduplicationResolution(removals)
     if (totalDeleted > 0) {
@@ -311,9 +333,7 @@ class FiltersPresenterImpl(
         checkForUnsavedChanges()
       }
 
-      if (shouldReapply) {
-        applyFilters()
-      }
+      affectedTags.forEach { applyFiltersForContext(it) }
 
       view.showToast("Cleaned $totalDeleted duplicate filter(s)")
     }
@@ -337,6 +357,7 @@ class FiltersPresenterImpl(
   }
 
   private fun addQuickFilter(name: String, pattern: String) {
+    val activeTag = view.activeFilterContextTag
     val duplicateMatch = findDuplicateFilter(pattern, false, null)
     if (duplicateMatch != null) {
       val addAnyway = view.showDuplicateFilterWarning(
@@ -344,9 +365,9 @@ class FiltersPresenterImpl(
         duplicateMatch.group
       )
       if (!addAnyway) {
-        if (!duplicateMatch.filter.isApplied) {
-          duplicateMatch.filter.isApplied = true
-          applyFilters()
+        if (activeTag != null && !duplicateMatch.filter.isApplied(activeTag)) {
+          duplicateMatch.filter.setApplied(activeTag, true)
+          applyFiltersForContext(activeTag)
         }
         return
       }
@@ -360,7 +381,9 @@ class FiltersPresenterImpl(
 
     val color = EditFilterDialog.getRandomColor(ServiceLocator.themeManager.isDark)
     val newFilter = Filter(name, pattern, color, LogLevel.VERBOSE)
-    newFilter.isApplied = true
+    if (activeTag != null) {
+      newFilter.setApplied(activeTag, true)
+    }
     addFilter(group, newFilter)
     if (!userPrefs.reapplyFiltersAfterEdit) {
       applyFilters()
@@ -407,8 +430,7 @@ class FiltersPresenterImpl(
     return false
   }
 
-  private fun cleanUpFilterTempInfo() {
-    val tag = view.activeFilterContextTag ?: return
+  private fun cleanUpFilterTempInfo(tag: FilterContextTag) {
     filtersRepository.currentlyOpenedFilters.values.flatten().forEach { it.resetContext(tag) }
   }
 
@@ -428,26 +450,32 @@ class FiltersPresenterImpl(
   }
 
   private fun rememberAppliedFilters() {
-    for ((group, filters) in filtersRepository.currentlyOpenedFilters) {
-      val appliedIndices = filters.mapIndexedNotNull { index, filter ->
-        if (filter.isApplied) index else null
+    val tags = knownContextTags
+    for (tag in tags) {
+      for ((group, filters) in filtersRepository.currentlyOpenedFilters) {
+        val appliedIndices = filters.mapIndexedNotNull { index, filter ->
+          if (filter.isApplied(tag)) index else null
+        }
+        userPrefs.setAppliedFiltersIndices(tag, group, appliedIndices)
       }
-      userPrefs.setAppliedFiltersIndices(group, appliedIndices)
     }
   }
 
   private fun reapplyRememberedFilters() {
-    for ((group, filters) in filtersRepository.currentlyOpenedFilters) {
-      val appliedIndices = userPrefs.getAppliedFiltersIndices(group)
-      if (appliedIndices.isNotEmpty()) {
-        for ((index, filter) in filters.withIndex()) {
-          if (appliedIndices.contains(index)) {
-            filter.isApplied = true
+    val tags = knownContextTags
+    for (tag in tags) {
+      for ((group, filters) in filtersRepository.currentlyOpenedFilters) {
+        val appliedIndices = userPrefs.getAppliedFiltersIndices(tag, group)
+        if (appliedIndices.isNotEmpty()) {
+          for ((index, filter) in filters.withIndex()) {
+            if (appliedIndices.contains(index)) {
+              filter.setApplied(tag, true)
+            }
           }
         }
       }
+      applyFiltersForContext(tag)
     }
-    applyFilters()
   }
 
   fun setUnsavedGroupForTesting(group: String) {

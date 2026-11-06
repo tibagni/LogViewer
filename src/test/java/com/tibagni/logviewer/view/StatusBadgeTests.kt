@@ -395,7 +395,8 @@ class StatusBadgeTests {
     `when`(mockHost.parentWindow).thenReturn(mockFrame)
 
     val filtersPanel = FiltersPanel(mockHost)
-    val logView = LogViewerViewImpl(mockMain, filtersPanel, emptySet())
+    val logView = LogViewerViewImpl(mockMain, emptySet())
+    logView.attachFiltersPanel(filtersPanel)
     val headerPanel = logView.headerPanel
 
     assertNotNull(headerPanel)
@@ -455,7 +456,8 @@ class StatusBadgeTests {
     `when`(mockHost.parentWindow).thenReturn(mockFrame)
 
     val filtersPanel = FiltersPanel(mockHost)
-    val logView = LogViewerViewImpl(mockMain, filtersPanel, emptySet())
+    val logView = LogViewerViewImpl(mockMain, emptySet())
+    logView.attachFiltersPanel(filtersPanel)
     val headerPanel = logView.headerPanel
     headerPanel.setSize(200, 30)
 

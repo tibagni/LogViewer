@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.preferences
 
+import com.tibagni.logviewer.filter.FilterContextTag
 import java.io.File
 
 interface LogViewerPreferences {
@@ -36,6 +37,13 @@ interface LogViewerPreferences {
 
     fun setAppliedFiltersIndices(group: String, indices: List<Int>)
     fun getAppliedFiltersIndices(group: String): List<Int>
+    fun setAppliedFiltersIndices(
+        contextTag: FilterContextTag,
+        group: String,
+        indices: List<Int>
+    ) = setAppliedFiltersIndices("${contextTag.id}_$group", indices)
+    fun getAppliedFiltersIndices(contextTag: FilterContextTag, group: String): List<Int> =
+        getAppliedFiltersIndices("${contextTag.id}_$group")
     fun getCustomShortcut(actionId: String): String? = null
     fun setCustomShortcut(actionId: String, serializedKeyStroke: String?) {}
     fun applyCustomShortcuts(shortcuts: Map<String, String?>) {}

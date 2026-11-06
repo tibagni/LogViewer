@@ -64,8 +64,11 @@ class LogViewerPresenterTests {
   @Before
   fun setUp() {
     MockitoAnnotations.initMocks(this)
-    `when`(mockFiltersRepository.appliedFilters).thenAnswer {
-      mockFiltersRepository.currentlyOpenedFilters?.values?.flatten()?.filter { it.isApplied } ?: emptyList<Filter>()
+    val contextTag = LogViewerPresenterImpl.FILTER_CONTEXT_TAG
+    `when`(mockFiltersRepository.getAppliedFilters(contextTag)).thenAnswer {
+      mockFiltersRepository.currentlyOpenedFilters?.values?.flatten()?.filter {
+        it.isApplied(contextTag)
+      } ?: emptyList<Filter>()
     }
     presenter = LogViewerPresenterImpl(
       view,
@@ -98,8 +101,15 @@ class LogViewerPresenterTests {
 
   @Test
   fun testOnFiltersAppliedTriggersApplyFilters() {
-    presenter.onFiltersApplied(emptyList())
+    presenter.onFiltersApplied(LogViewerPresenterImpl.FILTER_CONTEXT_TAG, emptyList())
     assertEquals(1, presenter.testStats.applyFiltersCallCount)
+  }
+
+  @Test
+  fun testOnFiltersAppliedIgnoresOtherContextTag() {
+    val otherTag = com.tibagni.logviewer.filter.FilterContextTag.register("other_view_tag")
+    presenter.onFiltersApplied(otherTag, emptyList())
+    assertEquals(0, presenter.testStats.applyFiltersCallCount)
   }
 
   @Test
@@ -1123,7 +1133,7 @@ class LogViewerPresenterTests {
   fun testLoadLogsApplyFilters() {
     val inputLogFiles = arrayOf(File("test"))
     val appliedFilter = Filter.createFromString(TEST_SERIALIZED_FILTER)
-    appliedFilter.isApplied = true
+    appliedFilter.setApplied(LogViewerPresenterImpl.FILTER_CONTEXT_TAG, true)
     val currentFilters = mapOf("testGroup" to listOf(appliedFilter))
 
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(currentFilters)
@@ -1151,8 +1161,10 @@ class LogViewerPresenterTests {
   fun testLoadLogsApplyFilters2() {
     val inputLogFiles = arrayOf(File("test"))
     val appliedFilter = Filter.createFromString(TEST_SERIALIZED_FILTER)
-    appliedFilter.isApplied = true
-    val currentFilters = mapOf("testGroup" to listOf(appliedFilter, Filter.createFromString(TEST_SERIALIZED_FILTER2)))
+    appliedFilter.setApplied(LogViewerPresenterImpl.FILTER_CONTEXT_TAG, true)
+    val currentFilters = mapOf(
+      "testGroup" to listOf(appliedFilter, Filter.createFromString(TEST_SERIALIZED_FILTER2))
+    )
 
     `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(currentFilters)
     `when`(mockLogsRepository.currentlyOpenedLogFiles).thenReturn(inputLogFiles.toList())

@@ -130,8 +130,8 @@ object ScreenshotGenerator {
     val filteredLogsTable = getPrivateField<SearchableTable>(logViewerView, "filteredLogList")
 
     // Populate filter groups
-    val filterGroups = buildSampleFilterGroups()
     val contextTag = logViewerView.presenter.filterContextTag
+    val filterGroups = buildSampleFilterGroups(contextTag)
     populateContextMatches(filterGroups, contextTag)
 
     filtersPanel.activeFilterContextTag = contextTag
@@ -176,7 +176,7 @@ object ScreenshotGenerator {
     // 2. filter-details.png (crop of Performance.filter + Settings-SIM.filter in FiltersPanel)
     setExpandedGroups(filtersPanel.filtersPane, setOf("Performance.filter"))
     // Mark all filters in Performance.filter as applied for filter-details.png
-    filterGroups["Performance.filter"]?.forEach { it.isApplied = true }
+    filterGroups["Performance.filter"]?.forEach { it.setApplied(contextTag, true) }
     filtersPanel.updateFiltersUI()
     layoutWindowTree(frame)
 
@@ -402,8 +402,8 @@ object ScreenshotGenerator {
 
     val filtersPanel = getPrivateField<FiltersPanel>(mainView, "filtersPanel")
     val liveLogView = getPrivateField<LiveLogViewImpl>(mainView, "liveLogView")
-    val filterGroups = buildSampleFilterGroups()
     val contextTag = liveLogView.presenter.filterContextTag
+    val filterGroups = buildSampleFilterGroups(contextTag)
     populateContextMatches(filterGroups, contextTag)
 
     filtersPanel.activeFilterContextTag = contextTag
@@ -551,10 +551,12 @@ object ScreenshotGenerator {
       override fun showOpenMultipleFiltersFileChooser(): Array<File> = emptyArray()
     }
     val dummyFiltersPanel = FiltersPanel(dummyHost)
+    dummyFiltersPanel.activeFilterContextTag = LogViewerPresenterImpl.FILTER_CONTEXT_TAG
     val searchFiltersDialog = SearchFiltersDialog(
       owner = owner,
       presenter = dummyFiltersPanel.presenter,
       filtersRepository = filtersRepo,
+      contextTag = LogViewerPresenterImpl.FILTER_CONTEXT_TAG,
       onFilterSelected = { _, _ -> }
     )
     searchFiltersDialog.isModal = false
@@ -813,9 +815,11 @@ object ScreenshotGenerator {
     return map[name]
   }
 
-  private fun buildSampleFilterGroups(): Map<String, List<Filter>> {
+  private fun buildSampleFilterGroups(contextTag: FilterContextTag): Map<String, List<Filter>> {
     fun f(name: String, pattern: String, color: Color, applied: Boolean = false): Filter {
-      return Filter(name, pattern, color, LogLevel.VERBOSE, false).apply { isApplied = applied }
+      return Filter(name, pattern, color, LogLevel.VERBOSE, false).apply {
+        setApplied(contextTag, applied)
+      }
     }
 
     return linkedMapOf(
@@ -995,7 +999,13 @@ object ScreenshotGenerator {
   }
 
   private fun buildSearchFilteredLogs(): List<LogEntry> {
-    val euiccFilter = Filter("EuiccGoogle", "EuiccGoogle", Color(185, 185, 0), LogLevel.VERBOSE, false).apply { isApplied = true }
+    val euiccFilter = Filter(
+      "EuiccGoogle",
+      "EuiccGoogle",
+      Color(185, 185, 0),
+      LogLevel.VERBOSE,
+      false
+    ).apply { setApplied(LogViewerPresenterImpl.FILTER_CONTEXT_TAG, true) }
     val lines = listOf(
       "10-12 15:59:25.091 12215 12215 I EuiccGoogle: [116] CarrierInfoStore.initCarrierInfoStore: Carrier proto is empty.",
       "10-12 15:59:25.091 12215 12215 E EuiccGoogle: [116] CarrierInfoStore.getCarrierByConfigName: Unable to find carrier config name key: carrier_freedom",
@@ -1120,7 +1130,9 @@ object ScreenshotGenerator {
 
   private fun buildSearchDialogFilterGroups(): Map<String, List<Filter>> {
     fun f(name: String, pattern: String, color: Color, applied: Boolean = true): Filter {
-      return Filter(name, pattern, color, LogLevel.VERBOSE, false).apply { isApplied = applied }
+      return Filter(name, pattern, color, LogLevel.VERBOSE, false).apply {
+        setApplied(LogViewerPresenterImpl.FILTER_CONTEXT_TAG, applied)
+      }
     }
     return linkedMapOf(
       "IMS-RIL.filter" to listOf(

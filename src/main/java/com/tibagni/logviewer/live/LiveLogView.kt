@@ -22,6 +22,7 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.layout.WrapLayout
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.filter.FiltersPanelListener
 import com.tibagni.logviewer.view.CommonIcons
@@ -77,6 +78,15 @@ class LiveLogViewImpl(
 
   private val rootCardLayout = CardLayout()
   override val contentPane: JPanel = JPanel(rootCardLayout)
+
+  override val tabTitle: String
+    get() = I18n.get(I18n.MAIN_TAB_LIVE_LOGS)
+
+  override val tabIcon: Icon
+    get() = CommonIcons.liveLogsTabIcon(UIScaleUtils.dip(16))
+
+  override val filterContextTag: FilterContextTag
+    get() = presenter.filterContextTag
 
   @VisibleForTesting
   internal val presenter: LiveLogPresenter

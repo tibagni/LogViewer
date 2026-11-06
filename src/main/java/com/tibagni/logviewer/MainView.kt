@@ -6,6 +6,7 @@ import com.tibagni.logviewer.annotation.VisibleForTesting
 import com.tibagni.logviewer.bugreport.BugReportView
 import com.tibagni.logviewer.bugreport.BugReportViewImpl
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.filter.FiltersPanelHost
 import com.tibagni.logviewer.live.LiveLogView
@@ -51,6 +52,9 @@ interface View {
 
 interface MainViewTab : View {
   val contentPane: JPanel
+  val tabTitle: String
+  val tabIcon: Icon? get() = null
+  val filterContextTag: FilterContextTag? get() = null
   fun attachFiltersPanel(panel: FiltersPanel) {}
   fun onTabSelected() {}
   fun onTabDeselected() {}
@@ -128,6 +132,8 @@ class MainViewImpl(
   private val registeredTabStrokes = mutableListOf<KeyStroke>()
 
   private val tabs: List<MainViewTab>
+  private val initialTab: MainViewTab
+    get() = tabs.first()
   private val finishChain: List<View>
     get() = listOf(filtersPanel) + tabs
   private var finishChainPosition = 0
@@ -136,18 +142,23 @@ class MainViewImpl(
     get() = if (::tabbedPane.isInitialized) {
       tabs.firstOrNull { it.contentPane === tabbedPane.selectedComponent }
     } else {
-      logViewerView
+      initialTab
     }
 
   val contentPane: JPanel
     get() = mainPanel
 
   init {
-    liveLogView = LiveLogViewImpl(this)
-    filtersPanel = FiltersPanel(this)
-    logViewerView = LogViewerViewImpl(this, filtersPanel, initialLogFiles)
+    logViewerView = LogViewerViewImpl(this, initialLogFiles)
     bugReportView = BugReportViewImpl(this)
+    liveLogView = LiveLogViewImpl(this)
     tabs = listOf(logViewerView, bugReportView, liveLogView)
+
+    filtersPanel = FiltersPanel(
+      host = this,
+      initialContextTag = initialTab.filterContextTag,
+      knownContextTags = tabs.mapNotNull { it.filterContextTag }.toSet()
+    )
 
     buildUi()
     configureMenuBar()
@@ -479,9 +490,9 @@ class MainViewImpl(
     registeredTabStrokes.clear()
 
     val tabActions = listOf(
-      ShortcutAction.NAV_TAB_LOGS to 0,
-      ShortcutAction.NAV_TAB_BUGREPORT to 1,
-      ShortcutAction.NAV_TAB_LIVE_LOGS to 2
+      ShortcutAction.NAV_TAB_LOGS to tabs.indexOf(logViewerView),
+      ShortcutAction.NAV_TAB_BUGREPORT to tabs.indexOf(bugReportView),
+      ShortcutAction.NAV_TAB_LIVE_LOGS to tabs.indexOf(liveLogView)
     )
     for ((action, tabIdx) in tabActions) {
       val ks = shortcutManager.getKeyStroke(action)
@@ -530,26 +541,13 @@ class MainViewImpl(
       Insets(UIScaleUtils.dip(2), UIScaleUtils.dip(4), 0, UIScaleUtils.dip(4))
     )
 
-    tabbedPane.addTab(
-      I18n.get(I18n.MAIN_TAB_LOGS),
-      CommonIcons.logsTabIcon(UIScaleUtils.dip(16)),
-      logViewerView.contentPane
-    )
-    tabbedPane.addTab(
-      I18n.get(I18n.MAIN_TAB_BUG_REPORT),
-      CommonIcons.bugReportTabIcon(UIScaleUtils.dip(16)),
-      bugReportView.contentPane
-    )
-    tabbedPane.addTab(
-      I18n.get(I18n.MAIN_TAB_LIVE_LOGS),
-      CommonIcons.liveLogsTabIcon(UIScaleUtils.dip(16)),
-      liveLogView.contentPane
-    )
+    tabs.forEach { tab ->
+      tabbedPane.addTab(tab.tabTitle, tab.tabIcon, tab.contentPane)
+    }
 
-    // Ensure the initial tab (Logs) has the filters panel properly attached
-    logViewerView.attachFiltersPanel(filtersPanel)
+    initialTab.attachFiltersPanel(filtersPanel)
 
-    var lastActiveTab: MainViewTab? = logViewerView
+    var lastActiveTab: MainViewTab? = initialTab
     tabbedPane.addChangeListener {
       lastActiveTab?.onTabDeselected()
       val currentTab = activeTab

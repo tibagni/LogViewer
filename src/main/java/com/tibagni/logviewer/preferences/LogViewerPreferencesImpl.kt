@@ -1,5 +1,6 @@
 package com.tibagni.logviewer.preferences
 
+import com.tibagni.logviewer.filter.FilterContextTag
 import javax.swing.filechooser.FileSystemView
 import java.io.File
 import java.util.HashSet
@@ -184,12 +185,30 @@ object LogViewerPreferencesImpl : LogViewerPreferences {
         }
 
     override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {
-        preferences.put(REMEMBER_APPLIED_FILTERS_PREFIX + group, indices.joinToString(separator = ","))
+        preferences.put(
+            REMEMBER_APPLIED_FILTERS_PREFIX + group,
+            indices.joinToString(separator = ",")
+        )
     }
 
     override fun getAppliedFiltersIndices(group: String): List<Int> {
-        val savedData = preferences.get(REMEMBER_APPLIED_FILTERS_PREFIX + group, "")
+        val savedData = preferences.get(REMEMBER_APPLIED_FILTERS_PREFIX + group, "") ?: ""
         return savedData.split(",".toRegex()).mapNotNull { it.toIntOrNull() }
+    }
+
+    override fun setAppliedFiltersIndices(
+        contextTag: FilterContextTag,
+        group: String,
+        indices: List<Int>
+    ) {
+        setAppliedFiltersIndices("${contextTag.id}_$group", indices)
+    }
+
+    override fun getAppliedFiltersIndices(
+        contextTag: FilterContextTag,
+        group: String
+    ): List<Int> {
+        return getAppliedFiltersIndices("${contextTag.id}_$group")
     }
 
     override fun getCustomShortcut(actionId: String): String? {
