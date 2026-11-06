@@ -45,7 +45,7 @@ class SearchFiltersDialog(
   internal val matchesBadge = StatusBadge(StatusBadge.Variant.NORMAL)
 
   @VisibleForTesting
-  internal val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP)).apply {
+  internal val jumpBtn = FlatButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP)).apply {
     icon = CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
     iconTextGap = UIScaleUtils.dip(4)
   }

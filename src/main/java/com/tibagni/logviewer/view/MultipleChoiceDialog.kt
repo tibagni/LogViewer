@@ -171,6 +171,7 @@ class MultipleChoiceDialog(
     if (choices.size > MAX_VISIBLE_CHOICES) {
       val sp = JScrollPane(cardPanel).apply {
         border = BorderFactory.createEmptyBorder()
+        viewportBorder = BorderFactory.createEmptyBorder()
         viewport.isOpaque = false
         isOpaque = false
         verticalScrollBar.unitIncrement = UIScaleUtils.dip(16)

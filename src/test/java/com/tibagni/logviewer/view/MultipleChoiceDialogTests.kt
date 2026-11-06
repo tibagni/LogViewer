@@ -150,6 +150,7 @@ class MultipleChoiceDialogTests {
     assertNotNull(dialog.scrollPane)
     assertEquals(dialog.cardPanel, dialog.scrollPane?.viewport?.view)
     assertTrue(dialog.cardPanel.border is FlatLineBorder)
+    assertTrue(dialog.scrollPane?.viewportBorder is EmptyBorder)
   }
 
   /**
