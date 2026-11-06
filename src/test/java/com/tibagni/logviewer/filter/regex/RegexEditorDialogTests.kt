@@ -14,6 +14,7 @@ import org.junit.Assume.assumeFalse
 import org.junit.Test
 import java.awt.Font
 import java.awt.GraphicsEnvironment
+import java.awt.event.MouseEvent
 import javax.swing.UIManager
 
 /**
@@ -105,15 +106,21 @@ class RegexEditorDialogTests {
                 badge.text
             )
 
-            // Invalid pattern -> NO_RESULTS variant with invalid_regex and error tooltip
+            // Invalid pattern -> ERROR variant with invalid_regex and error tooltip
             dialog.regexEdit.text = "[unclosed"
             assertTrue(badge.isVisible)
-            assertEquals(StatusBadge.Variant.NO_RESULTS, badge.variant)
+            assertEquals(StatusBadge.Variant.ERROR, badge.variant)
             assertEquals(
                 I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX),
                 badge.text
             )
             assertNotNull(badge.toolTipText)
+
+            val clickEvent = MouseEvent(
+                badge, MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(),
+                0, 0, 0, 1, false, MouseEvent.BUTTON1
+            )
+            badge.dispatchEvent(clickEvent)
 
             // Transition back to empty pattern -> hidden and tooltip cleared
             dialog.regexEdit.text = ""
@@ -150,10 +157,10 @@ class RegexEditorDialogTests {
             assertNull(badge.toolTipText)
             assertNull(dialog.regexEdit.getClientProperty(FlatClientProperties.OUTLINE))
 
-            // 3. Invalid regex -> NO_RESULTS badge with tooltip and error outline
+            // 3. Invalid regex -> ERROR badge with tooltip and error outline
             dialog.regexEdit.text = "(unclosed"
             assertTrue(badge.isVisible)
-            assertEquals(StatusBadge.Variant.NO_RESULTS, badge.variant)
+            assertEquals(StatusBadge.Variant.ERROR, badge.variant)
             assertEquals(
                 I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX),
                 badge.text

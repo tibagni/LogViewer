@@ -114,6 +114,15 @@ public class ButtonsPane extends JPanel {
   }
 
   /**
+   * Returns whether the OK button is currently enabled.
+   *
+   * @return true if enabled, false otherwise
+   */
+  public boolean isOkButtonEnabled() {
+    return buttonOK != null && buttonOK.isEnabled();
+  }
+
+  /**
    * Enables or disables the Cancel button.
    *
    * @param enable true to enable the button, false to disable

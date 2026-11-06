@@ -226,18 +226,22 @@ public class RegexEditorDialog extends JDialog
       if (StringUtils.isEmpty(regexPattern)) {
         matchStatusBadge.setVisible(false);
         matchStatusBadge.setToolTipText(null);
+        matchStatusBadge.setCursor(Cursor.getDefaultCursor());
       } else if (!isValid) {
-        matchStatusBadge.updateResult(0, 0, StatusBadge.Variant.NO_RESULTS,
+        matchStatusBadge.updateResult(0, 0, StatusBadge.Variant.ERROR,
             I18n.get(I18n.REGEX_EDITOR_INVALID_REGEX));
         matchStatusBadge.setToolTipText(errorMessage);
+        matchStatusBadge.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
       } else if (count > 0) {
         matchStatusBadge.updateResult(count, count, StatusBadge.Variant.NORMAL,
             I18n.format(I18n.REGEX_EDITOR_MATCHES_COUNT, count));
         matchStatusBadge.setToolTipText(null);
+        matchStatusBadge.setCursor(Cursor.getDefaultCursor());
       } else {
         matchStatusBadge.updateResult(0, 0, StatusBadge.Variant.NO_RESULTS,
             I18n.get(I18n.REGEX_EDITOR_NO_MATCHES));
         matchStatusBadge.setToolTipText(null);
+        matchStatusBadge.setCursor(Cursor.getDefaultCursor());
       }
     }
   }
@@ -492,6 +496,15 @@ public class RegexEditorDialog extends JDialog
     caseSensitive.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     matchStatusBadge = new StatusBadge();
+    matchStatusBadge.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mouseClicked(MouseEvent e) {
+        if (!isRegexValid && matchStatusBadge.getToolTipText() != null) {
+          Toast.showToast(RegexEditorDialog.this,
+              matchStatusBadge.getToolTipText(), Toast.LENGTH_LONG);
+        }
+      }
+    });
 
     regexEdit = new JTextArea(3, 50);
     regexEdit.setLineWrap(true);

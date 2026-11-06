@@ -1,11 +1,14 @@
 package com.tibagni.logviewer.filter
 
+import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.log.LogLevel
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
@@ -180,6 +183,45 @@ class EditFilterDialogInteractionTests {
             assertNotNull(dialog.verbosityCombo)
             assertNotNull(dialog.colorChooser)
             assertNotNull(dialog.modernColorChooser)
+        } finally {
+            dialog.dispose()
+        }
+    }
+
+    /**
+     * Verifies real-time syntax validation on regexTxt: error outline and tooltip on invalid
+     * patterns, and clearing outline on valid patterns.
+     */
+    @Test
+    fun testRegexTxtValidationFeedback() {
+        assumeFalse(GraphicsEnvironment.isHeadless())
+        val dialog = EditFilterDialog(null, null, null) { _, _ -> null }
+        try {
+            // Initially empty pattern -> no outline, OK disabled
+            assertNull(dialog.regexTxt.getClientProperty(FlatClientProperties.OUTLINE))
+            assertNull(dialog.regexTxt.toolTipText)
+            assertFalse(dialog.isOkButtonEnabled)
+
+            // Valid pattern -> no outline, OK enabled
+            dialog.regexTxt.text = "valid_pattern.*"
+            assertNull(dialog.regexTxt.getClientProperty(FlatClientProperties.OUTLINE))
+            assertNull(dialog.regexTxt.toolTipText)
+            assertTrue(dialog.isOkButtonEnabled)
+
+            // Invalid pattern -> OUTLINE_ERROR and syntax description tooltip, OK disabled
+            dialog.regexTxt.text = "(unclosed_group"
+            assertEquals(
+                FlatClientProperties.OUTLINE_ERROR,
+                dialog.regexTxt.getClientProperty(FlatClientProperties.OUTLINE)
+            )
+            assertNotNull(dialog.regexTxt.toolTipText)
+            assertFalse(dialog.isOkButtonEnabled)
+
+            // Fix pattern -> error outline clears, OK enabled
+            dialog.regexTxt.text = "(closed_group)"
+            assertNull(dialog.regexTxt.getClientProperty(FlatClientProperties.OUTLINE))
+            assertNull(dialog.regexTxt.toolTipText)
+            assertTrue(dialog.isOkButtonEnabled)
         } finally {
             dialog.dispose()
         }
