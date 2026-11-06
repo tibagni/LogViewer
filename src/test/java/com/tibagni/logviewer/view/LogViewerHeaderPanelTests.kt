@@ -1,6 +1,7 @@
 package com.tibagni.logviewer.view
 
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -31,6 +32,7 @@ class LogViewerHeaderPanelTests {
     assertTrue(panel.isVisible)
     assertEquals("/var/log/syslog", panel.displayedPathText)
     assertNotNull(panel.displayedPathIcon)
+    assertEquals(UIScaleUtils.dip(16), panel.displayedPathIcon?.iconWidth)
   }
 
   /**

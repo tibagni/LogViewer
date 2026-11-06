@@ -18,6 +18,7 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
 import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.StatusBadge
 import java.awt.Color
@@ -183,6 +184,8 @@ class AboutDialog @VisibleForTesting constructor(
         versionStatusBadge.text = I18n.get(I18n.ABOUT_UPDATE_AVAILABLE)
         updateStatusProgress.isVisible = false
         updateBtn.isVisible = true
+        updateBtn.icon = CommonIcons.downloadIcon(UIScaleUtils.dip(14))
+        updateBtn.iconTextGap = UIScaleUtils.dip(4)
         updateBtn.text = I18n.format(
           I18n.ABOUT_UPDATE_TO,
           newRelease.versionName

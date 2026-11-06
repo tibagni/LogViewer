@@ -211,7 +211,7 @@ class LogLineDetailsDialog(
       FlowLayout(FlowLayout.LEFT, UIScaleUtils.dip(4), 0)
     ).apply {
       isOpaque = false
-      add(JLabel(CommonIcons.fileDocumentIcon(16)))
+      add(JLabel(CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))))
       add(fileNameLabel)
     }
     panel.add(fileNamePanel, gbc)

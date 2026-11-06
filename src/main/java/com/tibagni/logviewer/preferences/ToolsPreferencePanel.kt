@@ -34,7 +34,7 @@ class ToolsPreferencePanel(
   @VisibleForTesting
   internal val preferredEditorPathBtn = createBrowseButton(
     I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
-    CommonIcons.fileDocumentIcon()
+    CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
   )
 
   @VisibleForTesting
@@ -43,7 +43,7 @@ class ToolsPreferencePanel(
   @VisibleForTesting
   internal val adbPathBtn = createBrowseButton(
     I18n.get(I18n.PREF_ADB_PATH),
-    CommonIcons.fileDocumentIcon()
+    CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
   )
 
   @VisibleForTesting
