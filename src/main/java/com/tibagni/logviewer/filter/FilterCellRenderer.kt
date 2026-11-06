@@ -179,7 +179,7 @@ class FilterCellRenderer @JvmOverloads constructor(
     }
 
     componentOrientation = list.componentOrientation
-    checkBox.isSelected = filter.isApplied
+    checkBox.isSelected = contextTag != null && filter.isApplied(contextTag)
 
     var itemSelected = isSelected
     val dropLocation = list.dropLocation

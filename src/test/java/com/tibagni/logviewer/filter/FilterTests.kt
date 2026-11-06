@@ -520,4 +520,80 @@ class FilterTests {
       assertEquals(1000, filter.getContext(TAG_LOGS)?.totalLinesFound)
     }
   }
+
+  @Test
+  fun testScopedFilterAppliedIsolation() {
+    val filter = Filter("Test", "pattern", Color.RED, LogLevel.DEBUG)
+
+    assertFalse(filter.isApplied(TAG_LOGS))
+    assertFalse(filter.isApplied(TAG_LIVE_LOGS))
+    assertFalse(filter.isApplied(null))
+    assertTrue(filter.appliedContexts.isEmpty())
+
+    // Null context tag is a no-op
+    filter.setApplied(null, true)
+    assertTrue(filter.appliedContexts.isEmpty())
+
+    // Applying in TAG_LOGS does not apply in TAG_LIVE_LOGS
+    filter.setApplied(TAG_LOGS, true)
+    assertTrue(filter.isApplied(TAG_LOGS))
+    assertFalse(filter.isApplied(TAG_LIVE_LOGS))
+    assertEquals(setOf(TAG_LOGS), filter.appliedContexts)
+
+    // Applying in TAG_LIVE_LOGS keeps both applied independently
+    filter.setApplied(TAG_LIVE_LOGS, true)
+    assertTrue(filter.isApplied(TAG_LOGS))
+    assertTrue(filter.isApplied(TAG_LIVE_LOGS))
+    assertEquals(setOf(TAG_LOGS, TAG_LIVE_LOGS), filter.appliedContexts)
+
+    // Unapplying TAG_LOGS leaves TAG_LIVE_LOGS applied
+    filter.setApplied(TAG_LOGS, false)
+    assertFalse(filter.isApplied(TAG_LOGS))
+    assertTrue(filter.isApplied(TAG_LIVE_LOGS))
+    assertEquals(setOf(TAG_LIVE_LOGS), filter.appliedContexts)
+
+    // Clearing all applied contexts unsets everything
+    filter.clearAppliedContexts()
+    assertFalse(filter.isApplied(TAG_LOGS))
+    assertFalse(filter.isApplied(TAG_LIVE_LOGS))
+    assertTrue(filter.appliedContexts.isEmpty())
+  }
+
+  @Test
+  fun testCopyConstructorCopiesAppliedContextsIndependently() {
+    val original = Filter("Test", "pattern", Color.RED, LogLevel.DEBUG)
+    original.setApplied(TAG_LOGS, true)
+
+    val copy = Filter(original)
+    assertTrue(copy.isApplied(TAG_LOGS))
+    assertFalse(copy.isApplied(TAG_LIVE_LOGS))
+
+    // Mutating copy does not mutate original
+    copy.setApplied(TAG_LIVE_LOGS, true)
+    copy.setApplied(TAG_LOGS, false)
+
+    assertTrue(original.isApplied(TAG_LOGS))
+    assertFalse(original.isApplied(TAG_LIVE_LOGS))
+    assertFalse(copy.isApplied(TAG_LOGS))
+    assertTrue(copy.isApplied(TAG_LIVE_LOGS))
+  }
+
+  @Test
+  fun testResetContextAndResetAllContextsPreserveAppliedState() {
+    val filter = Filter("Test", "pattern", Color.RED, LogLevel.DEBUG)
+    filter.setApplied(TAG_LOGS, true)
+    filter.setApplied(TAG_LIVE_LOGS, true)
+    filter.initContext(TAG_LOGS).incrementLineCount(LogStream.MAIN)
+    filter.initContext(TAG_LIVE_LOGS).incrementLineCount(LogStream.MAIN)
+
+    filter.resetContext(TAG_LOGS)
+    assertNull(filter.getContext(TAG_LOGS))
+    assertTrue(filter.isApplied(TAG_LOGS))
+    assertTrue(filter.isApplied(TAG_LIVE_LOGS))
+
+    filter.resetAllContexts()
+    assertNull(filter.getContext(TAG_LIVE_LOGS))
+    assertTrue(filter.isApplied(TAG_LOGS))
+    assertTrue(filter.isApplied(TAG_LIVE_LOGS))
+  }
 }

@@ -82,8 +82,12 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
   }
 
   @Override
-  public void onFiltersApplied(@NotNull List<Filter> appliedFilters) {
-    applyFilters();
+  public void onFiltersApplied(
+      @NotNull FilterContextTag tag,
+      @NotNull List<Filter> appliedFilters) {
+    if (FILTER_CONTEXT_TAG.equals(tag)) {
+      applyFilters();
+    }
   }
 
   @Override
@@ -245,7 +249,8 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
           if (logsRepository.getCurrentlyOpenedLogs().size() > 0) {
             String logsPath = FilenameUtils.getFullPath(logFiles[0].getAbsolutePath());
             view.showCurrentLogsLocation(logsPath);
-            long appliedFiltersCount = filtersRepository.getAppliedFilters().size();
+            long appliedFiltersCount =
+                filtersRepository.getAppliedFilters(FILTER_CONTEXT_TAG).size();
             if (appliedFiltersCount > 0) {
               applyFilters();
             }
@@ -352,7 +357,7 @@ public class LogViewerPresenterImpl extends AsyncPresenter implements LogViewerP
     cleanUpFilterInfoFromLogEntries();
     cleanUpFilterTempInfo();
 
-    List<Filter> toApply = filtersRepository.getAppliedFilters();
+    List<Filter> toApply = filtersRepository.getAppliedFilters(FILTER_CONTEXT_TAG);
     doAsync(() -> {
       filteredLogs.clear();
       filteredLogs.addAll(Filters.applyMultipleFilters(

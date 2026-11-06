@@ -59,7 +59,11 @@ class FiltersPresenterTests {
     openedFilters.clear()
     openedFiles.clear()
 
-    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(openedFilters as Map<String, List<Filter>>)
+    `when`(view.activeFilterContextTag).thenReturn(TEST_TAG)
+    `when`(view.availableFilterContextTags).thenReturn(setOf(TEST_TAG))
+    `when`(mockFiltersRepository.currentlyOpenedFilters).thenReturn(
+      openedFilters as Map<String, List<Filter>>
+    )
     `when`(mockFiltersRepository.currentlyOpenedFilterFiles).thenReturn(openedFiles)
 
     presenter = FiltersPresenterImpl(
@@ -128,7 +132,7 @@ class FiltersPresenterTests {
 
     verify(mockFiltersRepository).addFilter("testGroup", toAdd)
     verify(view).configureFiltersList(any())
-    verify(mockFiltersRepository, never()).notifyFiltersApplied()
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -140,8 +144,9 @@ class FiltersPresenterTests {
 
     verify(mockFiltersRepository).addFilter("testGroup", toAdd)
     verify(view).configureFiltersList(any())
-    assertTrue(toAdd.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(toAdd.isApplied(TEST_TAG))
+    assertFalse(toAdd.isApplied(SECOND_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -167,38 +172,44 @@ class FiltersPresenterTests {
   @Test
   fun testRemoveFiltersNotApplied() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = false
-    `when`(mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))).thenReturn(listOf(f))
+    f.setApplied(TEST_TAG, false)
+    `when`(
+      mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))
+    ).thenReturn(listOf(f))
 
     presenter.removeFilters("Group1", intArrayOf(0))
 
     verify(view).configureFiltersList(any())
-    verify(mockFiltersRepository, never()).notifyFiltersApplied()
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testRemoveFiltersApplied() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = true
-    `when`(mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))).thenReturn(listOf(f))
+    f.setApplied(TEST_TAG, true)
+    `when`(
+      mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))
+    ).thenReturn(listOf(f))
 
     presenter.removeFilters("Group1", intArrayOf(0))
 
     verify(view).configureFiltersList(any())
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testMoveFilters() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = true
-    `when`(mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))).thenReturn(listOf(f))
+    f.setApplied(TEST_TAG, true)
+    `when`(
+      mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))
+    ).thenReturn(listOf(f))
 
     presenter.moveFilters("Group1", "Group2", intArrayOf(0))
 
     verify(mockFiltersRepository).addFilters("Group2", listOf(f))
     verify(view).configureFiltersList(any())
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -210,7 +221,8 @@ class FiltersPresenterTests {
   @Test
   fun testRemoveGroupUnsavedCancel() {
     presenter.setUnsavedGroupForTesting("Group1")
-    `when`(view.showAskToSaveFilterDialog("Group1")).thenReturn(FiltersPresenter.UserSelection.CANCELLED)
+    `when`(view.showAskToSaveFilterDialog("Group1"))
+      .thenReturn(FiltersPresenter.UserSelection.CANCELLED)
 
     presenter.removeGroup("Group1")
 
@@ -223,16 +235,17 @@ class FiltersPresenterTests {
     val file = File("test.filters")
     openedFiles["Group1"] = file
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = true
+    f.setApplied(TEST_TAG, true)
     openedFilters["Group1"] = mutableListOf(f)
 
-    `when`(view.showAskToSaveFilterDialog("Group1")).thenReturn(FiltersPresenter.UserSelection.CONFIRMED)
+    `when`(view.showAskToSaveFilterDialog("Group1"))
+      .thenReturn(FiltersPresenter.UserSelection.CONFIRMED)
 
     presenter.removeGroup("Group1")
 
     verify(mockFiltersRepository).persistGroup(file, "Group1")
     verify(mockFiltersRepository).deleteGroup("Group1")
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -240,7 +253,7 @@ class FiltersPresenterTests {
     val file = File("test.filters")
     openedFiles["Group1"] = file
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = true
+    f.setApplied(TEST_TAG, true)
     openedFilters["Group1"] = mutableListOf(f)
 
     presenter.removeGroup("Group1")
@@ -248,7 +261,7 @@ class FiltersPresenterTests {
     verify(view, never()).showAskToSaveFilterDialog(anyNonNull(""))
     verify(mockFiltersRepository, never()).persistGroup(anyNonNull(file), anyNonNull(""))
     verify(mockFiltersRepository).deleteGroup("Group1")
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -309,22 +322,23 @@ class FiltersPresenterTests {
   fun testLoadFiltersRememberApplied() {
     val file = File("test.filters")
     val f1 = Filter("test1", "pattern1", Color.RED, LogLevel.DEBUG)
-    f1.isApplied = true
+    f1.setApplied(TEST_TAG, false)
     val f2 = Filter("test2", "pattern2", Color.BLUE, LogLevel.INFO)
-    f2.isApplied = false
+    f2.setApplied(TEST_TAG, false)
     openedFilters["Group1"] = mutableListOf(f1, f2)
     openedFiles["Group1"] = file
 
     `when`(mockPrefs.rememberAppliedFilters).thenReturn(true)
-    `when`(mockPrefs.getAppliedFiltersIndices("Group1")).thenReturn(listOf(0))
+    `when`(mockPrefs.getAppliedFiltersIndices(TEST_TAG, "Group1")).thenReturn(listOf(0))
 
     presenter.loadFilters(arrayOf(file), false)
 
     verify(mockFiltersRepository).openFilterFiles(arrayOf(file))
     verify(view).configureFiltersList(any())
     verify(view).onAppliedFiltersRemembered()
-    assertTrue(f1.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(f1.isApplied(TEST_TAG))
+    assertFalse(f2.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -344,68 +358,72 @@ class FiltersPresenterTests {
   @Test
   fun testFilterEditedReapply() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = true
+    f.setApplied(TEST_TAG, true)
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
 
     presenter.filterEdited(f)
 
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testFilterEditedReapplyWhenPreviouslyUnapplied() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = false
+    f.setApplied(TEST_TAG, false)
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
 
     presenter.filterEdited(f)
 
-    assertTrue(f.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(f.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testFilterEditedNoReapply() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
-    f.isApplied = false
+    f.setApplied(TEST_TAG, false)
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
 
     presenter.filterEdited(f)
 
-    assertFalse(f.isApplied)
-    verify(mockFiltersRepository, never()).notifyFiltersApplied()
+    assertFalse(f.isApplied(TEST_TAG))
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testSetAllFiltersAppliedGroup() {
     val f1 = Filter("test1", "pattern1", Color.RED, LogLevel.DEBUG)
-    f1.isApplied = false
+    f1.setApplied(TEST_TAG, false)
     val f2 = Filter("test2", "pattern2", Color.BLUE, LogLevel.INFO)
-    f2.isApplied = false
+    f2.setApplied(TEST_TAG, false)
     openedFilters["Group1"] = mutableListOf(f1, f2)
 
     presenter.setAllFiltersApplied("Group1", true)
 
-    assertTrue(f1.isApplied)
-    assertTrue(f2.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(f1.isApplied(TEST_TAG))
+    assertTrue(f2.isApplied(TEST_TAG))
+    assertFalse(f1.isApplied(SECOND_TAG))
+    assertFalse(f2.isApplied(SECOND_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
     verify(view).updateFiltersUI()
   }
 
   @Test
   fun testSetAllFiltersAppliedAll() {
     val f1 = Filter("test1", "pattern1", Color.RED, LogLevel.DEBUG)
-    f1.isApplied = true
+    f1.setApplied(TEST_TAG, true)
+    f1.setApplied(SECOND_TAG, true)
     val f2 = Filter("test2", "pattern2", Color.BLUE, LogLevel.INFO)
-    f2.isApplied = true
+    f2.setApplied(TEST_TAG, true)
     openedFilters["Group1"] = mutableListOf(f1)
     openedFilters["Group2"] = mutableListOf(f2)
 
     presenter.setAllFiltersApplied(false)
 
-    assertFalse(f1.isApplied)
-    assertFalse(f2.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertFalse(f1.isApplied(TEST_TAG))
+    assertFalse(f2.isApplied(TEST_TAG))
+    assertTrue(f1.isApplied(SECOND_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
     verify(view).updateFiltersUI()
   }
 
@@ -418,7 +436,8 @@ class FiltersPresenterTests {
   @Test
   fun testCleanDuplicateFiltersNoDuplicates() {
     openedFilters["Group1"] = mutableListOf(Filter("test", "pattern", Color.RED, LogLevel.DEBUG))
-    `when`(mockFilterDuplicateUtils.findDuplicateClusters(anyNonNull(emptyMap()))).thenReturn(emptyList())
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(anyNonNull(emptyMap())))
+      .thenReturn(emptyList())
 
     presenter.cleanDuplicateFilters()
 
@@ -429,18 +448,19 @@ class FiltersPresenterTests {
   fun testCleanDuplicateFiltersResolutionApplied() {
     val f1 = Filter("test1", "pattern", Color.RED, LogLevel.DEBUG)
     val f2 = Filter("test2", "pattern", Color.BLUE, LogLevel.DEBUG)
-    f2.isApplied = true
+    f2.setApplied(TEST_TAG, true)
     openedFilters["Group1"] = mutableListOf(f1, f2)
 
     val cluster = DuplicateCluster(f1, listOf(FilterMatch("Group1", f2, 1)))
-    `when`(mockFilterDuplicateUtils.findDuplicateClusters(anyNonNull(emptyMap()))).thenReturn(listOf(cluster))
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(anyNonNull(emptyMap())))
+      .thenReturn(listOf(cluster))
     `when`(view.showDuplicateFiltersDialog(listOf(cluster))).thenReturn(mapOf("Group1" to listOf(f2)))
 
     presenter.cleanDuplicateFilters()
 
     verify(mockFiltersRepository).deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(1)))
     verify(view).showToast("Cleaned 1 duplicate filter(s)")
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -450,20 +470,22 @@ class FiltersPresenterTests {
     openedFilters["Group1"] = mutableListOf(f1, f2)
 
     val cluster = DuplicateCluster(f1, listOf(FilterMatch("Group1", f2, 1)))
-    `when`(mockFilterDuplicateUtils.findDuplicateClusters(anyNonNull(emptyMap()))).thenReturn(listOf(cluster))
+    `when`(mockFilterDuplicateUtils.findDuplicateClusters(anyNonNull(emptyMap())))
+      .thenReturn(listOf(cluster))
     `when`(view.showDuplicateFiltersDialog(listOf(cluster))).thenReturn(null)
 
     presenter.cleanDuplicateFilters()
 
     verify(mockFiltersRepository, never()).deleteFilters(anyNonNull(""), anyNonNull(intArrayOf()))
-    verify(mockFiltersRepository, never()).notifyFiltersApplied()
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testFindDuplicateFilter() {
     val f = Filter("test", "pattern", Color.RED, LogLevel.DEBUG)
     val match = FilterMatch("Group1", f, 0)
-    `when`(mockFilterDuplicateUtils.findFirstDuplicate("pattern", false, null, openedFilters)).thenReturn(match)
+    `when`(mockFilterDuplicateUtils.findFirstDuplicate("pattern", false, null, openedFilters))
+      .thenReturn(match)
 
     val result = presenter.findDuplicateFilter("pattern", false, null)
 
@@ -474,54 +496,84 @@ class FiltersPresenterTests {
   fun testAddFilterForPidSingleGroup() {
     val dummyFilter = Filter("dummy", "dummy", Color.BLACK, LogLevel.VERBOSE)
     openedFilters["Group1"] = mutableListOf()
-    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyNonNull(""), anyBoolean(), anyOrNull(), anyNonNull(emptyMap()))).thenReturn(null)
+    `when`(
+      mockFilterDuplicateUtils.findFirstDuplicate(
+        anyNonNull(""),
+        anyBoolean(),
+        anyOrNull(),
+        anyNonNull(emptyMap())
+      )
+    ).thenReturn(null)
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
     `when`(view.showSelectFilterGroup(listOf("Group1"))).thenReturn("Group1")
 
     presenter.addFilterForPid(1234)
 
     verify(view).showSelectFilterGroup(listOf("Group1"))
-    verify(mockFiltersRepository).addFilter(eqNonNull("Group1"), captureNonNull(filterCaptor, dummyFilter))
+    verify(mockFiltersRepository).addFilter(
+      eqNonNull("Group1"),
+      captureNonNull(filterCaptor, dummyFilter)
+    )
     val captured = filterCaptor.value
     assertEquals("PID 1234", captured.name)
     assertEquals(LogLineParser.getFilterPatternForPid(1234), captured.patternString)
-    assertTrue(captured.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(captured.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testAddFilterForPidCreateNewGroup() {
     val dummyFilter = Filter("dummy", "dummy", Color.BLACK, LogLevel.VERBOSE)
     openedFilters["Group1"] = mutableListOf()
-    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyNonNull(""), anyBoolean(), anyOrNull(), anyNonNull(emptyMap()))).thenReturn(null)
+    `when`(
+      mockFilterDuplicateUtils.findFirstDuplicate(
+        anyNonNull(""),
+        anyBoolean(),
+        anyOrNull(),
+        anyNonNull(emptyMap())
+      )
+    ).thenReturn(null)
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
     `when`(view.showSelectFilterGroup(listOf("Group1"))).thenReturn("NewGroup")
 
     presenter.addFilterForPid(1234)
 
     verify(view).showSelectFilterGroup(listOf("Group1"))
-    verify(mockFiltersRepository).addFilter(eqNonNull("NewGroup"), captureNonNull(filterCaptor, dummyFilter))
+    verify(mockFiltersRepository).addFilter(
+      eqNonNull("NewGroup"),
+      captureNonNull(filterCaptor, dummyFilter)
+    )
     val captured = filterCaptor.value
     assertEquals("PID 1234", captured.name)
     assertEquals(LogLineParser.getFilterPatternForPid(1234), captured.patternString)
-    assertTrue(captured.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(captured.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testAddFilterForPidWhenReapplyAfterEditIsFalse() {
     val dummyFilter = Filter("dummy", "dummy", Color.BLACK, LogLevel.VERBOSE)
     openedFilters["Group1"] = mutableListOf()
-    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyNonNull(""), anyBoolean(), anyOrNull(), anyNonNull(emptyMap()))).thenReturn(null)
+    `when`(
+      mockFilterDuplicateUtils.findFirstDuplicate(
+        anyNonNull(""),
+        anyBoolean(),
+        anyOrNull(),
+        anyNonNull(emptyMap())
+      )
+    ).thenReturn(null)
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
     `when`(view.showSelectFilterGroup(listOf("Group1"))).thenReturn("Group1")
 
     presenter.addFilterForPid(1234)
 
-    verify(mockFiltersRepository).addFilter(eqNonNull("Group1"), captureNonNull(filterCaptor, dummyFilter))
+    verify(mockFiltersRepository).addFilter(
+      eqNonNull("Group1"),
+      captureNonNull(filterCaptor, dummyFilter)
+    )
     val captured = filterCaptor.value
-    assertTrue(captured.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(captured.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -529,34 +581,51 @@ class FiltersPresenterTests {
     val dummyFilter = Filter("dummy", "dummy", Color.BLACK, LogLevel.VERBOSE)
     openedFilters["Group1"] = mutableListOf()
     openedFilters["Group2"] = mutableListOf()
-    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyNonNull(""), anyBoolean(), anyOrNull(), anyNonNull(emptyMap()))).thenReturn(null)
+    `when`(
+      mockFilterDuplicateUtils.findFirstDuplicate(
+        anyNonNull(""),
+        anyBoolean(),
+        anyOrNull(),
+        anyNonNull(emptyMap())
+      )
+    ).thenReturn(null)
     `when`(view.showSelectFilterGroup(listOf("Group1", "Group2"))).thenReturn("Group2")
     `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
 
     presenter.addFilterForTag("ActivityManager")
 
-    verify(mockFiltersRepository).addFilter(eqNonNull("Group2"), captureNonNull(filterCaptor, dummyFilter))
+    verify(mockFiltersRepository).addFilter(
+      eqNonNull("Group2"),
+      captureNonNull(filterCaptor, dummyFilter)
+    )
     val captured = filterCaptor.value
     assertEquals("ActivityManager", captured.name)
     assertEquals(LogLineParser.getFilterPatternForTag("ActivityManager"), captured.patternString)
-    assertTrue(captured.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(captured.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
   fun testAddFilterDuplicateRejectedActivatesExisting() {
     val existing = Filter("existing", "pattern", Color.RED, LogLevel.DEBUG)
-    existing.isApplied = false
+    existing.setApplied(TEST_TAG, false)
     val match = FilterMatch("Group1", existing, 0)
 
-    `when`(mockFilterDuplicateUtils.findFirstDuplicate(anyNonNull(""), anyBoolean(), anyOrNull(), anyNonNull(emptyMap()))).thenReturn(match)
-    `when`(view.showDuplicateFilterWarning(anyNonNull(""), anyNonNull(""))).thenReturn(false) // User cancels duplicate
+    `when`(
+      mockFilterDuplicateUtils.findFirstDuplicate(
+        anyNonNull(""),
+        anyBoolean(),
+        anyOrNull(),
+        anyNonNull(emptyMap())
+      )
+    ).thenReturn(match)
+    `when`(view.showDuplicateFilterWarning(anyNonNull(""), anyNonNull(""))).thenReturn(false)
 
     presenter.addFilterForPid(1234)
 
     verify(mockFiltersRepository, never()).addFilter(anyNonNull(""), anyNonNull(existing))
-    assertTrue(existing.isApplied)
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    assertTrue(existing.isApplied(TEST_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -589,6 +658,7 @@ class FiltersPresenterTests {
 
   companion object {
     private val TEST_TAG = FilterContextTag.register("test_filters_presenter_tag")
+    private val SECOND_TAG = FilterContextTag.register("test_filters_presenter_second_tag")
   }
 
   @Test
@@ -602,7 +672,7 @@ class FiltersPresenterTests {
     presenter.applyFilters()
 
     assertNull(f.getContext(TEST_TAG))
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
   }
 
   @Test
@@ -615,6 +685,98 @@ class FiltersPresenterTests {
     presenter.applyFilters()
 
     assertNotNull(f.getContext(TEST_TAG))
-    verify(mockFiltersRepository).notifyFiltersApplied()
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
+  }
+
+  @Test
+  fun testSwitchingActiveFilterContextTagAppliesIndependently() {
+    val f1 = Filter("f1", "p1", Color.RED, LogLevel.DEBUG)
+    val f2 = Filter("f2", "p2", Color.BLUE, LogLevel.INFO)
+    openedFilters["Group1"] = mutableListOf(f1, f2)
+
+    `when`(view.activeFilterContextTag).thenReturn(TEST_TAG)
+    presenter.setAllFiltersApplied("Group1", true)
+    assertTrue(f1.isApplied(TEST_TAG))
+    assertFalse(f1.isApplied(SECOND_TAG))
+
+    `when`(view.activeFilterContextTag).thenReturn(SECOND_TAG)
+    presenter.setAllFiltersApplied("Group1", false)
+    assertTrue(f1.isApplied(TEST_TAG))
+    assertFalse(f1.isApplied(SECOND_TAG))
+  }
+
+  @Test
+  fun testCrossContextNotificationOnEditDeleteMoveAndRemoveGroup() {
+    val f = Filter("shared", "pattern", Color.RED, LogLevel.DEBUG)
+    f.setApplied(SECOND_TAG, true)
+    f.initContext(SECOND_TAG)
+    openedFilters["Group1"] = mutableListOf(f)
+
+    // 1. Edit filter applied in SECOND_TAG while TEST_TAG is active (reapplyFiltersAfterEdit=false)
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(false)
+    presenter.filterEdited(f)
+    assertNotNull(f.getContext(SECOND_TAG))
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(SECOND_TAG)
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
+
+    // 2. Edit filter with reapplyFiltersAfterEdit=true notifies both TEST_TAG and SECOND_TAG
+    clearInvocations(mockFiltersRepository)
+    `when`(mockPrefs.reapplyFiltersAfterEdit).thenReturn(true)
+    presenter.filterEdited(f)
+    assertNull(f.getContext(SECOND_TAG))
+    assertTrue(f.isApplied(TEST_TAG))
+    assertTrue(f.isApplied(SECOND_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
+    verify(mockFiltersRepository).notifyFiltersApplied(SECOND_TAG)
+
+    // 3. Remove filter applied in SECOND_TAG notifies SECOND_TAG
+    clearInvocations(mockFiltersRepository)
+    f.setApplied(TEST_TAG, false)
+    `when`(
+      mockFiltersRepository.deleteFilters(eqNonNull("Group1"), anyNonNull(intArrayOf(0)))
+    ).thenReturn(listOf(f))
+    presenter.removeFilters("Group1", intArrayOf(0))
+    verify(mockFiltersRepository).notifyFiltersApplied(SECOND_TAG)
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
+
+    // 4. Move filter applied in SECOND_TAG notifies SECOND_TAG
+    clearInvocations(mockFiltersRepository)
+    presenter.moveFilters("Group1", "Group2", intArrayOf(0))
+    verify(mockFiltersRepository).notifyFiltersApplied(SECOND_TAG)
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
+
+    // 5. Remove group containing filter applied in SECOND_TAG notifies SECOND_TAG
+    clearInvocations(mockFiltersRepository)
+    presenter.removeGroup("Group1")
+    verify(mockFiltersRepository).notifyFiltersApplied(SECOND_TAG)
+    verify(mockFiltersRepository, never()).notifyFiltersApplied(TEST_TAG)
+  }
+
+  @Test
+  fun testRememberAppliedFiltersPerContextIndependently() {
+    `when`(view.availableFilterContextTags).thenReturn(setOf(TEST_TAG, SECOND_TAG))
+    val file = File("multi.filters")
+    val f0 = Filter("f0", "p0", Color.RED, LogLevel.DEBUG)
+    val f1 = Filter("f1", "p1", Color.BLUE, LogLevel.INFO)
+    openedFilters["Group1"] = mutableListOf(f0, f1)
+    openedFiles["Group1"] = file
+
+    `when`(mockPrefs.rememberAppliedFilters).thenReturn(true)
+    `when`(mockPrefs.getAppliedFiltersIndices(TEST_TAG, "Group1")).thenReturn(listOf(0))
+    `when`(mockPrefs.getAppliedFiltersIndices(SECOND_TAG, "Group1")).thenReturn(listOf(1))
+
+    presenter.loadFilters(arrayOf(file), false)
+
+    assertTrue(f0.isApplied(TEST_TAG))
+    assertFalse(f1.isApplied(TEST_TAG))
+    assertFalse(f0.isApplied(SECOND_TAG))
+    assertTrue(f1.isApplied(SECOND_TAG))
+    verify(mockFiltersRepository).notifyFiltersApplied(TEST_TAG)
+    verify(mockFiltersRepository).notifyFiltersApplied(SECOND_TAG)
+
+    // Finishing saves each context's applied filter indices independently
+    presenter.finishing()
+    verify(mockPrefs).setAppliedFiltersIndices(TEST_TAG, "Group1", listOf(0))
+    verify(mockPrefs).setAppliedFiltersIndices(SECOND_TAG, "Group1", listOf(1))
   }
 }

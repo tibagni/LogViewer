@@ -552,81 +552,119 @@ class FiltersRepositoryTests {
   }
 
   @Test
-  fun testAppliedFiltersReturnsOnlyApplied() {
-    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
-    val f2 = Filter("f2", "p2", java.awt.Color.BLUE, LogLevel.INFO).apply { isApplied = false }
-    val f3 = Filter("f3", "p3", java.awt.Color.GREEN, LogLevel.VERBOSE).apply { isApplied = true }
+  fun testGetAppliedFiltersReturnsOnlyAppliedForContext() {
+    val tagA = com.tibagni.logviewer.filter.FilterContextTag.register("repo_test_tag_a")
+    val tagB = com.tibagni.logviewer.filter.FilterContextTag.register("repo_test_tag_b")
+
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply {
+      setApplied(tagA, true)
+    }
+    val f2 = Filter("f2", "p2", java.awt.Color.BLUE, LogLevel.INFO).apply {
+      setApplied(tagA, false)
+      setApplied(tagB, true)
+    }
+    val f3 = Filter("f3", "p3", java.awt.Color.GREEN, LogLevel.VERBOSE).apply {
+      setApplied(tagA, true)
+      setApplied(tagB, true)
+    }
 
     filtersRepository.addGroup("Group1")
     filtersRepository.addGroup("Group2")
     filtersRepository.addFilters("Group1", listOf(f1, f2))
     filtersRepository.addFilter("Group2", f3)
 
-    val applied = filtersRepository.appliedFilters
-    assertEquals(2, applied.size)
-    assertTrue(applied.contains(f1))
-    assertTrue(applied.contains(f3))
-    assertFalse(applied.contains(f2))
+    val appliedA = filtersRepository.getAppliedFilters(tagA)
+    assertEquals(2, appliedA.size)
+    assertTrue(appliedA.contains(f1))
+    assertTrue(appliedA.contains(f3))
+    assertFalse(appliedA.contains(f2))
+
+    val appliedB = filtersRepository.getAppliedFilters(tagB)
+    assertEquals(2, appliedB.size)
+    assertTrue(appliedB.contains(f2))
+    assertTrue(appliedB.contains(f3))
+    assertFalse(appliedB.contains(f1))
   }
 
   @Test
   fun testNotifyFiltersAppliedNotifiesListeners() {
-    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    val tag = com.tibagni.logviewer.filter.FilterContextTag.register("repo_notify_tag")
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply {
+      setApplied(tag, true)
+    }
     filtersRepository.addGroup("Group1")
     filtersRepository.addFilter("Group1", f1)
 
+    var notifiedTag: com.tibagni.logviewer.filter.FilterContextTag? = null
     var notifiedFilters: List<Filter>? = null
     val listener = object : FiltersRepository.Listener {
-      override fun onFiltersApplied(appliedFilters: List<Filter>) {
+      override fun onFiltersApplied(
+        tag: com.tibagni.logviewer.filter.FilterContextTag,
+        appliedFilters: List<Filter>
+      ) {
+        notifiedTag = tag
         notifiedFilters = appliedFilters
       }
     }
 
     filtersRepository.addListener(listener)
-    filtersRepository.notifyFiltersApplied()
+    filtersRepository.notifyFiltersApplied(tag)
 
+    assertEquals(tag, notifiedTag)
     assertNotNull(notifiedFilters)
     assertEquals(listOf(f1), notifiedFilters)
   }
 
   @Test
   fun testRemoveListenerStopsNotifications() {
-    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    val tag = com.tibagni.logviewer.filter.FilterContextTag.register("repo_remove_tag")
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply {
+      setApplied(tag, true)
+    }
     filtersRepository.addGroup("Group1")
     filtersRepository.addFilter("Group1", f1)
 
     var notificationCount = 0
     val listener = object : FiltersRepository.Listener {
-      override fun onFiltersApplied(appliedFilters: List<Filter>) {
+      override fun onFiltersApplied(
+        tag: com.tibagni.logviewer.filter.FilterContextTag,
+        appliedFilters: List<Filter>
+      ) {
         notificationCount++
       }
     }
 
     filtersRepository.addListener(listener)
-    filtersRepository.notifyFiltersApplied()
+    filtersRepository.notifyFiltersApplied(tag)
     assertEquals(1, notificationCount)
 
     filtersRepository.removeListener(listener)
-    filtersRepository.notifyFiltersApplied()
+    filtersRepository.notifyFiltersApplied(tag)
     assertEquals(1, notificationCount)
   }
 
   @Test
   fun testAddDuplicateListenerOnlyNotifiedOnce() {
-    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply { isApplied = true }
+    val tag = com.tibagni.logviewer.filter.FilterContextTag.register("repo_dup_tag")
+    val f1 = Filter("f1", "p1", java.awt.Color.RED, LogLevel.DEBUG).apply {
+      setApplied(tag, true)
+    }
     filtersRepository.addGroup("Group1")
     filtersRepository.addFilter("Group1", f1)
 
     var notificationCount = 0
     val listener = object : FiltersRepository.Listener {
-      override fun onFiltersApplied(appliedFilters: List<Filter>) {
+      override fun onFiltersApplied(
+        tag: com.tibagni.logviewer.filter.FilterContextTag,
+        appliedFilters: List<Filter>
+      ) {
         notificationCount++
       }
     }
 
     filtersRepository.addListener(listener)
     filtersRepository.addListener(listener)
-    filtersRepository.notifyFiltersApplied()
+    filtersRepository.notifyFiltersApplied(tag)
 
     assertEquals(1, notificationCount)
   }

@@ -1,8 +1,8 @@
 package com.tibagni.logviewer
 
 import com.tibagni.logviewer.annotation.VisibleForTesting
-import com.tibagni.logviewer.filter.EditFilterDialog
 import com.tibagni.logviewer.filter.Filter
+import com.tibagni.logviewer.filter.FilterContextTag
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.filter.FiltersPanelListener
 import com.tibagni.logviewer.i18n.I18n
@@ -57,10 +57,20 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
 
 class LogViewerViewImpl(
   private val mainView: MainView,
-  private var filtersPanel: FiltersPanel,
-  initialLogFiles: Set<File>
+  initialLogFiles: Set<File> = emptySet()
 ) : LogViewerView, LogViewerPresenterView {
   override val presenter: LogViewerPresenter
+
+  override val tabTitle: String
+    get() = I18n.get(I18n.MAIN_TAB_LOGS)
+
+  override val tabIcon: Icon
+    get() = CommonIcons.logsTabIcon(UIScaleUtils.dip(16))
+
+  override val filterContextTag: FilterContextTag
+    get() = presenter.filterContextTag
+
+  private var filtersPanel: FiltersPanel? = null
 
   private lateinit var mainSplitPane: JSplitPane
   private lateinit var mainLogSplit: JSplitPane
@@ -139,7 +149,6 @@ class LogViewerViewImpl(
         }
       }
     }
-    filtersPanel.listener = filtersPanelListener
 
     logRenderer = LogCellRenderer()
     logRenderer.showLineNumbers(userPrefs.showLineNumbers)
@@ -431,7 +440,7 @@ class LogViewerViewImpl(
 
   override fun onThemeChanged() {
     updateLogFont()
-    filtersPanel.onThemeChanged()
+    filtersPanel?.onThemeChanged()
     SwingUtilities.updateComponentTreeUI(sideButtonsPanel)
     headerPanel.onThemeChanged()
     if (::logList.isInitialized) {
@@ -543,7 +552,7 @@ class LogViewerViewImpl(
       filteredLogListTableModel.setLogs(it)
     }
     logList.updateUI()
-    filtersPanel.updateFiltersUI()
+    filtersPanel?.updateFiltersUI()
 
     // Update the save menu option availability
     mainView.enableSaveFilteredLogsMenu(logEntries?.isNotEmpty() ?: false)
@@ -788,7 +797,6 @@ class LogViewerViewImpl(
     mainLogSplit.rightComponent.isVisible = false
 
     mainSplitPane.rightComponent = mainLogSplit
-    mainSplitPane.leftComponent = filtersPanel
 
     updateEmptyStateVisibility()
     return mainSplitPane

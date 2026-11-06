@@ -16,7 +16,7 @@ import java.util.regex.PatternSyntaxException;
 public class Filter {
   public static final String FILE_EXTENSION = "filter";
 
-  private boolean applied;
+  private final Set<FilterContextTag> appliedContexts = ConcurrentHashMap.newKeySet();
   private String name;
   private Color color;
   private LogLevel verbosity = LogLevel.VERBOSE;
@@ -39,7 +39,7 @@ public class Filter {
     name = from.name;
     color = new Color(from.color.getRGB());
     flags = from.flags;
-    applied = from.isApplied();
+    appliedContexts.addAll(from.appliedContexts);
     pattern = getPattern(from.pattern.pattern());
     verbosity = from.verbosity;
     isSimpleFilter = from.isSimpleFilter;
@@ -114,12 +114,25 @@ public class Filter {
     }
   }
 
-  public boolean isApplied() {
-    return applied;
+  public boolean isApplied(FilterContextTag tag) {
+    return tag != null && appliedContexts.contains(tag);
   }
 
-  public void setApplied(boolean applied) {
-    this.applied = applied;
+  public void setApplied(FilterContextTag tag, boolean applied) {
+    if (tag == null) return;
+    if (applied) {
+      appliedContexts.add(tag);
+    } else {
+      appliedContexts.remove(tag);
+    }
+  }
+
+  public Set<FilterContextTag> getAppliedContexts() {
+    return Collections.unmodifiableSet(new HashSet<>(appliedContexts));
+  }
+
+  public void clearAppliedContexts() {
+    appliedContexts.clear();
   }
 
   public String getName() {
@@ -204,8 +217,9 @@ public class Filter {
 
   @Override
   public String toString() {
-    return String.format("Filter: [Name=%s, pattern=%s, regexFlags=%d, color=%s, verbosity=%s, applied=%b]",
-        name, pattern, flags, color, verbosity, applied);
+    return String.format(
+        "Filter: [Name=%s, pattern=%s, regexFlags=%d, color=%s, verbosity=%s, appliedContexts=%s]",
+        name, pattern, flags, color, verbosity, appliedContexts);
   }
 
   public String serializeFilter() {

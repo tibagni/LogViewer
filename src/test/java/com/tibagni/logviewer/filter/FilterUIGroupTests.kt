@@ -30,19 +30,21 @@ class FilterUIGroupTests {
   private lateinit var filterA: Filter
   private lateinit var filterB: Filter
   private lateinit var filterC: Filter
+  private var activeContextTag: FilterContextTag = TEST_TAG_A
 
   @Before
   fun setUp() {
     assumeFalse(GraphicsEnvironment.isHeadless())
     listener = mock(FiltersList.FiltersListener::class.java)
+    activeContextTag = TEST_TAG_A
     filterA = Filter("FilterA", "patternA", Color.RED, LogLevel.DEBUG, false)
-    filterA.isApplied = true
+    filterA.setApplied(TEST_TAG_A, true)
     filterB = Filter("FilterB", "patternB", Color.BLUE, LogLevel.INFO, false)
-    filterB.isApplied = true
+    filterB.setApplied(TEST_TAG_A, true)
     filterC = Filter(
       "FilterC", "patternC", Color.GREEN, LogLevel.WARNING, false
     )
-    filterC.isApplied = false
+    filterC.setApplied(TEST_TAG_A, false)
   }
 
   private fun createGroup(
@@ -52,7 +54,7 @@ class FilterUIGroupTests {
     return FilterUIGroup(
       groupName,
       filters,
-      { null },
+      { activeContextTag },
       { listener },
       null
     )
@@ -374,5 +376,47 @@ class FilterUIGroupTests {
     assertNotNull("Edit item should have an icon", editItem.icon)
     assertNotNull("Duplicate item should have an icon", duplicateItem.icon)
     assertNotNull("Move item should have an icon", moveItem.icon)
+  }
+
+  @Test
+  fun testSwitchingContextTagUpdatesCheckboxAndHeaderCount() {
+    filterA.setApplied(TEST_TAG_B, false)
+    filterB.setApplied(TEST_TAG_B, false)
+    filterC.setApplied(TEST_TAG_B, true)
+
+    val group = createGroup("SwitchGroup", arrayOf(filterA, filterB, filterC))
+    assertEquals("SwitchGroup (2 / 3)", group.hideGroupBtn.text)
+    assertEquals(
+      TriStateCheckbox.SelectionState.PARTIALLY_SELECTED,
+      group.selectAllCb.selectionState
+    )
+
+    // Switch to TEST_TAG_B where only filterC is applied
+    activeContextTag = TEST_TAG_B
+    group.updateActionPaneButtons()
+    assertEquals("SwitchGroup (1 / 3)", group.hideGroupBtn.text)
+    assertEquals(
+      TriStateCheckbox.SelectionState.PARTIALLY_SELECTED,
+      group.selectAllCb.selectionState
+    )
+
+    // Unapply filterC in TEST_TAG_B -> 0 / 3 and NOT_SELECTED
+    filterC.setApplied(TEST_TAG_B, false)
+    group.updateActionPaneButtons()
+    assertEquals("SwitchGroup (0 / 3)", group.hideGroupBtn.text)
+    assertEquals(
+      TriStateCheckbox.SelectionState.NOT_SELECTED,
+      group.selectAllCb.selectionState
+    )
+
+    // Switch back to TEST_TAG_A -> still 2 / 3
+    activeContextTag = TEST_TAG_A
+    group.updateActionPaneButtons()
+    assertEquals("SwitchGroup (2 / 3)", group.hideGroupBtn.text)
+  }
+
+  companion object {
+    private val TEST_TAG_A = FilterContextTag.register("ui_group_test_tag_a")
+    private val TEST_TAG_B = FilterContextTag.register("ui_group_test_tag_b")
   }
 }

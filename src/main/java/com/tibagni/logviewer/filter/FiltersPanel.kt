@@ -40,13 +40,48 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   private val host: FiltersPanelHost,
   presenterFactory: ((FiltersView) -> FiltersPresenter)?,
   @VisibleForTesting
-  internal val userPrefs: LogViewerPreferences
+  internal val userPrefs: LogViewerPreferences,
+  initialContextTag: FilterContextTag? = null,
+  knownContextTags: Set<FilterContextTag> = emptySet()
 ) : JPanel(), FiltersView, View {
 
   constructor(
     host: FiltersPanelHost,
     presenterFactory: ((FiltersView) -> FiltersPresenter)? = null
-  ) : this(host, presenterFactory, ServiceLocator.logViewerPrefs)
+  ) : this(
+    host,
+    presenterFactory,
+    ServiceLocator.logViewerPrefs,
+    null,
+    emptySet()
+  )
+
+  constructor(
+    host: FiltersPanelHost,
+    initialContextTag: FilterContextTag?,
+    knownContextTags: Set<FilterContextTag> = emptySet(),
+    presenterFactory: ((FiltersView) -> FiltersPresenter)? = null
+  ) : this(
+    host,
+    presenterFactory,
+    ServiceLocator.logViewerPrefs,
+    initialContextTag,
+    knownContextTags
+  )
+
+  val filtersPane: FiltersList = FiltersList().apply {
+    activeFilterContextTag = initialContextTag
+  }
+
+  private val registeredContextTags = mutableSetOf<FilterContextTag>().apply {
+    addAll(knownContextTags)
+    if (initialContextTag != null) {
+      add(initialContextTag)
+    }
+  }
+
+  override val availableFilterContextTags: Set<FilterContextTag>
+    get() = registeredContextTags.toSet()
 
   @VisibleForTesting
   internal val presenter: FiltersPresenter =
@@ -70,6 +105,9 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   override var activeFilterContextTag: FilterContextTag?
     get() = filtersPane.activeFilterContextTag
     set(value) {
+      if (value != null) {
+        registeredContextTags.add(value)
+      }
       filtersPane.activeFilterContextTag = value
       updateFiltersUI()
     }
@@ -126,8 +164,6 @@ open class FiltersPanel @VisibleForTesting internal constructor(
 
   private val centerCardLayout = CardLayout()
   private val centerContainer = JPanel(centerCardLayout)
-
-  val filtersPane: FiltersList = FiltersList()
 
   var listener: FiltersPanelListener? = null
 
@@ -407,7 +443,7 @@ open class FiltersPanel @VisibleForTesting internal constructor(
 
       override fun onDuplicateFilter(group: String, filter: Filter) {
         val duplicatedFilter = Filter(filter)
-        duplicatedFilter.isApplied = false
+        duplicatedFilter.clearAppliedContexts()
         presenter.addFilter(group, duplicatedFilter, true)
       }
 
@@ -642,7 +678,8 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     SearchFiltersDialog.show(
       host.parentWindow,
       presenter,
-      ServiceLocator.filtersRepository
+      ServiceLocator.filtersRepository,
+      activeFilterContextTag
     ) { group, filter ->
       filtersPane.selectFilter(group, filter)
     }

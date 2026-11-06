@@ -55,6 +55,7 @@ class FilterUIGroup extends JPanel {
   private final FilterCellRenderer cellRenderer;
   private final FilterListSearchHandler listSearchHandler;
 
+  private final Supplier<FilterContextTag> contextTagSupplier;
   private final Supplier<FiltersList.FiltersListener> listenerSupplier;
   private final Consumer<String> focusGainedCallback;
   private final LogViewerPreferences userPrefs =
@@ -88,6 +89,7 @@ class FilterUIGroup extends JPanel {
       Supplier<FiltersList.FiltersListener> listenerSupplier,
       Consumer<String> focusGainedCallback) {
     this.groupName = groupName;
+    this.contextTagSupplier = contextTagSupplier;
     this.listenerSupplier = listenerSupplier;
     this.focusGainedCallback = focusGainedCallback;
 
@@ -204,14 +206,19 @@ class FilterUIGroup extends JPanel {
     }
 
     if (applied != null) {
+      FilterContextTag tag = getActiveContextTag();
       ListModel<Filter> listModel = list.getModel();
       for (int i = 0; i < listModel.getSize(); i++) {
-        listModel.getElementAt(i).setApplied(applied);
+        listModel.getElementAt(i).setApplied(tag, applied);
       }
       list.updateUI();
       listener.onFiltersApplied();
       updateGroupHeader();
     }
+  }
+
+  private FilterContextTag getActiveContextTag() {
+    return contextTagSupplier != null ? contextTagSupplier.get() : null;
   }
 
   /**
@@ -475,7 +482,8 @@ class FilterUIGroup extends JPanel {
     list.addListSelectionListener(e -> updateActionPaneButtons());
     list.setReorderedListener(this::reorderFilters);
     list.setItemsCheckListener((CheckBoxList.ItemsCheckListener<Filter>) elements -> {
-      elements.forEach(f -> f.setApplied(!f.isApplied()));
+      FilterContextTag tag = getActiveContextTag();
+      elements.forEach(f -> f.setApplied(tag, !f.isApplied(tag)));
       FiltersList.FiltersListener listener = listenerSupplier.get();
       if (userPrefs.getApplyFilterOnCheck() && listener != null) {
         listener.onFiltersApplied();
@@ -663,14 +671,16 @@ class FilterUIGroup extends JPanel {
     if (list == null) return;
     updateNavigationTooltips();
 
+    FilterContextTag tag = getActiveContextTag();
     Filter selectedFilter = list.getSelectedValue();
     boolean enableNavigation = list.getSelectedIndices().length == 1
         && selectedFilter != null
-        && selectedFilter.isApplied();
+        && selectedFilter.isApplied(tag);
     prevBtn.setEnabled(enableNavigation);
     nextBtn.setEnabled(enableNavigation);
 
     selectAllCb.setSelectionState(calculateSelectionState(list.getModel()));
+    updateGroupHeader();
   }
 
   /**
@@ -686,11 +696,12 @@ class FilterUIGroup extends JPanel {
       return TriStateCheckbox.SelectionState.NOT_SELECTED;
     }
 
+    FilterContextTag tag = getActiveContextTag();
     boolean hasAtLeastOneFilterApplied = false;
     boolean allFiltersApplied = true;
     for (int i = 0; i < listModel.getSize(); i++) {
       Filter filter = listModel.getElementAt(i);
-      boolean applied = filter.isApplied();
+      boolean applied = filter.isApplied(tag);
       hasAtLeastOneFilterApplied |= applied;
       allFiltersApplied &= applied;
     }
@@ -1078,9 +1089,10 @@ class FilterUIGroup extends JPanel {
     int selectedCount = 0;
 
     if (listModel != null) {
+      FilterContextTag tag = getActiveContextTag();
       count = listModel.getSize();
       for (int i = 0; i < count; i++) {
-        if (listModel.getElementAt(i).isApplied()) {
+        if (listModel.getElementAt(i).isApplied(tag)) {
           selectedCount++;
         }
       }

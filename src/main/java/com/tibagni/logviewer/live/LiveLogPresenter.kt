@@ -131,8 +131,10 @@ class LiveLogPresenterImpl(
   }
 
   private val filtersListener = object : FiltersRepository.Listener {
-    override fun onFiltersApplied(appliedFilters: List<Filter>) {
-      applyFiltersAsync(appliedFilters)
+    override fun onFiltersApplied(tag: FilterContextTag, appliedFilters: List<Filter>) {
+      if (tag == filterContextTag) {
+        applyFiltersAsync(appliedFilters)
+      }
     }
   }
 
@@ -179,7 +181,7 @@ class LiveLogPresenterImpl(
 
   override fun init() {
     filtersRepository.addListener(filtersListener)
-    liveLogsRepository.setLiveFilters(filtersRepository.appliedFilters)
+    liveLogsRepository.setLiveFilters(filtersRepository.getAppliedFilters(filterContextTag))
     view.showStreamingStatus(
       statusText = I18n.get(I18n.LIVE_LOGS_STATUS_STOPPED),
       isStreaming = false

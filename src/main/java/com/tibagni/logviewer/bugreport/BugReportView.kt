@@ -47,6 +47,12 @@ interface BugReportPresenterView : AsyncPresenter.AsyncPresenterView {
 class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugReportPresenterView {
   override val contentPane: JPanel = JPanel()
 
+  override val tabTitle: String
+    get() = I18n.get(I18n.MAIN_TAB_BUG_REPORT)
+
+  override val tabIcon: Icon
+    get() = CommonIcons.bugReportTabIcon(UIScaleUtils.dip(16))
+
   @VisibleForTesting
   internal lateinit var sectionsList: JList<String>
   @VisibleForTesting

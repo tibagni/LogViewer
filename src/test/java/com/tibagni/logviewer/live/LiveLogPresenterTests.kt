@@ -39,8 +39,16 @@ class LiveLogPresenterTests {
     return fallback
   }
 
+  companion object {
+    private val liveContextTag =
+      com.tibagni.logviewer.filter.FilterContextTag.register("test_live_logs_view")
+  }
+
   private val dummyFilterListener = object : com.tibagni.logviewer.FiltersRepository.Listener {
-    override fun onFiltersApplied(appliedFilters: List<Filter>) {}
+    override fun onFiltersApplied(
+      tag: com.tibagni.logviewer.filter.FilterContextTag,
+      appliedFilters: List<Filter>
+    ) {}
   }
 
   @Mock
@@ -70,8 +78,11 @@ class LiveLogPresenterTests {
   @Before
   fun setUp() {
     MockitoAnnotations.initMocks(this)
-    `when`(mockFiltersRepo.appliedFilters).thenAnswer {
-      mockFiltersRepo.currentlyOpenedFilters?.values?.flatten()?.filter { it.isApplied } ?: emptyList<Filter>()
+    `when`(mockRepo.filterContextTag).thenReturn(liveContextTag)
+    `when`(mockFiltersRepo.getAppliedFilters(liveContextTag)).thenAnswer {
+      mockFiltersRepo.currentlyOpenedFilters?.values?.flatten()?.filter {
+        it.isApplied(liveContextTag)
+      } ?: emptyList<Filter>()
     }
     `when`(mockAdbManager.isAdbAvailable).thenReturn(true)
     runBlocking {
@@ -194,14 +205,21 @@ class LiveLogPresenterTests {
   fun testInitSetsLiveFilters() {
     runBlocking {
       val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-      val activeFilter = Filter("Test", "regex.*", Color.RED, LogLevel.VERBOSE).apply { isApplied = true }
-      val inactiveFilter = Filter("Inactive", "foo", Color.BLUE, LogLevel.INFO).apply { isApplied = false }
-      `when`(mockFiltersRepo.currentlyOpenedFilters).thenReturn(mapOf("group1" to listOf(activeFilter, inactiveFilter)))
+      val activeFilter = Filter("Test", "regex.*", Color.RED, LogLevel.VERBOSE).apply {
+        setApplied(liveContextTag, true)
+      }
+      val inactiveFilter = Filter("Inactive", "foo", Color.BLUE, LogLevel.INFO).apply {
+        setApplied(liveContextTag, false)
+      }
+      `when`(mockFiltersRepo.currentlyOpenedFilters).thenReturn(
+        mapOf("group1" to listOf(activeFilter, inactiveFilter))
+      )
 
       val presenter = createPresenter(scope)
       presenter.init()
 
-      val captor = ArgumentCaptor.forClass(com.tibagni.logviewer.FiltersRepository.Listener::class.java)
+      val captor =
+        ArgumentCaptor.forClass(com.tibagni.logviewer.FiltersRepository.Listener::class.java)
       verify(mockFiltersRepo).addListener(captureNonNull(captor, dummyFilterListener))
       verify(mockRepo).setLiveFilters(listOf(activeFilter))
       presenter.finishing()
@@ -225,7 +243,8 @@ class LiveLogPresenterTests {
   fun testFiltersRepositoryListenerRegisteredAndNotified() {
     runBlocking {
       val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-      val captor = ArgumentCaptor.forClass(com.tibagni.logviewer.FiltersRepository.Listener::class.java)
+      val captor =
+        ArgumentCaptor.forClass(com.tibagni.logviewer.FiltersRepository.Listener::class.java)
 
       val entry = LogEntry("matched", LogLevel.INFO, null, LogStream.MAIN)
       `when`(mockRepo.allLogs).thenReturn(listOf(entry))
@@ -242,12 +261,15 @@ class LiveLogPresenterTests {
 
       val listener = captor.value
       assertNotNull(listener)
-      val filter = Filter("F1", "matched", Color.RED, LogLevel.INFO).apply { isApplied = true }
-      listener.onFiltersApplied(listOf(filter))
+      val filter = Filter("F1", "matched", Color.RED, LogLevel.INFO).apply {
+        setApplied(liveContextTag, true)
+      }
+      listener.onFiltersApplied(liveContextTag, listOf(filter))
 
       @Suppress("UNCHECKED_CAST")
       val filtersCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Filter>>
-      val prCaptor: ArgumentCaptor<ProgressReporter> = ArgumentCaptor.forClass(ProgressReporter::class.java)
+      val prCaptor: ArgumentCaptor<ProgressReporter> =
+        ArgumentCaptor.forClass(ProgressReporter::class.java)
       verify(mockRepo).setLiveFilters(captureNonNull(filtersCaptor, emptyList()), prCaptor.capture())
       assertEquals(listOf(filter), filtersCaptor.value)
 
@@ -257,6 +279,12 @@ class LiveLogPresenterTests {
       verify(mockView).showFilteringProgress(0)
       verify(mockView).finishFilteringProgress()
       verify(mockView).showAllLogs(listOf(entry), listOf(entry))
+
+      // Notifications for a different contextTag are ignored
+      clearInvocations(mockRepo, mockView)
+      val otherTag = com.tibagni.logviewer.filter.FilterContextTag.register("other_live_tag")
+      listener.onFiltersApplied(otherTag, listOf(filter))
+      verify(mockRepo, never()).setLiveFilters(anyList(), any())
 
       presenter.finishing()
     }

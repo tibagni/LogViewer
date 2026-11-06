@@ -389,4 +389,30 @@ class FilterCellRendererTests {
       zeroG.dispose()
     }
   }
+
+  /**
+   * Verifies that checkbox selection reflects the applied state for the active context tag.
+   */
+  @Test
+  fun testCheckBoxSelectionReflectsActiveContextTag() {
+    val tagA = FilterContextTag.register("cellRendererTagA-" + UUID.randomUUID())
+    val tagB = FilterContextTag.register("cellRendererTagB-" + UUID.randomUUID())
+    var currentTag: FilterContextTag = tagA
+    val renderer = FilterCellRenderer(Supplier { currentTag })
+    val list = JList<Filter>()
+    val filter = Filter("ContextFilter", "pattern", Color.RED, LogLevel.DEBUG)
+    filter.setApplied(tagA, true)
+    filter.setApplied(tagB, false)
+
+    val compA = renderer.getListCellRendererComponent(
+      list, filter, 0, false, false
+    ) as FilterCellRenderer
+    assertTrue(compA.checkBox.isSelected)
+
+    currentTag = tagB
+    val compB = renderer.getListCellRendererComponent(
+      list, filter, 0, false, false
+    ) as FilterCellRenderer
+    assertFalse(compB.checkBox.isSelected)
+  }
 }
