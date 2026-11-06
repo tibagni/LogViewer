@@ -18,5 +18,8 @@ data class SubscriptionInfo(
   val displayName: String,
   val carrierName: String,
   val nameSource: String,
-  val fullText: String
+  val fullText: String,
+  val gid1: String = "",
+  val isEmbedded: Int = -1,
+  val profileClass: Int = -1
 )
