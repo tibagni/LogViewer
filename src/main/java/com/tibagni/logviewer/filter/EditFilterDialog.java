@@ -24,6 +24,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Random;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Dialog for creating and editing log filters.
@@ -179,6 +181,24 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
       });
     }
 
+    regexTxt.getDocument().addDocumentListener(new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+        validateRegexInput();
+      }
+
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+        validateRegexInput();
+      }
+
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+        validateRegexInput();
+      }
+    });
+    validateRegexInput();
+
     SwingUtilities.invokeLater(() -> regexTxt.requestFocus());
 
     if (!StringUtils.isEmpty(preDefinedText)) {
@@ -189,6 +209,32 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
           regexEditorBtn.doClick();
         }
       });
+    }
+  }
+
+  /**
+   * Validates the regex pattern input, applying error outline and tooltip if invalid,
+   * and enabling/disabling the OK button accordingly.
+   */
+  void validateRegexInput() {
+    String pattern = regexTxt.getText();
+    if (StringUtils.isEmpty(pattern)) {
+      regexTxt.putClientProperty(FlatClientProperties.OUTLINE, null);
+      regexTxt.setToolTipText(null);
+      buttonsPane.enableOkButton(false);
+      return;
+    }
+
+    try {
+      Pattern.compile(pattern);
+      regexTxt.putClientProperty(FlatClientProperties.OUTLINE, null);
+      regexTxt.setToolTipText(null);
+      buttonsPane.enableOkButton(true);
+    } catch (PatternSyntaxException e) {
+      regexTxt.putClientProperty(FlatClientProperties.OUTLINE,
+          FlatClientProperties.OUTLINE_ERROR);
+      regexTxt.setToolTipText(e.getDescription());
+      buttonsPane.enableOkButton(false);
     }
   }
 
@@ -652,5 +698,15 @@ public class EditFilterDialog extends JDialog implements ButtonsPane.Listener {
   @VisibleForTesting
   public JComboBox<LogLevel> getVerbosityCombo() {
     return verbosityCombo;
+  }
+
+  /**
+   * Returns whether the OK action button is currently enabled.
+   *
+   * @return {@code true} if OK button is enabled; {@code false} otherwise
+   */
+  @VisibleForTesting
+  public boolean isOkButtonEnabled() {
+    return buttonsPane != null && buttonsPane.isOkButtonEnabled();
   }
 }
