@@ -9,6 +9,7 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
 import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.StatusBadge
 import java.awt.BorderLayout
@@ -66,12 +67,18 @@ class VisibleLogsConfigurationDialog(
   @VisibleForTesting
   internal val clearStartingPointBtn = FlatButton(
     I18n.get(I18n.COMMON_CLEAR)
-  )
+  ).apply {
+    icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   @VisibleForTesting
   internal val clearEndingPointBtn = FlatButton(
     I18n.get(I18n.COMMON_CLEAR)
-  )
+  ).apply {
+    icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   @VisibleForTesting
   internal val startingPointLogText = JTextArea(3, 30)

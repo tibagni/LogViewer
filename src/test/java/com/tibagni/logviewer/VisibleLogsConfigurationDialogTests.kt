@@ -57,7 +57,13 @@ class VisibleLogsConfigurationDialogTests {
       assertEquals("Ending log content", dialog.endingPointLogText.text)
 
       assertTrue(dialog.clearStartingPointBtn.isEnabled)
+      assertNotNull(dialog.clearStartingPointBtn.icon)
+      assertEquals(UIScaleUtils.dip(14), dialog.clearStartingPointBtn.icon.iconWidth)
+      assertEquals(UIScaleUtils.dip(4), dialog.clearStartingPointBtn.iconTextGap)
       assertTrue(dialog.clearEndingPointBtn.isEnabled)
+      assertNotNull(dialog.clearEndingPointBtn.icon)
+      assertEquals(UIScaleUtils.dip(14), dialog.clearEndingPointBtn.icon.iconWidth)
+      assertEquals(UIScaleUtils.dip(4), dialog.clearEndingPointBtn.iconTextGap)
 
       assertEquals(
         StatusBadge.Variant.NORMAL,
