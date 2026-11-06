@@ -13,8 +13,32 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
 
+class SubscriptionsSectionPanel(private val section: SubscriptionsSection) :
+  SectionPanel(section.sectionName) {
 
-class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : SectionPanel(section.sectionName) {
+  companion object {
+    private val TABLE_HEADERS = arrayOf(
+      "Sub Id",
+      "Carrier Id",
+      "Display Name",
+      "MCC",
+      "MNC",
+      "GID1",
+      "Is Embedded",
+      "Profile Class"
+    )
+
+    private const val LEADING_PREFIX_PATTERN = """^\[SubscriptionInfo[a-zA-Z]*:\s*"""
+    private const val LEADING_BRACKET_PATTERN = """^[\[\{]\s*"""
+    private const val TRAILING_BRACKET_PATTERN = """\s*[\]\}]$"""
+    private const val PROPERTY_KEY_PATTERN = """(?:^|[\s,]+)(\w+)="""
+
+    private val LEADING_PREFIX_REGEX = LEADING_PREFIX_PATTERN.toRegex()
+    private val LEADING_BRACKET_REGEX = LEADING_BRACKET_PATTERN.toRegex()
+    private val TRAILING_BRACKET_REGEX = TRAILING_BRACKET_PATTERN.toRegex()
+    private val PROPERTY_KEY_REGEX = PROPERTY_KEY_PATTERN.toRegex()
+  }
+
   init {
     buildUi()
   }
@@ -35,13 +59,15 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
       it.lineWrap = true
       it.isEditable = false
       it.text = section.logs
+      it.caretPosition = 0
     })
 
+    val scrollPane = JScrollPane(container).also {
+      it.verticalScrollBar.unitIncrement = 16
+      it.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+    }
     add(
-      JScrollPane(container).also {
-        it.verticalScrollBar.unitIncrement = 16
-        it.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-      },
+      scrollPane,
       GBConstraintsBuilder()
         .withGridx(1)
         .withGridy(1)
@@ -50,38 +76,54 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
         .withFill(GridBagConstraints.BOTH)
         .build()
     )
+    SwingUtilities.invokeLater {
+      scrollPane.verticalScrollBar.value = 0
+      scrollPane.horizontalScrollBar.value = 0
+    }
   }
 
   private fun buildPropertiesTable(): Component {
-    val data = section.subscriptionManagerProperties.map { arrayOf(it.key, it.value) }.toTypedArray()
+    val data = section.subscriptionManagerProperties.map {
+      arrayOf(it.key, it.value)
+    }.toTypedArray()
     val propTable = JTable()
     propTable.model = PropTableModel(data, arrayOf("Property", "Value"))
     propTable.setDefaultRenderer(Object::class.java, PropTableRenderer())
 
-    // Resize the first column according to its maximum width
     val propColWidth = propTable.maxWidthOfColumn(0)
-    propTable.columnModel.getColumn(0).minWidth = propColWidth * 1.5.toInt()
-    propTable.columnModel.getColumn(0).maxWidth = propColWidth * 3
-    propTable.columnModel.getColumn(0).preferredWidth = propColWidth * 2
+    if (propColWidth > 0) {
+      propTable.columnModel.getColumn(0).minWidth = (propColWidth * 1.5).toInt()
+      propTable.columnModel.getColumn(0).maxWidth = propColWidth * 3
+      propTable.columnModel.getColumn(0).preferredWidth = propColWidth * 2
+    }
 
     propTable.tableHeader.resizingAllowed = true
-    return propTable
+
+    val panel = JPanel()
+    panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+    panel.add(propTable.tableHeader)
+    panel.add(propTable)
+    return panel
   }
 
   private fun buildSubsListsPanel(): Component {
     val container = JPanel()
     container.layout = BoxLayout(container, BoxLayout.Y_AXIS)
-    val headers = arrayOf("Sub Id", "Carrier Id", "Number", "Number from IMS", "Number from carrier", "MCC", "MNC", "Display Name", "Carrier Name", "Name Source")
 
     val activeSubList = JTable()
-    activeSubList.model = PropTableModel(getDataFromSubList(section.activeSubscriptions), headers)
+    activeSubList.model =
+      PropTableModel(getDataFromSubList(section.activeSubscriptions), TABLE_HEADERS)
     activeSubList.setDefaultRenderer(Object::class.java, PropTableRenderer())
+    activeSubList.tableHeader.resizingAllowed = true
+    configureTableColumns(activeSubList)
 
     val allSubsList = JTable()
-    allSubsList.model = PropTableModel(getDataFromSubList(section.allSubscriptions), headers)
+    allSubsList.model =
+      PropTableModel(getDataFromSubList(section.allSubscriptions), TABLE_HEADERS)
     allSubsList.setDefaultRenderer(Object::class.java, PropTableRenderer())
+    allSubsList.tableHeader.resizingAllowed = true
+    configureTableColumns(allSubsList)
 
-    // Manually add the table headers as we are not using a scroll pane for each table
     container.add(JPanel(FlowLayout(FlowLayout.LEFT)).also {
       val logsTitle = JLabel(I18n.get(I18n.BUGREPORT_SUBS_ACTIVE))
       logsTitle.font = Font(Font.DIALOG, Font.BOLD, logsTitle.font.size)
@@ -119,48 +161,81 @@ class SubscriptionsSectionPanel(private val section: SubscriptionsSection) : Sec
     return container
   }
 
+  private fun configureTableColumns(table: JTable) {
+    for (i in 0 until table.columnCount) {
+      val col = table.columnModel.getColumn(i)
+      val headerRenderer = table.tableHeader?.defaultRenderer
+      val headerComp = headerRenderer?.getTableCellRendererComponent(
+        table, col.headerValue, false, false, -1, i
+      )
+      val headerWidth = headerComp?.preferredSize?.width ?: 60
+      val cellWidth = table.maxWidthOfColumn(i)
+      val targetWidth = maxOf(headerWidth + 16, cellWidth + 16, 75)
+      col.preferredWidth = targetWidth
+    }
+  }
+
   private fun getDataFromSubList(subList: List<SubscriptionInfo>): Array<Array<String>> {
     return subList.map {
       arrayOf(
         it.id.toString(),
         it.carrierId.toString(),
-        it.number,
-        it.imsNumber,
-        it.carrierNumber,
+        it.displayName,
         it.mcc.toString(),
         it.mnc.toString(),
-        it.displayName,
-        it.carrierName,
-        it.nameSource)
+        it.gid1,
+        it.isEmbedded.toString(),
+        it.profileClass.toString()
+      )
     }.toTypedArray()
   }
 
   private fun onSubscriptionClicked(subList: JTable) {
-    val subId = subList.model.getValueAt(subList.selectedRow, 0) as String
-    val subInfo = section.allSubscriptions.find { it.id == subId.toInt() }
+    if (subList.selectedRow < 0) return
+    val subIdStr = subList.model.getValueAt(subList.selectedRow, 0)?.toString() ?: return
+    val subId = subIdStr.toIntOrNull() ?: return
+    val subInfo = section.allSubscriptions.find { it.id == subId }
+      ?: section.activeSubscriptions.find { it.id == subId }
+      ?: return
 
-    // Format the text so each property is displayed in one line to make it more readable to the user
-    val elements = subInfo?.fullText?.split("=") ?: listOf()
-    val sb = StringBuilder("${elements[0]} = ")
-    for (s in elements.subList(1, elements.size)) {
-      val parts = s.split(" ")
-      if (parts.size > 1) {
-        val nextProperty = parts.last()
-        sb.append(parts.subList(0, parts.lastIndex).joinToString(" "))
-        sb.append("\n$nextProperty = ")
-      } else {
-        // We reached the end, so just append the last value
-        sb.append(s)
-      }
-    }
-
-    val formattedText = sb.toString().replace("{", "").replace("}", "")
+    val formattedText = formatSubscriptionDetails(subInfo.fullText)
     val textArea = JTextArea(formattedText)
     textArea.columns = 30
     textArea.rows = 20
     textArea.lineWrap = true
     textArea.wrapStyleWord = true
+    textArea.isEditable = false
+    textArea.caretPosition = 0
 
-    JOptionPane.showMessageDialog(subList, JScrollPane(textArea), subInfo?.displayName, JOptionPane.PLAIN_MESSAGE)
+    JOptionPane.showMessageDialog(
+      subList,
+      JScrollPane(textArea),
+      subInfo.displayName,
+      JOptionPane.PLAIN_MESSAGE
+    )
+  }
+
+  private fun formatSubscriptionDetails(fullText: String): String {
+    var raw = fullText.trim()
+    raw = LEADING_PREFIX_REGEX.replace(raw, "")
+    raw = LEADING_BRACKET_REGEX.replace(raw, "")
+    raw = TRAILING_BRACKET_REGEX.replace(raw, "")
+
+    val matches = PROPERTY_KEY_REGEX.findAll(raw).toList()
+    if (matches.isEmpty()) return raw
+
+    val sb = StringBuilder()
+    for (i in matches.indices) {
+      val match = matches[i]
+      val key = match.groupValues[1]
+      val valStart = match.range.last + 1
+      val valEnd = if (i + 1 < matches.size) matches[i + 1].range.first else raw.length
+      val value = raw.substring(valStart, valEnd).trim().removeSuffix(",")
+      sb.append(key).append(" = ").append(value)
+      if (i + 1 < matches.size) {
+        sb.append("\n")
+      }
+    }
+    return sb.toString()
   }
 }

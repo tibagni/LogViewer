@@ -149,5 +149,146 @@ class SubscriptionsSectionParserTests {
     assertEquals("CARRIER", subscriptionInfo.nameSource)
     assertEquals("displayName3", subscriptionInfo.displayName)
     assertEquals("carrierName3", subscriptionInfo.carrierName)
+    assertEquals("", subscriptionInfo.gid1)
+    assertEquals(0, subscriptionInfo.isEmbedded)
+    assertEquals(-1, subscriptionInfo.profileClass)
+  }
+
+  @Test
+  fun testParseSubscriptionInfoGid1EmbeddedAndProfileClass() {
+    val textWithValues = "[SubscriptionInfoInternal: id=5 gid1=BAE0000000000000 " +
+        "isEmbedded=1 profileClass=2]"
+    val infoWithValues = subscriptionSectionParser.parseSubscriptionInfo(textWithValues)
+    assertEquals(5, infoWithValues.id)
+    assertEquals("BAE0000000000000", infoWithValues.gid1)
+    assertEquals(1, infoWithValues.isEmbedded)
+    assertEquals(2, infoWithValues.profileClass)
+
+    val textWithDefaults = "[SubscriptionInfoInternal: id=6 displayName=Test]"
+    val defaultInfo = subscriptionSectionParser.parseSubscriptionInfo(textWithDefaults)
+    assertEquals(6, defaultInfo.id)
+    assertEquals("", defaultInfo.gid1)
+    assertEquals(-1, defaultInfo.isEmbedded)
+    assertEquals(-1, defaultInfo.profileClass)
+
+    val textWithEmptyGid1 = "[SubscriptionInfoInternal: id=7 gid1= isEmbedded=0 profileClass=-1]"
+    val emptyGid1Info = subscriptionSectionParser.parseSubscriptionInfo(textWithEmptyGid1)
+    assertEquals(7, emptyGid1Info.id)
+    assertEquals("", emptyGid1Info.gid1)
+    assertEquals(0, emptyGid1Info.isEmbedded)
+    assertEquals(-1, emptyGid1Info.profileClass)
+  }
+
+  @Test
+  fun testParseSubscriptionInfoEmptyPropertiesDoNotOverCapture() {
+    val text = "[SubscriptionInfoInternal: id=10 carrierName= displayName=MyDisplay " +
+        "gid1= carrierId=555 number= numberFromCarrier= numberFromIms=+123456789]"
+    val info = subscriptionSectionParser.parseSubscriptionInfo(text)
+    assertEquals(10, info.id)
+    assertEquals("", info.carrierName)
+    assertEquals("MyDisplay", info.displayName)
+    assertEquals("", info.gid1)
+    assertEquals(555, info.carrierId)
+    assertEquals("", info.number)
+    assertEquals("", info.carrierNumber)
+    assertEquals("+123456789", info.imsNumber)
+
+    val text2 = "[SubscriptionInfoInternal: id=11 displayName= " +
+        "carrierName=Verizon Wireless isOpportunistic=0 gid1= ]"
+    val info2 = subscriptionSectionParser.parseSubscriptionInfo(text2)
+    assertEquals(11, info2.id)
+    assertEquals("", info2.displayName)
+    assertEquals("Verizon Wireless", info2.carrierName)
+    assertEquals("", info2.gid1)
+  }
+
+  companion object {
+    private const val SEPARATOR =
+        "-------------------------------------------------------------------------------\n"
+  }
+
+  @Test
+  fun testParseEmptyActiveSubscriptionsBlockWithBlankLine() {
+    val bugreport = SEPARATOR +
+        "DUMP OF SERVICE isub:\n" +
+        "defaultSubId=1\n" +
+        "\n" +
+        "Active subscriptions:\n" +
+        "\n" +
+        "All subscriptions:\n" +
+        "  [SubscriptionInfoInternal: id=1 displayName=Test carrierName=Test]\n" +
+        "\n" +
+        "--------- 0.024s was the duration of dumpsys isub, ending at: 2024-05-07 20:11:51\n" +
+        SEPARATOR
+    val section = subscriptionSectionParser.parse("", bugreport) as SubscriptionsSection
+    assertTrue(section.activeSubscriptions.isEmpty())
+    assertEquals(1, section.allSubscriptions.size)
+    assertEquals(1, section.allSubscriptions[0].id)
+  }
+
+  @Test
+  fun testParseEmptyActiveSubscriptionsBlockDirectlyFollowedByAllSubscriptions() {
+    val bugreport = SEPARATOR +
+        "DUMP OF SERVICE isub:\n" +
+        "defaultSubId=1\n" +
+        "\n" +
+        "Active subscriptions:\n" +
+        "All subscriptions:\n" +
+        "  [SubscriptionInfoInternal: id=1 displayName=Test carrierName=Test]\n" +
+        "\n" +
+        "--------- 0.024s was the duration of dumpsys isub, ending at: 2024-05-07 20:11:51\n" +
+        SEPARATOR
+    val section = subscriptionSectionParser.parse("", bugreport) as SubscriptionsSection
+    assertTrue(section.activeSubscriptions.isEmpty())
+    assertEquals(1, section.allSubscriptions.size)
+    assertEquals(1, section.allSubscriptions[0].id)
+  }
+
+  @Test
+  fun testParseEmptyActiveSubscriptionsBlockWithIndentedBlankLine() {
+    val bugreport = SEPARATOR +
+        "DUMP OF SERVICE isub:\n" +
+        "defaultSubId=1\n" +
+        "\n" +
+        "Active subscriptions:\n" +
+        "  \n" +
+        "All subscriptions:\n" +
+        "  [SubscriptionInfoInternal: id=1 displayName=Test carrierName=Test]\n" +
+        "\n" +
+        "--------- 0.024s was the duration of dumpsys isub, ending at: 2024-05-07 20:11:51\n" +
+        SEPARATOR
+    val section = subscriptionSectionParser.parse("", bugreport) as SubscriptionsSection
+    assertTrue(section.activeSubscriptions.isEmpty())
+    assertEquals(1, section.allSubscriptions.size)
+    assertEquals(1, section.allSubscriptions[0].id)
+  }
+
+  @Test
+  fun testParseControllerPropertiesFiltersLogsAndPreservesEquals() {
+    val bugreport = SEPARATOR +
+        "DUMP OF SERVICE isub:\n" +
+        "simpleProp=value1\n" +
+        "complexProp=key=value=more\n" +
+        "mReadWriteLock=Lock@123[Write locks = 0, Read locks = 0]\n" +
+        "  2024-05-07T20:10:32.176151 - updateSubscription: current mapping [slot 0: subId=2]\n" +
+        "  05-07 20:10:32.176 1000 1000 D SubMgr: log line with id=5\n" +
+        "  [SubscriptionInfoInternal: id=1 carrierId=2]\n" +
+        "\n" +
+        "Active subscriptions:\n" +
+        "\n" +
+        "All subscriptions:\n" +
+        "\n" +
+        "--------- 0.024s was the duration of dumpsys isub, ending at: 2024-05-07 20:11:51\n" +
+        SEPARATOR
+    val section = subscriptionSectionParser.parse("", bugreport) as SubscriptionsSection
+    val props = section.subscriptionManagerProperties
+
+    assertEquals("value1", props["simpleProp"])
+    assertEquals("key=value=more", props["complexProp"])
+    assertEquals("Lock@123[Write locks = 0, Read locks = 0]", props["mReadWriteLock"])
+
+    assertFalse(props.keys.any { it.contains("2024-05-07T20:10:32") })
+    assertFalse(props.keys.any { it.contains("05-07 20:10:32") })
+    assertFalse(props.keys.any { it.contains("SubscriptionInfo") })
   }
 }
