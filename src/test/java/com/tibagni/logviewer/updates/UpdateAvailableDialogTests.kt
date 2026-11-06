@@ -58,6 +58,7 @@ class UpdateAvailableDialogTests {
 
       val buttonOk = dialog.buttonsPane.buttonOk
       assertNotNull(buttonOk)
+      assertNotNull(buttonOk?.icon)
       assertEquals(
         I18n.get(I18n.UPDATES_BTN_DOWNLOAD),
         buttonOk?.text

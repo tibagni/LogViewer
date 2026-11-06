@@ -377,6 +377,16 @@ object CommonIcons {
   fun clockIcon(size: Int = 16): ImageIcon = ClockIcon(size)
 
   /**
+   * Returns a theme-aware download arrow icon of the given [size].
+   *
+   * @param size icon width and height in pixels (defaults to 16)
+   * @return theme-aware [ImageIcon] that dynamically resolves theme colors
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun downloadIcon(size: Int = 16): ImageIcon = DownloadIcon(size)
+
+  /**
    * Dynamic theme-aware [ImageIcon] that paints a smartphone device icon
    * using current Look and Feel foreground colors directly at paint time.
    */
@@ -1714,6 +1724,48 @@ object CommonIcons {
 
       // Minute hand (pointing to 12 o'clock)
       g2d.draw(Line2D.Double(cx, cy, cx, cy - 4.5 * scale))
+    }
+  }
+
+  /**
+   * Theme-aware vector icon rendering a downward-pointing download arrow and tray.
+   */
+  private class DownloadIcon(iconSize: Int = 16) :
+    DynamicVectorIcon(iconSize) {
+    override fun paintIconContent(
+      g2d: Graphics2D,
+      s: Int,
+      color: Color
+    ) {
+      val strokeWidth = (s * 0.08f).coerceAtLeast(1.2f)
+      g2d.stroke = BasicStroke(
+        strokeWidth,
+        BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+      )
+      g2d.color = color
+
+      val scale = s / 16.0
+
+      // Downward vertical arrow stem
+      g2d.draw(Line2D.Double(8.0 * scale, 2.5 * scale, 8.0 * scale, 9.5 * scale))
+
+      // Downward arrow head chevron
+      val arrowHead = Path2D.Double().apply {
+        moveTo(5.0 * scale, 7.0 * scale)
+        lineTo(8.0 * scale, 10.0 * scale)
+        lineTo(11.0 * scale, 7.0 * scale)
+      }
+      g2d.draw(arrowHead)
+
+      // Tray bracket at the bottom
+      val tray = Path2D.Double().apply {
+        moveTo(3.5 * scale, 10.0 * scale)
+        lineTo(3.5 * scale, 13.5 * scale)
+        lineTo(12.5 * scale, 13.5 * scale)
+        lineTo(12.5 * scale, 10.0 * scale)
+      }
+      g2d.draw(tray)
     }
   }
 

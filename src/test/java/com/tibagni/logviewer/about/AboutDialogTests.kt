@@ -174,6 +174,7 @@ class AboutDialogTests {
 
       assertFalse(dialog.updateStatusProgress.isVisible)
       assertTrue(dialog.updateBtn.isVisible)
+      assertNotNull(dialog.updateBtn.icon)
       val expectedBtnText = I18n.format(
         I18n.ABOUT_UPDATE_TO,
         release.versionName

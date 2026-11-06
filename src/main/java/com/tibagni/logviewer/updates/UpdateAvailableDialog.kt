@@ -11,6 +11,7 @@ import com.tibagni.logviewer.util.layout.GBConstraintsBuilder
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.ButtonsPane
 import com.tibagni.logviewer.view.CardBorderUtils
+import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.StatusBadge
 import java.awt.BorderLayout
 import java.awt.Color
@@ -230,6 +231,8 @@ class UpdateAvailableDialog @VisibleForTesting constructor(
   private fun configureActionButtons() {
     buttonsPane.setOkText(I18n.get(I18n.UPDATES_BTN_DOWNLOAD))
     buttonsPane.buttonOk?.let { btn ->
+      btn.icon = CommonIcons.downloadIcon(UIScaleUtils.dip(14))
+      btn.iconTextGap = UIScaleUtils.dip(4)
       btn.putClientProperty(
         FlatClientProperties.BUTTON_TYPE,
         FlatClientProperties.BUTTON_TYPE_ROUND_RECT

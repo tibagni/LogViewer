@@ -37,7 +37,7 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
   private val currentLogsLbl: JLabel = JLabel().apply {
     autoscrolls = true
     text = ""
-    icon = CommonIcons.fileDocumentIcon()
+    icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
     iconTextGap = UIScaleUtils.dip(6)
   }
 
@@ -155,7 +155,7 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
     val width = if (availableWidth > 0) availableWidth else 1000
     val truncated = SwingUtils.truncateTextFor(currentLogsLbl, "", path, width).trim()
     currentLogsLbl.text = truncated
-    currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
+    currentLogsLbl.icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
     currentLogsLbl.toolTipText = path
     isVisible = true
   }
@@ -188,7 +188,7 @@ open class LogViewerHeaderPanel : JPanel(BorderLayout()) {
   fun onThemeChanged() {
     border = createHeaderBorder()
     if (currentLogsLbl.icon != null) {
-      currentLogsLbl.icon = CommonIcons.fileDocumentIcon()
+      currentLogsLbl.icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
     }
     repaint()
   }
