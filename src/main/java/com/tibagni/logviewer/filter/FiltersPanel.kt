@@ -802,6 +802,16 @@ open class FiltersPanel @VisibleForTesting internal constructor(
   fun onThemeChanged() {
     SwingUtilities.updateComponentTreeUI(filtersPane)
     border = createPanelBorder()
+    if (::emptyFiltersCard.isInitialized) {
+      emptyFiltersCard.border = CardBorderUtils.createCardBorder(
+        insets = Insets(
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(12),
+          UIScaleUtils.dip(20),
+          UIScaleUtils.dip(12)
+        )
+      )
+    }
     updateCollapseExpandButtonState()
     collapseExpandAllGroupsBtn.updateUI()
     addNewFilterGroupBtn.updateUI()

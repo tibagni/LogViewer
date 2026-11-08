@@ -449,6 +449,9 @@ class FiltersPanelTests {
       UIScaleUtils.dip(4),
       panel.addNewFilterGroupBtn.iconTextGap
     )
+
+    // Verify onThemeChanged completes cleanly on FiltersPanel
+    panel.onThemeChanged()
   }
 
   private fun <T : Any> captureNonNull(
