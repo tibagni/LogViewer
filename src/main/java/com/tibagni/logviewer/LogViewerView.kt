@@ -241,18 +241,30 @@ class LogViewerViewImpl(
         }
       },
       addSelectionActions = { popup, selectedEntries ->
-        popup.add(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).addActionListener {
+        val addToMyLogsItem = JMenuItem(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).apply {
+          icon = CommonIcons.myLogsIcon(UIScaleUtils.dip(14))
+        }
+        addToMyLogsItem.addActionListener {
           presenter.addLogEntriesToMyLogs(selectedEntries)
         }
+        popup.add(addToMyLogsItem)
       },
       addExtraSingleEntryActions = { popup, singleEntry ->
         popup.add(JSeparator())
-        popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_BEFORE)).addActionListener {
+        val ignoreBeforeItem = JMenuItem(I18n.get(I18n.LOGS_MENU_IGNORE_BEFORE)).apply {
+          icon = CommonIcons.chevronLeftIcon(UIScaleUtils.dip(14))
+        }
+        ignoreBeforeItem.addActionListener {
           presenter.ignoreLogsBefore(singleEntry.index)
         }
-        popup.add(I18n.get(I18n.LOGS_MENU_IGNORE_AFTER)).addActionListener {
+        val ignoreAfterItem = JMenuItem(I18n.get(I18n.LOGS_MENU_IGNORE_AFTER)).apply {
+          icon = CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
+        }
+        ignoreAfterItem.addActionListener {
           presenter.ignoreLogsAfter(singleEntry.index)
         }
+        popup.add(ignoreBeforeItem)
+        popup.add(ignoreAfterItem)
       }
     )
   }
@@ -269,9 +281,13 @@ class LogViewerViewImpl(
         logList.table.setRowSelectionInterval(logIndex, logIndex)
       },
       addSelectionActions = { popup, selectedEntries ->
-        popup.add(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).addActionListener {
+        val addToMyLogsItem = JMenuItem(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).apply {
+          icon = CommonIcons.myLogsIcon(UIScaleUtils.dip(14))
+        }
+        addToMyLogsItem.addActionListener {
           presenter.addLogEntriesToMyLogs(selectedEntries)
         }
+        popup.add(addToMyLogsItem)
       }
     )
   }
@@ -300,9 +316,13 @@ class LogViewerViewImpl(
         }
       },
       addSelectionActions = { popup, _ ->
-        popup.add(I18n.get(I18n.COMMON_REMOVE)).addActionListener {
+        val removeItem = JMenuItem(I18n.get(I18n.COMMON_REMOVE)).apply {
+          icon = CommonIcons.deleteIcon(UIScaleUtils.dip(14))
+        }
+        removeItem.addActionListener {
           presenter.removeFromMyLog(myLogsList.table.selectedRows)
         }
+        popup.add(removeItem)
       }
     )
 
