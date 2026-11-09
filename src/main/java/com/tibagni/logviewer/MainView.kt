@@ -341,7 +341,9 @@ class MainViewImpl(
 
     val fileMenu = JMenu(I18n.get(I18n.MENU_FILE))
     fileMenu.setMnemonic('F')
-    val settingsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_SETTINGS))
+    val settingsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_SETTINGS)).apply {
+      icon = CommonIcons.toolsIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(settingsItem, ShortcutAction.FILE_SETTINGS)
     settingsItem.addActionListener { openUserPreferences() }
     fileMenu.add(settingsItem)
@@ -376,12 +378,16 @@ class MainViewImpl(
     saveFilteredLogs?.addActionListener { logViewerView.handleSaveFilteredLogsMenu() }
     logsMenu.add(saveFilteredLogs)
     logsMenu.addSeparator()
-    val goToTimestampItem = JMenuItem(I18n.get(I18n.MENU_ITEM_GO_TO_TIMESTAMP))
+    val goToTimestampItem = JMenuItem(I18n.get(I18n.MENU_ITEM_GO_TO_TIMESTAMP)).apply {
+      icon = CommonIcons.clockIcon(UIScaleUtils.dip(14))
+    }
     shortcutManager.bindToMenuItem(goToTimestampItem, ShortcutAction.LOGS_GO_TO_TIMESTAMP)
     goToTimestampItem.addActionListener { logViewerView.handleGoToTimestampMenu() }
     logsMenu.add(goToTimestampItem)
     logsMenu.addSeparator()
-    val configureVisibleLogs = JMenuItem(I18n.get(I18n.MENU_ITEM_VISIBLE_LOGS))
+    val configureVisibleLogs = JMenuItem(I18n.get(I18n.MENU_ITEM_VISIBLE_LOGS)).apply {
+      icon = CommonIcons.viewListIcon(UIScaleUtils.dip(14))
+    }
     configureVisibleLogs.addActionListener { logViewerView.handleConfigureIgnoredLogs() }
     logsMenu.add(configureVisibleLogs)
 
@@ -408,11 +414,15 @@ class MainViewImpl(
     filtersMenu.add(cleanDuplicatesItem)
 
     val helpMenu = JMenu(I18n.get(I18n.MENU_HELP))
-    val shortcutsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_KEYBOARD_SHORTCUTS))
+    val shortcutsItem = JMenuItem(I18n.get(I18n.MENU_ITEM_KEYBOARD_SHORTCUTS)).apply {
+      icon = CommonIcons.keyboardIcon(UIScaleUtils.dip(14))
+    }
     val aboutItem = JMenuItem(I18n.get(I18n.MENU_ITEM_ABOUT)).apply {
       icon = CommonIcons.infoIcon(UIScaleUtils.dip(14))
     }
-    val onlineHelpItem = JMenuItem(I18n.get(I18n.MENU_ITEM_USER_GUIDE))
+    val onlineHelpItem = JMenuItem(I18n.get(I18n.MENU_ITEM_USER_GUIDE)).apply {
+      icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(14))
+    }
     shortcutsItem.addActionListener { openKeyboardShortcuts() }
     aboutItem.addActionListener { AboutDialog.showAboutDialog(parent) }
     onlineHelpItem.addActionListener { openUserGuide() }

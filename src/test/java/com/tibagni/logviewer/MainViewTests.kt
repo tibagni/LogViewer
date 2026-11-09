@@ -85,4 +85,58 @@ class MainViewTests {
       parent.dispose()
     }
   }
+
+  /**
+   * Verifies that main menu items have theme-aware vector icons attached.
+   */
+  @Test
+  fun testMenuBarItemIconography() {
+    assumeFalse(GraphicsEnvironment.isHeadless())
+    val parent = JFrame()
+    try {
+      val prefs = mock(LogViewerPreferences::class.java)
+      MainViewImpl(parent, prefs, emptySet())
+      val menuBar = parent.jMenuBar
+      assertNotNull(menuBar)
+
+      // Find menu items across all menus and verify icons
+      val menus = (0 until menuBar.menuCount).mapNotNull { menuBar.getMenu(it) }
+      val menuItems = menus.flatMap { menu ->
+        (0 until menu.itemCount).mapNotNull { menu.getItem(it) }
+      }
+
+      // Check specific items have non-null icons
+      val settingsItem = menuItems.find { it.text == I18n.get(I18n.MENU_ITEM_SETTINGS) }
+      assertNotNull(settingsItem)
+      assertNotNull(settingsItem?.icon)
+
+      val shortcutsItem = menuItems.find {
+        it.text == I18n.get(I18n.MENU_ITEM_KEYBOARD_SHORTCUTS)
+      }
+      assertNotNull(shortcutsItem)
+      assertNotNull(shortcutsItem?.icon)
+
+      val aboutItem = menuItems.find { it.text == I18n.get(I18n.MENU_ITEM_ABOUT) }
+      assertNotNull(aboutItem)
+      assertNotNull(aboutItem?.icon)
+
+      val helpItem = menuItems.find { it.text == I18n.get(I18n.MENU_ITEM_USER_GUIDE) }
+      assertNotNull(helpItem)
+      assertNotNull(helpItem?.icon)
+
+      val gotoTsItem = menuItems.find {
+        it.text == I18n.get(I18n.MENU_ITEM_GO_TO_TIMESTAMP)
+      }
+      assertNotNull(gotoTsItem)
+      assertNotNull(gotoTsItem?.icon)
+
+      val visibleLogsItem = menuItems.find {
+        it.text == I18n.get(I18n.MENU_ITEM_VISIBLE_LOGS)
+      }
+      assertNotNull(visibleLogsItem)
+      assertNotNull(visibleLogsItem?.icon)
+    } finally {
+      parent.dispose()
+    }
+  }
 }
