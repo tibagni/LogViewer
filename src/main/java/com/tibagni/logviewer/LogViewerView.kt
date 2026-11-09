@@ -448,6 +448,13 @@ class LogViewerViewImpl(
       filteredLogList.onThemeChanged()
       myLogsList.onThemeChanged()
     }
+    if (::emptyLogsCard.isInitialized) {
+      val padVert = UIScaleUtils.dip(24)
+      val padHoriz = UIScaleUtils.dip(16)
+      emptyLogsCard.border = CardBorderUtils.createCardBorder(
+        insets = Insets(padVert, padHoriz, padVert, padHoriz)
+      )
+    }
     if (::emptyLogsOpenBtn.isInitialized) {
       emptyLogsOpenBtn.updateUI()
     }
