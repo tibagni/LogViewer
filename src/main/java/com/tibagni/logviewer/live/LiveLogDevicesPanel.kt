@@ -40,7 +40,7 @@ class LiveLogDevicesPanel(
   private val _bufferCheckboxes = mutableMapOf<String, JCheckBox>()
   internal val bufferCheckboxes: Map<String, JCheckBox>
     get() = _bufferCheckboxes
-  private val activeStartButtons = mutableListOf<JButton>()
+  private val activeStartButtons = mutableListOf<FlatButton>()
   private val deviceCardsContainer: JPanel
   internal val deviceItemsContainer: JPanel
   private val deviceSubCardLayout = CardLayout()
@@ -213,7 +213,7 @@ class LiveLogDevicesPanel(
       }
       if (device.isOnline) {
         val hasSelection = getSelectedBuffers().isNotEmpty()
-        val startBtn = JButton(I18n.get(I18n.LIVE_LOGS_START)).apply {
+        val startBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_START)).apply {
           icon = CommonIcons.playIcon(UIScaleUtils.dip(14))
           iconTextGap = UIScaleUtils.dip(4)
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
@@ -230,13 +230,15 @@ class LiveLogDevicesPanel(
         }
         activeStartButtons.add(startBtn)
 
-        val termBtn = JButton(I18n.get(I18n.LIVE_LOGS_TERMINAL)).apply {
+        val termBtn = FlatButton(I18n.get(I18n.LIVE_LOGS_TERMINAL)).apply {
           icon = CommonIcons.terminalIcon(UIScaleUtils.dip(14))
           iconTextGap = UIScaleUtils.dip(4)
           cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
           addActionListener { presenter.openDeviceTerminal(device) }
         }
+        val actionsDivider = ToolbarDivider()
         actionsPanel.add(startBtn)
+        actionsPanel.add(actionsDivider)
         actionsPanel.add(termBtn)
       }
 
@@ -558,7 +560,7 @@ class LiveLogDevicesPanel(
 
     if (buttonText != null && onButtonClick != null) {
       content.add(Box.createVerticalStrut(UIScaleUtils.dip(16)))
-      val btn = JButton(buttonText).apply {
+      val btn = FlatButton(buttonText).apply {
         alignmentX = Component.CENTER_ALIGNMENT
         addActionListener { onButtonClick() }
       }
