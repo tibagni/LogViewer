@@ -58,12 +58,36 @@ public class FlatButton extends JButton {
     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     updateColors();
+    updateDisabledIcon();
+  }
+
+  @Override
+  public void setIcon(Icon defaultIcon) {
+    super.setIcon(defaultIcon);
+    updateDisabledIcon();
   }
 
   @Override
   public void updateUI() {
     super.updateUI();
     updateColors();
+    updateDisabledIcon();
+  }
+
+  private void updateDisabledIcon() {
+    Icon currentIcon = getIcon();
+    if (currentIcon instanceof CommonIcons.DynamicVectorIcon) {
+      Color disabledColor = UIManager.getColor("Label.disabledForeground");
+      if (disabledColor == null) {
+        disabledColor = UIManager.getColor("Component.disabledForeground");
+      }
+      if (disabledColor == null) {
+        disabledColor = new Color(160, 160, 160);
+      }
+      setDisabledIcon(((CommonIcons.DynamicVectorIcon) currentIcon).withColor(disabledColor));
+    } else if (currentIcon == null) {
+      setDisabledIcon(null);
+    }
   }
 
   private void updateColors() {

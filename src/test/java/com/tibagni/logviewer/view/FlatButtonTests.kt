@@ -54,6 +54,31 @@ class FlatButtonTests {
   }
 
   @Test
+  fun testDisabledIconForDynamicVectorIcon() {
+    val vectorIcon = CommonIcons.clearIcon(14)
+    val button = FlatButton("Test", vectorIcon)
+
+    assertNotNull(
+      "disabledIcon should be automatically set for DynamicVectorIcon",
+      button.disabledIcon
+    )
+    assertTrue(
+      "disabledIcon should be a DynamicVectorIcon",
+      button.disabledIcon is CommonIcons.DynamicVectorIcon
+    )
+
+    // Updating icon should also update disabledIcon
+    val newIcon = CommonIcons.editIcon(14)
+    button.icon = newIcon
+    assertNotNull(button.disabledIcon)
+    assertTrue(button.disabledIcon is CommonIcons.DynamicVectorIcon)
+
+    // Clearing icon should clear disabledIcon
+    button.icon = null
+    assertNull(button.disabledIcon)
+  }
+
+  @Test
   fun testMouseEnteredAndExited() {
     if (GraphicsEnvironment.isHeadless()) return;
 

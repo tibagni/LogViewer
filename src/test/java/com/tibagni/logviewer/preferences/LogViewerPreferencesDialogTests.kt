@@ -280,9 +280,62 @@ class LogViewerPreferencesDialogTests {
       Cursor.HAND_CURSOR,
       toolsPanel.preferredEditorPathBtn.cursor.type
     )
+    assertNotNull(toolsPanel.preferredEditorPathClearBtn.icon)
+    assertEquals(
+      Cursor.HAND_CURSOR,
+      toolsPanel.preferredEditorPathClearBtn.cursor.type
+    )
     assertNotNull(toolsPanel.adbPathBtn.icon)
     assertEquals(Cursor.HAND_CURSOR, toolsPanel.adbPathBtn.cursor.type)
     assertEquals(Cursor.HAND_CURSOR, toolsPanel.adbPathClearBtn.cursor.type)
+  }
+
+  /**
+   * Test double for [LogViewerPreferences] providing mutable state for preference tests.
+   */
+  private class FakeLogViewerPreferences : LogViewerPreferences {
+    override var defaultLogsPath: File = File("/default/logs")
+    override var defaultFiltersPath: File = File("/default/filters")
+    override var lookAndFeel: String = "Light"
+    override var accentColor: String = "Default"
+    override var openLastFilter: Boolean = false
+    override var reapplyFiltersAfterEdit: Boolean = false
+    override var rememberAppliedFilters: Boolean = false
+    override var preferredTextEditor: File? = File("/test/editor")
+    override var adbPath: File? = File("/test/adb")
+    override var collapseAllGroupsStartup: Boolean = false
+    override var showLineNumbers: Boolean = false
+    override var showLogLineDividers: Boolean = false
+    override var applyFilterOnCheck: Boolean = false
+    override var logFontSize: Int = 12
+    override var logFontFamily: String = "Monospaced"
+    override var logFontBold: Boolean = false
+    override var lastFilterPaths: Array<File> = emptyArray()
+
+    override fun setAppliedFiltersIndices(group: String, indices: List<Int>) {}
+    override fun getAppliedFiltersIndices(group: String): List<Int> = emptyList()
+    override fun addPreferenceListener(listener: LogViewerPreferences.Listener) {}
+    override fun removePreferenceListener(listener: LogViewerPreferences.Listener) {}
+  }
+
+  /**
+   * Verifies that clicking the preferred text editor clear button empties the
+   * path input field and persists a null preference upon dialog apply.
+   */
+  @Test
+  fun testToolsPanelClearPreferredEditorAction() {
+    val fakePrefs = FakeLogViewerPreferences()
+    val container = JPanel()
+    val toolsPanel = ToolsPreferencePanel(container, fakePrefs)
+    assertEquals(File("/test/editor").absolutePath, toolsPanel.preferredEditorPathTxt.text)
+
+    // Clear preferred editor
+    toolsPanel.preferredEditorPathClearBtn.doClick()
+    assertTrue(toolsPanel.preferredEditorPathTxt.text.isEmpty())
+
+    // Applying should persist null
+    toolsPanel.apply()
+    assertEquals(null, fakePrefs.preferredTextEditor)
   }
 
   @Test
@@ -353,5 +406,18 @@ class LogViewerPreferencesDialogTests {
     assertEquals(FlatButton::class.java, keymapPanel.changeBtn.javaClass)
     assertEquals(FlatButton::class.java, keymapPanel.resetSelectedBtn.javaClass)
     assertEquals(FlatButton::class.java, keymapPanel.resetAllBtn.javaClass)
+
+    // Verify disabled vector icons are not null
+    keymapPanel.changeBtn.isEnabled = false
+    assertNotNull(keymapPanel.changeBtn.disabledIcon)
+    assertTrue(keymapPanel.changeBtn.disabledIcon is CommonIcons.DynamicVectorIcon)
+
+    keymapPanel.resetSelectedBtn.isEnabled = false
+    assertNotNull(keymapPanel.resetSelectedBtn.disabledIcon)
+    assertTrue(keymapPanel.resetSelectedBtn.disabledIcon is CommonIcons.DynamicVectorIcon)
+
+    keymapPanel.resetAllBtn.isEnabled = false
+    assertNotNull(keymapPanel.resetAllBtn.disabledIcon)
+    assertTrue(keymapPanel.resetAllBtn.disabledIcon is CommonIcons.DynamicVectorIcon)
   }
 }
