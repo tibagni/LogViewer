@@ -2,6 +2,7 @@ package com.tibagni.logviewer.preferences
 
 import com.formdev.flatlaf.FlatClientProperties
 import com.tibagni.logviewer.shortcuts.ShortcutAction
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -33,6 +34,22 @@ class KeymapPreferencePanelTests {
       FlatClientProperties.TEXT_FIELD_SHOW_CLEAR_BUTTON
     )
     assertEquals(true, showClear)
+  }
+
+  /**
+   * Verifies that action buttons have attached vector icons and iconTextGap.
+   */
+  @Test
+  fun testActionButtonsHaveIcons() {
+    val parent = mock(Component::class.java)
+    val panel = KeymapPreferencePanel(parent)
+
+    assertNotNull("changeBtn must have an icon", panel.changeBtn.icon)
+    assertNotNull("resetSelectedBtn must have an icon", panel.resetSelectedBtn.icon)
+    assertNotNull("resetAllBtn must have an icon", panel.resetAllBtn.icon)
+    assertEquals(UIScaleUtils.dip(4), panel.changeBtn.iconTextGap)
+    assertEquals(UIScaleUtils.dip(4), panel.resetSelectedBtn.iconTextGap)
+    assertEquals(UIScaleUtils.dip(4), panel.resetAllBtn.iconTextGap)
   }
 
   /**

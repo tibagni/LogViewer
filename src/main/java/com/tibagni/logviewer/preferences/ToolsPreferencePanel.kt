@@ -8,6 +8,7 @@ import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.JFileChooserExt
+import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
@@ -36,6 +37,15 @@ class ToolsPreferencePanel(
     I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR),
     CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
   )
+
+  @VisibleForTesting
+  internal val preferredEditorPathClearBtn = FlatButton(
+    I18n.get(I18n.COMMON_CLEAR)
+  ).apply {
+    icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+    toolTipText = I18n.get(I18n.COMMON_CLEAR)
+  }
 
   @VisibleForTesting
   internal val adbPathTxt = createPathTextField()
@@ -98,6 +108,11 @@ class ToolsPreferencePanel(
       selectedAdbPath = null
       updatePathText(adbPathTxt, null)
     }
+
+    preferredEditorPathClearBtn.addActionListener {
+      selectedEditorPath = null
+      updatePathText(preferredEditorPathTxt, null)
+    }
   }
 
   override fun apply() {
@@ -121,10 +136,16 @@ class ToolsPreferencePanel(
     ).apply { isOpaque = false }
 
     val editorPathLbl = JLabel(I18n.get(I18n.PREF_PREFERRED_TEXT_EDITOR))
+    val editorButtonsPane = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
+      isOpaque = false
+      add(preferredEditorPathBtn, BorderLayout.WEST)
+      add(ToolbarDivider(), BorderLayout.CENTER)
+      add(preferredEditorPathClearBtn, BorderLayout.EAST)
+    }
     val editorPathPanel = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
       isOpaque = false
       add(preferredEditorPathTxt, BorderLayout.CENTER)
-      add(preferredEditorPathBtn, BorderLayout.EAST)
+      add(editorButtonsPane, BorderLayout.EAST)
     }
     editorForm.add(editorPathLbl, cc.xy(1, 1))
     editorForm.add(editorPathPanel, cc.xy(3, 1))
@@ -147,6 +168,7 @@ class ToolsPreferencePanel(
     val adbButtonsPane = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {
       isOpaque = false
       add(adbPathBtn, BorderLayout.WEST)
+      add(ToolbarDivider(), BorderLayout.CENTER)
       add(adbPathClearBtn, BorderLayout.EAST)
     }
     val adbPathPanel = JPanel(BorderLayout(UIScaleUtils.dip(4), 0)).apply {

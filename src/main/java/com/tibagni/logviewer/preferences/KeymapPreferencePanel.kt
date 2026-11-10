@@ -14,6 +14,7 @@ import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
 import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.BorderLayout
 import java.awt.Component
@@ -68,11 +69,20 @@ class KeymapPreferencePanel(
   internal val shortcutsTable = JTable(tableModel)
 
   @VisibleForTesting
-  internal val changeBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_CHANGE))
+  internal val changeBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_CHANGE)).apply {
+    icon = CommonIcons.editIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
   @VisibleForTesting
-  internal val resetSelectedBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_RESET_SELECTED))
+  internal val resetSelectedBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_RESET_SELECTED)).apply {
+    icon = CommonIcons.refreshIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
   @VisibleForTesting
-  internal val resetAllBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_RESET_ALL))
+  internal val resetAllBtn = FlatButton(I18n.get(I18n.KEYMAP_BTN_RESET_ALL)).apply {
+    icon = CommonIcons.clearIcon(UIScaleUtils.dip(14))
+    iconTextGap = UIScaleUtils.dip(4)
+  }
 
   override val panel: JComponent = buildPanel()
 
@@ -114,7 +124,9 @@ class KeymapPreferencePanel(
       isOpaque = false
       border = BorderFactory.createEmptyBorder(UIScaleUtils.dip(2), 0, 0, 0)
       add(changeBtn)
+      add(ToolbarDivider())
       add(resetSelectedBtn)
+      add(ToolbarDivider())
       add(resetAllBtn)
     }
 
