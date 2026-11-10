@@ -2,6 +2,7 @@ package com.tibagni.logviewer.log
 
 import com.tibagni.logviewer.filter.FiltersPanel
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.view.CommonIcons
 import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.*
@@ -385,5 +386,33 @@ class LogTableActionsTests {
         c1 is JSeparator && c2 is JSeparator
       )
     }
+  }
+
+  @Test
+  fun testCustomSelectionActionsWithIcons() {
+    val model = LogListTableModel("Test")
+    val entry = LogEntry("Line 0", LogLevel.INFO, null, LogStream.MAIN)
+    model.setLogs(listOf(entry))
+
+    val table = JTable(model)
+    table.setRowSelectionInterval(0, 0)
+
+    val popup = createPopupMenu(
+      table = table,
+      model = model,
+      addSelectionActions = { p, _ ->
+        val item = JMenuItem(I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS)).apply {
+          icon = CommonIcons.myLogsIcon(14)
+        }
+        p.add(item)
+      }
+    )
+
+    val myLogsItem = (0 until popup.componentCount)
+      .mapNotNull { popup.getComponent(it) as? JMenuItem }
+      .firstOrNull { it.text == I18n.get(I18n.LOGS_MENU_ADD_TO_MY_LOGS) }
+
+    assertNotNull(myLogsItem)
+    assertNotNull(myLogsItem?.icon)
   }
 }
