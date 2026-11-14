@@ -14,6 +14,7 @@ import com.tibagni.logviewer.view.CommonIcons
 import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.StatusBadge
 import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
@@ -238,6 +239,7 @@ class LogLineDetailsDialog(
       }
     }
     actionsPanel.add(copyPathBtn)
+    actionsPanel.add(ToolbarDivider())
 
     openEditorBtn = FlatButton(
       I18n.get(I18n.LOG_DETAILS_OPEN_EDITOR)
@@ -475,6 +477,7 @@ class LogLineDetailsDialog(
           }
         }
         add(filterTagBtn)
+        add(ToolbarDivider())
 
         val copyTagBtn = FlatButton(
           I18n.get(I18n.LOG_DETAILS_COPY_TAG)
@@ -539,6 +542,7 @@ class LogLineDetailsDialog(
       }
     }
     actionsPanel.add(copyLineBtn)
+    actionsPanel.add(ToolbarDivider())
 
     copyMsgBtn = FlatButton(
       I18n.get(I18n.LOG_DETAILS_COPY_MESSAGE)
