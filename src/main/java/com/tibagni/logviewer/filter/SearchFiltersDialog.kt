@@ -16,6 +16,7 @@ import com.tibagni.logviewer.view.FlatButton
 import com.tibagni.logviewer.view.HintTextField
 import com.tibagni.logviewer.view.StatusBadge
 import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.view.whenTextChanges
 import java.awt.*
 import java.awt.event.*
@@ -45,7 +46,7 @@ class SearchFiltersDialog(
   internal val matchesBadge = StatusBadge(StatusBadge.Variant.NORMAL)
 
   @VisibleForTesting
-  internal val jumpBtn = JButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP)).apply {
+  internal val jumpBtn = FlatButton(I18n.get(I18n.SEARCH_FILTERS_BTN_JUMP)).apply {
     icon = CommonIcons.chevronRightIcon(UIScaleUtils.dip(14))
     iconTextGap = UIScaleUtils.dip(4)
   }
@@ -254,8 +255,11 @@ class SearchFiltersDialog(
         FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(5), 0)
       ).apply {
         add(jumpBtn)
+        add(ToolbarDivider())
         add(editBtn)
+        add(ToolbarDivider())
         add(deleteBtn)
+        add(ToolbarDivider())
         add(closeBtn)
       }
       add(buttonsPanel, BorderLayout.EAST)
