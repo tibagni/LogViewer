@@ -368,7 +368,9 @@ class MainViewImpl(
     closeLogsItem.addActionListener { logViewerView.handleCloseLogsMenu() }
     logsMenu.add(closeLogsItem)
 
-    val changeEncodingMenu = JMenu(I18n.get(I18n.MENU_ENCODING))
+    val changeEncodingMenu = JMenu(I18n.get(I18n.MENU_ENCODING)).apply {
+      icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(14))
+    }
     configureCharsetsMenu(changeEncodingMenu)
     logsMenu.add(changeEncodingMenu)
 
