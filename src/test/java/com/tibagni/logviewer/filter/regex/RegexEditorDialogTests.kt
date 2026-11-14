@@ -280,6 +280,7 @@ class RegexEditorDialogTests {
                 dialog.regexPreview.text
             )
 
+            assertNotNull(dialog.resetSampleBtn.icon)
             dialog.resetSampleBtn.doClick()
 
             assertEquals(

@@ -14,6 +14,7 @@ import com.tibagni.logviewer.view.CommonIcons;
 import com.tibagni.logviewer.view.FlatButton;
 import com.tibagni.logviewer.view.StatusBadge;
 import com.tibagni.logviewer.view.Toast;
+import com.tibagni.logviewer.view.ToolbarDivider;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -583,14 +584,14 @@ public class RegexEditorDialog extends JDialog
     headerPanel.add(previewLbl, BorderLayout.WEST);
 
     presetsBtn = new FlatButton();
-    presetsBtn.setIcon(CommonIcons.viewListIcon(UIScaleUtils.dip(12)));
+    presetsBtn.setIcon(CommonIcons.viewListIcon(UIScaleUtils.dip(14)));
     presetsBtn.setText(I18n.get(I18n.REGEX_EDITOR_BTN_PRESETS));
     presetsBtn.setIconTextGap(UIScaleUtils.dip(4));
     presetsBtn.setToolTipText(I18n.get(I18n.REGEX_EDITOR_BTN_PRESETS));
     presetsBtn.addActionListener(e -> showPresetsMenu());
 
     resetSampleBtn = new FlatButton();
-    resetSampleBtn.setIcon(CommonIcons.refreshIcon(UIScaleUtils.dip(12)));
+    resetSampleBtn.setIcon(CommonIcons.refreshIcon(UIScaleUtils.dip(14)));
     resetSampleBtn.setToolTipText(I18n.get(I18n.REGEX_EDITOR_RESET_SAMPLE_TOOLTIP));
     resetSampleBtn.addActionListener(e -> {
       regexPreview.setText(I18n.get(I18n.REGEX_EDITOR_SAMPLE_TEXT));
@@ -600,6 +601,7 @@ public class RegexEditorDialog extends JDialog
     JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UIScaleUtils.dip(4), 0));
     actionsPanel.setOpaque(false);
     actionsPanel.add(presetsBtn);
+    actionsPanel.add(new ToolbarDivider());
     actionsPanel.add(resetSampleBtn);
     headerPanel.add(actionsPanel, BorderLayout.EAST);
 
