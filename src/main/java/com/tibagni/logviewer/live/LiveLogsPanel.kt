@@ -14,6 +14,7 @@ import com.tibagni.logviewer.view.SideButtonsPanel
 import com.tibagni.logviewer.view.SidePanelEntry
 import com.tibagni.logviewer.view.StatusBadge
 import com.tibagni.logviewer.view.Toast
+import com.tibagni.logviewer.view.ToolbarDivider
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Cursor
@@ -244,31 +245,7 @@ class LiveLogsPanel(
    *
    * @return [JComponent] representing the vertical divider separator.
    */
-  internal fun createVerticalDivider(): JComponent {
-    return object : JComponent() {
-      init {
-        val width = UIScaleUtils.dip(1).coerceAtLeast(1)
-        val height = UIScaleUtils.dip(14)
-        preferredSize = Dimension(width, height)
-        minimumSize = Dimension(width, height)
-        maximumSize = Dimension(width, height)
-        isOpaque = false
-      }
-
-      override fun paintComponent(g: Graphics) {
-        val g2 = g.create() as? Graphics2D ?: return
-        try {
-          val dividerColor = UIManager.getColor("Separator.foreground")
-            ?: UIManager.getColor("Component.borderColor")
-            ?: Color(128, 128, 128, 60)
-          g2.color = dividerColor
-          g2.fillRect(0, 0, width, height)
-        } finally {
-          g2.dispose()
-        }
-      }
-    }
-  }
+  internal fun createVerticalDivider(): JComponent = ToolbarDivider(lineHeightDp = 14)
 
   /**
    * Creates a bottom matte border matching theme component borders.
