@@ -266,7 +266,7 @@ class AppearancePreferencePanel(
 
     val typographyCard = createPreferenceCard(
       title = I18n.get(I18n.PREF_SECTION_APPEARANCE_TYPOGRAPHY),
-      icon = CommonIcons.terminalIcon(),
+      icon = CommonIcons.terminalIcon(UIScaleUtils.dip(16)),
       content = typographyForm
     )
 

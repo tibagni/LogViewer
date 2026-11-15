@@ -156,7 +156,7 @@ class FiltersPreferencePanel(
 
     val behaviorCard = createPreferenceCard(
       title = I18n.get(I18n.PREF_SECTION_FILTERS_BEHAVIOR),
-      icon = CommonIcons.viewListIcon(),
+      icon = CommonIcons.viewListIcon(UIScaleUtils.dip(16)),
       content = behaviorForm
     )
 

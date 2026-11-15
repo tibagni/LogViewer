@@ -12,6 +12,7 @@ import com.tibagni.logviewer.bugreport.section.ui.PlainTextBugreportPanel
 import com.tibagni.logviewer.bugreport.section.ui.SectionPanel
 import com.tibagni.logviewer.bugreport.section.ui.SystemPropertiesSectionPanel
 import com.tibagni.logviewer.i18n.I18n
+import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
 import org.junit.Assert.*
 import org.junit.Test
@@ -120,6 +121,8 @@ class BugReportViewTests {
 
     view.onThemeChanged()
     assertNotNull(view.sidebarHeaderLabel.icon)
+    assertEquals(UIScaleUtils.dip(16), view.sidebarHeaderLabel.icon.iconWidth)
+    assertEquals(UIScaleUtils.dip(6), view.sidebarHeaderLabel.iconTextGap)
     assertNotNull(view.sectionsList.cellRenderer)
   }
 
@@ -163,6 +166,8 @@ class BugReportViewTests {
 
     assertTrue(panel.openBugreportBtn is FlatButton)
     assertNotNull(panel.openBugreportBtn.icon)
+    assertEquals(UIScaleUtils.dip(16), panel.openBugreportBtn.icon.iconWidth)
+    assertEquals(UIScaleUtils.dip(4), panel.openBugreportBtn.iconTextGap)
     assertFalse(panel.disclaimerTxt.isEditable)
     assertTrue(panel.disclaimerTxt.lineWrap)
 
