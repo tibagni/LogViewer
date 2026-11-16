@@ -122,7 +122,7 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
   override fun onThemeChanged() {
     // Force panels to be recreated since theme changed
     sectionPanels.clear()
-    sidebarHeaderLabel.icon = CommonIcons.viewListIcon()
+    sidebarHeaderLabel.icon = CommonIcons.viewListIcon(UIScaleUtils.dip(16))
     sectionsList.cellRenderer = SectionListCellRenderer()
     if (::emptyCard.isInitialized) {
       emptyCard.border = CardBorderUtils.createCardBorder(
@@ -225,7 +225,8 @@ class BugReportViewImpl(private val mainView: MainView) : BugReportView, BugRepo
         UIScaleUtils.dip(12)
       )
       sidebarHeaderLabel = JLabel(I18n.get(I18n.BUGREPORT_SECTIONS_TITLE)).apply {
-        icon = CommonIcons.viewListIcon()
+        icon = CommonIcons.viewListIcon(UIScaleUtils.dip(16))
+        iconTextGap = UIScaleUtils.dip(6)
         font = font.deriveFont(Font.BOLD, UIScaleUtils.dip(13).toFloat())
       }
       add(sidebarHeaderLabel, BorderLayout.WEST)

@@ -368,6 +368,8 @@ class LogViewerPreferencesDialogTests {
     `when`(mockPrefs.defaultFiltersPath).thenReturn(dummyDir)
     `when`(mockPrefs.preferredTextEditor).thenReturn(File("/test/editor"))
     `when`(mockPrefs.adbPath).thenReturn(File("/test/adb"))
+    `when`(mockPrefs.lookAndFeel).thenReturn("Light")
+    `when`(mockPrefs.accentColor).thenReturn("Default")
 
     val container = JPanel()
     val logsPanel = LogsPreferencePanel(container, mockPrefs)
@@ -382,12 +384,21 @@ class LogViewerPreferencesDialogTests {
     assertTrue(filtersRoot.componentCount >= 3)
     assertTrue((filtersRoot.getComponent(0) as JPanel).border is FlatLineBorder)
     assertTrue((filtersRoot.getComponent(2) as JPanel).border is FlatLineBorder)
+    val behaviorCard = filtersRoot.getComponent(2) as JPanel
+    val behaviorHeader = (behaviorCard.getComponent(0) as JPanel).getComponent(0) as JLabel
+    assertEquals(UIScaleUtils.dip(16), behaviorHeader.icon.iconWidth)
 
     val toolsPanel = ToolsPreferencePanel(container, mockPrefs)
     val toolsRoot = toolsPanel.panel as JPanel
     assertTrue(toolsRoot.componentCount >= 3)
     assertTrue((toolsRoot.getComponent(0) as JPanel).border is FlatLineBorder)
     assertTrue((toolsRoot.getComponent(2) as JPanel).border is FlatLineBorder)
+
+    val appearancePanel = AppearancePreferencePanel(mockPrefs, LogViewerThemeManager)
+    val appearanceRoot = appearancePanel.panel as JPanel
+    val typoCard = appearanceRoot.getComponent(2) as JPanel
+    val typoHeader = (typoCard.getComponent(0) as JPanel).getComponent(0) as JLabel
+    assertEquals(UIScaleUtils.dip(16), typoHeader.icon.iconWidth)
   }
 
   @Test

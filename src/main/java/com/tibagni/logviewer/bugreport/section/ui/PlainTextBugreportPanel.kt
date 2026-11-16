@@ -71,6 +71,7 @@ class PlainTextBugreportPanel(private val plainTextSection: PlainTextSection) :
   private fun buildUi() {
     openBugreportBtn = FlatButton("").apply {
       icon = CommonIcons.fileDocumentIcon(UIScaleUtils.dip(16))
+      iconTextGap = UIScaleUtils.dip(4)
     }
 
     disclaimerTxt = JTextArea().apply {
