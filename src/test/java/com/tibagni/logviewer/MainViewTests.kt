@@ -135,6 +135,12 @@ class MainViewTests {
       }
       assertNotNull(visibleLogsItem)
       assertNotNull(visibleLogsItem?.icon)
+
+      val encodingItem = menuItems.find {
+        it.text == I18n.get(I18n.MENU_ENCODING)
+      }
+      assertNotNull(encodingItem)
+      assertNotNull(encodingItem?.icon)
     } finally {
       parent.dispose()
     }
