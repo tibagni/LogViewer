@@ -55,11 +55,22 @@ interface LogViewerPresenterView : AsyncPresenter.AsyncPresenterView {
   fun closeCurrentlyOpenedBugReports()
 }
 
-class LogViewerViewImpl(
+class LogViewerViewImpl @VisibleForTesting internal constructor(
   private val mainView: MainView,
-  initialLogFiles: Set<File> = emptySet()
+  initialLogFiles: Set<File> = emptySet(),
+  customPresenter: LogViewerPresenter? = null
 ) : LogViewerView, LogViewerPresenterView {
   override val presenter: LogViewerPresenter
+
+  /**
+   * Constructs a [LogViewerViewImpl] with the specified owning [MainView] and
+   * initial log files to load.
+   *
+   * @param mainView the parent hosting [MainView].
+   * @param initialLogFiles set of initial log files to open, or empty set by default.
+   */
+  constructor(mainView: MainView, initialLogFiles: Set<File> = emptySet()) :
+    this(mainView, initialLogFiles, null)
 
   override val tabTitle: String
     get() = I18n.get(I18n.MAIN_TAB_LOGS)
@@ -121,7 +132,7 @@ class LogViewerViewImpl(
   init {
     buildUi()
 
-    presenter = LogViewerPresenterImpl(
+    presenter = customPresenter ?: LogViewerPresenterImpl(
       this,
       userPrefs,
       ServiceLocator.logsRepository,
@@ -365,35 +376,67 @@ class LogViewerViewImpl(
     file?.let { presenter.saveFilteredLogs(it) }
   }
 
-  override fun handleGoToTimestampMenu() {
-    var hintText = "{month}-{day} {hour}:{min}:{sec}:{hund}"
-    var ts: LogTimestamp? = null
-    if (filteredLogList.table.hasFocus() && filteredLogList.table.selectedRow >= 0) {
+  /**
+   * Functional provider for displaying the input dialog, defaulting to
+   * [JOptionPane.showInputDialog]. Overridable in tests to verify dialog
+   * inputs and vector icon parameters without opening GUI dialogs in headless environments.
+   */
+  @VisibleForTesting
+  internal var inputDialogProvider: (
+    parent: Component,
+    message: String,
+    title: String,
+    messageType: Int,
+    icon: Icon?,
+    selectionValues: Array<Any>?,
+    initialSelectionValue: Any?
+  ) -> String? = { parent, msg, title, type, icon, values, initial ->
+    JOptionPane.showInputDialog(parent, msg, title, type, icon, values, initial) as String?
+  }
+
+  /**
+   * Functional provider resolving the [LogTimestamp] of the currently selected log entry,
+   * overridable in tests to verify timestamp hint formatting in headless environments.
+   */
+  @VisibleForTesting
+  internal var selectedTimestampProvider: () -> LogTimestamp? = {
+    getSelectedLogTimestamp()
+  }
+
+  /**
+   * Resolves the timestamp of the currently selected log entry in the focused log table,
+   * or returns null if no entry is selected or focused.
+   */
+  private fun getSelectedLogTimestamp(): LogTimestamp? {
+    return if (filteredLogList.table.hasFocus() && filteredLogList.table.selectedRow >= 0) {
       val row = filteredLogList.table.selectedRow
       val col = filteredLogList.table.selectedColumn
-      val selectedEntry = filteredLogList.table.model.getValueAt(row, col) as LogEntry
-      ts = selectedEntry.timestamp
+      (filteredLogList.table.model.getValueAt(row, col) as? LogEntry)?.timestamp
     } else if (logList.table.hasFocus() && logList.table.selectedRow >= 0) {
       val row = logList.table.selectedRow
       val col = logList.table.selectedColumn
-      val selectedEntry = logList.table.model.getValueAt(row, col) as LogEntry
-      ts = selectedEntry.timestamp
+      (logList.table.model.getValueAt(row, col) as? LogEntry)?.timestamp
+    } else {
+      null
     }
+  }
 
+  override fun handleGoToTimestampMenu() {
+    var hintText = "{month}-{day} {hour}:{min}:{sec}:{hund}"
+    val ts = selectedTimestampProvider()
     ts?.let {
       hintText = "${it.month}-${it.day} ${it.hour}:${it.minutes}:${it.seconds}.${it.hundredth}"
     }
 
-    val input =
-      JOptionPane.showInputDialog(
-        contentPane,
-        I18n.get(I18n.LOGS_GOTO_TIMESTAMP_MSG),
-        I18n.get(I18n.LOGS_GOTO_TIMESTAMP_TITLE),
-        JOptionPane.PLAIN_MESSAGE,
-        null,
-        null,
-        hintText
-      ) as String?
+    val input = inputDialogProvider(
+      contentPane,
+      I18n.get(I18n.LOGS_GOTO_TIMESTAMP_MSG),
+      I18n.get(I18n.LOGS_GOTO_TIMESTAMP_TITLE),
+      JOptionPane.PLAIN_MESSAGE,
+      CommonIcons.clockIcon(UIScaleUtils.dip(28)),
+      null,
+      hintText
+    )
 
     if (input.isNullOrEmpty()) {
       Logger.debug("timestamp is empty. Dialog was canceled or no timestamp provided. Aborting...")
