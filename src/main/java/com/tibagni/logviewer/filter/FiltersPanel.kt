@@ -95,11 +95,24 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     SingleChoiceDialog(title, msg, choices, def).show(parent)
   }
 
+  /**
+   * Functional provider for displaying input dialogs, defaulting to [JOptionPane.showInputDialog].
+   * Overridable in tests to verify dialog inputs and vector icon parameters without opening GUI
+   * dialogs.
+   */
   @VisibleForTesting
   internal var inputDialogProvider:
-    (parent: Component, message: String, title: String) -> String? =
-    { parent, msg, title ->
-      JOptionPane.showInputDialog(parent, msg, title, JOptionPane.PLAIN_MESSAGE)
+    (parent: Component, message: String, title: String, icon: Icon?) -> String? =
+    { parent, msg, title, icon ->
+      JOptionPane.showInputDialog(
+        parent,
+        msg,
+        title,
+        JOptionPane.PLAIN_MESSAGE,
+        icon,
+        null,
+        null
+      ) as String?
     }
 
   override var activeFilterContextTag: FilterContextTag?
@@ -559,7 +572,8 @@ open class FiltersPanel @VisibleForTesting internal constructor(
     var newGroupName = inputDialogProvider(
       host.parentWindow,
       I18n.get(I18n.FILTERS_NEW_GROUP_MSG),
-      I18n.get(I18n.FILTERS_NEW_GROUP_TITLE)
+      I18n.get(I18n.FILTERS_NEW_GROUP_TITLE),
+      CommonIcons.plusIcon(UIScaleUtils.dip(28))
     )
 
     if (!StringUtils.isEmpty(newGroupName)) {
