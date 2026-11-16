@@ -41,13 +41,13 @@ class FilterUIGroup extends JPanel {
   private static final int DEFAULT_CARD_ARC_DP = 8;
 
   private final String groupName;
-  private final JButton hideGroupBtn = createToolbarComponent(new FlatButton());
-  private final JButton prevBtn = createToolbarComponent(new FlatButton());
-  private final JButton nextBtn = createToolbarComponent(new FlatButton());
-  private final JButton addBtn = createToolbarComponent(new FlatButton());
-  private final JButton saveBtn = createToolbarComponent(
+  private final FlatButton hideGroupBtn = createToolbarComponent(new FlatButton());
+  private final FlatButton prevBtn = createToolbarComponent(new FlatButton());
+  private final FlatButton nextBtn = createToolbarComponent(new FlatButton());
+  private final FlatButton addBtn = createToolbarComponent(new FlatButton());
+  private final FlatButton saveBtn = createToolbarComponent(
       new FlatButton(I18n.get(I18n.COMMON_SAVE)));
-  private final JButton closeBtn = createToolbarComponent(new FlatButton());
+  private final FlatButton closeBtn = createToolbarComponent(new FlatButton());
   private final TriStateCheckbox selectAllCb = createToolbarComponent(
       new TriStateCheckbox());
   private final JPanel optionsPane;
@@ -262,7 +262,7 @@ class FilterUIGroup extends JPanel {
    *
    * @return the hide group toggle button.
    */
-  public JButton getHideGroupBtn() {
+  public FlatButton getHideGroupBtn() {
     return hideGroupBtn;
   }
 
@@ -271,7 +271,7 @@ class FilterUIGroup extends JPanel {
    *
    * @return the previous navigation button.
    */
-  public JButton getPrevBtn() {
+  public FlatButton getPrevBtn() {
     return prevBtn;
   }
 
@@ -280,7 +280,7 @@ class FilterUIGroup extends JPanel {
    *
    * @return the next navigation button.
    */
-  public JButton getNextBtn() {
+  public FlatButton getNextBtn() {
     return nextBtn;
   }
 
@@ -289,7 +289,7 @@ class FilterUIGroup extends JPanel {
    *
    * @return the add filter button.
    */
-  public JButton getAddBtn() {
+  public FlatButton getAddBtn() {
     return addBtn;
   }
 
@@ -298,7 +298,7 @@ class FilterUIGroup extends JPanel {
    *
    * @return the save filters button.
    */
-  public JButton getSaveBtn() {
+  public FlatButton getSaveBtn() {
     return saveBtn;
   }
 
@@ -307,7 +307,7 @@ class FilterUIGroup extends JPanel {
    *
    * @return the close group button.
    */
-  public JButton getCloseBtn() {
+  public FlatButton getCloseBtn() {
     return closeBtn;
   }
 
