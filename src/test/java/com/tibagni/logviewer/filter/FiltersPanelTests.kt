@@ -8,8 +8,10 @@ import com.tibagni.logviewer.view.SingleChoiceDialog
 import com.tibagni.logviewer.view.ToolbarDivider
 import com.tibagni.logviewer.util.scaling.UIScaleUtils
 import com.tibagni.logviewer.view.FlatButton
+import com.tibagni.logviewer.view.CommonIcons
 import java.awt.Cursor
 import java.awt.FlowLayout
+import javax.swing.Icon
 import javax.swing.JButton
 import javax.swing.border.CompoundBorder
 import javax.swing.border.EmptyBorder
@@ -283,7 +285,7 @@ class FiltersPanelTests {
       0
     }
 
-    panel.inputDialogProvider = { _, _, _ -> "FirstGroup" }
+    panel.inputDialogProvider = { _, _, _, _ -> "FirstGroup" }
     `when`(mockPresenter.addGroup("FirstGroup")).thenReturn("FirstGroup")
 
     val selected = panel.showSelectFilterGroup(emptyList())
@@ -302,13 +304,38 @@ class FiltersPanelTests {
     panel.singleChoiceDialogProvider = { _, _, choices, _, _ ->
       choices.lastIndex // select "Create new group"
     }
-    panel.inputDialogProvider = { _, _, _ ->
+    panel.inputDialogProvider = { _, _, _, _ ->
       "BrandNewGroup"
     }
 
     val selected = panel.showSelectFilterGroup(listOf("Group1"))
     assertEquals("BrandNewGroup", selected)
     verify(mockPresenter).addGroup("BrandNewGroup")
+  }
+
+  @Test
+  fun testAddGroupSuppliesVectorIcon() {
+    val panel = FiltersPanel(mockHost) { mockPresenter }
+    `when`(mockPresenter.addGroup("IconGroup")).thenReturn("IconGroup")
+
+    var capturedIcon: Icon? = null
+    var capturedTitle: String? = null
+    var capturedMsg: String? = null
+
+    panel.inputDialogProvider = { _, msg, title, icon ->
+      capturedMsg = msg
+      capturedTitle = title
+      capturedIcon = icon
+      "IconGroup"
+    }
+
+    val result = panel.addGroup(initializeFilter = false)
+    assertEquals("IconGroup", result)
+    assertEquals(I18n.get(I18n.FILTERS_NEW_GROUP_TITLE), capturedTitle)
+    assertEquals(I18n.get(I18n.FILTERS_NEW_GROUP_MSG), capturedMsg)
+    assertNotNull(capturedIcon)
+    assertTrue(capturedIcon is CommonIcons.DynamicVectorIcon)
+    verify(mockPresenter).addGroup("IconGroup")
   }
 
   @Test
