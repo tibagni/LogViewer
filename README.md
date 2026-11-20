@@ -212,15 +212,22 @@ Deployments are handled via the [Release Deploy GitHub Action](https://github.co
 3. Click **Run workflow**, enter the tag name (e.g. `2.8`), and submit. The workflow will automatically build the standalone fat JAR, generate release notes, and publish the GitHub Release with the binary attached.
 
 ### 7. Generating Documentation Screenshots
-To regenerate all screenshots used in `README.md` and the [User Guide (`gh-pages`)](https://tibagni.github.io/LogViewer/) after UI changes:
+To regenerate all screenshots and automatically sync them across `master` (for `README.md`) and `gh-pages` (for the website documentation):
 ```bash
-# Generate into docs/images/ (default):
-./gradlew generateScreenshots
+# Generate, update, and commit screenshots locally on master and gh-pages:
+python3 scripts/update_screenshots.py
 
-# Or specify a custom output directory:
+# Or generate, commit, and push both branches to origin:
+python3 scripts/update_screenshots.py --push
+
+# Preview changes without committing:
+python3 scripts/update_screenshots.py --dry-run
+```
+Alternatively, generate raw images into a local directory:
+```bash
 ./gradlew generateScreenshots -PoutputDir=/path/to/output
 ```
-The task renders the live Swing UI off-screen using your currently configured theme, accent color, and log font settings.
+The task renders the live Swing UI off-screen using your currently configured theme, accent color, and log font settings. In Wayland / Herdr sessions, `update_screenshots.py` automatically resolves the active Xwayland authentication cookie.
 
 ### 8. Updating the Keyboard Shortcuts Table
 The [Keyboard Shortcuts](#keyboard-shortcuts) table in `README.md` is generated directly from `ShortcutAction` definitions. After adding or modifying any shortcut in `ShortcutAction.kt`, regenerate the table with:
